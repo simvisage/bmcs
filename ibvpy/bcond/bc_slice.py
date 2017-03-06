@@ -12,6 +12,11 @@
 #
 # Created on May 26, 2009 by: rchx
 
+from ibvpy.core.i_bcond import \
+    IBCond
+from ibvpy.mesh.fe_grid_idx_slice import FEGridIdxSlice
+from ibvpy.plugins.mayavi_util.pipelines import \
+    MVPointLabels
 from numpy import \
     ix_, dot, repeat, zeros
 from scipy.linalg import \
@@ -26,13 +31,9 @@ from traitsui.api import \
     View, Item, TableEditor
 from traitsui.table_column \
     import ObjectColumn
+from view.ui import BMCSTreeNode
 
 from bc_dof import BCDof
-from ibvpy.core.i_bcond import \
-    IBCond
-from ibvpy.mesh.fe_grid_idx_slice import FEGridIdxSlice
-from ibvpy.plugins.mayavi_util.pipelines import \
-    MVPointLabels
 import numpy as np
 
 
@@ -46,12 +47,17 @@ bcond_list_editor = TableEditor(
 )
 
 
-class BCSlice(HasStrictTraits):
+class BCSlice(BMCSTreeNode):
 
     '''
     Implements the IBC functionality for a constrained dof.
     '''
     implements(IBCond)
+
+    tree_node_list = List
+
+    def _tree_node_list_default(self):
+        return self.bcdof_list
 
     name = Str('<unnamed>')
 

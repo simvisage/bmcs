@@ -1,4 +1,10 @@
 
+from ibvpy.mesh.fe_domain import FEDomain
+from ibvpy.mesh.fe_grid import FEGrid
+from ibvpy.mesh.fe_refinement_grid import FERefinementGrid
+from ibvpy.mesh.fe_subdomain import FESubDomain
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 from traits.api import \
     Array, Bool, Enum, Float, HasTraits, \
     Instance, Int, Trait, Str, Enum, \
@@ -11,16 +17,11 @@ from traitsui.api import \
 from traitsui.menu import \
     NoButtons, OKButton, CancelButton, \
     Action
+from view.ui import BMCSTreeNode
 
 from bcond_mngr import BCondMngr
 from i_sdomain import ISDomain
 from ibv_resource import IBVResource
-from ibvpy.mesh.fe_domain import FEDomain
-from ibvpy.mesh.fe_grid import FEGrid
-from ibvpy.mesh.fe_refinement_grid import FERefinementGrid
-from ibvpy.mesh.fe_subdomain import FESubDomain
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 import numpy as np
 from rtrace_mngr import RTraceMngr
 from scontext import SContext
@@ -28,7 +29,7 @@ from sdomain import SDomain
 from tstepper_eval import ITStepperEval
 
 
-class TStepper(IBVResource):
+class TStepper(BMCSTreeNode):
 
     """
     The TStepper is a spatially bounded TStepperEval.
@@ -48,9 +49,10 @@ class TStepper(IBVResource):
     point].
     """
 
-    # service specifiers - used to link the service to this object
-    service_class = 'ibvpy.plugins.tstepper_service.TStepperService'
-    service_attrib = 'tstepper'
+    tree_node_list = List
+
+    def _tree_node_list_default(self):
+        return [self.bcond_mngr, self.rtrace_mngr]
 
     # Integration terms involved in the evaluation of the
     # incremetal spatial integrals.
@@ -219,6 +221,10 @@ class TStepper(IBVResource):
 
     def new_resp_var(self):
         return self.tse_integ.new_resp_var()
+
+    kw = Dict
+    args = List
+    K = Instance(SysMtxAssembly)
 
     U_k = Property(depends_on='_sdomain.changed_structure')
 

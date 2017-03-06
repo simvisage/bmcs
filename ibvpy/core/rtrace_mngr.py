@@ -1,30 +1,27 @@
 
+from numpy import zeros, float_
 from traits.api import \
     Array, Bool, Callable, Enum, Float, HasTraits, \
     Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
     Dict, Property, cached_property, WeakRef, Delegate, Button, \
     Constant
-
 from traitsui.api import \
     Item, View, HGroup, ListEditor, VGroup, VSplit, Group, HSplit, \
     TabularEditor
-
 from traitsui.menu import \
     NoButtons, OKButton, CancelButton, Action, CloseAction, Menu, \
     MenuBar, Separator
-
 from traitsui.tabular_adapter \
     import TabularAdapter
+from view.ui import BMCSTreeNode
 
-from numpy import zeros, float_
 from ibv_resource import IBVResource
 from rtrace import RTrace
+
 
 #-------------------------------------------------------------------------
 # Tabular Adapter Definition
 #-------------------------------------------------------------------------
-
-
 class RTraceTableAdapter (TabularAdapter):
 
     columns = [('Name', 'name'),
@@ -46,7 +43,7 @@ rtrace_editor = TabularEditor(
 )
 
 
-class RTraceMngr(IBVResource):
+class RTraceMngr(BMCSTreeNode):
 
     '''
     The response variable manager.
@@ -64,8 +61,8 @@ class RTraceMngr(IBVResource):
     '''
 
     # service specifiers - used to link the service to this object
-    service_class = 'ibvpy.plugins.rtrace_service.RTraceService'
-    service_attrib = 'rtrace_mngr'
+
+    tree_node_list = List([])
 
     # Traced object an object suplying the RT Evaluators
     #
@@ -122,7 +119,8 @@ class RTraceMngr(IBVResource):
 
     def start_timer(self):
         if self.timer:
-            self.timer.Start(1000.0, wx.TIMER_CONTINUOUS)
+            pass
+            #self.timer.Start(1000.0, wx.TIMER_CONTINUOUS)
 
     def stop_timer(self):
         if self.timer:
@@ -206,7 +204,7 @@ class RTraceMngr(IBVResource):
     )
 
 if __name__ == '__main__':
-    from rtrace import RTraceGraph
+    from ibvpy.rtrace.rt_dof import RTraceGraph
     rmgr = RTraceMngr(rtrace_list=[
         RTraceGraph(name='rte x'),
         RTraceGraph(name='rte 2'),

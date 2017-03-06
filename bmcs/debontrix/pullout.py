@@ -13,7 +13,7 @@ Run #1
 
 Run #2
    - efficiency of the boundary conditions - index notation
-   - sparse-solver warning - chcek
+   - sparse-solver warning - check
    - coupling of domains
    - coupling with reinforcement - non-conforming
    
@@ -54,6 +54,7 @@ if __name__ == '__main__':
         fets_eval=fets_eval)
 
     ts = TS(dof_resultants=True,
+            node_name='Pull-out',
             tse=tse,
             sdomain=tse.sdomain,
             # conversion to list (square brackets) is only necessary for slicing of
@@ -88,3 +89,7 @@ if __name__ == '__main__':
                   tline=TLine(min=0.0, step=0.1, max=1.0))
 
     print tloop.eval()
+
+    from view.window import BMCSWindow
+    bmcs = BMCSWindow(root=ts)
+    bmcs.configure_traits()

@@ -14,13 +14,13 @@ from traitsui.api import \
     HSplit, HGroup
 from traitsui.menu import \
     Menu, MenuBar, Separator
+from view.ui.bmcs_tree_node import \
+    BMCSTreeNode, BMCSLeafNode
 
 from bmcs_plot_dock_pane import PlotDockPane
 from bmcs_tree_view_handler import \
     BMCSTreeViewHandler, plot_self, menu_save, \
     menu_open, menu_exit, toolbar_actions
-from view.ui.bmcs_tree_node import \
-    BMCSTreeNode, BMCSLeafNode
 
 
 if ETSConfig.toolkit == 'wx':
@@ -133,10 +133,15 @@ class BMCSWindow(HasStrictTraits):
 if __name__ == '__main__':
 
     from view.plot2d.example import rt
+    from ibvpy.core.bcond_mngr import BCondMngr
+    from ibvpy.bcond import BCDof, BCSlice
+    bc_mngr = BCondMngr()
+    bc_mngr.bcond_list = [BCDof(), BCSlice()]
     tr = BMCSTreeNode(node_name='root',
                       tree_node_list=[BMCSTreeNode(node_name='subnode 1'),
                                       BMCSTreeNode(node_name='subnode 2'),
-                                      rt
+                                      rt,
+                                      bc_mngr
                                       ])
 
     tv = BMCSWindow(root=tr)
