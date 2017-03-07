@@ -240,7 +240,7 @@ if __name__ == '__main__':
 
 
         rtrace_list=[
-            #                         RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+            #                         RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
             #                               var_y = 'F_int', idx_y = right_dof,
             #                               var_x = 'U_k', idx_x = right_dof),
             #                         RTraceDomainListField(name = 'Stress' ,

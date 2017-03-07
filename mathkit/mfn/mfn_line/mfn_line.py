@@ -1,14 +1,16 @@
-import numpy as np
-from traits.api import Array, Float, Event, HasTraits, \
-                                 ToolbarButton, on_trait_change, \
-                                 Property, cached_property, Enum
-
 from scipy import interpolate as ip
+from traits.api import Array, Float, Event, HasStrictTraits, \
+    ToolbarButton, on_trait_change, \
+    Property, cached_property, Enum
 
-class MFnLineArray(HasTraits):
+import numpy as np
+
+
+class MFnLineArray(HasStrictTraits):
 
     # Public Traits
-    xdata = Array(float, value = [0.0, 1.0])
+    xdata = Array(float, value=[0.0, 1.0])
+
     def _xdata_default(self):
         '''
         convenience default - when xdata not defined created automatically as
@@ -16,54 +18,58 @@ class MFnLineArray(HasTraits):
         '''
         return np.arange(self.ydata.shape[0])
 
-    ydata = Array(float, value = [0.0, 1.0])
+    ydata = Array(float, value=[0.0, 1.0])
 
     extrapolate = Enum('constant', 'exception', 'diff', 'zero')
+    '''
+    Vectorized interpolation using scipy.interpolate
+    '''
 
-    # alternative vectorized interpolation using scipy.interpolate   
-    def get_values(self, x, k = 1):
+    def values(self, x, k=1):
         '''
         vectorized interpolation, k is the spline order, default set to 1 (linear)
         '''
-        tck = ip.splrep(self.xdata, self.ydata, s = 0, k = k)
+        tck = ip.splrep(self.xdata, self.ydata, s=0, k=k)
 
         x = np.array([x]).flatten()
 
         if self.extrapolate == 'diff':
-            values = ip.splev(x, tck, der = 0)
+            values = ip.splev(x, tck, der=0)
         elif self.extrapolate == 'exception':
             if x.all() < self.xdata[0] and x.all() > self.xdata[-1]:
-                values = values = ip.splev(x, tck, der = 0)
+                values = values = ip.splev(x, tck, der=0)
             else:
                 raise ValueError('value(s) outside interpolation range')
-
         elif self.extrapolate == 'constant':
-            values = ip.splev(x, tck, der = 0)
+            values = ip.splev(x, tck, der=0)
             values[x < self.xdata[0]] = self.ydata[0]
             values[x > self.xdata[-1]] = self.ydata[-1]
         elif self.extrapolate == 'zero':
-            values = ip.splev(x, tck, der = 0)
+            values = ip.splev(x, tck, der=0)
             values[x < self.xdata[0]] = 0.0
             values[x > self.xdata[-1]] = 0.0
         return values
 
-    def get_value(self, x):
-        x2idx = self.xdata.searchsorted(x)
-        if x2idx == len(self.xdata):
-            x2idx -= 1
-        x1idx = x2idx - 1
-        x1 = self.xdata[ x1idx ]
-        x2 = self.xdata[ x2idx ]
-        dx = x2 - x1
-        y1 = self.ydata[ x1idx ]
-        y2 = self.ydata[ x2idx ]
-        dy = y2 - y1
-        y = y1 + dy / dx * (x - x1)
-        return y
+    def __call__(self, x):
+        return self.values(x)
+
+    yrange = Property
+    '''Get min max values on the vertical axis
+    '''
+
+    def _get_yrange(self):
+        return np.min(self.ydata), np.max(self.ydata)
+
+    xrange = Property
+    '''Get min max values on the vertical axis
+    '''
+
+    def _get_xrange(self):
+        return np.min(self.xdata), np.max(self.xdata)
 
     data_changed = Event
 
-    def get_diffs(self, x, k = 1, der = 1):
+    def diff(self, x, k=1, der=1):
         '''
         vectorized interpolation, der is the nth derivative, default set to 1;
         k is the spline order of the data inetrpolation, default set to 1 (linear)
@@ -71,32 +77,21 @@ class MFnLineArray(HasTraits):
         xdata = np.sort(np.hstack((self.xdata, x)))
         idx = np.argwhere(np.diff(xdata) == 0).flatten()
         xdata = np.delete(xdata, idx)
-        tck = ip.splrep(xdata, self.get_values(xdata, k = k), s = 0, k = k)
-        return ip.splev(x, tck, der = der)
-
-    def get_diff(self, x):
-        x2idx = self.xdata.searchsorted(x)
-        if x2idx == len(self.xdata):
-            x2idx -= 1
-        x1idx = x2idx - 1
-        x1 = self.xdata[ x1idx ]
-        x2 = self.xdata[ x2idx ]
-        dx = x2 - x1
-        y1 = self.ydata[ x1idx ]
-        y2 = self.ydata[ x2idx ]
-        dy = y2 - y1
-        return dy / dx
+        tck = ip.splrep(xdata, self.values(xdata, k=k), s=0, k=k)
+        return ip.splev(x, tck, der=der)
 
     dump_button = ToolbarButton('Print data',
-                                style = 'toolbar')
+                                style='toolbar')
+
     @on_trait_change('dump_button')
-    def print_data(self, event = None):
+    def print_data(self, event=None):
         print 'x = ', repr(self.xdata)
         print 'y = ', repr(self.ydata)
 
-    integ_value = Property(Float(), depends_on = 'ydata')
+    integ = Property(Float(), depends_on='ydata')
+
     @cached_property
-    def _get_integ_value(self):
+    def _get_integ(self):
         _xdata = self.xdata
         _ydata = self.ydata
         # integral under the stress strain curve
@@ -121,45 +116,39 @@ if __name__ == '__main__':
     xx = np.linspace(-4, 8, 100)
     y = np.sin(x)
 
-    mf = MFnLineArray(xdata = x, ydata = y)
+    mf = MFnLineArray(xdata=x, ydata=y)
 
     # plots raw data
     def data():
-        plt.plot(x, y, 'ro', label = 'data')
-
-    # plots interpolation and extrapolation using scalar methods
-    def scalar():
-        plt.plot(xx, [mf.get_value(xi) for xi in xx], label = 'values scalar')
-        plt.plot(xx, [mf.get_diff(xi) for xi in xx], label = 'diff scalar')
+        plt.plot(x, y, 'ro', label='data')
 
     # plots values with extrapolation as constant value
     def constant():
         mf.extrapolate = 'constant'
-        plt.plot(xx, mf.get_values(xx), label = 'constant')
-        plt.plot(xx, mf.get_diffs(xx,), label = 'constant diff')
+        plt.plot(xx, mf(xx), label='constant')
+        plt.plot(xx, mf.diff(xx), label='constant diff')
 
     # plots values with extrapolation as zero
     def zero():
         mf.extrapolate = 'zero'
-        plt.plot(xx, mf.get_values(xx), label = 'zero')
-        plt.plot(xx, mf.get_diffs(xx,), label = 'zero diff')
+        plt.plot(xx, mf(xx), label='zero')
+        plt.plot(xx, mf.diff(xx), label='zero diff')
 
     # plots values with extrapolation with constant slope
     def diff():
         mf.extrapolate = 'diff'
-        plt.plot(xx, mf.get_values(xx), label = 'diff')
-        plt.plot(xx, mf.get_diffs(xx,), label = 'diff diff')
+        plt.plot(xx, mf(xx), label='diff')
+        plt.plot(xx, mf.diff(xx,), label='diff diff')
 
     # raises an exception if data are outside the interpolation range
     def exception():
         mf.extrapolate = 'exception'
-        plt.plot(xx, mf.get_values(xx), label = 'diff')
+        plt.plot(xx, mf(xx), label='exception')
 
     data()
-    #scalar()
-    #constant()
-    zero()
-    #diff()
-    #exception()
-    plt.legend(loc = 'best')
+    # constant()
+    # zero()
+    diff()
+    # exception()
+    plt.legend(loc='best')
     plt.show()

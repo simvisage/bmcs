@@ -91,7 +91,7 @@ from ibvpy.plugins.ibvpy_app import IBVPyApp
 def __demo__():
 
     from ibvpy.api import \
-        TStepper as TS, RTraceGraph, RTraceDomainListField, TLoop, \
+        TStepper as TS, RTDofGraph, RTraceDomainListField, TLoop, \
         TLine, BCDof
     from ibvpy.mats.mats1D.mats1D_elastic.mats1D_elastic import MATS1DElastic
 
@@ -107,7 +107,7 @@ def __demo__():
             sdomain=domain,
             bcond_list=[BCDof(var='u', dof=0, value=0.),
                         BCDof(var='f', dof=3, value=1,)],
-            rtrace_list=[RTraceGraph(name='Fi,right over u_right (iteration)',
+            rtrace_list=[RTDofGraph(name='Fi,right over u_right (iteration)',
                                      var_y='F_int', idx_y=0,
                                      var_x='U_k', idx_x=1),
                          RTraceDomainListField(name='Stress',

@@ -5,7 +5,7 @@
 
 if __name__ == '__main__':
     from ibvpy.api import \
-        TStepper as TS, RTraceGraph, TLoop, \
+        TStepper as TS, RTDofGraph, TLoop, \
         TLine, BCDofGroup
     from ibvpy.rtrace.rt_domain_list_field import RTraceDomainListField
     from ibvpy.mesh.fe_grid import FEGrid
@@ -44,7 +44,7 @@ if __name__ == '__main__':
                             BCDofGroup(var='u', value=0., dims=[0, 1],
                                        get_dof_method=fe_domain1.get_bottom_dofs),
                             ],
-                rtrace_list=[RTraceGraph(name='Fi,right over u_right (iteration)',
+                rtrace_list=[RTDofGraph(name='Fi,right over u_right (iteration)',
                                          var_y='F_int', idx_y=0,
                                          var_x='U_k', idx_x=1),
                              RTraceDomainListField(name='Stress',

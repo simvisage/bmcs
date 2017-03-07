@@ -1,28 +1,18 @@
 from ibvpy.core.i_bcond import \
     IBCond
+from mathkit.mfn import MFnLineArray
 from traits.api import Float, \
-    Int,  Enum, \
-    Callable, List,  Any, implements
+    Int,  Enum, Instance, \
+    List,  Any, implements
 from traitsui.api import View, Item, Group, Include
-from view.plot2d import Vis2D, Viz2D
+from view.plot2d import Vis2D, TimeFunctionViz2D
 from view.ui import BMCSLeafNode
+
+
 import numpy as np
 
 
-class BCDofViz2D(Viz2D):
-    '''Visualization adaptor for time function of a boundary condition'''
-
-    def plot(self, ax, vot=0, *args, **kw):
-        if self.vis2d.time_function:
-            x = np.linspace(0, 1, 100)
-            #y = self.vis2d.time_function(x)
-            #ax.plot(x, y, *args, **kw)
-            ax.plot([vot, vot], [0, 1])
-            ax.set_xlim([0, 1])
-            ax.set_ylim([0, 1])
-
-
-class BCDof(Vis2D, BMCSLeafNode):
+class BCDof(BMCSLeafNode, Vis2D):
     '''
     Implements the IBC functionality for a constrained dof.
 
@@ -76,13 +66,13 @@ class BCDof(Vis2D, BMCSLeafNode):
     Coefficients of the linear combination of DOFs specified in the
     above list.
     '''
-    time_function = Callable
+    time_function = Instance(MFnLineArray)
     '''
     Time function prescribing the evolution of the boundary condition.
     '''
 
     def _time_function_default(self):
-        return lambda t: t
+        return MFnLineArray(xdata=[0, 1], ydata=[0, 1], extrapolate='diff')
 
     def is_essential(self):
         return self.var == 'u'
@@ -161,7 +151,7 @@ class BCDof(Vis2D, BMCSLeafNode):
                 alpha = np.array(self.link_coeffs, np.float_)
                 R[n_ix] += alpha.transpose() * R_a
 
-    viz2d_classes = {'time function': BCDofViz2D}
+    viz2d_classes = {'time function': TimeFunctionViz2D}
     tree_view = View(
         Include('actions'),
         Item('var'),
@@ -176,7 +166,7 @@ if __name__ == '__main__':
     from ibvpy.mesh.fe_domain import FEDomain
     from ibvpy.fets.fets1D.fets1D2l import FETS1D2L
     from ibvpy.api import \
-        TStepper as TS, RTraceGraph, TLoop, \
+        TStepper as TS, RTDofGraph, TLoop, \
         TLine
     from ibvpy.mats.mats1D.mats1D_elastic.mats1D_elastic import MATS1DElastic
 
@@ -199,7 +189,7 @@ if __name__ == '__main__':
                         BCDof(
                             var='u', dof=5, link_dofs=[16], link_coeffs=[1.], value=0.),
                         BCDof(var='f', dof=21, value=10)],
-            rtrace_list=[RTraceGraph(name='Fi,right over u_right (iteration)',
+            rtrace_list=[RTDofGraph(name='Fi,right over u_right (iteration)',
                                      var_y='F_int', idx_y=0,
                                      var_x='U_k', idx_x=1),
                          ]

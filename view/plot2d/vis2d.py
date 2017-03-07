@@ -11,8 +11,6 @@ from traits.api import \
 from traitsui.api import \
     View, Group, UItem, Include, EnumEditor, HGroup
 
-from view.ui import BMCSLeafNode
-
 
 class Viz2DDict(HasStrictTraits):
     '''On demand constructor of viz2d object, 
@@ -52,7 +50,7 @@ class Viz2DDict(HasStrictTraits):
         return repr(self._viz2d_objects)
 
 
-class Vis2D(BMCSLeafNode):
+class Vis2D(HasStrictTraits):
     '''Each state and operator object can be associated with 
     several visualization objects with a shortened class name Viz3D. 
     In order to introduce a n independent class subsystem into 
@@ -76,7 +74,13 @@ class Vis2D(BMCSLeafNode):
     def _get_viz2d_class_names(self):
         return self.viz2d_classes.keys()
 
-    selected_viz2d_class = Str('default')
+    selected_viz2d_class = Str
+
+    def _selected_viz2d_class_default(self):
+        if len(self.viz2d_class_names) > 0:
+            return self.viz2d_class_names[0]
+        else:
+            return ''
 
     add_selected_viz2d = Button(label='Add plot viz2d')
 
@@ -99,15 +103,12 @@ class Vis2D(BMCSLeafNode):
         for viz2d in self.viz2d.values():
             viz2d.vis2d_changed = True
 
-    actions = Group(
-        HGroup(
-            UItem('add_selected_viz2d'),
-            UItem('selected_viz2d_class', springy=True,
-                  editor=EnumEditor(name='object.viz2d_class_names',
-                                    )
-                  ),
-            springy=True,
-        ),
+    actions = HGroup(
+        UItem('add_selected_viz2d'),
+        UItem('selected_viz2d_class', springy=True,
+              editor=EnumEditor(name='object.viz2d_class_names',
+                                )
+              ),
     )
 
     view = View(

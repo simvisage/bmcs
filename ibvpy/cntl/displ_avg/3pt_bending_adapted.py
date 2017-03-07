@@ -18,7 +18,7 @@ Created on Jul 20, 2010
 # Created on Jun 23, 2010 by: rch
 
 from ibvpy.api import \
-    TStepper as TS, RTraceGraph, TLoop, \
+    TStepper as TS, RTDofGraph, TLoop, \
     TLine, BCDof, IBVPSolve as IS, DOTSEval, FEDomain, FERefinementGrid, \
     FEGrid, BCSlice, RTraceDomainListField
 
@@ -78,7 +78,7 @@ def app():
                                 value= -2.0e-5),
                         ],
              rtrace_list=[
-                            RTraceGraph(name='Fi,right over u_right (iteration)' ,
+                            RTDofGraph(name='Fi,right over u_right (iteration)' ,
                                       var_y='F_int', idx_y=right_dof,
                                       var_x='U_k', idx_x=right_dof,
                                       record_on='update'),

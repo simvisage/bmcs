@@ -104,7 +104,7 @@ class FETS2D4Q4T(FETSEval):
 
 def run_example():
     from ibvpy.api import \
-        TStepper as TS, RTraceGraph, RTraceDomainListField, \
+        TStepper as TS, RTDofGraph, RTraceDomainListField, \
         RTraceDomainListInteg, TLoop, \
         TLine, BCDof, IBVPSolve as IS, DOTSEval
     from ibvpy.mats.mats2D.mats2D_conduction.mats2D_conduction import MATS2DConduction

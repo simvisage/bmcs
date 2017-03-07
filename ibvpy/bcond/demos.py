@@ -15,7 +15,7 @@
 
 #from sys_matrix import SysSparseMtx, SysDenseMtx
 from ibvpy.api import \
-    TStepper as TS, RTraceGraph, TLoop, \
+    TStepper as TS, RTDofGraph, TLoop, \
     TLine, BCDof
 from ibvpy.fets.fets1D.fets1D2l import FETS1D2L
 from ibvpy.mats.mats1D.mats1D_elastic.mats1D_elastic import MATS1DElastic
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     ts.bcond_list = [BCDof(var='u', dof=0, value=0.),
                      BCDof(var='u', dof=1, link_dofs=[2], link_coeffs=[0.5]),
                      BCDof(var='u', dof=3, value=1.)]
-    ts.rtrace_list = [RTraceGraph(name='Fi,right over u_right (iteration)',
+    ts.rtrace_list = [RTDofGraph(name='Fi,right over u_right (iteration)',
                                   var_y='F_int', idx_y=3,
                                   var_x='U_k', idx_x=3)]
 

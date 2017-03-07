@@ -1,6 +1,6 @@
 
 from traits.api import List
-from ibvpy.api import RTraceGraph, RTraceDomainListField
+from ibvpy.api import RTDofGraph, RTraceDomainListField
 from numpy import array, ones, trapz, frompyfunc, dot, zeros, fabs
 
 from mathkit.mfn import MFnLineArray

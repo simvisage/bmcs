@@ -17,20 +17,23 @@ from ibvpy.core.i_bcond import \
 from ibvpy.mesh.fe_grid_idx_slice import FEGridIdxSlice
 from ibvpy.plugins.mayavi_util.pipelines import \
     MVPointLabels
+from mathkit.mfn import MFnLineArray
 from numpy import \
     ix_, dot, repeat, zeros
 from scipy.linalg import \
     det, norm
 from traits.api import Float, \
     Instance, Int, Trait, Str, Enum, \
-    Callable, List, cached_property, \
+    List, cached_property, \
     Button, \
     implements, Property
 from traitsui.api import \
     HSplit, Group, \
-    View, Item, TableEditor
+    View, Item, TableEditor, Include
 from traitsui.table_column \
     import ObjectColumn
+from view.plot2d import Vis2D
+from view.plot2d import Vis2D, TimeFunctionViz2D
 from view.ui import BMCSTreeNode
 
 from bc_dof import BCDof
@@ -47,8 +50,7 @@ bcond_list_editor = TableEditor(
 )
 
 
-class BCSlice(BMCSTreeNode):
-
+class BCSlice(BMCSTreeNode, Vis2D):
     '''
     Implements the IBC functionality for a constrained dof.
     '''
@@ -111,15 +113,15 @@ class BCSlice(BMCSTreeNode):
     integ_domain = Enum(['global', 'local'])
 
     # TODO - adapt the definition
-    time_function = Callable
+    time_function = Instance(MFnLineArray)
 
-    space_function = Callable
+    space_function = Instance(MFnLineArray)
 
     def _space_function_default(self):
-        return lambda x: 1.0
+        return MFnLineArray(xdata=[0, 1], ydata=[1, 1], extrapolate='diff')
 
     def _time_function_default(self):
-        return lambda t: t
+        return MFnLineArray(xdata=[0, 1], ydata=[0, 1], extrapolate='diff')
 
     def is_essential(self):
         return self.var == 'u'
@@ -367,6 +369,8 @@ class BCSlice(BMCSTreeNode):
         self.mvp_dofs.redraw(label_mode='label_vectors')
         self.mvp_link_dofs.redraw(label_mode='label_vectors')
 
+    viz2d_classes = {'time function': TimeFunctionViz2D}
+
     traits_view = View(HSplit(Group('var',
                                     'dims',
                                     'value',
@@ -378,18 +382,18 @@ class BCSlice(BMCSTreeNode):
                        resizable=True,
                        )
 
-    tree_view = View(Group(Item('var'),
-                           Item('dims'),
-                           Item('value'),
-                           ),
-                     resizable=True
-                     )
+    tree_view = View(
+        Include('actions'),
+        Item('var'),
+        Item('dims'),
+        Item('value'),
+    )
 
 if __name__ == '__main__':
 
     from ibvpy.api import \
         TStepper as TS, TLoop, TLine, \
-        RTraceGraph, RTraceDomainListField
+        RTDofGraph, RTraceDomainListField
     from ibvpy.mesh.fe_grid import FEGrid
     from math import pi as Pi
     from numpy import cos, sin, sqrt

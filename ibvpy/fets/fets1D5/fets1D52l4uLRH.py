@@ -174,7 +174,7 @@ def _get_one_if_same_sign(a, b):
 
 def example():
     from ibvpy.api import \
-        TStepper as TS, RTraceGraph, RTraceDomainListField, TLoop, \
+        TStepper as TS, RTDofGraph, RTraceDomainListField, TLoop, \
         TLine, IBVPSolve as IS, DOTSEval, BCSlice
     from ibvpy.mesh.fe_grid import FEGrid
     from mathkit.mfn import MFnLineArray
@@ -215,7 +215,7 @@ def example():
                 BCSlice(var='f', value=f_max, dims=[0],
                         slice=domain[-1, 0, -1, 0])
             ],
-            rtrace_list=[RTraceGraph(name='Fi,right over u_right (iteration)',
+            rtrace_list=[RTDofGraph(name='Fi,right over u_right (iteration)',
                                      var_y='F_int', idx_y=end_dof,
                                      var_x='U_k', idx_x=end_dof),
                          RTraceDomainListField(name='slip',

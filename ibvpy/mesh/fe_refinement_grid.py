@@ -409,7 +409,7 @@ class FERefinementGrid(FERefinementLevel):
 if __name__ == '__main__':
 
     from ibvpy.api import \
-        TStepper as TS, RTraceGraph, RTraceDomainField, TLoop, \
+        TStepper as TS, RTDofGraph, RTraceDomainField, TLoop, \
         TLine, BCDofGroup, BCDof, IBVPSolve as IS, FEDomain, FEPatchedGrid
     from ibvpy.rtrace.rt_domain_list_field import RTraceDomainListField
     from ibvpy.mats.mats1D.mats1D_elastic.mats1D_elastic import MATS1DElastic
@@ -521,7 +521,7 @@ if __name__ == '__main__':
                             BCDofGroup(var='u', value=0., dims=[0, 1],
                                        get_dof_method=fe_domain1.get_bottom_dofs),
                             ],
-                rtrace_list=[RTraceGraph(name='Fi,right over u_right (iteration)',
+                rtrace_list=[RTDofGraph(name='Fi,right over u_right (iteration)',
                                          var_y='F_int', idx_y=0,
                                          var_x='U_k', idx_x=1),
                              #                            RTraceDomainListField(name = 'Stress' ,

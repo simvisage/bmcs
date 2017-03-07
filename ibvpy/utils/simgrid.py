@@ -13,7 +13,7 @@
 # Created on Aug 13, 2009 by: rch
 
 from ibvpy.api import \
-    TStepper as TS, RTraceGraph, RTraceDomainListField, RTraceDomainListInteg, TLoop, \
+    TStepper as TS, RTDofGraph, RTraceDomainListField, RTraceDomainListInteg, TLoop, \
     TLine, BCDofGroup, IBVPSolve as IS, DOTSEval, BCSlice
 
 from ibvpy.mesh.fe_grid import FEGrid
@@ -55,7 +55,7 @@ def simgrid( fets_eval,
 
     loading_dofs = domain[loading_slice].dofs[:,:,load_dir].flatten()
 
-    graphs = [ RTraceGraph( name = 'Force in one node / Displ.',
+    graphs = [ RTDofGraph( name = 'Force in one node / Displ.',
                               var_y = 'F_int', idx_x = loading_dof,
                               var_x = 'U_k'  , idx_y = loading_dof )
                  for loading_dof in loading_dofs ]

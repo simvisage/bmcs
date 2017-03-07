@@ -121,7 +121,7 @@ class FETS2D4Q(FETSEval):
 
 def example_with_new_domain():
     from ibvpy.api import \
-        TStepper as TS, RTraceGraph, RTraceDomainListField, \
+        TStepper as TS, RTDofGraph, RTraceDomainListField, \
         RTraceDomainListInteg, TLoop, \
         TLine, BCDof, IBVPSolve as IS, DOTSEval
     from ibvpy.mats.mats2D.mats2D_elastic.mats2D_elastic import MATS2DElastic
@@ -164,7 +164,7 @@ def example_with_new_domain():
                                          time_function=mf.get_value,
                                          get_dof_method=fe_grid.get_right_dofs)],
                   rtrace_list=[
-                      RTraceGraph(name='Fi,right over u_right (iteration)',
+                      RTDofGraph(name='Fi,right over u_right (iteration)',
                                   var_y='F_int', idx_y=right_dof,
                                   var_x='U_k', idx_x=right_dof,
                                   record_on='update'),

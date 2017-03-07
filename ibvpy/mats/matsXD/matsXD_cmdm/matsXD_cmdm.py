@@ -1102,7 +1102,7 @@ class MATSXDMicroplaneDamage(PolarDiscr):
         '''
         c = super(MATSXDMicroplaneDamage, self)._get_explorer_config()
 
-        from ibvpy.rtrace.rt_dof import RTraceGraph
+        from ibvpy.rtrace.rt_dof import RTDofGraph
         from ibvpy.rtrace.rt_dof import RTraceArraySnapshot
         from ibvpy.mats.mats2D.mats2D_cmdm.mats2D_cmdm_rtrace_Gf_mic import \
             MATS2DMicroplaneDamageTraceGfmic, \
@@ -1112,25 +1112,25 @@ class MATSXDMicroplaneDamage(PolarDiscr):
             MATS2DMicroplaneDamageTraceEtmac, MATS2DMicroplaneDamageTraceUtmac
 
         c['rtrace_list'] += [
-            RTraceGraph(name='time - microplane damage',
+            RTDofGraph(name='time - microplane damage',
                         var_x='time', idx_x=0,
                         var_y='microplane_damage', idx_y=0,
                         record_on='update'),
 
             # e_equiv, s_equiv
-            RTraceGraph(name='e_equiv - s_equiv',
+            RTDofGraph(name='e_equiv - s_equiv',
                         var_x='e_equiv_arr', idx_x=0,
                         var_y='s_equiv_arr', idx_y=0,
                         record_on='update'),
 
             # e_N, s_N:
-            RTraceGraph(name='e_N - s_N',
+            RTDofGraph(name='e_N - s_N',
                         var_x='e_N_arr', idx_x=0,
                         var_y='s_N_arr', idx_y=0,
                         record_on='update'),
 
             # e_T, s_T:
-            RTraceGraph(name='e_T - s_T',
+            RTDofGraph(name='e_T - s_T',
                         var_x='e_T_arr', idx_x=0,
                         var_y='s_T_arr', idx_y=0,
                         record_on='update'),
@@ -1260,21 +1260,21 @@ class MATSXDMicroplaneDamage(PolarDiscr):
             # record_on = 'update' ),
 
             # decoupled energy contributions for G_f
-            #             RTraceGraph(name = 'time - G_f',
+            #             RTDofGraph(name = 'time - G_f',
             #                          var_x = 'time', idx_x = 0,
             #                          var_y = 'fracture_energy', idx_y = 0,
             #                          record_on = 'update' ),
             #                                     ###
-            RTraceGraph(name='time - sig_norm',
+            RTDofGraph(name='time - sig_norm',
                         var_x='time', idx_x=0,
                         var_y='sig_norm', idx_y=0,
                         record_on='update'),
-            #                                       RTraceGraph(name = 'time - phi_pdc',
+            #                                       RTDofGraph(name = 'time - phi_pdc',
             #                                                   var_x = 'time', idx_x = 0,
             #                                                   var_y = 'phi_pdc', idx_y = 0,
             #                                                   record_on = 'update' ),
             # e_equiv_projection:
-            #                                       RTraceGraph(name = 'e_equiv_projection - s_equiv',
+            #                                       RTDofGraph(name = 'e_equiv_projection - s_equiv',
             #                                                   var_x = 'equiv_projection', idx_x = 0,
             #                                                   var_y = 's_equiv', idx_y = 0,
             # record_on = 'update' ),

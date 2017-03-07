@@ -1,28 +1,23 @@
 
-from numpy import zeros, float_
 from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasTraits, \
-    Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
-    Dict, Property, cached_property, WeakRef, Delegate, Button, \
+    Instance, List, Any, \
+    Dict, Property, cached_property, WeakRef, \
     Constant
 from traitsui.api import \
-    Item, View, HGroup, ListEditor, VGroup, VSplit, Group, HSplit, \
+    Item, View, HSplit, \
     TabularEditor
-from traitsui.menu import \
-    NoButtons, OKButton, CancelButton, Action, CloseAction, Menu, \
-    MenuBar, Separator
+
 from traitsui.tabular_adapter \
     import TabularAdapter
 from view.ui import BMCSTreeNode
 
-from ibv_resource import IBVResource
 from rtrace import RTrace
 
 
 #-------------------------------------------------------------------------
 # Tabular Adapter Definition
 #-------------------------------------------------------------------------
-class RTraceTableAdapter (TabularAdapter):
+class RTraceTableAdapter(TabularAdapter):
 
     columns = [('Name', 'name'),
                #                ( 'Record on',    'record_on' ),
@@ -64,6 +59,9 @@ class RTraceMngr(BMCSTreeNode):
     # service specifiers - used to link the service to this object
 
     tree_node_list = List([])
+
+    def _tree_node_list_default(self):
+        return self.rtrace_bound_list
 
     # Traced object an object suplying the RT Evaluators
     #
@@ -205,18 +203,18 @@ class RTraceMngr(BMCSTreeNode):
     )
 
 if __name__ == '__main__':
-    from ibvpy.rtrace.rt_dof import RTraceGraph
+    from ibvpy.rtrace.rt_dof import RTDofGraph
     rmgr = RTraceMngr(rtrace_list=[
-        RTraceGraph(name='rte x'),
-        RTraceGraph(name='rte 2'),
-        RTraceGraph(name='rte 3'),
-        RTraceGraph(name='rte 4'),
-        RTraceGraph(name='rte 5'),
-        RTraceGraph(name='rte 6'),
-        RTraceGraph(name='rte 7'),
-        RTraceGraph(name='rte 8'),
-        RTraceGraph(name='rte 8'),
-        RTraceGraph(name='rte 10'),
-        RTraceGraph(name='rte 11'),
+        RTDofGraph(name='rte x'),
+        RTDofGraph(name='rte 2'),
+        RTDofGraph(name='rte 3'),
+        RTDofGraph(name='rte 4'),
+        RTDofGraph(name='rte 5'),
+        RTDofGraph(name='rte 6'),
+        RTDofGraph(name='rte 7'),
+        RTDofGraph(name='rte 8'),
+        RTDofGraph(name='rte 8'),
+        RTDofGraph(name='rte 10'),
+        RTDofGraph(name='rte 11'),
     ])
     rmgr.configure_traits()

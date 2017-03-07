@@ -9,7 +9,7 @@ from mathkit.matrix_la.dense_mtx import DenseMtx
 import unittest
 
 from ibvpy.api import \
-    TStepper as TS, RTraceGraph, RTraceDomainField, TLoop, \
+    TStepper as TS, RTDofGraph, RTraceDomainField, TLoop, \
     TLine, BCDof, IBVPSolve as IS, DOTSEval
 from ibvpy.mats.mats1D.mats1D_elastic.mats1D_elastic import MATS1DElastic
 
@@ -45,7 +45,7 @@ class TestSysMtxConstraints(unittest.TestCase):
         self.domain.shape = (10,)
         self.ts.bcond_list =  [BCDof(var='u', dof = 0, value = 0.),
                                BCDof(var='u', dof = 10, value = 1. )]
-        self.ts.rtrace_list = [RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+        self.ts.rtrace_list = [RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
                                            var_y = 'F_int', idx_y = 10,
                                            var_x = 'U_k', idx_x = 10)]
 
@@ -125,7 +125,7 @@ class TestMultiDomain( unittest.TestCase):
                                       value = 0. ),
                                 BCDof(var='f', dof = 7, value = 1,
                                           link_dofs = [2], link_coeffs = [2] ) ],
-                 rtrace_list =  [ RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+                 rtrace_list =  [ RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
                                        var_y = 'F_int', idx_y = 0,
                                        var_x = 'U_k', idx_x = 1),
                                        ]             
@@ -200,7 +200,7 @@ class TestMultiDomain( unittest.TestCase):
                                      BCDof(var='u', dof = 5, link_dofs = [6], link_coeffs = [1.],
                                            value = 0. ),
                                      BCDof(var='u', dof = 8, value = 1 )  ],
-                        rtrace_list =  [ RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+                        rtrace_list =  [ RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
                                        var_y = 'F_int', idx_y = 0,
                                        var_x = 'U_k', idx_x = 1),
                                        ]

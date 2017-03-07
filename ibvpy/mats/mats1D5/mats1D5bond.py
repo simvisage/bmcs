@@ -24,7 +24,7 @@ from ibvpy.core.tstepper import \
 
 from ibvpy.mats.mats_eval import IMATSEval, MATSEval
 
-from ibvpy.api import RTrace, RTraceGraph, RTraceArraySnapshot
+from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
 from mathkit.mfn import MFnLineArray
 from mathkit.mfn.mfn_line.mfn_matplotlib_editor import MFnMatplotlibEditor
 from mathkit.mfn.mfn_line.mfn_plot_adapter import MFnPlotAdapter

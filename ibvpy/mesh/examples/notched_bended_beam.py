@@ -6,7 +6,7 @@ from ibvpy.fets.fets2D.fets2D4q import FETS2D4Q
 from ibvpy.fets.fets2D.fets2D4q8u import FETS2D4Q8U
 from ibvpy.fets.fets_ls.fets_ls_eval import FETSLSEval #, FETSCracked
 from ibvpy.api import\
-     BCDofGroup, TStepper as TS, TLoop, TLine, RTraceGraph
+     BCDofGroup, TStepper as TS, TLoop, TLine, RTDofGraph
 from ibvpy.rtrace.rt_domain_list_field import RTraceDomainListField
 from ibvpy.mesh.fe_grid import FEGrid
 from ibvpy.mesh.fe_refinement_grid import FERefinementGrid
@@ -43,7 +43,7 @@ def notched_bended_beam():
                                        get_dof_method = fe_domain1.get_top_dofs ),
                                        ],
              rtrace_list =  [
-#                              RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+#                              RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
 #                                   var_y = 'F_int', idx_y = 0,
 #                                   var_x = 'U_k', idx_x = 1),
 #                        RTraceDomainListField(name = 'Stress' ,

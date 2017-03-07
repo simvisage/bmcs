@@ -329,7 +329,7 @@ if __name__ == '__main__':
                                            get_dof_method = fe_grid1.get_left_dofs ),
                                            ],
                  rtrace_list = [
-#                                 RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+#                                 RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
 #                                       var_y = 'F_int', idx_y = 0,
 #                                       var_x = 'U_k', idx_x = 1),
 #                            RTraceDomainListField(name = 'Stress' ,

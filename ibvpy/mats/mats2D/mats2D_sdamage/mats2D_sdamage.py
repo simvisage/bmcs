@@ -283,25 +283,25 @@ if __name__ == '__main__':
     # Example
     #------------------------------------------------------------------------------
 
-    from ibvpy.api import RTraceGraph
+    from ibvpy.api import RTDofGraph
     from ibvpy.mats.mats2D.mats2D_explore import MATS2DExplore
 
     mats2D_explore = \
         MATS2DExplore(mats2D_eval=MATS2DScalarDamage(strain_norm_type='Rankine'),
                        # stiffness = 'algorithmic' ),
-                       rtrace_list=[ RTraceGraph(name='strain - stress',
+                       rtrace_list=[ RTDofGraph(name='strain - stress',
                                               var_x='eps_app', idx_x=0,
                                               var_y='sig_app', idx_y=0,
                                               record_on='update'),
-                                     RTraceGraph(name='strain - strain',
+                                     RTDofGraph(name='strain - strain',
                                               var_x='eps_app', idx_x=0,
                                               var_y='eps_app', idx_y=1,
                                               record_on='update'),
-                                     RTraceGraph(name='stress - stress',
+                                     RTDofGraph(name='stress - stress',
                                               var_x='sig_app', idx_x=0,
                                               var_y='sig_app', idx_y=1,
                                               record_on='update'),
-        #                             RTraceGraph(name = 'time - sig_norm',
+        #                             RTDofGraph(name = 'time - sig_norm',
         #                                      var_x = 'time', idx_x = 0,
         #                                      var_y = 'sig_norm', idx_y = 0,
         #                                      record_on = 'update' ),

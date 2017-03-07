@@ -43,7 +43,7 @@ if __name__ == '__main__':
                                         slice = fe_grid1[ -1, -1 ] ),
                                         ],
                  rtrace_list = [
-#                                 RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+#                                 RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
 #                                       var_y = 'F_int', idx_y = 0,
 #                                       var_x = 'U_k', idx_x = 1),
                             RTraceDomainListField( name = 'Stress' ,
@@ -183,7 +183,7 @@ if __name__ == '__main__':
                                          slice = fe_grid1[:, -1, :, -1] )
                                 ] + bc_list,
                  rtrace_list = [
-#                                 RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+#                                 RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
 #                                       var_y = 'F_int', idx_y = 0,
 #                                       var_x = 'U_k', idx_x = 1),
                             RTraceDomainListField( name = 'Stress' ,

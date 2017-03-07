@@ -127,7 +127,7 @@ class MATS1DElastic(MATS1DEval):
         '''Return the list of relevant tracers to be used in mats_explorer.
         '''
         return [
-            RTraceGraph(name='strain - stress',
+            RTDofGraph(name='strain - stress',
                         var_x='eps_app', idx_x=0,
                         var_y='sig_app', idx_y=0,
                         record_on='update')
@@ -141,14 +141,14 @@ if __name__ == '__main__':
     from ibvpy.core.tloop import TLoop, TLine
     from ibvpy.api import BCDof
     from ibvpy.core.ibvp_solve import IBVPSolve as IS
-    from ibvpy.api import RTraceGraph
+    from ibvpy.api import RTDofGraph
     # tseval for a material model
     #
     tseval = MATS1DElastic()
     ts = TS(tse=tseval,
             bcond_list=[BCDof(var='u', dof=0, value=1.)
                         ],
-            rtrace_list=[RTraceGraph(name='strain 0 - stress 0',
+            rtrace_list=[RTDofGraph(name='strain 0 - stress 0',
                                      var_x='eps_app', idx_x=0,
                                      var_y='sig_app', idx_y=0,
                                      record_on='update')

@@ -15,7 +15,7 @@ from traitsui.api import \
 
 
 class Viz2D(HasStrictTraits):
-    '''Visualization interface
+    '''Base class of the visualization adaptors
     '''
     label = Str('<unnamed>')
     vis2d = WeakRef

@@ -153,7 +153,7 @@ class FETS3D8H(FETS3D):
 
 if __name__ == '__main__':
     from ibvpy.api import \
-        TStepper as TS, RTraceGraph, RTraceDomainListField, TLoop, \
+        TStepper as TS, RTDofGraph, RTraceDomainListField, TLoop, \
         TLine, BCDofGroup, IBVPSolve as IS, DOTSEval
 
     from ibvpy.mats.mats3D.mats3D_elastic.mats3D_elastic import MATS3DElastic
@@ -176,7 +176,7 @@ if __name__ == '__main__':
                         BCDofGroup(var='u', value=0.002, dims=[0],
                                   get_dof_method=domain.get_right_dofs) ],
              rtrace_list=[
-#                        RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+#                        RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
 #                                  var_y = 'F_int', idx_y = right_dof,
 #                                  var_x = 'U_k', idx_x = right_dof,
 #                                  record_on = 'update'),

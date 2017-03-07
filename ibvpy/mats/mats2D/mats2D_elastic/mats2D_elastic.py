@@ -177,23 +177,23 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------
     # Example using the mats2d_explore
     #-------------------------------------------------------------------------
-    from ibvpy.api import RTraceGraph
+    from ibvpy.api import RTDofGraph
     from ibvpy.mats.mats2D.mats2D_explore import MATS2DExplore
     mats2D_explore = \
         MATS2DExplore(mats2D_eval=MATS2DElastic(),
-                      rtrace_list=[RTraceGraph(name='strain 0 - stress 0',
+                      rtrace_list=[RTDofGraph(name='strain 0 - stress 0',
                                                var_x='eps_app', idx_x=0,
                                                var_y='sig_app', idx_y=0,
                                                record_on='update'),
-                                   RTraceGraph(name='strain 0 - strain 1',
+                                   RTDofGraph(name='strain 0 - strain 1',
                                                var_x='eps_app', idx_x=0,
                                                var_y='eps_app', idx_y=1,
                                                record_on='update'),
-                                   RTraceGraph(name='stress 0 - stress 1',
+                                   RTDofGraph(name='stress 0 - stress 1',
                                                var_x='sig_app', idx_x=0,
                                                var_y='sig_app', idx_y=1,
                                                record_on='update'),
-                                   RTraceGraph(name='time - sig_norm',
+                                   RTDofGraph(name='time - sig_norm',
                                                var_x='time', idx_x=0,
                                                var_y='sig_norm', idx_y=0,
                                                record_on='update')

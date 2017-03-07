@@ -30,7 +30,7 @@ from ibvpy.core.tstepper import \
 
 from ibvpy.mats.mats_eval import IMATSEval, MATSEval
 
-from ibvpy.api import RTrace, RTraceGraph, RTraceArraySnapshot
+from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
 
 from mathkit.mfn.mfn_ndgrid.mfn_ndgrid import MFnNDGrid, GridPoint
 
@@ -360,7 +360,7 @@ if __name__ == '__main__':
     ts = TS(tse=tseval,
              bcond_list=[ BCDof(var='u', dof=0, value=1.)
                          ],
-             rtrace_list=[ RTraceGraph(name='strain 0 - stress 0',
+             rtrace_list=[ RTDofGraph(name='strain 0 - stress 0',
                                   var_x='eps_app', idx_x=0,
                                   var_y='sig_app', idx_y=0,
                                   record_on='update')

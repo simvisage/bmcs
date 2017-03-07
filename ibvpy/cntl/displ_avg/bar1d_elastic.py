@@ -16,7 +16,7 @@ from traits.api import Float, Int
 
 from ibvpy.api import \
     IBVModel, \
-    TStepper as TS, RTraceGraph, RTraceDomainListField, TLoop, \
+    TStepper as TS, RTDofGraph, RTraceDomainListField, TLoop, \
     TLine, BCDof, IBVPSolve as IS, DOTSEval
 
 from ibvpy.mats.mats1D.mats1D_elastic.mats1D_elastic import MATS1DElastic
@@ -137,7 +137,7 @@ class BarStrainLocalization(IBVModel):
                                         var='sig_app')
 
         right_dof = domain[-1, -1].dofs[0, 0, 0]
-        rt_fu = RTraceGraph(name='Fi,right over u_right (iteration)' ,
+        rt_fu = RTDofGraph(name='Fi,right over u_right (iteration)' ,
                              var_y='F_int', idx_y=right_dof,
                              var_x='U_k', idx_x=right_dof)
 

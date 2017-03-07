@@ -6,7 +6,6 @@ Created on Mar 4, 2017
 Run #1
    - add plot2d adaptors to boundary conditions
    - fix the natural boundary conditions
-   - add BMCSTreeNode base class
    - add the calculation button, add the proces button
    - add splash screen
    - entry point
@@ -32,7 +31,7 @@ import numpy as np
 
 if __name__ == '__main__':
     from ibvpy.api import \
-        TStepper as TS, RTraceGraph, RTraceDomainListField, TLoop, \
+        TStepper as TS, RTDofGraph, RTraceDomainListField, TLoop, \
         TLine, BCSlice
     from ibvpy.dots.dots_grid_eval import DOTSGridEval
     from debontrix import FETS1D2L
@@ -57,40 +56,37 @@ if __name__ == '__main__':
             node_name='Pull-out',
             tse=tse,
             sdomain=tse.sdomain,
-            # conversion to list (square brackets) is only necessary for slicing of
-            # single dofs, e.g "get_left_dofs()[0,1]"
             bcond_list=[
                 BCSlice(var='u', value=0., dims=[0],
                         slice=tse.sdomain[0, 0]),
                 BCSlice(var='u', value=0.1, dims=[1],
                         slice=tse.sdomain[-1, -1])
             ],
-            #             rtrace_list=[RTraceGraph(name='Fi,right over u_right (iteration)',
-            #                                      var_y='F_int', idx_y=end_dof,
-            #                                      var_x='U_k', idx_x=end_dof),
-            #                          RTraceDomainListField(name='slip',
-            #                                                var='slip', idx=0),
-            #                          RTraceDomainListField(name='eps1',
-            #                                                var='eps1', idx=0),
-            #                          RTraceDomainListField(name='eps2',
-            #                                                var='eps2', idx=0),
-            #                          RTraceDomainListField(name='shear_flow',
-            #                                                var='shear_flow', idx=0),
-            #                          RTraceDomainListField(name='sig1',
-            #                                                var='sig1', idx=0),
-            #                          RTraceDomainListField(name='sig2',
-            #                                                var='sig2', idx=0),
-            #                          RTraceDomainListField(name='Displacement',
-            #                                                var='u', idx=0)
-            #                          ]
+            rtrace_list=[RTDofGraph(name='Fi,right over u_right',
+                                    var_y='F_int', idx_y=-1, cum_y=True,
+                                    var_x='U_k', idx_x=-1),
+                         #                          RTraceDomainListField(name='slip',
+                         #                                                var='slip', idx=0),
+                         #                          RTraceDomainListField(name='eps1',
+                         #                                                var='eps1', idx=0),
+                         #                          RTraceDomainListField(name='eps2',
+                         #                                                var='eps2', idx=0),
+                         #                          RTraceDomainListField(name='shear_flow',
+                         #                                                var='shear_flow', idx=0),
+                         #                          RTraceDomainListField(name='sig1',
+                         #                                                var='sig1', idx=0),
+                         #                          RTraceDomainListField(name='sig2',
+                         #                                                var='sig2', idx=0),
+                         #                          RTraceDomainListField(name='Displacement',
+                         # var='u', idx=0)
+                         ]
             )
     # Add the time-loop control
     tloop = TLoop(tstepper=ts, KMAX=30, debug=False,
                   tline=TLine(min=0.0, step=0.1, max=1.0))
 
-    print tloop.setup()
+    print tloop.eval()
 
-    print tloop.tstepper.bcond_mngr.bcond_list[0].bcdof_list
     from view.window import BMCSWindow
     bmcs = BMCSWindow(root=ts)
     bmcs.configure_traits()

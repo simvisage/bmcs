@@ -94,7 +94,7 @@ class FETS1D2L3U( FETSEval ):
 
 def example_with_new_domain():
     from ibvpy.api import \
-        TStepper as TS, RTraceGraph, RTraceDomainListField, TLoop, \
+        TStepper as TS, RTDofGraph, RTraceDomainListField, TLoop, \
         TLine, BCDof, IBVPSolve as IS, DOTSEval
     from ibvpy.mats.mats1D.mats1D_elastic.mats1D_elastic import MATS1DElastic
 
@@ -122,7 +122,7 @@ def example_with_new_domain():
                         BCDof( var = 'f', dof = 6, value = 1,
                                   #link_dofs = [2], link_coeffs = [2]
                                    ) ],
-         rtrace_list = [ RTraceGraph( name = 'Fi,right over u_right (iteration)' ,
+         rtrace_list = [ RTDofGraph( name = 'Fi,right over u_right (iteration)' ,
                                var_y = 'F_int', idx_y = 0,
                                var_x = 'U_k', idx_x = 1 ),
                     RTraceDomainListField( name = 'Stress' ,

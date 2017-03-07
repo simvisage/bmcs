@@ -12,34 +12,24 @@
 #
 # Created on Sep 4, 2009 by: rch
 
-from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasTraits, \
-    Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-    implements, Dict, Property, cached_property, Delegate
+from math import copysign, sin
 
+from ibvpy.mats.mats1D.mats1D_eval import MATS1DEval
+from ibvpy.mats.mats_eval import IMATSEval
+from traits.api import \
+    Float,  \
+    Trait,    \
+    implements, Dict
 from traitsui.api import \
-    Item, View, HSplit, VSplit, VGroup, Group, Spring
+    Item, View, Group, Spring
+
+import numpy as np
+
 
 # from dacwt import DAC
-
-from numpy import \
-    array, ones, zeros, outer, inner, transpose, dot, frompyfunc, \
-    fabs, sqrt, linspace, vdot, identity, tensordot, \
-    sin as nsin, meshgrid, float_, ix_, \
-    vstack, hstack, sqrt as arr_sqrt
-
-from math import exp, copysign, sin
-
-
 def sign(val):
     return copysign(1, val)
 
-from ibvpy.core.tstepper import \
-    TStepper as TS
-
-from ibvpy.mats.mats_eval import IMATSEval
-from ibvpy.mats.mats1D.mats1D_eval import MATS1DEval
-from ibvpy.api import RTrace, RTraceGraph, BCDof
 
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
@@ -115,10 +105,10 @@ class MATS1DPlastic(MATS1DEval):
         return 3
 
     def new_cntl_var(self):
-        return zeros(1, float_)
+        return np.zeros(1, np.float_)
 
     def new_resp_var(self):
-        return zeros(1, float_)
+        return np.zeros(1, np.float_)
 
     #-------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
@@ -143,8 +133,8 @@ class MATS1DPlastic(MATS1DEval):
         xi_trial = sigma_trial - q_n
         f_trial = abs(xi_trial) - (self.sigma_y + self.K_bar * alpha_n)
 
-        sig_n1 = zeros((1,), dtype='float_')
-        D_n1 = zeros((1, 1), dtype='float_')
+        sig_n1 = np.zeros((1,), dtype='float_')
+        D_n1 = np.zeros((1, 1), dtype='float_')
         if f_trial <= 1e-8:
             sig_n1[0] = sigma_trial
             D_n1[0, 0] = E
@@ -186,7 +176,7 @@ class MATS1DPlastic(MATS1DEval):
             q_n += d_gamma * self.H_bar * sign(xi_trial)
             alpha_n += d_gamma
 
-        newarr = array([eps_p_n, q_n, alpha_n], dtype='float_')
+        newarr = np.array([eps_p_n, q_n, alpha_n], dtype='float_')
 
         return newarr
 
@@ -194,13 +184,13 @@ class MATS1DPlastic(MATS1DEval):
     # Response trace evaluators
     #--------------------------------------------------------------------------
     def get_eps_p(self, sctx, eps_app_eng):
-        return array([sctx.mats_state_array[0]])
+        return np.array([sctx.mats_state_array[0]])
 
     def get_q(self, sctx, eps_app_eng):
-        return array([sctx.mats_state_array[1]])
+        return np.array([sctx.mats_state_array[1]])
 
     def get_alpha(self, sctx, eps_app_eng):
-        return array([sctx.mats_state_array[2]])
+        return np.array([sctx.mats_state_array[2]])
 
     # Declare and fill-in the rte_dict - it is used by the clients to
     # assemble all the available time-steppers.
@@ -215,29 +205,29 @@ class MATS1DPlastic(MATS1DEval):
                 'alpha': self.get_alpha}
 
     def _get_explorer_config(self):
-        from ibvpy.api import TLine, BCDof, RTraceGraph
+        from ibvpy.api import TLine, BCDof, RTDofGraph
         c = super(MATS1DPlastic, self)._get_explorer_config()
         # overload the default configuration
         c['bcond_list'] = [BCDof(var='u',
                                  dof=0, value=2.0,
                                  time_function=lambda t: sin(t))]
         c['rtrace_list'] = [
-            RTraceGraph(name='strain - stress',
-                        var_x='eps_app', idx_x=0,
-                        var_y='sig_app', idx_y=0,
-                        record_on='update'),
-            RTraceGraph(name='time - plastic_strain',
-                        var_x='time', idx_x=0,
-                        var_y='eps_p', idx_y=0,
-                        record_on='update'),
-            RTraceGraph(name='time - back stress',
-                        var_x='time', idx_x=0,
-                        var_y='q', idx_y=0,
-                        record_on='update'),
-            RTraceGraph(name='time - hardening',
-                        var_x='time', idx_x=0,
-                        var_y='alpha', idx_y=0,
-                        record_on='update')
+            RTDofGraph(name='strain - stress',
+                       var_x='eps_app', idx_x=0,
+                       var_y='sig_app', idx_y=0,
+                       record_on='update'),
+            RTDofGraph(name='time - plastic_strain',
+                       var_x='time', idx_x=0,
+                       var_y='eps_p', idx_y=0,
+                       record_on='update'),
+            RTDofGraph(name='time - back stress',
+                       var_x='time', idx_x=0,
+                       var_y='q', idx_y=0,
+                       record_on='update'),
+            RTDofGraph(name='time - hardening',
+                       var_x='time', idx_x=0,
+                       var_y='alpha', idx_y=0,
+                       record_on='update')
         ]
         c['tline'] = TLine(step=0.3, max=10)
         return c
@@ -247,10 +237,6 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------
     # Example
     #-------------------------------------------------------------------------
-
-    from ibvpy.mats.mats1D.mats1D_explore import MATS1DExplore
-    from ibvpy.mats.mats_explore import MATSExplore
-    from ibvpy.plugins.ibvpy_app import IBVPyApp
 
     mats_eval = MATS1DPlastic()
     mats_eval.configure_traits()

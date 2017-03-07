@@ -13,7 +13,7 @@ from traits.api import \
 from traitsui.api import \
     Item, View, HSplit, VSplit, VGroup, Group, Spring
 
-from ibvpy.api import RTrace, RTraceGraph, RTraceArraySnapshot
+from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
 from ibvpy.core.tstepper import \
     TStepper as TS
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval

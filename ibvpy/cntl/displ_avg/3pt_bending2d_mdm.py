@@ -4,7 +4,7 @@ Created on Jul 21, 2010
 @author: jakub
 '''
 from ibvpy.api import \
-    TStepper as TS, RTraceGraph, TLoop, \
+    TStepper as TS, RTDofGraph, TLoop, \
     TLine, BCDof, IBVPSolve as IS, DOTSEval, FEDomain, FERefinementGrid, \
     FEGrid, BCSlice, RTraceDomainListField
 
@@ -91,7 +91,7 @@ def app():
                                 value= -2.0e-4),
                         ],
              rtrace_list=[
-                            RTraceGraph(name='Fi,right over u_right (iteration)' ,
+                            RTDofGraph(name='Fi,right over u_right (iteration)' ,
                                       var_y='F_int', idx_y=loading_dof,
                                       var_x='U_k', idx_x=loading_dof,
                                       record_on='update'),

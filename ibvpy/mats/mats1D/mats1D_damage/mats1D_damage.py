@@ -1,31 +1,21 @@
 
-from traits.api import \
-     Array, Bool, Callable, Enum, Float, HasTraits, \
-     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-     implements, Dict, Property, cached_property, Delegate
-
-from traitsui.api import \
-     Item, View, HSplit, VSplit, VGroup, Group, Spring
-
-from numpy import \
-     array, ones, zeros, outer, inner, transpose, dot, frompyfunc, \
-     fabs, sqrt, linspace, vdot, identity, tensordot, \
-     sin as nsin, meshgrid, float_, ix_, \
-     vstack, hstack, sqrt as arr_sqrt
-
 from math import exp, sin
 
-from ibvpy.core.tstepper import \
-     TStepper as TS
-
-from ibvpy.mats.mats_eval import IMATSEval
 from ibvpy.mats.mats1D.mats1D_eval import MATS1DEval
-from ibvpy.api import RTrace, RTraceGraph, RTraceArraySnapshot, BCDof
+from ibvpy.mats.mats_eval import IMATSEval
+from traits.api import \
+    Enum, Float,  \
+    Trait,  Event, \
+    implements, Dict
+from traitsui.api import \
+    Item, View, Group, Spring
+
+import numpy as np
+
 
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
-
 class MATS1DDamage(MATS1DEval):
     '''
     Scalar Damage Model.
@@ -34,28 +24,28 @@ class MATS1DDamage(MATS1DEval):
     implements(IMATSEval)
 
     E = Float(1.,  # 34e+3,
-                 modified=True,
-                 label="E",
-                 desc="Young's Modulus",
-                 enter_set=True,
-                 auto_set=False)
+              modified=True,
+              label="E",
+              desc="Young's Modulus",
+              enter_set=True,
+              auto_set=False)
 
     epsilon_0 = Float(1.,  # 59e-6,
-                 modified=True,
-                 label="eps_0",
-                 desc="Breaking Strain",
-                 enter_set=True,
-                 auto_set=False)
+                      modified=True,
+                      label="eps_0",
+                      desc="Breaking Strain",
+                      enter_set=True,
+                      auto_set=False)
 
     epsilon_f = Float(1.,  # 191e-6,
-                 modified=True,
-                 label="eps_f",
-                 desc="Shape Factor",
-                 enter_set=True,
-                 auto_set=False)
+                      modified=True,
+                      label="eps_f",
+                      desc="Shape Factor",
+                      enter_set=True,
+                      auto_set=False)
 
     stiffness = Enum("secant", "algorithmic",
-                      modified=True)
+                     modified=True)
 
     # This event can be used by the clients to trigger an action upon
     # the completed reconfiguration of the material model
@@ -67,23 +57,23 @@ class MATS1DDamage(MATS1DEval):
     #--------------------------------------------------------------------------
 
     traits_view = View(Group(Group(Item('E'),
-                                      Item('epsilon_0'),
-                                      Item('epsilon_f'),
-                                      label='Material parameters',
-                                      show_border=True),
-                                Group(Item('stiffness', style='custom'),
-                                       Spring(resizable=True),
-                                       label='Configuration parameters',
-                                       show_border=True,
-                                       ),
-                                       layout='tabbed'
-                                ),
-                        resizable=True
-                        )
+                                   Item('epsilon_0'),
+                                   Item('epsilon_f'),
+                                   label='Material parameters',
+                                   show_border=True),
+                             Group(Item('stiffness', style='custom'),
+                                   Spring(resizable=True),
+                                   label='Configuration parameters',
+                                   show_border=True,
+                                   ),
+                             layout='tabbed'
+                             ),
+                       resizable=True
+                       )
 
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Setup for computation within a supplied spatial context
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
     def get_state_array_size(self):
         '''
@@ -93,14 +83,14 @@ class MATS1DDamage(MATS1DEval):
         return 2
 
     def new_cntl_var(self):
-        return zeros(1, float_)
+        return np.zeros(1, np.float_)
 
     def new_resp_var(self):
-        return zeros(1, float_)
+        return np.zeros(1, np.float_)
 
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
     def get_corr_pred(self, sctx, eps_app_eng, d_eps, tn, tn1, eps_avg=None):
         '''
@@ -111,7 +101,7 @@ class MATS1DDamage(MATS1DEval):
             eps_avg = eps_app_eng
 
         E = self.E
-        D_el = array([E])
+        D_el = np.array([E])
 
         if sctx.update_state_on:
 
@@ -123,17 +113,17 @@ class MATS1DDamage(MATS1DEval):
         sctx.mats_state_array[1] = kappa_k
 
         if self.stiffness == "algorithmic":
-            D_e_dam = array([self._get_alg_stiffness(sctx, eps_app_eng,
-                                                       kappa_k,
-                                                       omega)])
+            D_e_dam = np.array([self._get_alg_stiffness(sctx, eps_app_eng,
+                                                        kappa_k,
+                                                        omega)])
         else:
-            D_e_dam = array([(1 - omega) * D_el])
+            D_e_dam = np.array([(1 - omega) * D_el])
 
-        sigma = dot(array([(1 - omega) * D_el]), eps_app_eng)
+        sigma = np.dot(np.array([(1 - omega) * D_el]), eps_app_eng)
 
         # print the stress you just computed and the value of the apparent E
 
-        return  sigma, D_e_dam
+        return sigma, D_e_dam
 
     #--------------------------------------------------------------------------
     # Subsidiary methods realizing configurable features
@@ -152,18 +142,18 @@ class MATS1DDamage(MATS1DEval):
     def _get_omega(self, sctx, kappa):
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
-        if kappa >= epsilon_0 :
+        if kappa >= epsilon_0:
             return 1. - epsilon_0 / kappa * exp(-1 * (kappa - epsilon_0) / epsilon_f)
         else:
             return 0.
 
     def _get_alg_stiffness(self, sctx, eps_app_eng, e_max, omega):
         E = self.E
-        D_el = array([E])
+        D_el = np.array([E])
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
-        dodk = (epsilon_0 / (e_max * e_max) * exp(-(e_max - epsilon_0) / epsilon_f) + 
-                 epsilon_0 / e_max / epsilon_f * exp(-(e_max - epsilon_0) / epsilon_f))
+        dodk = (epsilon_0 / (e_max * e_max) * exp(-(e_max - epsilon_0) / epsilon_f) +
+                epsilon_0 / e_max / epsilon_f * exp(-(e_max - epsilon_0) / epsilon_f))
         D_alg = (1 - omega) * D_el - D_el * eps_app_eng * dodk
         return D_alg
 
@@ -180,52 +170,45 @@ class MATS1DDamage(MATS1DEval):
     # assemble all the available time-steppers.
     #
     rte_dict = Trait(Dict)
-    def _rte_dict_default(self):
-        return {'sig_app' : self.get_sig_app,
-                'eps_app' : self.get_eps_app,
-                'omega'   : self.get_omega }
 
-    #----------------------------------------------------------------------------
+    def _rte_dict_default(self):
+        return {'sig_app': self.get_sig_app,
+                'eps_app': self.get_eps_app,
+                'omega': self.get_omega}
+
+    #-------------------------------------------------------------------------
     # List of response tracers to be constructed within the mats_explorer
-    #----------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     def _get_explorer_rtrace_list(self):
         '''Return the list of relevant tracers to be used in mats_explorer.
         '''
         return []
 
     def _get_explorer_config(self):
-        from ibvpy.api import TLine, RTraceGraph, BCDof
+        from ibvpy.api import TLine, RTDofGraph, BCDof
         ec = super(MATS1DDamage, self)._get_explorer_config()
         ec['mats_eval'] = MATS1DDamage(E=1.0, epsilon_0=1.0, epsilon_f=5)
-        ec['bcond_list'] = [ BCDof(var='u',
-                                    dof=0, value=1.7,
-                                    time_function=lambda t: (1 + 0.1 * t) * sin(t)) ]
+        ec['bcond_list'] = [BCDof(var='u',
+                                  dof=0, value=1.7,
+                                  time_function=lambda t: (1 + 0.1 * t) * sin(t))]
         ec['tline'] = TLine(step=0.1, max=10)
         ec['rtrace_list'] = [
-                               RTraceGraph(name='strain - stress',
-                                           var_x='eps_app', idx_x=0,
-                                           var_y='sig_app', idx_y=0,
-                                           record_on='update'),
-                               RTraceGraph(name='time - damage',
-                                           var_x='time', idx_x=0,
-                                           var_y='omega', idx_y=0,
-                                           record_on='update')
-                               ]
+            RTDofGraph(name='strain - stress',
+                       var_x='eps_app', idx_x=0,
+                       var_y='sig_app', idx_y=0,
+                       record_on='update'),
+            RTDofGraph(name='time - damage',
+                       var_x='time', idx_x=0,
+                       var_y='omega', idx_y=0,
+                       record_on='update')
+        ]
         return ec
 
 if __name__ == '__main__':
 
-    #-------------------------------------------------------------------------------
-    # Example 
-    #-------------------------------------------------------------------------------
-
-    from ibvpy.mats.mats1D.mats1D_explore import MATS1DExplore
-    from ibvpy.mats.mats_explore import MATSExplore
-    from ibvpy.plugins.ibvpy_app import IBVPyApp
+    #-------------------------------------------------------------------------
+    # Example
+    #-------------------------------------------------------------------------
 
     mats_eval = MATS1DDamage()
     mats_eval.configure_traits()
-
-#    ex = MATSExplore( dim = MATS1DExplore( mats_eval  = MATS1DDamage( ) ) )
-#    app = IBVPyApp( tloop = ex )
-#    app.main()

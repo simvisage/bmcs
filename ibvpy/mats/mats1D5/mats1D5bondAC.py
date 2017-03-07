@@ -40,7 +40,7 @@ from ibvpy.core.tstepper import \
 
 from ibvpy.mats.mats_eval import IMATSEval, MATSEval
 
-from ibvpy.api import RTrace, RTraceGraph, RTraceArraySnapshot
+from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
 from mathkit.mfn import MFnLineArray
 
 from mats1D5bond import MATS1D5Bond

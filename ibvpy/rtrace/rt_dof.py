@@ -1,24 +1,38 @@
 
 import os
 import pickle
-from traits.api import \
-    Array, List, Callable, \
-    Instance, Int, Str, \
-    ToolbarButton, on_trait_change
-from traitsui.api import \
-    Item, View, HGroup, VGroup, VSplit, HSplit, Spring
-from traitsui.menu import \
-    OKButton, CancelButton
 
 from ibvpy.api import RTrace
 from mathkit.mfn import MFnLineArray
 from mathkit.mfn.mfn_line.mfn_matplotlib_editor import MFnMatplotlibEditor
 from mathkit.mfn.mfn_line.mfn_plot_adapter import MFnPlotAdapter
+from traits.api import \
+    Array, List, Callable, \
+    Instance, Int, Str, \
+    ToolbarButton, Bool, on_trait_change
+from traitsui.api import \
+    Item, View, HGroup, \
+    VGroup, VSplit, HSplit, Spring, Include
+from traitsui.menu import \
+    OKButton, CancelButton
+from view.plot2d import Vis2D, Viz2D
+from view.ui import BMCSLeafNode
+
 import numpy as np
 
 
-class RTraceGraph(RTrace):
+class RTraceViz2D(Viz2D):
 
+    def plot(self, ax, vot, *args, **kw):
+        self.vis2d.redraw()
+        self.vis2d.trace.plot(ax)
+        y_min, y_max = self.vis2d.trace.yrange
+        x_min, x_max = self.vis2d.trace.xrange
+        x = x_min + vot * (x_max - x_min)
+        ax.plot([x, x], [y_min, y_max])
+
+
+class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
     '''
     Collects two response evaluators to make a response graph.
 
@@ -35,14 +49,14 @@ class RTraceGraph(RTrace):
     should be synchronized with the actual contents.
     '''
 
-    label = Str('RTraceGraph')
-    var_x = Str('')
+    label = Str('RTDofGraph')
+    var_x = Str('', label='Variable on x', enter_set=True, auto_set=False)
+    cum_x = Bool(label='Cumulative x', enter_set=True, auto_set=False)
     var_x_eval = Callable(trantient=True)
-    idx_x_arr = Array
     idx_x = Int(-1, enter_set=True, auto_set=False)
-    var_y = Str('')
+    var_y = Str('', label='Variable on y', enter_set=True, auto_set=False)
+    cum_y = Bool(label='Cumulative y', enter_set=True, auto_set=False)
     var_y_eval = Callable(trantient=True)
-    idx_y_arr = Array
     idx_y = Int(-1, enter_set=True, auto_set=False)
     transform_x = Str(enter_set=True, auto_set=False)
     transform_y = Str(enter_set=True, auto_set=False)
@@ -58,29 +72,6 @@ class RTraceGraph(RTrace):
     @on_trait_change('print_button')
     def print_values(self, event=None):
         print 'x:\t', self.trace.xdata, '\ny:\t', self.trace.ydata
-
-    view = View(VSplit(VGroup(HGroup(VGroup(HGroup(Spring(), Item('var_x', style='readonly'),
-                                                   Item('idx_x', show_label=False)),
-                                            Item('transform_x')),
-                                     VGroup(HGroup(Spring(), Item('var_y', style='readonly'),
-                                                   Item('idx_y', show_label=False)),
-                                            Item('transform_y')),
-                                     VGroup('record_on', 'clear_on')),
-                              HGroup(Item('refresh_button', show_label=False),
-                                     Item('print_button', show_label=False)),
-                              ),
-                       Item('trace@',
-                            editor=MFnMatplotlibEditor(
-                                adapter=MFnPlotAdapter(var_x='var_x',
-                                                       var_y='var_y',
-                                                       min_size=(100, 100))),
-                            show_label=False, resizable=True),
-                       ),
-                buttons=[OKButton, CancelButton],
-                resizable=True,
-                scrollable=True,
-                height=0.5, width=0.5)
-
     _xdata = List(Array(float))
     _ydata = List(Array(float))
 
@@ -130,38 +121,27 @@ class RTraceGraph(RTrace):
         self.add_pair(x.flatten(), y.flatten())
 
     def add_pair(self, x, y):
-        self._xdata.append(np.copy(x))
-        self._ydata.append(np.copy(y))
+
+        if self.cum_x and len(self._xdata) > 0:
+            self._xdata.append(self._xdata[-1] + x)
+        else:
+            self._xdata.append(np.copy(x))
+        if self.cum_y and len(self._ydata) > 0:
+            self._ydata.append(self._ydata[-1] + y)
+        else:
+            self._ydata.append(np.copy(y))
+
+    idx_x_arr = Array
+    idx_y_arr = Array
 
     @on_trait_change('idx_x,idx_y')
     def redraw(self, e=None):
-        if ((self.idx_x < 0 and len(self.idx_x_arr) == 0) or
-                (self.idx_y < 0 and len(self.idx_y_arr) == 0) or
-                self._xdata == [] or
+        if (self._xdata == [] or
                 self._ydata == []):
             return
         #
-        if len(self.idx_x_arr) > 0:
-            print 'x: summation for', self.idx_x_arr
-            xarray = np.array(self._xdata)[:, self.idx_x_arr].sum(1)
-        else:
-            xarray = np.array(self._xdata)[:, self.idx_x]
-
-        if len(self.idx_y_arr) > 0:
-            print 'y: summation for', self.idx_y_arr
-            yarray = np.array(self._ydata)[:, self.idx_y_arr].sum(1)
-
-#            print 'yarray', yarray
-#            yarray_arr = array( self._ydata )[:, self.idx_y_arr]
-#            sym_weigth_arr = 2. * ones_like( yarray_arr[1] )
-#            sym_weigth_arr[0] = 4.
-#            print 'yarray_arr', yarray_arr
-#            print 'sym_weigth_arr', sym_weigth_arr
-#            yarray = dot( yarray_arr, sym_weigth_arr )
-#            print 'yarray', yarray
-
-        else:
-            yarray = np.array(self._ydata)[:, self.idx_y]
+        xarray = np.array(self._xdata)[:, self.idx_x]
+        yarray = np.array(self._ydata)[:, self.idx_y]
 
         if self.transform_x:
             def transform_x_fn(x):
@@ -198,6 +178,88 @@ class RTraceGraph(RTrace):
         self._ydata = []
         self.trace.clear()
         self.redraw()
+
+    viz2d_classes = {'time function': RTraceViz2D}
+
+    view = View(
+        VSplit(
+            VGroup(
+                HGroup(
+                    VGroup(
+                        HGroup(Spring(),
+                               Item('var_x', style='readonly'),
+                               Item('idx_x', show_label=False)),
+                        Item('transform_x')),
+                    VGroup(HGroup(Spring(), Item('var_y', style='readonly'),
+                                  Item('idx_y', show_label=False)),
+                           Item('transform_y')),
+                    VGroup('record_on', 'clear_on')),
+                HGroup(Item('refresh_button', show_label=False),
+                       Item('print_button', show_label=False)),
+            ),
+            Item('trace@',
+                 editor=MFnMatplotlibEditor(
+                     adapter=MFnPlotAdapter(var_x='var_x',
+                                            var_y='var_y',
+                                            min_size=(100, 100))),
+                 show_label=False, resizable=True),
+        ),
+        buttons=[OKButton, CancelButton],
+        resizable=True,
+        scrollable=True,
+        height=0.5, width=0.5)
+
+    tree_view = View(
+        Include('actions'),
+        Item('var_x', style='readonly'),
+        Item('idx_x', show_label=False),
+    )
+
+
+class RTSumDofGraph(RTDofGraph):
+
+    idx_x_arr = Array
+    idx_y_arr = Array
+
+    @on_trait_change('idx_x,idx_y')
+    def redraw(self, e=None):
+        if (len(self.idx_x_arr) == 0 or
+                len(self.idx_y_arr) == 0 or
+                self._xdata == [] or
+                self._ydata == []):
+            return
+        #
+        print 'x: summation for', self.idx_x_arr
+        xarray = np.array(self._xdata)[:, self.idx_x_arr].sum(1)
+
+        print 'y: summation for', self.idx_y_arr
+        yarray = np.array(self._ydata)[:, self.idx_y_arr].sum(1)
+
+        if self.transform_x:
+            def transform_x_fn(x):
+                '''makes a callable function out of the Str-attribute
+                "transform_x". The vectorised version of this function is
+                then used to transform the values in "xarray". Note that
+                the function defined in "transform_x" must be defined in
+                terms of a lower case variable "x".
+                '''
+                return eval(self.transform_x)
+            xarray = np.frompyfunc(transform_x_fn, 1, 1)(xarray)
+
+        if self.transform_y:
+            def transform_y_fn(y):
+                '''makes a callable function out of the Str-attribute
+                "transform_y". The vectorised version of this function is
+                then used to transform the values in "yarray". Note that
+                the function defined in "transform_y" must be defined in
+                terms of a lower case variable "y".
+                '''
+                return eval(self.transform_y)
+            yarray = np.frompyfunc(transform_y_fn, 1, 1)(yarray)
+
+        self.trace.xdata = np.array(xarray)
+        self.trace.ydata = np.array(yarray)
+        self.trace.data_changed = True
 
 
 class RTraceArraySnapshot(RTrace):
@@ -260,10 +322,10 @@ class RTraceArraySnapshot(RTrace):
 
 if __name__ == '__main__':
 
-    rm1 = RTraceGraph(name='rte 1',
-                      idx_x=0,
-                      idx_y=0,
-                      transform_x='-x')
+    rm1 = RTDofGraph(name='rte 1',
+                     idx_x=0,
+                     idx_y=0,
+                     transform_x='-x')
 #                       transform_x = lambda x: -x )
 
 #    print rm1.dir

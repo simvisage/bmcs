@@ -9,7 +9,7 @@ from mathkit.matrix_la.dense_mtx import DenseMtx
 import unittest
 
 from ibvpy.api import \
-    TStepper as TS, RTraceGraph, RTraceDomainField, TLoop, \
+    TStepper as TS, RTDofGraph, RTraceDomainField, TLoop, \
     TLine, BCDof, BCDofGroup, IBVPSolve as IS
 
 from ibvpy.mesh.fe_grid import FEGrid
@@ -54,7 +54,7 @@ def test_bar2( ):
                            BCDof(var='u', dof = 5, link_dofs = [16], link_coeffs = [1.],
                                   value = 0. ),
                            BCDof(var='f', dof = 21, value = 10 ) ],
-             rtrace_list =  [ RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+             rtrace_list =  [ RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
                                    var_y = 'F_int', idx_y = 0,
                                    var_x = 'U_k', idx_x = 1),
                                    ]             
@@ -116,7 +116,7 @@ def test_bar4( ):
                             BCDof(var='u', dof = 5, link_dofs = [6], link_coeffs = [1.],
                                   value = 0. ),
                             BCDof(var='u', dof = 8, value = 1) ],
-             rtrace_list =  [ RTraceGraph(name = 'Fi,right over u_right (iteration)' ,
+             rtrace_list =  [ RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
                                    var_y = 'F_int', idx_y = 0,
                                    var_x = 'U_k', idx_x = 1),
                              RTraceDomainListField( name = 'Displacement', var = 'u', idx = 0 )

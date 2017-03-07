@@ -33,7 +33,7 @@ from ibvpy.mats.mats2D.mats2D_sdamage.mats2D_sdamage import MATS2DScalarDamage
 from ibvpy.mesh.fe_grid import FEGrid
 
 from ibvpy.mats.mats2D.mats2D_explorer_bcond import get_value_and_coeff, BCDofProportional
-from ibvpy.rtrace.rt_dof import RTraceGraph
+from ibvpy.rtrace.rt_dof import RTDofGraph
 import numpy as np
 
 from math import \
@@ -60,23 +60,23 @@ if __name__ == '__main__':
     ts = TStepper(tse=tseval,
              bcond_list=[ bcond_alpha
                          ],
-             rtrace_list=[ RTraceGraph(name='strain 0 - stress 0',
+             rtrace_list=[ RTDofGraph(name='strain 0 - stress 0',
                                   var_x='eps_app', idx_x=0,
                                   var_y='sig_app', idx_y=0,
                                   record_on='update'),
-                         RTraceGraph(name='strain 1 - stress 1',
+                         RTDofGraph(name='strain 1 - stress 1',
                                   var_x='eps_app', idx_x=1,
                                   var_y='sig_app', idx_y=1,
                                   record_on='update'),
-                         RTraceGraph(name='strain 0 - stress 1',
+                         RTDofGraph(name='strain 0 - stress 1',
                                   var_x='eps_app', idx_x=0,
                                   var_y='sig_app', idx_y=1,
                                   record_on='update'),
-                         RTraceGraph(name='strain 1 - stress 0',
+                         RTDofGraph(name='strain 1 - stress 0',
                                   var_x='eps_app', idx_x=1,
                                   var_y='sig_app', idx_y=0,
                                   record_on='update'),
-                         RTraceGraph(name='strain 0 - strain 1',
+                         RTDofGraph(name='strain 0 - strain 1',
                                   var_x='eps_app', idx_x=0,
                                   var_y='eps_app', idx_y=1,
                                   record_on='update'),

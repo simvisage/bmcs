@@ -28,7 +28,7 @@ from ibvpy.core.tstepper import \
 
 from ibvpy.mats.mats_eval import IMATSEval
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
-from ibvpy.api import RTrace, RTraceGraph, RTraceArraySnapshot
+from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
 from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 
 #---------------------------------------------------------------------------

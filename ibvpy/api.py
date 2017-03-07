@@ -23,7 +23,7 @@ from mesh.fe_grid import FEGrid
 from mesh.fe_grid_idx_slice import FEGridIdxSlice
 from mesh.fe_grid_ls_slice import FEGridLevelSetSlice
 from mesh.fe_refinement_grid import FERefinementGrid, FERefinementGrid as FEPatchedGrid
-from rtrace.rt_dof import RTraceGraph, RTraceArraySnapshot
+from rtrace.rt_dof import RTDofGraph, RTSumDofGraph, RTraceArraySnapshot
 from rtrace.rt_domain_field import RTraceDomainField
 from rtrace.rt_domain_list_field import RTraceDomainListField
 from rtrace.rt_domain_list_integ import RTraceDomainListInteg

@@ -13,7 +13,7 @@
 # Created on Oct 26, 2010 by: rch
 
 from ibvpy.api import\
-     BCSlice, TStepper as TS, TLoop, TLine, RTraceGraph
+     BCSlice, TStepper as TS, TLoop, TLine, RTDofGraph
 from ibvpy.rtrace.rt_domain_list_field import RTraceDomainListField
 from ibvpy.mesh.fe_grid import FEGrid
 from ibvpy.mesh.fe_refinement_grid import FERefinementGrid

@@ -10,7 +10,7 @@ from mayavi.plugins.app import setup_logger
 from traits.api import List
 from envisage.api import Plugin
 from pyface.workbench.api import Perspective, PerspectiveItem
-from ibvpy.api import RTraceGraph
+from ibvpy.api import RTDofGraph
 
 logger = logging.getLogger()
 
@@ -138,17 +138,17 @@ def main():
     application = IBVPyWorkbenchApplication(id=id, plugins=plugins)
 
     rtrace_mgr = RTraceService(rtrace_list=[
-        RTraceGraph(name='rte 1'),
-        RTraceGraph(name='rte 2'),
-        RTraceGraph(name='rte 3'),
-        RTraceGraph(name='rte 4'),
-        RTraceGraph(name='rte 5'),
-        RTraceGraph(name='rte 6'),
-        RTraceGraph(name='rte 7'),
-        RTraceGraph(name='rte 8'),
-        RTraceGraph(name='rte 8'),
-        RTraceGraph(name='rte 10'),
-        RTraceGraph(name='rte 11'),
+        RTDofGraph(name='rte 1'),
+        RTDofGraph(name='rte 2'),
+        RTDofGraph(name='rte 3'),
+        RTDofGraph(name='rte 4'),
+        RTDofGraph(name='rte 5'),
+        RTDofGraph(name='rte 6'),
+        RTDofGraph(name='rte 7'),
+        RTDofGraph(name='rte 8'),
+        RTDofGraph(name='rte 8'),
+        RTDofGraph(name='rte 10'),
+        RTDofGraph(name='rte 11'),
     ])
     application.register_service('rtrace_service.RTraceService', rtrace_mgr)
 

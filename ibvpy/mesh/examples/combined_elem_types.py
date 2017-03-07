@@ -4,7 +4,7 @@ from ibvpy.mats.mats2D.mats2D_elastic.mats2D_elastic import MATS2DElastic
 from ibvpy.fets.fets2D.fets2D4q import FETS2D4Q
 from ibvpy.fets.fets2D.fets2D4q8u import FETS2D4Q8U
 from ibvpy.api import\
-     BCSlice, TStepper as TS, TLoop, TLine, RTraceGraph
+     BCSlice, TStepper as TS, TLoop, TLine, RTDofGraph
 from ibvpy.rtrace.rt_domain_list_field import RTraceDomainListField
 from ibvpy.mesh.fe_grid import FEGrid
 from ibvpy.mesh.fe_refinement_grid import FERefinementGrid
@@ -72,7 +72,7 @@ def combined_fe2D4q_with_fe2D4q8u():
                            BCSlice( var = 'u', value = 0., dims = [0, 1],
                                        slice = fe_first_grid[ :, 0, :, 0 ] )
                                        ],
-             rtrace_list = [ RTraceGraph( name = 'Fi,right over u_right (iteration)' ,
+             rtrace_list = [ RTDofGraph( name = 'Fi,right over u_right (iteration)' ,
                                    var_y = 'F_int', idx_y = 0,
                                    var_x = 'U_k', idx_x = 1 ),
                         RTraceDomainListField( name = 'Stress',

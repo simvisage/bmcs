@@ -5,7 +5,7 @@ Created on Aug 8, 2009
 '''
 import unittest
 from ibvpy.api import \
-    TStepper as TS, RTraceGraph, RTraceDomainListField, TLoop, \
+    TStepper as TS, RTDofGraph, RTraceDomainListField, TLoop, \
     TLine, BCDofGroup, IBVPSolve as IS, DOTSEval, BCSlice
 
 from ibvpy.mesh.fe_grid import FEGrid

@@ -2,11 +2,11 @@
 from numpy import array, ones, trapz, frompyfunc, dot
 
 from traits.api import List, Callable
-from ibvpy.api import RTraceGraph
+from ibvpy.api import RTDofGraph
 from mathkit.mfn import MFnLineArray
 
 
-class MATS2DMicroplaneDamageTraceGfmac(RTraceGraph):
+class MATS2DMicroplaneDamageTraceGfmac(RTDofGraph):
     '''Evaluate the energy contributions spread over 
     several fields of stress-strain responses. 
     '''
