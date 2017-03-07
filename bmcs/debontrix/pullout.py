@@ -88,8 +88,9 @@ if __name__ == '__main__':
     tloop = TLoop(tstepper=ts, KMAX=30, debug=False,
                   tline=TLine(min=0.0, step=0.1, max=1.0))
 
-    print tloop.eval()
+    print tloop.setup()
 
+    print tloop.tstepper.bcond_mngr.bcond_list[0].bcdof_list
     from view.window import BMCSWindow
     bmcs = BMCSWindow(root=ts)
     bmcs.configure_traits()

@@ -21,9 +21,9 @@ from numpy import \
     ix_, dot, repeat, zeros
 from scipy.linalg import \
     det, norm
-from traits.api import Float, HasStrictTraits, \
+from traits.api import Float, \
     Instance, Int, Trait, Str, Enum, \
-    Callable, List, \
+    Callable, List, cached_property, \
     Button, \
     implements, Property
 from traitsui.api import \
@@ -56,10 +56,19 @@ class BCSlice(BMCSTreeNode):
 
     tree_node_list = List
 
-    def _tree_node_list_default(self):
+    tree_node_list = Property(depends_on='bcdof_list,bcdof_list_items')
+
+    @cached_property
+    def _get_tree_node_list(self):
+        print 'GETTING LIST', self.bcdof_list
         return self.bcdof_list
 
     name = Str('<unnamed>')
+
+    node_name = Property
+
+    def _get_node_name(self):
+        return '%s:%s=%s' % (self.var, self.slice, self.value)
 
     var = Enum('u', 'f', 'eps', 'sig')
 
@@ -368,6 +377,13 @@ class BCSlice(BMCSTreeNode):
                                    show_label=False)),
                        resizable=True,
                        )
+
+    tree_view = View(Group(Item('var'),
+                           Item('dims'),
+                           Item('value'),
+                           ),
+                     resizable=True
+                     )
 
 if __name__ == '__main__':
 

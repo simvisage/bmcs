@@ -117,5 +117,5 @@ class Vis2D(BMCSLeafNode):
 
 if __name__ == '__main__':
 
-    from bmcs_example_vis2d import rt
+    from example import rt
     rt.configure_traits()

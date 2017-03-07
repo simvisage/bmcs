@@ -1,17 +1,61 @@
-from numpy import \
-    ix_, array, float_
+from ibvpy.core.i_bcond import \
+    IBCond
 from traits.api import Float, \
     Int,  Enum, \
     Callable, List,  Any, implements
-
-from ibvpy.core.i_bcond import \
-    IBCond
+from traitsui.api import View, Item, Group, Include
+from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSLeafNode
+import numpy as np
 
 
-class BCDof(BMCSLeafNode):
+class BCDofViz2D(Viz2D):
+    '''Visualization adaptor for time function of a boundary condition'''
+
+    def plot(self, ax, vot=0, *args, **kw):
+        if self.vis2d.time_function:
+            x = np.linspace(0, 1, 100)
+            #y = self.vis2d.time_function(x)
+            #ax.plot(x, y, *args, **kw)
+            ax.plot([vot, vot], [0, 1])
+            ax.set_xlim([0, 1])
+            ax.set_ylim([0, 1])
+
+
+class BCDof(Vis2D, BMCSLeafNode):
     '''
     Implements the IBC functionality for a constrained dof.
+
+    Example of a complex constraint:
+
+    For example the specification
+
+    BCDof( var = 'f',
+           value = 0.,
+           dof = 2,
+           link_dofs = [3,4],
+           link_coeffs = [0.5,0.5] )
+
+    means that
+
+    U[2] = 0.5*U[3] + 0.5*U[4] Note that U[2] is non-zero
+
+    and is regarded as a natural boundary condition.
+
+    On the ther hand, the specification
+
+    cos(alpha) * U[2] + sin(slpha) * U[3] = 0.4
+
+    can be expressed as for U[2] as
+    U[2] = - sin(alpha) / cos(alpha) * U[3] + 0.4 / cos(alpha)
+    so that the corresponding BCDof specification has the form
+
+    BCDof( var = 'u',
+           value = 0.4 / cos(alpha),
+           dof = 2,
+           link_dofs = [3],
+           link_coeffs = [-sin(alpha)/cos(alpha) ] )
+
     '''
     implements(IBCond)
 
@@ -19,50 +63,23 @@ class BCDof(BMCSLeafNode):
     dof = Int
     value = Float
 
-    # List of dofs that determine the value of the current dof
-    #
-    # If this list is empty, then the current dof is
-    # prescribed. Otherwise, the dof value is given by the
-    # linear combination of DOFs in the list (see the example below)
-    #
     link_dofs = List(Int)
-
-    # Coefficients of the linear combination of DOFs specified in the
-    # above list.
-    #
+    '''
+    List of dofs that determine the value of the current dof
+    
+    If this list is empty, then the current dof is
+    prescribed. Otherwise, the dof value is given by the
+    linear combination of DOFs in the list (see the example below)
+    '''
     link_coeffs = List(Float)
-
-    # Example of a complex constraint:
-    #
-    # For example the specification
-    #
-    # BCDof( var = 'f',
-    #        value = 0.,
-    #        dof = 2,
-    #        link_dofs = [3,4],
-    #        link_coeffs = [0.5,0.5] )
-    #
-    # means that
-    #
-    # U[2] = 0.5*U[3] + 0.5*U[4] Note that U[2] is non-zero
-    #
-    # and is regarded as a natural boundary condition.
-    #
-    # On the ther hand, the specification
-    #
-    # cos(alpha) * U[2] + sin(slpha) * U[3] = 0.4
-    #
-    # can be expressed as for U[2] as
-    # U[2] = - sin(alpha) / cos(alpha) * U[3] + 0.4 / cos(alpha)
-    # so that the corresponding BCDof specification has the form
-    #
-    # BCDof( var = 'u',
-    #        value = 0.4 / cos(alpha),
-    #        dof = 2,
-    #        link_dofs = [3],
-    #        link_coeffs = [-sin(alpha)/cos(alpha) ] )
-    #
+    '''
+    Coefficients of the linear combination of DOFs specified in the
+    above list.
+    '''
     time_function = Callable
+    '''
+    Time function prescribing the evolution of the boundary condition.
+    '''
 
     def _time_function_default(self):
         return lambda t: t
@@ -98,8 +115,8 @@ class BCDof(BMCSLeafNode):
         '''
         if self.is_essential():
             a = self.dof   # affected dof
-            alpha = array(self.link_coeffs, float_)
-            n_ix_arr = array(list(self.link_dofs), dtype=int)
+            alpha = np.array(self.link_coeffs, np.float_)
+            n_ix_arr = np.array(list(self.link_dofs), dtype=int)
             self._constraint = K.register_constraint(a=a, u_a=self.value,
                                                      alpha=alpha, ix_a=n_ix_arr)
 
@@ -137,13 +154,21 @@ class BCDof(BMCSLeafNode):
                 # Prepare the indexes and index arrays
                 #
                 n = self.link_dofs  # constraining dofs
-                n_ix = ix_(n)   # constraining dofs as array
+                n_ix = np.ix_(n)   # constraining dofs as array
 
                 # Distribute the load contribution to the proportionally loaded dofs
                 #
-                alpha = array(self.link_coeffs, float_)
+                alpha = np.array(self.link_coeffs, np.float_)
                 R[n_ix] += alpha.transpose() * R_a
 
+    viz2d_classes = {'time function': BCDofViz2D}
+    tree_view = View(
+        Include('actions'),
+        Item('var'),
+        Item('dof'),
+        Item('value'),
+        Item('time_function')
+    )
 
 if __name__ == '__main__':
 

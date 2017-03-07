@@ -60,6 +60,7 @@ class RTraceMngr(BMCSTreeNode):
     variable in an 2D or 3D iso-plot.
     '''
 
+    node_name = 'Response tracers'
     # service specifiers - used to link the service to this object
 
     tree_node_list = List([])
