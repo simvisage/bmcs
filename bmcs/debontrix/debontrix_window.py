@@ -12,10 +12,10 @@ from traits.api import \
 from traitsui.api import \
     View, Item, Group, \
     HSplit, HGroup
-
-from debontrix import DOTSGridEval as DebonTrixModel, FETS1D2L
 from util.traits.editors.mpl_figure_editor import \
     MPLFigureEditor
+
+from debontrix import DOTSGridEval as DebonTrixModel, FETS1D52L4ULRH
 
 
 class DebonTrixWindow(HasStrictTraits):
@@ -107,5 +107,5 @@ class DebonTrixWindow(HasStrictTraits):
 
 if __name__ == '__main__':
 
-    tv = DebonTrixWindow(model=DebonTrixModel(fets_eval=FETS1D2L()))
+    tv = DebonTrixWindow(model=DebonTrixModel(fets_eval=FETS1D52L4ULRH()))
     tv.configure_traits()

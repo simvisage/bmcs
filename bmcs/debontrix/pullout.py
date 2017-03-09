@@ -34,7 +34,7 @@ if __name__ == '__main__':
         TStepper as TS, RTDofGraph, RTraceDomainListField, TLoop, \
         TLine, BCSlice
     from ibvpy.dots.dots_grid_eval import DOTSGridEval
-    from debontrix import FETS1D2L
+    from debontrix import FETS1D52L4ULRH
 
     A_fiber = 1.
     E_fiber = 1.
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     G = 100
     f_max = 0.2
 
-    fets_eval = FETS1D2L()
+    fets_eval = FETS1D52L4ULRH()
     tse = DOTSGridEval(
         n_E=8,
         L_x=1.0,

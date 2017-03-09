@@ -13,8 +13,8 @@ from traits.api import \
 from traitsui.api import \
     TabularEditor
 from traitsui.api import \
-    View, Item, UItem, VGroup, Tabbed, VSplit, \
-    Group
+    View, Item, UItem, VGroup, VSplit, \
+    HSplit
 from traitsui.tabular_adapter import TabularAdapter
 
 from util.traits.editors.mpl_figure_editor import \
@@ -26,6 +26,7 @@ class Viz2DAdapter(TabularAdapter):
     # List of (Column labels, Column ID).
     columns = [('Label',    'label'),
                ]
+
 #-- Tabular Editor Definition --------------------------------------------
 
 # The tabular editor works in conjunction with an adapter class, derived from
@@ -38,20 +39,6 @@ tabular_editor = TabularEditor(
     auto_update=True,
     selected='selected_viz2d',
 )
-
-# # The definition of the demo TableEditor:
-# viz2d_list_editor = TableEditor(
-#     columns=[ObjectColumn(label='Name', name='label'),
-#              ],
-#     editable=True,
-#     deletable=True,
-#     reorderable=True,
-#     auto_size=True,
-#     show_toolbar=True,
-#     h_size_policy='expanding',
-#     filters=[EvalFilterTemplate, MenuFilterTemplate, RuleFilterTemplate],
-#     selected='object.selected_viz2d',
-# )
 
 
 class PlotDockPane(HasStrictTraits):
@@ -98,14 +85,14 @@ class PlotDockPane(HasStrictTraits):
     figure = Instance(Figure)
 
     def _figure_default(self):
-        figure = Figure()
+        figure = Figure(facecolor='white')
         return figure
 
     # Traits view definition:
     traits_view = View(
         VGroup(
-            Tabbed(
-                Group(
+            HSplit(
+                VGroup(
                     UItem('figure', editor=MPLFigureEditor(),
                           resizable=True,
                           springy=True),
@@ -113,12 +100,16 @@ class PlotDockPane(HasStrictTraits):
                     label='Plot panel'
                 ),
                 VGroup(
-                    Item('n_cols'),
+                    Item('n_cols', width=100),
                     VSplit(
-                        UItem('viz2d_list@', editor=tabular_editor),
-                        UItem('selected_viz2d@'),
+                        UItem('viz2d_list@',
+                              editor=tabular_editor,
+                              width=100),
+                        UItem('selected_viz2d@',
+                              width=100),
                     ),
-                    label='Plot configure'
+                    label='Plot configure',
+                    scrollable=True
                 ),
             ),
             Item('vot')

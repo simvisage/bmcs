@@ -5,13 +5,12 @@
 '''
 
 from traits.api import \
-    HasStrictTraits, Instance, Button, Event, \
-    List
+    HasStrictTraits, Instance, Button, Event
 from traits.etsconfig.api import ETSConfig
 from traitsui.api import \
-    ListEditor, TreeEditor, TreeNode, View, Item, Group, \
-    Handler, Action, ToolBar, \
-    HSplit, HGroup
+    TreeEditor, TreeNode, View, Item, VGroup, \
+    ToolBar, \
+    HSplit
 from traitsui.menu import \
     Menu, MenuBar, Separator
 from view.ui.bmcs_tree_node import \
@@ -89,7 +88,7 @@ class BMCSWindow(HasStrictTraits):
 
     view = View(
         HSplit(
-            Group(
+            VGroup(
                 Item('root',
                      id='bmcs.hsplit.left.tree.id',
                      dock='tab',
@@ -103,7 +102,7 @@ class BMCSWindow(HasStrictTraits):
                 id='bmcs.hsplit.left.id',
                 dock='tab',
             ),
-            Group(
+            VGroup(
                 Item('plot_dock_pane@',
                      show_label=False,
                      id='bmcs.hsplit.viz3d.notebook.id',

@@ -1,6 +1,16 @@
 
 import types
 
+from ibvpy.core.i_tstepper_eval import \
+    ITStepperEval
+from ibvpy.core.rtrace_eval import \
+    RTraceEval
+from ibvpy.core.tstepper_eval import \
+    TStepperEval
+from ibvpy.dots.dots_eval import \
+    DOTSEval
+from ibvpy.mats.mats_eval import \
+    IMATSEval
 from numpy import \
     array, zeros, float_, dot, hstack, arange, argmin, broadcast_arrays, c_
 from scipy.linalg import \
@@ -16,16 +26,6 @@ from traitsui.api import \
     View, Item, Group
 
 from i_fets_eval import IFETSEval
-from ibvpy.core.i_tstepper_eval import \
-    ITStepperEval
-from ibvpy.core.rtrace_eval import \
-    RTraceEval
-from ibvpy.core.tstepper_eval import \
-    TStepperEval
-from ibvpy.dots.dots_eval import \
-    DOTSEval
-from ibvpy.mats.mats_eval import \
-    IMATSEval
 import numpy as np
 from tvtk.tvtk_classes import tvtk_helper
 
@@ -752,20 +752,21 @@ class FETSEval(TStepperEval):
 
         return rte_dict
 
-    traits_view = View(Group(
-        Item('mats_eval'),
-        Item('n_e_dofs'),
-        Item('n_nodal_dofs'),
-        label='Numerical parameters'
-    ),
+    traits_view = View(
         Group(
-        #                              Item( 'dof_r' ),
-        #                              Item( 'geo_r' ),
-        Item('vtk_r'),
-        Item('vtk_cells'),
-        Item('vtk_cell_types'),
-        label='Visualization parameters'
-    ),
+            Item('mats_eval'),
+            Item('n_e_dofs'),
+            Item('n_nodal_dofs'),
+            label='Numerical parameters'
+        ),
+        Group(
+            #                              Item( 'dof_r' ),
+            #                              Item( 'geo_r' ),
+            Item('vtk_r'),
+            Item('vtk_cells'),
+            Item('vtk_cell_types'),
+            label='Visualization parameters'
+        ),
         #                         Item('rte_dict'),
         resizable=True,
         scrollable=True,

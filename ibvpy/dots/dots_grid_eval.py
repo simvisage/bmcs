@@ -4,19 +4,14 @@ Created on Mar 4, 2017
 @author: rch
 
 '''
-
-
+from ibvpy.api import \
+    TStepperEval, IFETSEval
+from mathkit.matrix_la import \
+    SysMtxArray
 from traits.api import \
-    Int, Array, \
+    Array, \
     Property, cached_property, \
     Instance, Float
-
-from ibvpy.api import \
-    TStepperEval, IFETSEval, FEGrid
-from ibvpy.mats.mats1D import MATS1DElastic
-from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
-from mathkit.matrix_la import \
-    SysMtxAssembly, SysMtxArray
 import numpy as np
 
 
@@ -48,21 +43,6 @@ class DOTSGridEval(TStepperEval):
         return SysMtxArray()
 
     fets_eval = Instance(IFETSEval)
-
-    L_x = Float(1, input=True)
-
-    eta = Float(0.1, input=True)
-
-    n_E = Int(10, input=True)
-
-    sdomain = Property(Instance(IFEUniformDomain), depends_on='+input')
-
-    @cached_property
-    def _get_sdomain(self):
-        return FEGrid(coord_min=(0., ),
-                      coord_max=(self.L_x, ),
-                      shape=(self.n_E, ),
-                      fets_eval=self.fets_eval)
 
     #=========================================================================
     # index maps
@@ -174,6 +154,12 @@ class DOTSGridEval(TStepperEval):
     def _get_sN_Cim(self):
         return self.constant_terms[3]
 
+    eta = Float(1.0, label='ratio of stiffnesses E_0/E_1',
+                enter_set=True, auto_set=False)
+
+    G = Float(1.0, label='Shear stiffness',
+              enter_set=True, auto_set=False)
+
     constant_terms = Property(depends_on='+input')
     '''Procedure calculating all constant terms of the finite element
     algorithm including the geometry mapping (Jacobi), shape 
@@ -217,99 +203,3 @@ class DOTSGridEval(TStepperEval):
         F_int[self.dofs] += F_I
         #
         return SysMtxArray(mtx_arr=K_Eij, dof_map_arr=self.dof_E)
-
-    G = Float(1.0, bc_changed=True)
-
-    w = Float(0.01, bc_changed=True)
-
-    K_Eij = Property(depends_on='+input,+bc_changed')
-
-    @cached_property
-    def _get_K_Eij(self):
-        fet = self.fets_eval
-        K_ECidDjf = self.BB_ECidDjf + self.NN_ECidDjf * self.G
-        K_Eij = K_ECidDjf.reshape(-1, fet.n_e_dofs, fet.n_e_dofs)
-        return K_Eij
-
-    d = Property(depends_on='+input,+bc_changed')
-
-    @cached_property
-    def _get_d(self):
-
-        n_dof_tot = self.sdomain.n_dofs
-        # System matrix
-        K = SysMtxAssembly()
-        K.add_mtx_array(self.K_Eij, self.dof_E)
-        K.register_constraint(0, 0.0)
-        K.register_constraint(n_dof_tot - 1, self.w)
-        F_ext = np.zeros((n_dof_tot,), np.float_)
-        K.apply_constraints(F_ext)
-        d = K.solve(F_ext)
-        return d
-
-    d_C = Property
-
-    def _get_d_C(self):
-        d_ECid = self.d[self.dof_ECid]
-        return np.einsum('ECid->EidC', d_ECid).reshape(-1, n_C)
-
-    eps_C = Property
-
-    def _get_eps_C(self):
-        d_ECid = self.d[self.dof_ECid]
-        eps_EmdC = np.einsum('Eimd,ECid->EmdC', self.dN_Eimd, d_ECid)
-        return eps_EmdC.reshape(-1, n_C)
-
-    u_C = Property
-    '''Displacement field
-    '''
-
-    def _get_u_C(self):
-        d_ECid = self.d[self.dof_ECid]
-        N_mi = self.fets_eval.N_mi
-        u_EmdC = np.einsum('mi,ECid->EmdC', N_mi, d_ECid)
-        return u_EmdC.reshape(-1, n_C)
-
-    s = Property
-    'Slip between the two material phases'
-
-    def _get_s(self):
-        d_ECid = self.d[self.dof_ECid]
-        s_Emd = np.einsum('Cim,ECid->Emd', self.sN_Cim, d_ECid)
-        return s_Emd.flatten()
-
-    Fint_I = Property
-
-    def _get_Fint_I(self):
-        K_ECidDjf = self.BB_ECidDjf + self.NN_ECidDjf * self.G
-        d_ECid = self.d[self.dof_ECid]
-        f_ECid = np.einsum('ECidDjf,EDjf->ECid', K_ECidDjf, d_ECid)
-        f_Ei = f_ECid.reshape(-1, self.fets_eval.n_e_dofs)
-        return np.bincount(self.dof_E.flatten(), weights=f_Ei.flatten())
-
-    Fint_IC = Property
-
-    def _get_Fint_IC(self):
-        return self.Fint_I.reshape(-1, n_C)
-
-    def plot_Fint_C(self, ax):
-        ax.plot(self.X_Id.flatten(), self.Fint_IC)
-
-    def plot_u_C(self, ax):
-        ax.plot(self.X_J, self.u_C)
-
-    def plot_eps_C(self, ax):
-        ax.plot(self.X_M, self.eps_C)
-
-    def plot_s(self, ax):
-        ax.plot(self.X_J, self.s)
-
-    def plot(self, fig):
-        ax = fig.add_subplot(221)
-        self.plot_Fint_C(ax)
-        ax = fig.add_subplot(222)
-        self.plot_eps_C(ax)
-        ax = fig.add_subplot(223)
-        self.plot_s(ax)
-        ax = fig.add_subplot(224)
-        self.plot_u_C(ax)

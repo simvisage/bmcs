@@ -8,7 +8,10 @@ The current version demonstrating a uni-axial two-layer
 continuum discretized with linear shape functions
 
 Planned extensions:
-   * Based on the element template generate the shape functions 
+
+Finite element formulation
+==========================
+   * Element template should generate the shape functions 
      based on the partition of unity concept. Generate symbolic 
      shape functions using sympy
    * Use sympy to construct the shape function derivatives up to
@@ -19,23 +22,57 @@ Planned extensions:
    * Introduce the visualization template for an element.
    * Single layer works
    * Put the object into a view window.
+
+Material model extensions
+=========================
+   * Simplify the DOTSGridEval so that it uses a material parameter.
    * Use a non-linear material model to demonstrate bond.
    * Use a non-linear material model to demonstrate strain-localization
-   * Provide visualization of shear flow and slip.
+   
+Boundary conditions
+===================
+   * Time function is used in connection with boundary conditions, 
+     and parameters of the material behavior.   
+
+Time loop
+=========
+
+Response tracers
+================
+Viz3D system
+
+Visualization
+=============
+   
+   * Introduce units [N/mm]
+   * Labels of the diagrams
    * Questions to be answered using this app
 
    * What is the relation to multi-dimensional case?
-   * Generalization 
+   * Generalization
+    
 @author: rch
 '''
 
-from traits.api import \
-    Int, implements, Array, \
-    List, Property, cached_property
 
 from ibvpy.api import \
-    IFETSEval, FETSEval
+    FEGrid, FETSEval, IFETSEval
+from ibvpy.api import \
+    TStepper as TS, TLoop, \
+    TLine, BCSlice
 from ibvpy.dots.dots_grid_eval import DOTSGridEval
+from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
+from mathkit.matrix_la import \
+    SysMtxAssembly
+from traits.api import \
+    Int, implements, Array, \
+    List, Property, cached_property, Float, \
+    Instance, Trait, Button
+from traitsui.api import \
+    View, Include, Item, UItem, VGroup
+from view.plot2d import Viz2D, Vis2D
+from view.ui import BMCSTreeNode, BMCSLeafNode
+
 import numpy as np
 import sympy as sp
 
@@ -45,7 +82,7 @@ n_C = 2
 r_ = sp.symbols('r')
 
 
-class FETS1D2L(FETSEval):
+class FETS1D52L4ULRH(BMCSLeafNode, FETSEval):
     '''Example of a finite element definition.
     '''
 
@@ -105,16 +142,278 @@ class FETS1D2L(FETSEval):
                            for r in self.r_m], dtype=np.float_)
         return np.einsum('mdi->mid', dN_mdi)
 
+    node_name = 'Finite element parameters'
+
+    tree_view = View(
+        VGroup(
+            Item('n_e_dofs'),
+            Item('n_nodal_dofs'),
+        )
+    )
+
+
+class Viz2DPullOutFW(Viz2D):
+    '''Plot adaptor for the force-displacement curve.
+    '''
+
+    w = List([])
+    Fint = List([])
+
+    def plot(self, ax, vot, *args, **kw):
+        w_max = self.vis2d.w_max
+        w = vot * w_max
+        self.vis2d.w = w
+        Fint = self.vis2d.Fint_IC[-1, -1]
+        self.w.append(w)
+        self.Fint.append(Fint)
+        ax.plot(self.w, self.Fint)
+
+    clear = Button()
+
+    def _clear_fired(self):
+        self.w = []
+        self.Fint = []
+
+    traits_view = View(
+        UItem('clear')
+    )
+
+
+class Viz2DPullOutField(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+
+    What the difference between the response tracer
+    and visualization adapter?
+
+    Response tracer gathers the data during the computation.
+    It maps the recorded data to the time axis governing
+    the calculation.
+
+    Visualization adapter (Viz2D, Viz3D) is used to
+    to map the recorded data into the interface. 
+    Visualization adapter can acquire the data from
+    input objects prescribing e.g. the boundary conditions
+    or geometry of the boundary value problem.
+
+    It can also use a response tracer to map the calculated
+    time dependency to the user interface. 
+    '''
+    label = Property(depends_on='plot_fn')
+
+    @cached_property
+    def _get_label(self):
+        return 'field: %s' % self.plot_fn
+
+    plot_fn = Trait('eps_C',
+                    {'eps_C': 'plot_eps_C',
+                     'u_C': 'plot_u_C',
+                     's': 'plot_s',
+                     'Fint_C': 'plot_Fint_C'
+                     },
+                    label='Field',
+                    tooltip='Select the field to plot'
+                    )
+
+    def plot(self, ax, vot, *args, **kw):
+        w_max = self.vis2d.w_max
+        self.vis2d.w = vot * w_max
+        getattr(self.vis2d, self.plot_fn_)(ax)
+
+    traits_view = View(
+        Item('plot_fn')
+    )
+
+
+class PullOut(BMCSTreeNode, Vis2D):
+    '''Linear elastic calculation of pull-out problem.
+    '''
+
+    node_name = 'Pull-out parameters'
+
+    tree_node_list = List
+
+    def _tree_node_list_default(self):
+        return [self.fets, self.ts.bcond_mngr]
+
+    L_x = Float(1, input=True)
+
+    eta = Float(0.1, input=True)
+
+    G = Float(1.0, bc_changed=True)
+
+    n_E = Int(10, input=True)
+
+    fets = Instance(FETSEval)
+
+    sdomain = Property(Instance(IFEUniformDomain), depends_on='+input')
+
+    @cached_property
+    def _get_sdomain(self):
+        return FEGrid(coord_min=(0., ),
+                      coord_max=(self.L_x, ),
+                      shape=(self.n_E, ),
+                      fets_eval=self.fets)
+
+    dots = Property(Instance(DOTSGridEval), depends_on='+input')
+
+    @cached_property
+    def _get_dots(self):
+        return DOTSGridEval(fets_eval=self.fets,
+                            sdomain=self.sdomain,
+                            eta=self.eta,
+                            G=self.G
+                            )
+
+    ts = Property(Instance(TS), depends_on='+input,+bc_changed')
+
+    @cached_property
+    def _get_ts(self):
+        return TS(dof_resultants=True,
+                  node_name='Pull-out',
+                  tse=self.dots,
+                  sdomain=self.sdomain,
+                  bcond_list=[
+                      BCSlice(var='u', value=0., dims=[0],
+                              slice=self.sdomain[0, 0]),
+                      BCSlice(var='u', value=self.w, dims=[1],
+                              slice=self.sdomain[-1, -1])
+                  ],
+                  )
+
+    tloop = Property(Instance(TLoop), depends_on='+input,+bc_changed')
+    '''Time loop control.
+    '''
+    @cached_property
+    def _get_tloop(self):
+        return TLoop(tstepper=self.ts, KMAX=30, debug=False,
+                     tline=TLine(min=0.0, step=0.1, max=1.0))
+
+    w_max = Float(0.01)
+    w = Float(0.01, bc_changed=True)
+
+    K_Eij = Property(depends_on='+input,+bc_changed')
+
+    @cached_property
+    def _get_K_Eij(self):
+        fet = self.fets
+        K_ECidDjf = self.dots.BB_ECidDjf + self.dots.NN_ECidDjf * self.G
+        K_Eij = K_ECidDjf.reshape(-1, fet.n_e_dofs, fet.n_e_dofs)
+        return K_Eij
+
+    dd = Property(depends_on='+input,+bc_changed')
+
+    @cached_property
+    def _get_dd(self):
+        n_dof_tot = self.sdomain.n_dofs
+        # System matrix
+        K = SysMtxAssembly()
+        K.add_mtx_array(self.K_Eij, self.dots.dof_E)
+        K.register_constraint(0, 0.0)
+        K.register_constraint(n_dof_tot - 1, self.w)
+        F_ext = np.zeros((n_dof_tot,), np.float_)
+        K.apply_constraints(F_ext)
+        d = K.solve(F_ext)
+        return d
+
+    d = Property(depends_on='+input,+bc_changed')
+
+    @cached_property
+    def _get_d(self):
+        return self.tloop.eval()
+
+    d_C = Property
+
+    def _get_d_C(self):
+        d_ECid = self.d[self.dots.dof_ECid]
+        return np.einsum('ECid->EidC', d_ECid).reshape(-1, n_C)
+
+    eps_C = Property
+
+    def _get_eps_C(self):
+        d_ECid = self.d[self.dots.dof_ECid]
+        eps_EmdC = np.einsum('Eimd,ECid->EmdC', self.dots.dN_Eimd, d_ECid)
+        return eps_EmdC.reshape(-1, n_C)
+
+    u_C = Property
+    '''Displacement field
+    '''
+
+    def _get_u_C(self):
+        d_ECid = self.d[self.dots.dof_ECid]
+        N_mi = self.fets.N_mi
+        u_EmdC = np.einsum('mi,ECid->EmdC', N_mi, d_ECid)
+        return u_EmdC.reshape(-1, n_C)
+
+    s = Property
+    'Slip between the two material phases'
+
+    def _get_s(self):
+        d_ECid = self.d[self.dots.dof_ECid]
+        s_Emd = np.einsum('Cim,ECid->Emd', self.dots.sN_Cim, d_ECid)
+        return s_Emd.flatten()
+
+    Fint_I = Property
+
+    def _get_Fint_I(self):
+        K_ECidDjf = self.dots.BB_ECidDjf + self.dots.NN_ECidDjf * self.G
+        d_ECid = self.d[self.dots.dof_ECid]
+        f_ECid = np.einsum('ECidDjf,EDjf->ECid', K_ECidDjf, d_ECid)
+        f_Ei = f_ECid.reshape(-1, self.fets.n_e_dofs)
+        return np.bincount(self.dots.dof_E.flatten(), weights=f_Ei.flatten())
+
+    Fint_IC = Property
+
+    def _get_Fint_IC(self):
+        return self.Fint_I.reshape(-1, n_C)
+
+    def plot_Fint_C(self, ax):
+        ax.plot(self.dots.X_Id.flatten(), self.Fint_IC)
+
+    def plot_u_C(self, ax):
+        ax.plot(self.dots.X_J, self.u_C)
+
+    def plot_eps_C(self, ax):
+        ax.plot(self.dots.X_M, self.eps_C)
+
+    def plot_s(self, ax):
+        ax.plot(self.dots.X_J, self.s)
+
+    def plot(self, fig):
+        ax = fig.add_subplot(221)
+        self.plot_Fint_C(ax)
+        ax = fig.add_subplot(222)
+        self.plot_eps_C(ax)
+        ax = fig.add_subplot(223)
+        self.plot_s(ax)
+        ax = fig.add_subplot(224)
+        self.plot_u_C(ax)
+
+    tree_view = View(
+        Include('actions'),
+        Item('w', label='Control displacement'),
+        Item('w_max', label='Maximum control displacement'),
+        Item('n_E', label='Number of elements'),
+        Item('G', label='Shear modulus'),
+        Item('eta', label='E_m/E_f'),
+        Item('L_x', label='Specimen length')
+    )
+
+    viz2d_classes = {'field': Viz2DPullOutField,
+                     'F-w': Viz2DPullOutFW}
+
 
 if __name__ == '__main__':
-    import pylab as p
+    from view.window import BMCSWindow
 
-    dots = DOTSGridEval(fets_eval=FETS1D2L(),
-                        n_E=5,
-                        L_x=1.0,
-                        G=1.0)
+    po = PullOut(fets=FETS1D52L4ULRH(),
+                 n_E=5,
+                 L_x=1.0,
+                 G=1.0)
 
-    print 's_C', dots.X_J, dots.u_C
-    fig = p.figure()
-    dots.plot(fig)
-    p.show()
+    print po.tloop.eval()
+
+    w = BMCSWindow(root=po)
+    po.ui = w
+    po.add_viz2d('F-w')
+    po.add_viz2d('field')
+    w.configure_traits()

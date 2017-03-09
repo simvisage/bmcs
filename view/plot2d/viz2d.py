@@ -17,7 +17,12 @@ from traitsui.api import \
 class Viz2D(HasStrictTraits):
     '''Base class of the visualization adaptors
     '''
-    label = Str('<unnamed>')
+    name = Str('<unnamed>')
+    label = Property(depends_on='label')
+
+    @cached_property
+    def _get_label(self):
+        return self.name
     vis2d = WeakRef
 
     def plot(self, ax, vot=0):
@@ -29,12 +34,6 @@ class Viz2D(HasStrictTraits):
                 UItem('label'),
                 label='Vizualization inteerface',
                 springy=True
-            ),
-            Group(
-                Item('vis2d@'),
-                label='Visualized object',
-                springy=True
-            ),
-        ),
+            )),
         resizable=True
     )

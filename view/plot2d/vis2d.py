@@ -7,9 +7,10 @@ Created on Dec 3, 2015
 from traits.api import \
     HasStrictTraits, Dict, Property, Float, \
     WeakRef, DelegatesTo, cached_property, \
-    Str, List, Button
+    Str, List, Button, Bool
 from traitsui.api import \
     View, Group, UItem, Include, EnumEditor, HGroup
+from viz2d import Viz2D
 
 
 class Viz2DDict(HasStrictTraits):
@@ -30,7 +31,7 @@ class Viz2DDict(HasStrictTraits):
             viz2d_class = self.viz2d_classes.get(key, None)
             if viz2d_class == None:
                 raise KeyError, 'No vizualization class with key %s' % key
-            viz2d = viz2d_class(label=key, vis2d=self.vis2d)
+            viz2d = viz2d_class(name=key, vis2d=self.vis2d)
             self._viz2d_objects[key] = viz2d
         return viz2d
 
@@ -85,23 +86,17 @@ class Vis2D(HasStrictTraits):
     add_selected_viz2d = Button(label='Add plot viz2d')
 
     def _add_selected_viz2d_fired(self):
-        viz2d = self.viz2d[self.selected_viz2d_class]
-        if self.ui:
+        viz2d_class_name = self.selected_viz2d_class
+        self.add_viz2d(viz2d_class_name)
+
+    def add_viz2d(self, name):
+        viz2d_class = self.viz2d_classes[name]
+        viz2d = viz2d_class(name=name, vis2d=self)
+        self.viz2d.append(viz2d)
+        if hasattr(self, 'ui') and self.ui:
             self.ui.plot_dock_pane.viz2d_list.append(viz2d)
 
-    viz2d = Property(Dict)
-    '''Dictionary of visualization objects'''
-    @cached_property
-    def _get_viz2d(self):
-        '''Get a vizualization object given the key
-        of the vizualization class. Construct it on demand
-        and register in the viz3d_dict.
-        '''
-        return Viz2DDict(vis2d=self)
-
-    def viz2d_notify_change(self):
-        for viz2d in self.viz2d.values():
-            viz2d.vis2d_changed = True
+    viz2d = List(Viz2D)
 
     actions = HGroup(
         UItem('add_selected_viz2d'),
