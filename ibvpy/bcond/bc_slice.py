@@ -81,6 +81,8 @@ class BCSlice(BMCSTreeNode, Vis2D):
 
     bcdof_list = List(BCDof)
 
+    def reset(self):
+        self.bcdof_list = []
     # List of dofs that determine the value of the current dof
     #
     # If this list is empty, then the current dof is

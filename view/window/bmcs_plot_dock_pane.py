@@ -67,7 +67,7 @@ class PlotDockPane(HasStrictTraits):
 
     selected_viz2d = Instance(Viz2D)
 
-    axes = Property(List, depends_on='viz2d_list,n_cols')
+    axes = Property(List, depends_on='viz2d_list,viz2d_list_items,n_cols')
     '''Derived axes objects reflecting the layout of plot pane
     and the individual. 
     '''

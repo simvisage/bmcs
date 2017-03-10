@@ -50,17 +50,22 @@ Visualization
 
    * What is the relation to multi-dimensional case?
    * Generalization
-    
+   
+   
+Time variable
+=============
+Clarify the meaning of vot and time-line in response tracers
+and in boundary conditions.
+
 @author: rch
 '''
 
 
 from ibvpy.api import \
-    FEGrid, FETSEval
-from ibvpy.api import \
+    FEGrid, FETSEval, IFETSEval, \
     TStepper as TS, TLoop, \
-    TLine, BCSlice
-from ibvpy.fets.i_fets_eval import IFETSEval
+    TLine, BCSlice, RTDofGraph
+from ibvpy.core.i_bcond import IBCond
 from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
 from mathkit.matrix_la import \
     SysMtxAssembly
@@ -165,6 +170,7 @@ class Viz2DPullOutFW(Viz2D):
         w = vot * w_max
         self.vis2d.w = w
         Fint = self.vis2d.Fint_IC[-1, -1]
+        print 'Fint', Fint
         self.w.append(w)
         self.Fint.append(Fint)
         ax.plot(self.w, self.Fint)
@@ -225,7 +231,7 @@ class Viz2DPullOutField(Viz2D):
     )
 
 
-class PullOut(BMCSTreeNode, Vis2D):
+class Bondix(BMCSTreeNode, Vis2D):
     '''Linear elastic calculation of pull-out problem.
     '''
 
@@ -234,7 +240,7 @@ class PullOut(BMCSTreeNode, Vis2D):
     tree_node_list = List
 
     def _tree_node_list_default(self):
-        return [self.fets, self.ts.bcond_mngr]
+        return [self.fets, self.ts.bcond_mngr, self.ts.rtrace_mngr]
 
     L_x = Float(1, input=True)
 
@@ -265,7 +271,15 @@ class PullOut(BMCSTreeNode, Vis2D):
                             G=self.G
                             )
 
-    ts = Property(Instance(TS), depends_on='+input,+bc_changed')
+    bcond = Property(Instance(IBCond), depends_on='+input')
+
+    @cached_property
+    def _get_bcond(self):
+        return BCSlice(var='u', value=0., dims=[1],
+                       slice=self.sdomain[-1, -1])
+
+    ts = Property(Instance(TS),
+                  depends_on='+input,+bc_changed')
 
     @cached_property
     def _get_ts(self):
@@ -276,12 +290,18 @@ class PullOut(BMCSTreeNode, Vis2D):
                   bcond_list=[
                       BCSlice(var='u', value=0., dims=[0],
                               slice=self.sdomain[0, 0]),
-                      BCSlice(var='u', value=self.w, dims=[1],
-                              slice=self.sdomain[-1, -1])
+                      self.bcond,
+                      # BCSlice(var='u', value=0., dims=[1],
+                      # slice=self.sdomain[-1, -1])
                   ],
+                  rtrace_list=[RTDofGraph(name='Fi,right over w_right',
+                                          var_y='F_int', idx_y=-1, cum_y=True,
+                                          var_x='U_k', idx_x=-1),
+                               ]
                   )
 
-    tloop = Property(Instance(TLoop), depends_on='+input,+bc_changed')
+    tloop = Property(Instance(TLoop),
+                     depends_on='+input,+bc_changed,+time_changed')
     '''Time loop control.
     '''
     @cached_property
@@ -290,7 +310,12 @@ class PullOut(BMCSTreeNode, Vis2D):
                      tline=TLine(min=0.0, step=0.1, max=1.0))
 
     w_max = Float(0.01)
-    w = Float(0.01, bc_changed=True)
+    w = Float(0.01, time_changed=True)
+
+    def _w_changed(self):
+        '''reset the current boundary condition'''
+        self.bcond.reset()
+        self.bcond.value = self.w
 
     K_Eij = Property(depends_on='+input,+bc_changed')
 
@@ -301,7 +326,8 @@ class PullOut(BMCSTreeNode, Vis2D):
         K_Eij = K_ECidDjf.reshape(-1, fet.n_e_dofs, fet.n_e_dofs)
         return K_Eij
 
-    dd = Property(depends_on='+input,+bc_changed')
+    dd = Property(
+        depends_on='+input,+bc_changed,+time_changed')
 
     @cached_property
     def _get_dd(self):
@@ -316,7 +342,8 @@ class PullOut(BMCSTreeNode, Vis2D):
         d = K.solve(F_ext)
         return d
 
-    d = Property(depends_on='+input,+bc_changed')
+    d = Property(Array(np.float),
+                 depends_on='+input,+bc_changed,+time_changed')
 
     @cached_property
     def _get_d(self):
@@ -346,7 +373,7 @@ class PullOut(BMCSTreeNode, Vis2D):
         return u_EmdC.reshape(-1, n_C)
 
     s = Property
-    'Slip between the two material phases'
+    '''Slip between the two material phases'''
 
     def _get_s(self):
         d_ECid = self.d[self.dots.dof_ECid]
@@ -406,10 +433,10 @@ class PullOut(BMCSTreeNode, Vis2D):
 if __name__ == '__main__':
     from view.window import BMCSWindow
 
-    po = PullOut(fets=FETS1D52L4ULRH(),
-                 n_E=5,
-                 L_x=1.0,
-                 G=1.0)
+    po = Bondix(fets=FETS1D52L4ULRH(),
+                n_E=5,
+                L_x=1.0,
+                G=1.0)
 
     print po.tloop.eval()
 
@@ -417,4 +444,7 @@ if __name__ == '__main__':
     po.ui = w
     po.add_viz2d('F-w')
     po.add_viz2d('field')
+    rt = po.ts.rtrace_mngr['Fi,right over w_right']
+    rt.ui = w
+    rt.add_viz2d('time function')
     w.configure_traits()

@@ -24,6 +24,7 @@ import numpy as np
 class RTraceViz2D(Viz2D):
 
     def plot(self, ax, vot, *args, **kw):
+        print 'RTraceViz2D: plotting', self.vis2d
         self.vis2d.redraw()
         self.vis2d.trace.plot(ax)
         y_min, y_max = self.vis2d.trace.yrange
@@ -131,9 +132,6 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
         else:
             self._ydata.append(np.copy(y))
 
-    idx_x_arr = Array
-    idx_y_arr = Array
-
     @on_trait_change('idx_x,idx_y')
     def redraw(self, e=None):
         if (self._xdata == [] or
@@ -223,6 +221,8 @@ class RTSumDofGraph(RTDofGraph):
 
     @on_trait_change('idx_x,idx_y')
     def redraw(self, e=None):
+
+        print 'redrawing'
         if (len(self.idx_x_arr) == 0 or
                 len(self.idx_y_arr) == 0 or
                 self._xdata == [] or
