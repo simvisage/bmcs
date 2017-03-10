@@ -56,11 +56,11 @@ Visualization
 
 
 from ibvpy.api import \
-    FEGrid, FETSEval, IFETSEval
+    FEGrid, FETSEval
 from ibvpy.api import \
     TStepper as TS, TLoop, \
     TLine, BCSlice
-from ibvpy.dots.dots_grid_eval import DOTSGridEval
+from ibvpy.fets.i_fets_eval import IFETSEval
 from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
 from mathkit.matrix_la import \
     SysMtxAssembly
@@ -70,11 +70,12 @@ from traits.api import \
     Instance, Trait, Button
 from traitsui.api import \
     View, Include, Item, UItem, VGroup
-from view.plot2d import Viz2D, Vis2D
-from view.ui import BMCSTreeNode, BMCSLeafNode
 
+from ibvpy.dots.dots_grid_eval import DOTSGridEval
 import numpy as np
 import sympy as sp
+from view.plot2d import Viz2D, Vis2D
+from view.ui import BMCSTreeNode, BMCSLeafNode
 
 
 n_C = 2
