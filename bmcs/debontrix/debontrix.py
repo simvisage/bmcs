@@ -66,6 +66,7 @@ from ibvpy.api import \
     TStepper as TS, TLoop, \
     TLine, BCSlice, RTDofGraph
 from ibvpy.core.i_bcond import IBCond
+from ibvpy.dots.dots_grid_eval import DOTSGridEval
 from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
 from mathkit.matrix_la import \
     SysMtxAssembly
@@ -75,12 +76,11 @@ from traits.api import \
     Instance, Trait, Button
 from traitsui.api import \
     View, Include, Item, UItem, VGroup
-
-from ibvpy.dots.dots_grid_eval import DOTSGridEval
-import numpy as np
-import sympy as sp
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSTreeNode, BMCSLeafNode
+
+import numpy as np
+import sympy as sp
 
 
 n_C = 2
