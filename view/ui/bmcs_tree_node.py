@@ -12,29 +12,38 @@ from traitsui.api import \
     View
 
 
-class BMCSLeafNode(HasStrictTraits):
-    '''Base class of all model classes that can appear in a tree view.
-    '''
+class BMCSTreeNodeBase(HasStrictTraits):
+
     node_name = Str('<unnamed>')
-
-    ui = WeakRef
-
-
-class BMCSTreeNode(HasStrictTraits):
-    '''Base class of all model classes that can appear in a tree view.
-    '''
-    node_name = Str('<unnamed>')
-
-    tree_node_list = List([])
-
-    ui = WeakRef
 
     tree_view = View()
+
+    ui = WeakRef
+
+
+class BMCSLeafNode(BMCSTreeNodeBase):
+    '''Base class of all model classes that can appear in a tree view.
+    '''
+
+    def set_ui_recursively(self, ui):
+        self.ui = ui
+
+
+class BMCSTreeNode(BMCSTreeNodeBase):
+    '''Base class of all model classes that can appear in a tree view.
+    '''
+    tree_node_list = List([])
+
+    def set_ui_recursively(self, ui):
+        self.ui = ui
+        for node in self.tree_node_list:
+            node.set_ui_recursively(ui)
 
     def append_node(self, node):
         '''Add a new subnode to the current node.
         Inform the tree view to select the new node within the view.
         '''
+        node.set_ui_recursively(self.ui)
         self.tree_node_list.append(node)
 
 

@@ -89,12 +89,14 @@ class Vis2D(HasStrictTraits):
         viz2d_class_name = self.selected_viz2d_class
         self.add_viz2d(viz2d_class_name)
 
-    def add_viz2d(self, name):
-        viz2d_class = self.viz2d_classes[name]
+    def add_viz2d(self, class_name, name=''):
+        if name == '':
+            name = class_name
+        viz2d_class = self.viz2d_classes[class_name]
         viz2d = viz2d_class(name=name, vis2d=self)
         self.viz2d.append(viz2d)
         if hasattr(self, 'ui') and self.ui:
-            self.ui.plot_dock_pane.viz2d_list.append(viz2d)
+            self.ui.viz_sheet.viz2d_list.append(viz2d)
 
     viz2d = List(Viz2D)
 
@@ -110,8 +112,3 @@ class Vis2D(HasStrictTraits):
         Include('actions'),
         resizable=True
     )
-
-if __name__ == '__main__':
-
-    from example import rt
-    rt.configure_traits()

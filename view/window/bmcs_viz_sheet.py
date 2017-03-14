@@ -8,7 +8,7 @@ from matplotlib.figure import \
 from traits.api import \
     HasStrictTraits, Str, \
     Instance,  Event, \
-    List,  Range, Int, \
+    List,  Range, Int, Float, \
     Property, cached_property, on_trait_change
 from traitsui.api import \
     TabularEditor
@@ -41,15 +41,21 @@ tabular_editor = TabularEditor(
 )
 
 
-class PlotDockPane(HasStrictTraits):
+class VizSheet(HasStrictTraits):
     '''Trait definition.
     '''
     name = Str
 
-    vot = Range(low=0.0, high=1.0, step=0.01,
+    vot_min = Float(0.0)
+    vot_max = Float(1.0)
+    vot = Range(low='vot_min', high='vot_max', step=0.01,
                 enter_set=True, auto_set=False)
 
-    n_cols = Int(1, label='Number of rows',
+    def set_vot(self, vot):
+        self.vot_max = max(self.vot_max, vot)
+        self.vot = vot
+
+    n_cols = Int(1, label='Number of columns',
                  tooltip='Defines a number of columns within the plot pane',
                  enter_set=True, auto_set=False)
 
@@ -121,10 +127,11 @@ class PlotDockPane(HasStrictTraits):
 
 if __name__ == '__main__':
 
-    from view.plot2d.example import mpl1, mpl2, rt
+    from view.plot2d.example import mpl1, mpl2, ResponseTracer
+    rt = ResponseTracer()
 
-    replot = PlotDockPane(viz2d_list=[mpl1.viz2d['default'],
-                                      mpl2.viz2d['default'],
-                                      rt.viz2d['default'],
-                                      rt.viz2d['time_profile']])
+    replot = VizSheet(viz2d_list=[mpl1.viz2d['default'],
+                                  mpl2.viz2d['default'],
+                                  rt.viz2d['default'],
+                                  rt.viz2d['time_profile']])
     replot.configure_traits()

@@ -5,7 +5,8 @@
 '''
 
 from traits.api import \
-    HasStrictTraits, Instance, Button, Event
+    HasStrictTraits, Instance, Button, Event, \
+    DelegatesTo
 from traits.etsconfig.api import ETSConfig
 from traitsui.api import \
     TreeEditor, TreeNode, View, Item, VGroup, \
@@ -16,10 +17,10 @@ from traitsui.menu import \
 from view.ui.bmcs_tree_node import \
     BMCSTreeNode, BMCSLeafNode
 
-from bmcs_plot_dock_pane import PlotDockPane
 from bmcs_tree_view_handler import \
     BMCSTreeViewHandler, plot_self, menu_save, \
     menu_open, menu_exit, toolbar_actions
+from bmcs_viz_sheet import VizSheet
 
 
 if ETSConfig.toolkit == 'wx':
@@ -62,12 +63,18 @@ class BMCSWindow(HasStrictTraits):
     '''
     root = Instance(BMCSTreeNode)
 
+    def _root_changed(self):
+        self.root.set_ui_recursively(self)
+
     selected_node = Instance(HasStrictTraits)
 
     def _selected_node_changed(self):
         self.selected_node.ui = self
 
-    plot_dock_pane = Instance(PlotDockPane, ())
+    def set_vot(self, vot):
+        self.viz_sheet.set_vot(vot)
+
+    viz_sheet = Instance(VizSheet, ())
 
     data_changed = Event
 
@@ -103,7 +110,7 @@ class BMCSWindow(HasStrictTraits):
                 dock='tab',
             ),
             VGroup(
-                Item('plot_dock_pane@',
+                Item('viz_sheet@',
                      show_label=False,
                      id='bmcs.hsplit.viz3d.notebook.id',
                      dock='tab',
@@ -111,7 +118,7 @@ class BMCSWindow(HasStrictTraits):
                 # Item('self.root.time', label='t/T_max'),
                 dock='tab',
                 id='bmcs.hsplit.viz3d.id',
-                label='plot sheet',
+                label='viz sheet',
             ),
             dock='tab',
             id='bmcs.hsplit.id',
@@ -131,11 +138,12 @@ class BMCSWindow(HasStrictTraits):
 
 if __name__ == '__main__':
 
-    from view.plot2d.example import rt
+    from view.plot2d.example import ResponseTracer
     from ibvpy.core.bcond_mngr import BCondMngr
     from ibvpy.bcond import BCDof, BCSlice
     bc_mngr = BCondMngr()
     bc_mngr.bcond_list = [BCDof(), BCSlice()]
+    rt = ResponseTracer()
     tr = BMCSTreeNode(node_name='root',
                       tree_node_list=[BMCSTreeNode(node_name='subnode 1'),
                                       BMCSTreeNode(node_name='subnode 2'),
@@ -144,5 +152,5 @@ if __name__ == '__main__':
                                       ])
 
     tv = BMCSWindow(root=tr)
-    tv.plot_dock_pane.viz2d_list.append(rt.viz2d['default'])
+    rt.add_viz2d('default')
     tv.configure_traits()
