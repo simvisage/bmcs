@@ -17,7 +17,7 @@ from traitsui.api import \
     HSplit
 from traitsui.tabular_adapter import TabularAdapter
 
-from util.traits.editors.mpl_figure_editor import \
+from util.traits.editors import \
     MPLFigureEditor
 from view.plot2d.viz2d import Viz2D
 
@@ -54,6 +54,9 @@ class VizSheet(HasStrictTraits):
     def set_vot(self, vot):
         self.vot_max = max(self.vot_max, vot)
         self.vot = vot
+
+    def get_vot_range(self):
+        return self.vot, self.vot_max
 
     n_cols = Int(1, label='Number of columns',
                  tooltip='Defines a number of columns within the plot pane',

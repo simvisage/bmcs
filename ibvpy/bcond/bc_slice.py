@@ -33,7 +33,7 @@ from traitsui.api import \
 from traitsui.table_column \
     import ObjectColumn
 from view.plot2d import Vis2D
-from view.plot2d import Vis2D, TimeFunctionViz2D
+from view.plot2d import Vis2D, Viz2DTimeFunction
 from view.ui import BMCSTreeNode
 
 from bc_dof import BCDof
@@ -371,7 +371,7 @@ class BCSlice(BMCSTreeNode, Vis2D):
         self.mvp_dofs.redraw(label_mode='label_vectors')
         self.mvp_link_dofs.redraw(label_mode='label_vectors')
 
-    viz2d_classes = {'time function': TimeFunctionViz2D}
+    viz2d_classes = {'time function': Viz2DTimeFunction}
 
     traits_view = View(HSplit(Group('var',
                                     'dims',

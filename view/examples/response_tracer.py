@@ -23,6 +23,8 @@ class TP(Viz2D):
 
 class ResponseTracer(BMCSLeafNode, Vis2D):
 
+    node_name = 'response tracer'
+
     def get_sim_results(self, vot):
         t = np.linspace(0, 1, 100)
         x = t

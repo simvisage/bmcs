@@ -4,15 +4,16 @@ from mathkit.mfn import MFnLineArray
 from traits.api import Float, \
     Int,  Enum, Instance, \
     List,  Any, implements
-from traitsui.api import View, Item, Group, Include
-from view.plot2d import Vis2D, TimeFunctionViz2D
-from view.ui import BMCSLeafNode
+from traitsui.api import \
+    View, Item, UItem, VGroup, Include, VSplit
+from view.plot2d import Vis2D, Viz2DTimeFunction
+from view.ui import BMCSTreeNode
 
 
 import numpy as np
 
 
-class BCDof(BMCSLeafNode, Vis2D):
+class BCDof(BMCSTreeNode):
     '''
     Implements the IBC functionality for a constrained dof.
 
@@ -49,11 +50,23 @@ class BCDof(BMCSLeafNode, Vis2D):
     '''
     implements(IBCond)
 
-    var = Enum('u', 'f', 'eps', 'sig',)
-    dof = Int
-    value = Float
+    node_name = 'boundary condition'
+    tree_node_list = List()
 
-    link_dofs = List(Int)
+    def _tree_node_list_default(self):
+        return [self.time_function]
+
+    var = Enum('u', 'f', 'eps', 'sig',
+               label='Variable',
+               )
+    dof = Int(label='Degree of freedom',
+              )
+    value = Float(label='Value',
+                  )
+    link_dofs = List(Int,
+                     label='Linear dependencies',
+                     tooltip='Degrees of freedom linked\n'
+                     'with the current by link coefficients')
     '''
     List of dofs that determine the value of the current dof
     
@@ -61,7 +74,10 @@ class BCDof(BMCSLeafNode, Vis2D):
     prescribed. Otherwise, the dof value is given by the
     linear combination of DOFs in the list (see the example below)
     '''
-    link_coeffs = List(Float)
+    link_coeffs = List(Float,
+                       label='Link coefficients',
+                       tooltip='Multipliers for linear combination\n'
+                       'equation')
     '''
     Coefficients of the linear combination of DOFs specified in the
     above list.
@@ -73,6 +89,9 @@ class BCDof(BMCSLeafNode, Vis2D):
 
     def _time_function_default(self):
         return MFnLineArray(xdata=[0, 1], ydata=[0, 1], extrapolate='diff')
+
+    def get_viz2d_data(self):
+        return self.time_function.xdata, self.time_function.ydata
 
     def is_essential(self):
         return self.var == 'u'
@@ -151,13 +170,22 @@ class BCDof(BMCSLeafNode, Vis2D):
                 alpha = np.array(self.link_coeffs, np.float_)
                 R[n_ix] += alpha.transpose() * R_a
 
-    viz2d_classes = {'time function': TimeFunctionViz2D}
     tree_view = View(
-        Include('actions'),
-        Item('var'),
-        Item('dof'),
-        Item('value'),
-        Item('time_function')
+        VGroup(
+            VSplit(
+                VGroup(
+                    Item('var', full_size=True, resizable=True,
+                         tooltip='Type of variable: u - essential, f- natural'),
+                    Item('dof',
+                         tooltip='Number of the degree of freedom'),
+                    Item('value',
+                         tooltip='Value of the boundary condition to\n'
+                         'be multiplied with the time function'),
+                ),
+                UItem('time_function@', full_size=True, springy=True,
+                      resizable=True)
+            ),
+        )
     )
 
 if __name__ == '__main__':
@@ -190,8 +218,8 @@ if __name__ == '__main__':
                             var='u', dof=5, link_dofs=[16], link_coeffs=[1.], value=0.),
                         BCDof(var='f', dof=21, value=10)],
             rtrace_list=[RTDofGraph(name='Fi,right over u_right (iteration)',
-                                     var_y='F_int', idx_y=0,
-                                     var_x='U_k', idx_x=1),
+                                    var_y='F_int', idx_y=0,
+                                    var_x='U_k', idx_x=1),
                          ]
             )
 

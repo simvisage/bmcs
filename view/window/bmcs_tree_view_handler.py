@@ -6,6 +6,9 @@ Created on 14. 4. 2014
 
 import pickle
 
+from bmcs.utils import \
+    get_outfile
+from pyface.api import ImageResource
 from traits.api import \
     Button, Instance, WeakRef
 from traitsui.api import \
@@ -15,9 +18,6 @@ from traitsui.file_dialog import \
     open_file, save_file
 from traitsui.menu import \
     Action
-
-from bmcs.utils import \
-    get_outfile
 
 
 plot_self = Action(name='Plot', action='plot_node')
@@ -126,12 +126,19 @@ class BMCSTreeViewHandler(Handler):
     #=========================================================================
 
     def run(self, info):
-        info.object.run_calculation()
+        print 'Running action'
+        info.object.run()
 
-    def stop(self, info):
-        info.object.stop_calculation()
+    def interrupt(self, info):
+        print 'Running interrupt'
+        info.object.interrupt()
+
+    def continue_(self, info):
+        print 'Running continue'
+        info.object.continue_()
 
     def replot(self, info):
+        print 'Running continue'
         info.object.replot()
 
     def clear(self, info):
@@ -150,16 +157,28 @@ class BMCSTreeViewHandler(Handler):
         info.object.load()
 
 action_strings = \
-    [('Run', 'run_calculation', 'Run calculation'),
-     ('Interrupt', 'interrupt_calculation', 'Interrupt calculation'),
-     ('Plot', 'replot', 'Replot current diagrams'),
+    [('Plot', 'replot', 'Replot current diagrams'),
      ('Clear', 'clear', 'Clear current diagrams'),
      ('Save', 'save', 'Save session'),
      ('Load', 'load', 'Load session'),
      ('Animate', 'anim', 'Animate current session'),
      ('Render', 'render', 'Render current session')]
 
-toolbar_actions = [Action(name=name,
-                          action=action,
-                          tooltip=tooltip)
-                   for name, action, tooltip in action_strings]
+toolbar_actions = [Action(name="Run",
+                          tooltip='Start computation',
+                          image=ImageResource('kt-start'),
+                          action="run"),
+                   Action(name="Pause",
+                          tooltip='Pause computation',
+                          image=ImageResource('kt-pause'),
+                          action="pause"),
+                   Action(name="Stop",
+                          tooltip='Stop computation',
+                          image=ImageResource('kt-stop'),
+                          action="stop"),
+                   ]
+
+toolbar_actions += [Action(name=name,
+                           action=action,
+                           tooltip=tooltip)
+                    for name, action, tooltip in action_strings]

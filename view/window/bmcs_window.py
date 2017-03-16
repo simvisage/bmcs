@@ -30,7 +30,7 @@ if ETSConfig.toolkit == 'qt4':
     from traitsui.qt4.tree_editor import \
         DeleteAction
 else:
-    raise ImportError, "tree actions for %s toolkit not availabe" % \
+    raise ImportError, "tree actions for %s toolkit not available" % \
         ETSConfig.toolkit
 
 
@@ -61,18 +61,32 @@ class BMCSWindow(HasStrictTraits):
 
     '''View object for a cross section state.
     '''
-    root = Instance(BMCSTreeNode)
+    model = Instance(BMCSTreeNode)
 
-    def _root_changed(self):
-        self.root.set_ui_recursively(self)
+    def _model_changed(self):
+        self.model.set_ui_recursively(self)
+
+    def run(self):
+        self.model.run()
+
+    def interrupt(self):
+        self.model.interrupt()
+
+    def continue_(self):
+        self.model.continue_()
 
     selected_node = Instance(HasStrictTraits)
 
     def _selected_node_changed(self):
         self.selected_node.ui = self
 
+    def get_vot_range(self):
+        return self.viz_sheet.get_vot_range()
+
     def set_vot(self, vot):
         self.viz_sheet.set_vot(vot)
+
+    vot = DelegatesTo('viz_sheet')
 
     viz_sheet = Instance(VizSheet, ())
 
@@ -91,12 +105,10 @@ class BMCSWindow(HasStrictTraits):
         self.figure.clear()
         self.data_changed = True
 
-    #time = self.root.time
-
     view = View(
         HSplit(
             VGroup(
-                Item('root',
+                Item('model',
                      id='bmcs.hsplit.left.tree.id',
                      dock='tab',
                      editor=tree_editor,
@@ -115,7 +127,6 @@ class BMCSWindow(HasStrictTraits):
                      id='bmcs.hsplit.viz3d.notebook.id',
                      dock='tab',
                      ),
-                # Item('self.root.time', label='t/T_max'),
                 dock='tab',
                 id='bmcs.hsplit.viz3d.id',
                 label='viz sheet',
@@ -130,7 +141,11 @@ class BMCSWindow(HasStrictTraits):
         title='BMCS',
         resizable=True,
         handler=BMCSTreeViewHandler(),
-        toolbar=ToolBar(*toolbar_actions),
+        toolbar=ToolBar(*toolbar_actions,
+                        image_size=(32, 32),
+                        show_tool_names=False,
+                        show_divider=True,
+                        name='view_toolbar'),
         menubar=MenuBar(Menu(menu_exit, Separator(),
                              menu_save, menu_open,
                              name='File'))
@@ -138,19 +153,21 @@ class BMCSWindow(HasStrictTraits):
 
 if __name__ == '__main__':
 
-    from view.plot2d.example import ResponseTracer
+    from view.examples.response_tracer import ResponseTracer
     from ibvpy.core.bcond_mngr import BCondMngr
     from ibvpy.bcond import BCDof, BCSlice
     bc_mngr = BCondMngr()
-    bc_mngr.bcond_list = [BCDof(), BCSlice()]
+    bc_mngr.bcond_list = [
+        BCDof(),
+        BCSlice()]
     rt = ResponseTracer()
-    tr = BMCSTreeNode(node_name='root',
+    tr = BMCSTreeNode(node_name='model',
                       tree_node_list=[BMCSTreeNode(node_name='subnode 1'),
                                       BMCSTreeNode(node_name='subnode 2'),
                                       rt,
                                       bc_mngr
                                       ])
 
-    tv = BMCSWindow(root=tr)
-    rt.add_viz2d('default')
+    tv = BMCSWindow(model=tr)
+    rt.add_viz2d('time_profile')
     tv.configure_traits()

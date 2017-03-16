@@ -25,24 +25,21 @@ Created on Mar 10, 2017
 @author: rch
 '''
 
+import time
+
+from ibvpy.api import BCDof
+from pyface.api import ProgressDialog
 from traits.api import Instance, List
 from traitsui.api import View, Include
-from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSTreeNode
 from view.window import BMCSWindow
 
-from boundary_condition import BoundaryCondition
+import numpy as np
 from response_tracer import ResponseTracer
+from tfun_pwl_interactive import TFunPWLInteractive
 
 
-class DemoVizControl(Viz2D):
-
-    def plot(self, ax, vot=0):
-        print 'recalculate for', vot
-        self.vis2d.eval(vot)
-
-
-class DemoModel(BMCSTreeNode, Vis2D):
+class DemoModel(BMCSTreeNode):
     '''Demo model of the BMCS Window
 
     Shows how the time control within an application of BMCS
@@ -74,36 +71,53 @@ class DemoModel(BMCSTreeNode, Vis2D):
     tree_node_list = List
 
     def _tree_node_list_default(self):
-        return [self.rt, self.bc]
+        return [self.rt, self.bc, self.bc_dof]
 
     def run(self):
+        print 'Model: recalculating'
+
+        n_steps = 5
+
+        # todo distinguish target time -- make a threaded
+        # interaction with the TLoop
+        #
+        t_min, t_max = self.ui.get_vot_range()
+        pd = ProgressDialog(title='simulation progress',
+                                  message='running %d steps' % n_steps,
+                                  min=0, max=n_steps,
+                                  show_time=True,
+                                  can_cancel=True)
+        pd.open()
+        tarray = np.linspace(t_min, t_max, n_steps)
+        for idx, t in enumerate(tarray):
+            print 't', t
+            pd.update(idx)
+            time.sleep(1)
+            self.ui.vot = t
+        pd.update(n_steps)
+
+    def pause(self):
         pass
 
-    def interrupt(self):
+    def stop(self):
         pass
 
-    def continue_(self):
-        pass
-
-    def eval(self, vot):
-        print 'recalculating for', vot
-
-    viz2d_classes = {'control_viz': DemoVizControl}
-
-    bc = Instance(BoundaryCondition, ())
+    bc = Instance(TFunPWLInteractive, ())
 
     rt = Instance(ResponseTracer, ())
+
+    bc_dof = Instance(BCDof)
+
+    def _bc_dof_default(self):
+        return BCDof(time_function=TFunPWLInteractive())
 
     tree_view = View(
         Include('actions')
     )
 
 if __name__ == '__main__':
-
-    model = DemoModel(node_name='demo')
-
-    tv = BMCSWindow(root=model)
-    model.add_viz2d('control_viz', 'time control')
+    model = DemoModel()
+    tv = BMCSWindow(model=model)
     model.bc.add_viz2d('time_function', 'boundary condition #1')
     model.rt.add_viz2d('time_profile', 'response tracer #1')
     tv.configure_traits()

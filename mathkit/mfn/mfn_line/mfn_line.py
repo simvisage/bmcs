@@ -1,12 +1,18 @@
+from enaml.widgets.v_group import VGroup
+from matplotlib.figure import \
+    Figure
 from scipy import interpolate as ip
 from traits.api import Array, Float, Event, HasStrictTraits, \
     ToolbarButton, on_trait_change, \
-    Property, cached_property, Enum
-
+    Property, cached_property, Enum, Instance
+from traitsui.api import View, VGroup, UItem
+from util.traits.editors import \
+    MPLFigureEditor
+from view.ui import BMCSLeafNode
 import numpy as np
 
 
-class MFnLineArray(HasStrictTraits):
+class MFnLineArray(BMCSLeafNode):
 
     # Public Traits
     xdata = Array(float, value=[0.0, 1.0])
@@ -19,6 +25,10 @@ class MFnLineArray(HasStrictTraits):
         return np.arange(self.ydata.shape[0])
 
     ydata = Array(float, value=[0.0, 1.0])
+
+    def __init__(self, *args, **kw):
+        super(MFnLineArray, self).__init__(*args, **kw)
+        self.replot()
 
     extrapolate = Enum('constant', 'exception', 'diff', 'zero')
     '''
@@ -69,6 +79,12 @@ class MFnLineArray(HasStrictTraits):
 
     data_changed = Event
 
+    figure = Instance(Figure)
+
+    def _figure_default(self):
+        figure = Figure(facecolor='white')
+        return figure
+
     def diff(self, x, k=1, der=1):
         '''
         vectorized interpolation, der is the nth derivative, default set to 1;
@@ -107,6 +123,23 @@ class MFnLineArray(HasStrictTraits):
     def mpl_plot(self, axes, *args, **kw):
         '''plot within matplotlib window'''
         axes.plot(self.xdata, self.ydata, *args, **kw)
+
+    def replot(self):
+        ax = self.figure.add_subplot(111)
+        ax.clear()
+        self.mpl_plot(ax)
+        self.data_changed = True
+
+    view = View(
+        VGroup(
+            VGroup(
+                UItem('figure', editor=MPLFigureEditor(),
+                      resizable=True,
+                      springy=True),
+                scrollable=True,
+            ),
+        )
+    )
 
 if __name__ == '__main__':
     import pylab as plt
@@ -152,3 +185,6 @@ if __name__ == '__main__':
     # exception()
     plt.legend(loc='best')
     plt.show()
+
+    mf.replot()
+    mf.configure_traits()

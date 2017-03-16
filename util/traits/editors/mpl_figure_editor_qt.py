@@ -20,6 +20,7 @@ from traits.api import Any, Instance
 from traitsui.qt4.basic_editor_factory import BasicEditorFactory
 from traitsui.qt4.editor import Editor
 
+
 class _MPLFigureEditor(Editor):
 
     scrollable = True
