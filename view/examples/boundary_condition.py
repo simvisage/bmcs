@@ -10,10 +10,10 @@ from traits.api import \
 from traitsui.api import \
     View, UItem, Item, Include, \
     VGroup, spring
-from view.plot2d import Vis2D, Viz2D
-from view.ui.bmcs_tree_node import BMCSLeafNode
 
 import numpy as np
+from view.plot2d import Vis2D, Viz2D
+from view.ui.bmcs_tree_node import BMCSLeafNode
 
 
 class TFViz2D(Viz2D):
@@ -27,6 +27,7 @@ class TFViz2D(Viz2D):
 
 class BoundaryCondition(BMCSLeafNode, Vis2D):
 
+    node_name = 'boundary condition'
     t_values = List(Float, [0])
     f_values = List(Float, [0])
     n_f_values = Int(10, auto_set=False, enter_set=True)
