@@ -132,25 +132,25 @@ class RTraceMngr(BMCSTreeNode):
     def get_values(self):
         return self.rtrace_bound_list
 
-    def record(self, sctx, U_k, *args, **kw):
+    def record(self, sctx, U_k, t=0.0, *args, **kw):
         for rte in self.get_values():
-            rte.add_current_values(sctx, U_k,
+            rte.add_current_values(sctx, U_k, t,
                                    *self.tstepper.args, **self.tstepper.kw)
-            rte.add_current_displ(sctx, U_k)
+            rte.add_current_displ(sctx, U_k, t)
 
-    def record_iter(self, sctx, U_k, *args, **kw):
+    def record_iter(self, sctx, U_k, t=0.0, *args, **kw):
         for rte in self.get_values():
             if rte.record_on == 'iteration':
-                rte.add_current_values(sctx, U_k,
+                rte.add_current_values(sctx, U_k, t,
                                        *self.tstepper.args, **self.tstepper.kw)
-                rte.add_current_displ(sctx, U_k)
+                rte.add_current_displ(sctx, U_k, t)
 
-    def record_equilibrium(self, sctx, U_k):
+    def record_equilibrium(self, sctx, U_k, t=0.0):
         for rte in self.get_values():
             if rte.record_on == 'update':
-                rte.add_current_values(sctx, U_k,
+                rte.add_current_values(sctx, U_k, t,
                                        *self.tstepper.args, **self.tstepper.kw)
-                rte.add_current_displ(sctx, U_k)
+                rte.add_current_displ(sctx, U_k, t)
             if rte.save_on == 'update':
                 rte.write()
             if rte.clear_on == 'update':

@@ -28,11 +28,10 @@ from traits.api import Float, \
     Button, \
     implements, Property
 from traitsui.api import \
-    HSplit, Group, \
-    View, Item, TableEditor, Include
+    VSplit, \
+    View, UItem, Item, TableEditor, VGroup
 from traitsui.table_column \
     import ObjectColumn
-from view.plot2d import Vis2D
 from view.plot2d import Vis2D, Viz2DTimeFunction
 from view.ui import BMCSTreeNode
 
@@ -62,8 +61,8 @@ class BCSlice(BMCSTreeNode, Vis2D):
 
     @cached_property
     def _get_tree_node_list(self):
-        print 'GETTING LIST', self.bcdof_list
-        return self.bcdof_list
+        return [self.time_function,
+                self.space_function] + self.bcdof_list
 
     name = Str('<unnamed>')
 
@@ -115,9 +114,9 @@ class BCSlice(BMCSTreeNode, Vis2D):
     integ_domain = Enum(['global', 'local'])
 
     # TODO - adapt the definition
-    time_function = Instance(MFnLineArray)
+    time_function = Instance(MFnLineArray, ())
 
-    space_function = Instance(MFnLineArray)
+    space_function = Instance(MFnLineArray, ())
 
     def _space_function_default(self):
         return MFnLineArray(xdata=[0, 1], ydata=[1, 1], extrapolate='diff')
@@ -373,22 +372,37 @@ class BCSlice(BMCSTreeNode, Vis2D):
 
     viz2d_classes = {'time function': Viz2DTimeFunction}
 
-    traits_view = View(HSplit(Group('var',
-                                    'dims',
-                                    'value',
-                                    'redraw_button'),
-                              Item('bcdof_list',
-                                   style='custom',
-                                   editor=bcond_list_editor,
-                                   show_label=False)),
-                       resizable=True,
-                       )
+    traits_view = View(
+        VGroup(
+            VSplit(
+                VGroup(
+                    Item('var', full_size=True, resizable=True),
+                    Item('dims',),
+                    Item('value'),
+                    Item('redraw_button')
+                ),
+                Item('bcdof_list',
+                     style='custom',
+                     editor=bcond_list_editor,
+                     show_label=False),
+                UItem('time_function@', full_size=True, springy=True,
+                      resizable=True),
+            ),
+        )
+    )
 
     tree_view = View(
-        Include('actions'),
-        Item('var'),
-        Item('dims'),
-        Item('value'),
+        VGroup(
+            VSplit(
+                VGroup(
+                    Item('var', full_size=True, resizable=True),
+                    Item('dims', full_size=True, resizable=False),
+                    Item('value'),
+                ),
+                UItem('time_function@', full_size=True, springy=True,
+                      resizable=True),
+            ),
+        )
     )
 
 if __name__ == '__main__':
@@ -476,10 +490,11 @@ if __name__ == '__main__':
     tloop = TLoop(tstepper=ts,
                   tline=TLine(min=0.0, step=1., max=1.0))
 
-    print 'u', tloop.eval()
+    print 'u', tloop.setup()
 
-    print 'F', tloop.tstepper.F_ext
+    # print 'F', tloop.tstepper.F_ext
 
-    from ibvpy.plugins.ibvpy_app import IBVPyApp
-    app = IBVPyApp(ibv_resource=tloop)
-    app.main()
+    from view.window import BMCSWindow
+
+    w = BMCSWindow(model=bcs[0])
+    w.configure_traits()

@@ -130,7 +130,7 @@ class MFnLineArray(BMCSLeafNode):
         self.mpl_plot(ax)
         self.data_changed = True
 
-    view = View(
+    tree_view = View(
         VGroup(
             VGroup(
                 UItem('figure', editor=MPLFigureEditor(),
@@ -140,6 +140,8 @@ class MFnLineArray(BMCSLeafNode):
             ),
         )
     )
+
+    traits_view = tree_view
 
 if __name__ == '__main__':
     import pylab as plt

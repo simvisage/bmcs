@@ -57,6 +57,14 @@ Time variable
 Clarify the meaning of vot and time-line in response tracers
 and in boundary conditions.
 
+   * Boundary condition subclasses
+   * Run action, pause action, stop action
+   * Response tracer for profiles - history tracing 
+   * Threaded calculation
+   * Efficiency
+   * Viz3D sheet
+   * Array boundary conditions
+
 @author: rch
 '''
 
@@ -64,7 +72,7 @@ and in boundary conditions.
 from ibvpy.api import \
     FEGrid, FETSEval, IFETSEval, \
     TStepper as TS, TLoop, \
-    TLine, BCSlice, RTDofGraph
+    TLine, BCSlice, BCDof, RTDofGraph
 from ibvpy.core.i_bcond import IBCond
 from ibvpy.dots.dots_grid_eval import DOTSGridEval
 from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
@@ -81,6 +89,7 @@ from view.ui import BMCSTreeNode, BMCSLeafNode
 
 import numpy as np
 import sympy as sp
+from view.examples.tfun_pwl_interactive import TFunPWLInteractive
 
 
 n_C = 2
@@ -166,12 +175,9 @@ class Viz2DPullOutFW(Viz2D):
     Fint = List([])
 
     def plot(self, ax, vot, *args, **kw):
-        w_max = self.vis2d.w_max
-        w = vot * w_max
-        self.vis2d.w = w
+        d = self.vis2d.d_IC[-1, -1]
         Fint = self.vis2d.Fint_IC[-1, -1]
-        print 'Fint', Fint
-        self.w.append(w)
+        self.w.append(d)
         self.Fint.append(Fint)
         ax.plot(self.w, self.Fint)
 
@@ -222,8 +228,8 @@ class Viz2DPullOutField(Viz2D):
                     )
 
     def plot(self, ax, vot, *args, **kw):
-        w_max = self.vis2d.w_max
-        self.vis2d.w = vot * w_max
+        #         w_max = self.vis2d.w_max
+        #         self.vis2d.w = vot * w_max
         getattr(self.vis2d, self.plot_fn_)(ax)
 
     traits_view = View(
@@ -275,8 +281,11 @@ class Bondix(BMCSTreeNode, Vis2D):
 
     @cached_property
     def _get_bcond(self):
-        return BCSlice(var='u', value=0., dims=[1],
-                       slice=self.sdomain[-1, -1])
+        dof = self.sdomain[-1, -1].dofs[0, 0, 1]
+        tfun = TFunPWLInteractive()
+        return BCDof(var='u', dof=dof, value=0.001,
+                     time_function=tfun
+                     )
 
     ts = Property(Instance(TS),
                   depends_on='+input,+bc_changed')
@@ -291,8 +300,6 @@ class Bondix(BMCSTreeNode, Vis2D):
                       BCSlice(var='u', value=0., dims=[0],
                               slice=self.sdomain[0, 0]),
                       self.bcond,
-                      # BCSlice(var='u', value=0., dims=[1],
-                      # slice=self.sdomain[-1, -1])
                   ],
                   rtrace_list=[RTDofGraph(name='Fi,right over w_right',
                                           var_y='F_int', idx_y=-1, cum_y=True,
@@ -301,21 +308,36 @@ class Bondix(BMCSTreeNode, Vis2D):
                   )
 
     tloop = Property(Instance(TLoop),
-                     depends_on='+input,+bc_changed,+time_changed')
+                     depends_on='+input,+bc_changed,tmax_changed')
     '''Time loop control.
     '''
     @cached_property
     def _get_tloop(self):
-        return TLoop(tstepper=self.ts, KMAX=30, debug=False,
-                     tline=TLine(min=0.0, step=0.1, max=1.0))
+        return TLoop(tstepper=self.ts, KMAX=30,
+                     debug=False, tline=self.tline,
+                     )
 
-    w_max = Float(0.01)
-    w = Float(0.01, time_changed=True)
+    tline = Instance(TLine)
+    '''Time range.
+    '''
 
-    def _w_changed(self):
-        '''reset the current boundary condition'''
-        self.bcond.reset()
-        self.bcond.value = self.w
+    def _tline_default(self):
+        return TLine(min=0.0, step=0.1, max=0.0,
+                     time_change_notifier=self.time_change,
+                     )
+
+    def time_change(self, time):
+        self.ui.viz_sheet.time_changed(time)
+
+    def time_range_change(self, tmax):
+        self.ui.viz_sheet.time_range_changed(tmax)
+
+    def set_tmax(self, time):
+        self.tline.max = time
+        self.time_range_change(time)
+
+    def run(self):
+        self.tloop.eval()
 
     K_Eij = Property(depends_on='+input,+bc_changed')
 
@@ -349,9 +371,9 @@ class Bondix(BMCSTreeNode, Vis2D):
     def _get_d(self):
         return self.tloop.eval()
 
-    d_C = Property
+    d_IC = Property
 
-    def _get_d_C(self):
+    def _get_d_IC(self):
         d_ECid = self.d[self.dots.dof_ECid]
         return np.einsum('ECid->EidC', d_ECid).reshape(-1, n_C)
 
@@ -418,8 +440,6 @@ class Bondix(BMCSTreeNode, Vis2D):
 
     tree_view = View(
         Include('actions'),
-        Item('w', label='Control displacement'),
-        Item('w_max', label='Maximum control displacement'),
         Item('n_E', label='Number of elements'),
         Item('G', label='Shear modulus'),
         Item('eta', label='E_m/E_f'),
@@ -438,13 +458,9 @@ if __name__ == '__main__':
                 L_x=1.0,
                 G=1.0)
 
-    print po.tloop.eval()
-
-    w = BMCSWindow(root=po)
-    po.ui = w
-    po.add_viz2d('F-w')
-    po.add_viz2d('field')
+    w = BMCSWindow(model=po)
+    # po.add_viz2d('F-w')
+    # po.add_viz2d('field')
     rt = po.ts.rtrace_mngr['Fi,right over w_right']
-    rt.ui = w
     rt.add_viz2d('time function')
     w.configure_traits()

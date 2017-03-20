@@ -16,37 +16,31 @@
 Generic implementation of the time loop.
 '''
 
-from traits.api import Array, Bool, Enum, Float, HasTraits, \
-    Instance, Int, Trait, Str, Enum, \
-    Callable, List, TraitDict, Any, Range, \
-    Delegate, Event, on_trait_change, Button, Property, \
-    cached_property, property_depends_on, Event, \
-    Directory
-
-from traitsui.api import \
-    Item, View, HGroup, ListEditor, VGroup, \
-    HSplit, Group, Handler, VSplit, RangeEditor, spring
-from traitsui.menu import NoButtons, OKButton, CancelButton, \
-    Action
-
-from weakref import ref
-
-from math import pow, fabs
-import numpy as np
-
-from ibvpy.core.rtrace_mngr import RTraceMngr
-from ibvpy.core.astrategy import AStrategyBase
-
+import os
 from threading import Thread
 import time
-import os
-from ibvpy.core.ibv_resource import IBVResource
+from warnings import warn
 
+from ibvpy.core.astrategy import AStrategyBase
+from ibvpy.core.ibv_resource import IBVResource
+from ibvpy.core.tstepper import TStepper
+from traits.api import Array, Bool, Float, HasTraits, \
+    Instance, Int, Trait, Str, Enum, \
+    Callable, List, \
+    Delegate, on_trait_change, Button, Property, \
+    cached_property, property_depends_on, \
+    Directory
 from traits.util.home_directory import get_home_directory
+from traitsui.api import \
+    Item, View, HGroup, \
+    Group, Handler, RangeEditor, spring
+from traitsui.menu import OKButton, CancelButton, \
+    Action
+
+import numpy as np
+
 
 # import pymem
-from ibvpy.core.tstepper import TStepper
-
 LOGGING_ON = False
 
 if LOGGING_ON:
@@ -79,7 +73,13 @@ class TLine(HasTraits):
 
     def _set_time(self, value):
         warn('This should be read-only slider')
-        self.val = self.val
+        self.val = value
+
+    def _val_changed(self):
+        if self.time_change_notifier:
+            self.time_change_notifier(self.val)
+
+    time_change_notifier = Callable
 
     traits_view = View(HGroup(Item('min'),
                               spring,
@@ -88,9 +88,8 @@ class TLine(HasTraits):
                               Item('max')),
                        Item('time', editor=RangeEditor(low_name='min',
                                                        high_name='max',
-                                                       format='(%s)',
                                                        auto_set=False,
-                                                       enter_set=False,
+                                                       enter_set=True,
                                                        ),
                             show_label=False
                             ),
@@ -147,9 +146,6 @@ class TLoopHandler(Handler):
 
 RecalcAction = Action(name='Recalculate', action='recalculate')
 
-from traitsui.api import TreeNodeObject
-from warnings import warn
-
 
 class TLoop(IBVResource):
 
@@ -191,6 +187,8 @@ class TLoop(IBVResource):
 
     def _tline_default(self):
         return TLine(min=0.0, max=1.0, step=1.0)
+
+    report_time_step = Callable
 
     # Convenience property to set the boundary condition list
     # in the time stepper through the time loop
@@ -358,13 +356,15 @@ class TLoop(IBVResource):
         self.eval_timer.reset()
 
         if self.verbose_load_step:
-            print '======= Time range: %g -> %g =========' % (self.tline.min, self.tline.max)
+            print '======= Time range: %g -> %g =========' % \
+                (self.t_n, self.tline.max)
 
         # Register the list of variables requrired by the adaptive
         # strategy in the time stepper to include their evaluation in
         # the corrector-predictor evaluation ts.extend_output_list(
         # adap.get_indicator_list() )
         #
+
         while (self.t_n1 - self.tline.max) <= self.step_tolerance and \
                 not self.user_wants_abort:
 
@@ -378,6 +378,10 @@ class TLoop(IBVResource):
 
             self.ls_counter += 1
             self.report_load_step_start()
+
+            print 't_n1', self.t_n1
+            print 'tline.max', self.tline.max
+
             self.k = 0
             step_flag = 'predictor'
 
@@ -415,7 +419,8 @@ class TLoop(IBVResource):
                 # self.crpr_timer.record()
                 # self.crpr_timer.report()
                 self.rtrace_mngr_timer.reset()
-                self.rtrace_mngr.record_iter(self.tstepper.sctx, self.U_k)
+                self.rtrace_mngr.record_iter(self.tstepper.sctx, self.U_k,
+                                             t=self.t_n1)
                 self.rtrace_mngr_timer.record()
                 # self.rtrace_mngr_timer.report()
 
@@ -538,9 +543,9 @@ class TLoop(IBVResource):
                 self.d_t *= adap.ehandler_get_scale()
                 self.t_n = self.t_n1
                 self.t_n1 = self.t_n + self.d_t
-                self.tline.val = self.t_n1
-
-                self.report_load_step_end()
+                # handle the case that due to numerical noice
+                # t_n might exceed the max of the range.
+                self.tline.val = min(self.t_n, self.tline.max)
 
         # Hack to get the state variables in the last time step.
         # This invokes the update state operator in the
@@ -599,7 +604,8 @@ class TLoop(IBVResource):
         '''Record current state in the state array.
         '''
         self.rtrace_mngr_timer.reset()
-        self.rtrace_mngr.record_equilibrium(self.tstepper.sctx, self.U_k)
+        self.rtrace_mngr.record_equilibrium(self.tstepper.sctx,
+                                            self.U_k, t=self.t_n1)
         self.rtrace_mngr_timer.record()
 
     verbose_load_step = Bool(True)

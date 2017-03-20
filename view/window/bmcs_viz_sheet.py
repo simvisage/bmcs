@@ -3,20 +3,23 @@ Created on Mar 2, 2017
 
 @author: rch
 '''
+import time
+
+from ibvpy.api import TLine
 from matplotlib.figure import \
     Figure
 from traits.api import \
     HasStrictTraits, Str, \
-    Instance,  Event, \
+    Instance,  Event, Enum, \
     List,  Range, Int, Float, \
-    Property, cached_property, on_trait_change
+    Property, cached_property, on_trait_change, \
+    DelegatesTo, Button
 from traitsui.api import \
     TabularEditor
 from traitsui.api import \
     View, Item, UItem, VGroup, VSplit, \
     HSplit
 from traitsui.tabular_adapter import TabularAdapter
-
 from util.traits.editors import \
     MPLFigureEditor
 from view.plot2d.viz2d import Viz2D
@@ -46,17 +49,69 @@ class VizSheet(HasStrictTraits):
     '''
     name = Str
 
-    vot_min = Float(0.0)
-    vot_max = Float(1.0)
-    vot = Range(low='vot_min', high='vot_max', step=0.01,
-                enter_set=True, auto_set=False)
+    min = Float(0.0)
+    '''Simulation start is always 0.0
+    '''
+    max = Float(1.0)
+    '''Upper range limit of the current simulator.
+    This range is determined by the the time-loop range
+    of the model. 
+    '''
+    vot = Float
 
-    def set_vot(self, vot):
-        self.vot_max = max(self.vot_max, vot)
-        self.vot = vot
+    def _vot_default(self):
+        return self.min
 
-    def get_vot_range(self):
-        return self.vot, self.vot_max
+    vot_slider = Range(low='min', high='max', step=0.01,
+                       enter_set=True, auto_set=False)
+    '''Time line controlling the current state of the simulation.
+    this value is synchronized with the control time of the
+    time loop setting the tline. The vot_max = tline.max.
+    The value of vot follows the value of tline.val in monitoring mode.
+    By default, the monitoring mode is active with vot = tline.value.
+    When sliding to a value vot < tline.value, the browser mode is activated.
+    When sliding into the range vot > tline.value the monitoring mode
+    is reactivated. 
+    '''
+
+    def _vot_slider_default(self):
+        return 0.0
+
+    mode = Enum('monitor', 'browse')
+
+    time = Float(0.0)
+
+    loop = Button
+
+    def _loop_fired(self):
+        tinc = 0.1
+        self.time_changed(self.time + tinc)
+        print 'time', self.time
+
+    def time_range_changed(self, max):
+        self.max = max
+
+    def time_changed(self, time):
+        self.time = time
+        if self.mode == 'monitor':
+            self.vot = time
+            self.vot_slider = time
+
+    def _vot_slider_changed(self):
+        if self.mode == 'browse':
+            if self.vot_slider >= self.time:
+                self.vot_slider = self.time
+                self.vot = self.time
+                self.mode = 'monitor'
+            else:
+                self.vot = self.vot_slider
+        elif self.mode == 'monitor':
+            if self.vot_slider < self.time:
+                self.vot = self.vot_slider
+                self.mode = 'browse'
+            else:
+                self.vot_slider = self.time
+                self.vot = self.time
 
     n_cols = Int(1, label='Number of columns',
                  tooltip='Defines a number of columns within the plot pane',
@@ -121,7 +176,9 @@ class VizSheet(HasStrictTraits):
                     scrollable=True
                 ),
             ),
-            Item('vot')
+            Item('mode'),
+            Item('vot_slider'),
+            Item('loop')
         ),
         resizable=True,
         width=0.8, height=0.8,
@@ -130,11 +187,5 @@ class VizSheet(HasStrictTraits):
 
 if __name__ == '__main__':
 
-    from view.plot2d.example import mpl1, mpl2, ResponseTracer
-    rt = ResponseTracer()
-
-    replot = VizSheet(viz2d_list=[mpl1.viz2d['default'],
-                                  mpl2.viz2d['default'],
-                                  rt.viz2d['default'],
-                                  rt.viz2d['time_profile']])
+    replot = VizSheet()
     replot.configure_traits()

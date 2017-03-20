@@ -7,7 +7,7 @@ Created on Mar 4, 2017
 from mathkit.mfn import MFnLineArray
 from traits.api import \
     List, Float, Int, Range, Property,\
-    cached_property, Bool
+    cached_property, Bool, Callable
 from traitsui.api import \
     View, UItem, Item, Include, \
     VGroup, VSplit, spring, Tabbed
@@ -33,16 +33,31 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
     node_name = 'time function'
     t_values = List(Float, [0])
     f_values = List(Float, [0])
+
     n_f_values = Int(10, auto_set=False, enter_set=True)
+
     f_min = Float(0.0, auto_set=False, enter_set=True,
                   label='F minimum')
+
     f_max = Float(1.0, auto_set=False, enter_set=True,
                   label='F maximum')
+
     t_ref = Float(1.0, auto_set=False, enter_set=True,
                   label='Initial time range')
+
     f_value = Range(low='f_min', high='f_max', value=0,
                     auto_set=False, enter_set=True)
+
     run_eagerly = Bool(True, label='Run eagerly')
+
+    t_snap = Float(0.1, label='Time step to snap to',
+                   auto_set=False, enter_set=True)
+
+    def __init__(self, *arg, **kw):
+        super(TFunPWLInteractive, self).__init__(*arg, **kw)
+        self.xdata = np.array(self.t_values)
+        self.ydata = np.array(self.f_values)
+
     d_t = Property(depends_on='t_ref,n_f_values')
 
     @cached_property
@@ -55,14 +70,20 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
         rel_step = delta_f / self.f_max
         delta_t = rel_step * self.t_ref
         t_value = np.fabs(delta_t) + self.t_values[-1]
+        n_steps = int(t_value / self.t_snap) + 1
+        t_value = n_steps * self.t_snap
         self.t_values.append(t_value)
         self.xdata = np.array(self.t_values)
         self.ydata = np.array(self.f_values)
+        print self.xdata
+        print self.ydata
         self.replot()
         if self.ui:
-            self.ui.set_vot(t_value)
+            self.ui.model.set_tmax(t_value)
             if self.run_eagerly:
                 self.ui.model.run()
+
+    notify_change = Callable(None)
 
     def get_ty_data(self, vot):
         return self.t_values, self.f_values
@@ -90,6 +111,9 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
                                 Item('f_min',
                                      full_size=True),
                                 Item('n_f_values',
+                                     full_size=True),
+                                Item('t_snap', tooltip='Snap value to round off'
+                                     'the value to',
                                      full_size=True),
                             ),
                             spring,

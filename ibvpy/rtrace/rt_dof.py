@@ -6,6 +6,7 @@ from ibvpy.api import RTrace
 from mathkit.mfn import MFnLineArray
 from mathkit.mfn.mfn_line.mfn_matplotlib_editor import MFnMatplotlibEditor
 from mathkit.mfn.mfn_line.mfn_plot_adapter import MFnPlotAdapter
+from scipy import interpolate as ip
 from traits.api import \
     Array, List, Callable, \
     Instance, Int, Str, \
@@ -24,12 +25,23 @@ import numpy as np
 class RTraceViz2D(Viz2D):
 
     def plot(self, ax, vot, *args, **kw):
-        print 'RTraceViz2D: plotting', self.vis2d
+        # @todo - extract the index within the time history
+        # to obtain the right profile of data.
+        # @todo improve the transform functionality
+        #
+        print 'vot', vot
+        if len(self.vis2d._tdata) == 0:
+            return
+        tdata = np.array(self.vis2d._tdata)
         self.vis2d.redraw()
         self.vis2d.trace.plot(ax)
         y_min, y_max = self.vis2d.trace.yrange
-        x_min, x_max = self.vis2d.trace.xrange
-        x = x_min + vot * (x_max - x_min)
+        xdata = self.vis2d.trace.xdata
+        fn_t_x = ip.splrep(tdata, xdata,  s=0, k=3)
+        print 'tdata', tdata
+        print 'xdata', xdata
+        x = ip.splev(vot, fn_t_x, der=0)
+        print 'x', x
         ax.plot([x, x], [y_min, y_max])
 
 
@@ -63,16 +75,18 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
     transform_y = Str(enter_set=True, auto_set=False)
 
     trace = Instance(MFnLineArray)
+    _tdata = List(np.float)
 
     def _trace_default(self):
         return MFnLineArray()
 
-    print_button = ToolbarButton('Print Values',
+    print_button = ToolbarButton('Print values',
                                  style='toolbar', trantient=True)
 
     @on_trait_change('print_button')
     def print_values(self, event=None):
         print 'x:\t', self.trace.xdata, '\ny:\t', self.trace.ydata
+
     _xdata = List(Array(float))
     _ydata = List(Array(float))
 
@@ -112,16 +126,16 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
         # pickle.dump( self, file_rtrace )
         # file.close()
 
-    def add_current_values(self, sctx, U_k, *args, **kw):
+    def add_current_values(self, sctx, U_k, t, *args, **kw):
         '''
         Invoke the evaluators in the current context for the specified control vector U_k.
         '''
         x = self.var_x_eval(sctx, U_k, *args, **kw)
         y = self.var_y_eval(sctx, U_k, *args, **kw)
 
-        self.add_pair(x.flatten(), y.flatten())
+        self.add_pair(x.flatten(), y.flatten(), t)
 
-    def add_pair(self, x, y):
+    def add_pair(self, x, y, t):
 
         if self.cum_x and len(self._xdata) > 0:
             self._xdata.append(self._xdata[-1] + x)
@@ -131,6 +145,7 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
             self._ydata.append(self._ydata[-1] + y)
         else:
             self._ydata.append(np.copy(y))
+        self._tdata.append(t)
 
     @on_trait_change('idx_x,idx_y')
     def redraw(self, e=None):
