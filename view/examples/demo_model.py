@@ -27,16 +27,17 @@ Created on Mar 10, 2017
 
 import time
 
-from ibvpy.api import BCDof
+from ibvpy.api import BCDof, TLine
 from pyface.api import ProgressDialog
 from traits.api import Instance, List
-from traitsui.api import View, Include
+from traitsui.api import View, Include, VGroup, UItem
 from view.ui import BMCSTreeNode
 from view.window import BMCSWindow
 
 import numpy as np
 from response_tracer import ResponseTracer
 from tfun_pwl_interactive import TFunPWLInteractive
+from scratch.ui.tloop_thread import TLoopThread
 
 
 class DemoModel(BMCSTreeNode):
@@ -73,34 +74,65 @@ class DemoModel(BMCSTreeNode):
     def _tree_node_list_default(self):
         return [self.rt, self.bc, self.bc_dof]
 
+    tline = Instance(TLine)
+    '''Time range.
+    '''
+
+    def _tline_default(self):
+        return TLine(min=0.0, step=0.1, max=0.0,
+                     time_change_notifier=self.time_changed,
+                     )
+
+    def time_changed(self, time):
+        self.ui.viz_sheet.time_changed(time)
+
+
+    def time_range_changed(self, tmax):
+        self.tline.max = tmax
+        self.ui.viz_sheet.time_range_changed(tmax)
+
+    def set_tmax(self, time):
+        self.time_range_changed(time)
+        
+    tloop_thread = Instance(TLoopThread)
+        
     def run(self):
+        self.tloop_thread = TLoopThread()
+        self.tloop_thread.model = self
+        self.tloop_thread.start()
+        
+        
+    def do_progress(self):
         print 'Model: recalculating'
-
+ 
         n_steps = 5
-
+ 
         # todo distinguish target time -- make a threaded
         # interaction with the TLoop
-        #
-        t_min, t_max = self.ui.get_vot_range()
+         
         pd = ProgressDialog(title='simulation progress',
                                   message='running %d steps' % n_steps,
                                   min=0, max=n_steps,
                                   show_time=True,
                                   can_cancel=True)
         pd.open()
+        t_min = self.tline.val
+        t_max = self.tline.max
         tarray = np.linspace(t_min, t_max, n_steps)
         for idx, t in enumerate(tarray):
             print 't', t
             pd.update(idx)
-            time.sleep(1)
-            self.ui.vot = t
+            time.sleep(5)
+            self.tline.val = t
+            self.ui.viz_sheet.time_changed(t)
         pd.update(n_steps)
+
 
     def pause(self):
         pass
 
     def stop(self):
-        pass
+        self.tloop_thread
 
     bc = Instance(TFunPWLInteractive, ())
 
@@ -112,7 +144,10 @@ class DemoModel(BMCSTreeNode):
         return BCDof(time_function=TFunPWLInteractive())
 
     tree_view = View(
-        Include('actions')
+        VGroup(
+        Include('actions'),
+        UItem('tline@')
+        )
     )
 
 if __name__ == '__main__':

@@ -137,7 +137,7 @@ class BMCSWindow(HasStrictTraits):
         #        dock='tab',
         id='bmcs.id',
         width=1.0,
-        height=1.0,
+        height=0.9,
         title='BMCS',
         resizable=True,
         handler=BMCSTreeViewHandler(),

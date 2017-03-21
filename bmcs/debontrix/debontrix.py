@@ -326,7 +326,7 @@ class Bondix(BMCSTreeNode, Vis2D):
                      time_change_notifier=self.time_change,
                      )
 
-    def time_change(self, time):
+    def time_changed(self, time):
         self.ui.viz_sheet.time_changed(time)
 
     def time_range_change(self, tmax):
@@ -334,7 +334,7 @@ class Bondix(BMCSTreeNode, Vis2D):
 
     def set_tmax(self, time):
         self.tline.max = time
-        self.time_range_change(time)
+        self.time_range_changed(time)
 
     def run(self):
         self.tloop.eval()
