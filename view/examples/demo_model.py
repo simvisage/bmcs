@@ -29,7 +29,7 @@ import time
 
 from ibvpy.api import BCDof, TLine
 from pyface.api import ProgressDialog
-from traits.api import Instance, List
+from traits.api import Instance, List, Int
 from traitsui.api import View, Include, VGroup, UItem
 from view.ui import BMCSTreeNode
 from view.window import BMCSWindow
@@ -38,6 +38,7 @@ import numpy as np
 from response_tracer import ResponseTracer
 from tfun_pwl_interactive import TFunPWLInteractive
 from scratch.ui.tloop_thread import TLoopThread
+from PyQt4.Qt import QProgressDialog, QSize, SIGNAL
 
 
 class DemoModel(BMCSTreeNode):
@@ -95,44 +96,64 @@ class DemoModel(BMCSTreeNode):
         self.time_range_changed(time)
         
     tloop_thread = Instance(TLoopThread)
+    pd = Instance(ProgressDialog)
+    pd_idx = Int(0)
+    
+    def _pd_idx_changed(self):
+        self.pd.update(self.pd_idx)
         
     def run(self):
+        print 'Model: recalculating'
+ 
+        n_steps = 5
+        
+#         self.pd = ProgressDialog(title='simulation progress',
+#                                   message='running %d steps' % n_steps,
+#                                   min=0, max=n_steps,
+#                                   show_time=True,
+#                                   can_cancel=True)
+#         self.pd.open()
+    
+        pd = QProgressDialog(windowTitle='simulation progress',
+                             labelText='running %d steps' % n_steps,
+                             minimum=0, maximum=n_steps,
+                             autoClose=True,
+                             size=QSize(250,100))
+    
+
         self.tloop_thread = TLoopThread()
         self.tloop_thread.model = self
         self.tloop_thread.start()
         
+        pd.open()
+        pd.connect(self.tloop_thread, SIGNAL('updateProgressDialog'), lambda i: pd.setValue(i))
+        
         
     def do_progress(self):
-        print 'Model: recalculating'
- 
+        '''this method is just called by the tloop_thread thread'''
         n_steps = 5
- 
+        
         # todo distinguish target time -- make a threaded
         # interaction with the TLoop
-         
-        pd = ProgressDialog(title='simulation progress',
-                                  message='running %d steps' % n_steps,
-                                  min=0, max=n_steps,
-                                  show_time=True,
-                                  can_cancel=True)
-        pd.open()
+
         t_min = self.tline.val
         t_max = self.tline.max
         tarray = np.linspace(t_min, t_max, n_steps)
         for idx, t in enumerate(tarray):
             print 't', t
-            pd.update(idx)
-            time.sleep(5)
+#             self.pd_idx = idx
+            self.tloop_thread.emit(SIGNAL('updateProgressDialog'), idx)
+            time.sleep(1)
             self.tline.val = t
             self.ui.viz_sheet.time_changed(t)
-        pd.update(n_steps)
-
+#         self.pd_idx = n_steps
+        self.tloop_thread.emit(SIGNAL('updateProgressDialog'), n_steps)
 
     def pause(self):
         pass
 
     def stop(self):
-        self.tloop_thread
+        pass
 
     bc = Instance(TFunPWLInteractive, ())
 

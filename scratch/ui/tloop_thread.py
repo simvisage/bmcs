@@ -3,18 +3,12 @@ Created on 21.03.2017
 
 @author: cthoennessen
 '''
-import time
-from threading import Thread
-from traits.api import Instance
-from view.ui.bmcs_tree_node import BMCSTreeNode
-from pyface.progress_dialog import ProgressDialog
+from PyQt4.Qt import QThread
+from traits.api import WeakRef
 
-import numpy as np
-
-
-class TLoopThread(Thread):
+class TLoopThread(QThread):
     
-    model = Instance(BMCSTreeNode)
+    model = WeakRef
     
     def run(self): 
         self.model.do_progress()
