@@ -28,8 +28,7 @@ Created on Mar 10, 2017
 import time
 
 from ibvpy.api import BCDof, TLine
-from pyface.api import ProgressDialog
-from traits.api import Instance, List, Int
+from traits.api import Instance, List, Bool
 from traitsui.api import View, Include, VGroup, UItem
 from view.ui import BMCSTreeNode
 from view.window import BMCSWindow
@@ -96,41 +95,40 @@ class DemoModel(BMCSTreeNode):
         self.time_range_changed(time)
         
     tloop_thread = Instance(TLoopThread)
-    pd = Instance(ProgressDialog)
-    pd_idx = Int(0)
     
-    def _pd_idx_changed(self):
-        self.pd.update(self.pd_idx)
+    tloop_running = Bool(False)
+    
+    def _tloop_running_changed(self):
+        self.bc.enable_slider = not self.tloop_running 
         
     def run(self):
         print 'Model: recalculating'
- 
+        
+        if self.tloop_running:
+            return
+        else:
+            self.tloop_running = True
+        
         n_steps = 5
         
-#         self.pd = ProgressDialog(title='simulation progress',
-#                                   message='running %d steps' % n_steps,
-#                                   min=0, max=n_steps,
-#                                   show_time=True,
-#                                   can_cancel=True)
-#         self.pd.open()
-    
         pd = QProgressDialog(windowTitle='simulation progress',
                              labelText='running %d steps' % n_steps,
                              minimum=0, maximum=n_steps,
                              autoClose=True,
                              size=QSize(250,100))
-    
 
         self.tloop_thread = TLoopThread()
         self.tloop_thread.model = self
         self.tloop_thread.start()
         
         pd.open()
-        pd.connect(self.tloop_thread, SIGNAL('updateProgressDialog'), lambda i: pd.setValue(i))
+        pd.connect(self.tloop_thread, 
+                   SIGNAL('updateProgressDialog'), 
+                   lambda i: pd.setValue(i))
         
         
     def do_progress(self):
-        '''this method is just called by the tloop_thread thread'''
+        '''this method is just called by the tloop_thread'''
         n_steps = 5
         
         # todo distinguish target time -- make a threaded
@@ -141,13 +139,13 @@ class DemoModel(BMCSTreeNode):
         tarray = np.linspace(t_min, t_max, n_steps)
         for idx, t in enumerate(tarray):
             print 't', t
-#             self.pd_idx = idx
             self.tloop_thread.emit(SIGNAL('updateProgressDialog'), idx)
             time.sleep(1)
             self.tline.val = t
             self.ui.viz_sheet.time_changed(t)
-#         self.pd_idx = n_steps
         self.tloop_thread.emit(SIGNAL('updateProgressDialog'), n_steps)
+        
+        self.tloop_running = False
 
     def pause(self):
         pass
@@ -166,8 +164,8 @@ class DemoModel(BMCSTreeNode):
 
     tree_view = View(
         VGroup(
-        Include('actions'),
-        UItem('tline@')
+            Include('actions'),
+            UItem('tline@')
         )
     )
 

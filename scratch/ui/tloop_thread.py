@@ -7,7 +7,8 @@ from PyQt4.Qt import QThread
 from traits.api import WeakRef
 
 class TLoopThread(QThread):
-    
+    '''
+    '''
     model = WeakRef
     
     def run(self): 

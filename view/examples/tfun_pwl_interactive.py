@@ -48,6 +48,8 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
     f_value = Range(low='f_min', high='f_max', value=0,
                     auto_set=False, enter_set=True)
 
+    enable_slider = Bool(True)
+
     run_eagerly = Bool(True, label='Run eagerly')
 
     t_snap = Float(0.1, label='Time step to snap to',
@@ -104,6 +106,7 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
                             VGroup(
                                 UItem('f_value',
                                       full_size=True, resizable=True),
+                                      enabled_when='enable_slider'
                             ),
                             VGroup(
                                 Item('f_max',
