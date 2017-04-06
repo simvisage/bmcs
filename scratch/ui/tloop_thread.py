@@ -4,12 +4,14 @@ Created on 21.03.2017
 @author: cthoennessen
 '''
 from PyQt4.Qt import QThread
-from traits.api import WeakRef
 
 class TLoopThread(QThread):
     '''
     '''
-    model = WeakRef
+    
+    def __init__(self, model, **args):
+        super(TLoopThread, self, **args).__init__()
+        self.model = model
     
     def run(self): 
         self.model.do_progress()

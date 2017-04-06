@@ -117,8 +117,7 @@ class DemoModel(BMCSTreeNode):
                              autoClose=True,
                              size=QSize(250,100))
 
-        self.tloop_thread = TLoopThread()
-        self.tloop_thread.model = self
+        self.tloop_thread = TLoopThread(model = self)
         self.tloop_thread.start()
         
         pd.open()
@@ -168,7 +167,7 @@ class DemoModel(BMCSTreeNode):
             UItem('tline@')
         )
     )
-
+ 
 if __name__ == '__main__':
     model = DemoModel()
     tv = BMCSWindow(model=model)
