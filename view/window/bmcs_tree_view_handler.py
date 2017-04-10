@@ -166,14 +166,17 @@ action_strings = \
 
 toolbar_actions = [Action(name="Run",
                           tooltip='Start computation',
+                          enabled_when='enable_run',
                           image=ImageResource('kt-start'),
                           action="run"),
                    Action(name="Pause",
                           tooltip='Pause computation',
+                          enabled_when='enable_pause',
                           image=ImageResource('kt-pause'),
                           action="pause"),
                    Action(name="Stop",
                           tooltip='Stop computation',
+                          enabled_when='enable_stop',
                           image=ImageResource('kt-stop'),
                           action="stop"),
                    ]

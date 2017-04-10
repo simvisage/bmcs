@@ -20,6 +20,11 @@ class BMCSTreeNodeBase(HasStrictTraits):
 
     ui = WeakRef
 
+    def set_traits_with_metadata(self, value, **metadata):
+        traits_names = self.trait_names(**metadata)
+        for tname in traits_names:
+            setattr(self, tname, value)
+
 
 class BMCSLeafNode(BMCSTreeNodeBase):
     '''Base class of all model classes that can appear in a tree view.
@@ -45,6 +50,11 @@ class BMCSTreeNode(BMCSTreeNodeBase):
         '''
         node.set_ui_recursively(self.ui)
         self.tree_node_list.append(node)
+
+    def set_traits_with_metadata(self, value, **metadata):
+        super(BMCSTreeNode, self).set_traits_with_metadata(value, **metadata)
+        for node in self.tree_node_list:
+            node.set_traits_with_metadata(value, **metadata)
 
 
 class ReinfLayoutTreeNode(BMCSTreeNode):

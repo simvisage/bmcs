@@ -4,7 +4,8 @@ Created on 09.03.2017
 @author: cthoennessen
 '''
 from pyface.api import GUI, PythonEditor
-from pyface.tasks.api import TaskWindow, Task, TaskPane, TraitsDockPane, TaskLayout, PaneItem
+from pyface.tasks.api import \
+    TaskWindow, Task, TaskPane, TraitsDockPane, TaskLayout, PaneItem
 from traits.api import Instance, Str
 from traitsui.api import View
 

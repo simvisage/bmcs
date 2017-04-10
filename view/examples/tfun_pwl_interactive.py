@@ -48,7 +48,7 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
     f_value = Range(low='f_min', high='f_max', value=0,
                     auto_set=False, enter_set=True)
 
-    enable_slider = Bool(True)
+    enable_slider = Bool(True, disable_on_run=True)
 
     run_eagerly = Bool(True, label='Run eagerly')
 
@@ -83,7 +83,7 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
         if self.ui:
             self.ui.model.set_tmax(t_value)
             if self.run_eagerly:
-                self.ui.model.run()
+                self.ui.run()
 
     notify_change = Callable(None)
 
@@ -105,8 +105,9 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
                         VGroup(
                             VGroup(
                                 UItem('f_value',
-                                      full_size=True, resizable=True),
+                                      full_size=True, resizable=True,
                                       enabled_when='enable_slider'
+                                      ),
                             ),
                             VGroup(
                                 Item('f_max',
@@ -134,6 +135,7 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
                     ),
                 ),
                 UItem('figure', editor=MPLFigureEditor(),
+                      height=300,
                       resizable=True,
                       springy=True),
             ),
@@ -144,5 +146,6 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
 
 if __name__ == '__main__':
     bc = TFunPWLInteractive()
+    bc.set_traits_with_metadata(True, disable_on_run=True)
     bc.replot()
     bc.configure_traits()

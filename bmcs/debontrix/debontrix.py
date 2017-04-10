@@ -79,7 +79,7 @@ from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
 from mathkit.matrix_la import \
     SysMtxAssembly
 from traits.api import \
-    Int, implements, Array, \
+    Int, implements, Array,\
     List, Property, cached_property, Float, \
     Instance, Trait, Button
 from traitsui.api import \
@@ -277,10 +277,10 @@ class Bondix(BMCSTreeNode, Vis2D):
                             G=self.G
                             )
 
-    bcond = Property(Instance(IBCond), depends_on='+input')
+    bc = Property(Instance(IBCond), depends_on='+input')
 
     @cached_property
-    def _get_bcond(self):
+    def _get_bc(self):
         dof = self.sdomain[-1, -1].dofs[0, 0, 1]
         tfun = TFunPWLInteractive()
         return BCDof(var='u', dof=dof, value=0.001,
@@ -299,7 +299,7 @@ class Bondix(BMCSTreeNode, Vis2D):
                   bcond_list=[
                       BCSlice(var='u', value=0., dims=[0],
                               slice=self.sdomain[0, 0]),
-                      self.bcond,
+                      self.bc,
                   ],
                   rtrace_list=[RTDofGraph(name='Fi,right over w_right',
                                           var_y='F_int', idx_y=-1, cum_y=True,
@@ -314,7 +314,7 @@ class Bondix(BMCSTreeNode, Vis2D):
     @cached_property
     def _get_tloop(self):
         return TLoop(tstepper=self.ts, KMAX=30,
-                     debug=False, tline=self.tline,
+                     debug=False, tline=self.tline
                      )
 
     tline = Instance(TLine)
@@ -323,21 +323,18 @@ class Bondix(BMCSTreeNode, Vis2D):
 
     def _tline_default(self):
         return TLine(min=0.0, step=0.1, max=0.0,
-                     time_change_notifier=self.time_change,
+                     time_change_notifier=self.time_changed,
                      )
 
     def time_changed(self, time):
         self.ui.viz_sheet.time_changed(time)
 
-    def time_range_change(self, tmax):
+    def time_range_changed(self, tmax):
+        self.tline.max = tmax
         self.ui.viz_sheet.time_range_changed(tmax)
 
     def set_tmax(self, time):
-        self.tline.max = time
         self.time_range_changed(time)
-
-    def run(self):
-        self.tloop.eval()
 
     K_Eij = Property(depends_on='+input,+bc_changed')
 

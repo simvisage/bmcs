@@ -120,33 +120,6 @@ class CompTimer(object):
         print "Elapsed time     : %8.2f sec" % self.duration
 
 
-class TLoopHandler(Handler):
-
-    computation_thread = Instance(Thread)
-
-    def setattr(self, info, object, name, value):
-        Handler.setattr(self, info, object, name, value)
-        info.object._updated += 1
-
-    def object__updated_changed(self, info):
-        if info.initialized:
-            info.ui.title += '*'
-
-    def recalculate(self, info):
-        '''
-        Eval in a thread.
-        '''
-        info.object.eval()
-#        if self.computation_thread and self.computation_thread.isAlive():
-#            info.object.user_wants_abort = True
-#        else:
-#            info.object.user_wants_abort = False
-#            self.computation_thread = Thread(target=info.object.eval, name="computation")
-#            self.computation_thread.start()
-
-RecalcAction = Action(name='Recalculate', action='recalculate')
-
-
 class TLoop(IBVResource):
 
     ''' Time loop management.
@@ -638,37 +611,31 @@ class TLoop(IBVResource):
         '''
         Eval in a thread.
         '''
-#        self.eval()
-#        return
         if self.computation_thread and self.computation_thread.isAlive():
             self.user_wants_abort = True
         else:
             self.user_wants_abort = False
             self.computation_thread = Thread(
-                target=self.eval, name="computation")
+                target=self.eval, name="computation",
+            )
+            self.computation_thread.daemon = True
             self.computation_thread.start()
 
-    def register_mv_pipelines(self, e):
-        '''Register the visualization pipelines in mayavi engine
-        '''
-        self.tstepper.register_mv_pipelines(e)
-
-    view = View(Group(Item('calculate', show_label=False),
-                      #                        'sync_resp_tracing',
-                      Item('tline', label='Time line', style='custom'),
-                      HGroup(Item('KMAX', label='Max. number of iterations'),
-                             Item('RESETMAX', label='Max. number of resets'),
-                             Item(
-                                 'tolerance', label='Tolerance on residual norm')
-                             ),
-                      ),
-                # Item('rmgr', style="custom"),
-                # handler = TCHandler(),
-                resizable=True,
-                scrollable=True,
-                height=0.75, width=0.75,
-                handler=TLoopHandler(),
-                buttons=[OKButton, CancelButton, RecalcAction])
+    view = View(
+        Group(
+            Item('calculate', show_label=False),
+            Item('tline', label='Time line', style='custom'),
+            HGroup(
+                Item('KMAX', label='Max. number of iterations'),
+                Item('RESETMAX', label='Max. number of resets'),
+                Item('tolerance', label='Tolerance on residual norm')
+            ),
+        ),
+        resizable=True,
+        scrollable=True,
+        height=0.75, width=0.75,
+        buttons=[OKButton, CancelButton]
+    )
 
 if LOGGING_ON:
     import logging.config

@@ -3,17 +3,14 @@ Created on Mar 2, 2017
 
 @author: rch
 '''
-import time
 
-from ibvpy.api import TLine
 from matplotlib.figure import \
     Figure
 from traits.api import \
     HasStrictTraits, Str, \
     Instance,  Event, Enum, \
     List,  Range, Int, Float, \
-    Property, cached_property, on_trait_change, \
-    DelegatesTo, Button
+    Property, cached_property, on_trait_change
 from traitsui.api import \
     TabularEditor
 from traitsui.api import \
@@ -81,15 +78,8 @@ class VizSheet(HasStrictTraits):
 
     time = Float(0.0)
 
-    loop = Button
-
-    def _loop_fired(self):
-        tinc = 0.1
-        self.time_changed(self.time + tinc)
-        print 'time', self.time
-
-    def time_range_changed(self, max):
-        self.max = max
+    def time_range_changed(self, max_):
+        self.max = max_
 
     def time_changed(self, time):
         self.time = time
@@ -154,7 +144,7 @@ class VizSheet(HasStrictTraits):
 
     # Traits view definition:
     traits_view = View(
-        VGroup(
+        VSplit(
             HSplit(
                 VGroup(
                     UItem('figure', editor=MPLFigureEditor(),
@@ -176,9 +166,10 @@ class VizSheet(HasStrictTraits):
                     scrollable=True
                 ),
             ),
-            Item('mode'),
-            Item('vot_slider'),
-            Item('loop')
+            VGroup(
+                Item('mode'),
+                Item('vot_slider', height=40),
+            )
         ),
         resizable=True,
         width=0.8, height=0.8,

@@ -1,12 +1,13 @@
 '''
 
-
 @author: rch
 '''
 
+from threading import Thread
+
 from traits.api import \
     HasStrictTraits, Instance, Button, Event, \
-    DelegatesTo
+    DelegatesTo, Bool
 from traits.etsconfig.api import ETSConfig
 from traitsui.api import \
     TreeEditor, TreeNode, View, Item, VGroup, \
@@ -57,6 +58,25 @@ tree_editor = TreeEditor(
 )
 
 
+class RunThread(Thread):
+    '''Time loop thread responsible.
+    '''
+
+    def __init__(self, ui, *args, **kw):
+        super(RunThread, self).__init__(*args, **kw)
+        self.daemon = True
+        self.ui = ui
+
+    def run(self):
+        self.ui.running = True
+        try:
+            self.ui.model.tloop.eval()
+        except Exception as e:
+            self.ui.running = False
+            raise
+        self.ui.running = False
+
+
 class BMCSWindow(HasStrictTraits):
 
     '''View object for a cross section state.
@@ -66,14 +86,32 @@ class BMCSWindow(HasStrictTraits):
     def _model_changed(self):
         self.model.set_ui_recursively(self)
 
+    tloop_thread = Instance(RunThread)
+
+    running = Bool(False)
+
+    enable_run = Bool(True)
+    enable_pause = Bool(False)
+    enable_stop = Bool(False)
+
+    def _running_changed(self):
+        self.enable_run = not self.running
+        self.enable_pause = self.running
+        self.enable_stop = self.running
+        self.model.set_traits_with_metadata(self.enable_run,
+                                            disable_on_run=True)
+
     def run(self):
-        self.model.run()
+        if self.running:
+            return
+        self.tloop_thread = RunThread(ui=self)
+        self.tloop_thread.start()
 
-    def interrupt(self):
-        self.model.interrupt()
+    def pause(self):
+        pass
 
-    def continue_(self):
-        self.model.continue_()
+    def stop(self):
+        pass
 
     selected_node = Instance(HasStrictTraits)
 
