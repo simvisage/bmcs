@@ -42,6 +42,18 @@ class DOTSGridEval(TStepperEval):
         '''
         return SysMtxArray()
 
+    state_array = Property(depends_on='sdomain.changed_structure')
+
+    @cached_property
+    def _get_state_array(self):
+
+        # The overall size is just a n_elem times the size of a single element
+        #
+        n_elems = self.sdomain.n_elems
+        n_ip = self.fets_eval.n_ip
+        state_arr_size = self.fets_eval.state_arr_size
+        return np.zeros((n_elems, n_ip, state_arr_size), dtype=np.float_)
+
     fets_eval = Instance(IFETSEval)
 
     #=========================================================================
@@ -199,6 +211,27 @@ class DOTSGridEval(TStepperEval):
         dU_ECid = dU[self.dof_ECid]
         f_ECid = np.einsum('ECidDjf,EDjf->ECid', K_ECidDjf, dU_ECid)
         f_Ei = f_ECid.reshape(-1, self.fets_eval.n_e_dofs)
+        F_I = np.bincount(self.dof_E.flatten(), weights=f_Ei.flatten())
+        F_int[self.dofs] += F_I
+        #
+        return SysMtxArray(mtx_arr=K_Eij, dof_map_arr=self.dof_E)
+
+    def get_corr_pred2(self, sctx, U, dU, tn, tn1, F_int, *args, **kw):
+
+        fets = self.fets_eval
+        sa = self.state_array
+        U_ECid = U[self.dof_ECid]
+        dU_ECid = dU[self.dof_ECid]
+        eps_ECmdf, deps_ECmdf = fets.get_eps(self.dN_Eimd, U_ECid, dU_ECid)
+        sig_ECmdf, D_ECmdfgh = fets.get_sig_D(eps_ECmdf, deps_ECmdf, sa)
+
+        n_e_dofs = self.fets_eval.n_e_dofs
+        #
+        K_ECidDjf = self.BB_ECidDjf + self.NN_ECidDjf * self.G
+        K_Eij = K_ECidDjf.reshape(-1, n_e_dofs, n_e_dofs)
+        #
+        f_ECid = np.einsum('ECidDjf,EDjf->ECid', K_ECidDjf, dU_ECid)
+        f_Ei = f_ECid.reshape(-1, n_e_dofs)
         F_I = np.bincount(self.dof_E.flatten(), weights=f_Ei.flatten())
         F_int[self.dofs] += F_I
         #

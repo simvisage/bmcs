@@ -3,21 +3,20 @@ Created on 12.12.2016
 
 @author: abaktheer
 '''
-from math import *
 
+from bmcs.view.ui import BMCSTreeNode, BMCSLeafNode
 from matplotlib.figure import Figure
 from scipy.interpolate import interp1d
 from traits.api import \
-    HasTraits, Property, Instance, cached_property, Str, Button, Enum, \
-    Range, on_trait_change, Array, List, Float
+    Property, Instance, cached_property, Str, Button, Enum, \
+    List, Float
 from traitsui.api import \
-    View, Item, Group, VGroup, HSplit, TreeEditor, TreeNode
-
-from bmcs.view.ui import BMCSTreeNode, BMCSLeafNode
+    View, Item, Group, VGroup
+from util.traits.editors import MPLFigureEditor
+from view.window import BMCSWindow
 import matplotlib.gridspec as gridspec
 from mats_bondslip import MATSEvalFatigue
 import numpy as np
-from util.traits.editors import MPLFigureEditor
 
 
 class Material(BMCSLeafNode):
@@ -302,11 +301,13 @@ class BondSlipModel(BMCSTreeNode):
         ax3.set_ylabel('Damage')
         ax3.legend()
 
-'''
 if __name__ == '__main__':
 
-    window = BondSlipModel(mats_eval=MATSEvalFatigue(), loading_scenario=LoadingScenario())
-#     window.draw()
-#
-    window.configure_traits()
-'''
+    bs = BondSlipModel(
+        mats_eval=MATSEvalFatigue(), loading_scenario=LoadingScenario())
+    w = BMCSWindow(model=bs)
+    # po.add_viz2d('F-w')
+    # po.add_viz2d('field')
+    rt = po.ts.rtrace_mngr['Fi,right over w_right']
+    rt.add_viz2d('time function')
+    w.configure_traits()

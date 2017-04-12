@@ -89,11 +89,11 @@ class Vis2D(HasStrictTraits):
         viz2d_class_name = self.selected_viz2d_class
         self.add_viz2d(viz2d_class_name)
 
-    def add_viz2d(self, class_name, name=''):
+    def add_viz2d(self, class_name, name='', **kw):
         if name == '':
             name = class_name
         viz2d_class = self.viz2d_classes[class_name]
-        viz2d = viz2d_class(name=name, vis2d=self)
+        viz2d = viz2d_class(name=name, vis2d=self, **kw)
         self.viz2d.append(viz2d)
         if hasattr(self, 'ui') and self.ui:
             self.ui.viz_sheet.viz2d_list.append(viz2d)

@@ -21,7 +21,6 @@ Finite element formulation
    * Introduce the integration template within an element template
    * Introduce the visualization template for an element.
    * Single layer works
-   * Put the object into a view window.
 
 Material model extensions
 =========================
@@ -69,8 +68,10 @@ and in boundary conditions.
 '''
 
 
+from bmcs.matmod.mats_bondslip import MATSEvalFatigue
 from ibvpy.api import \
     FEGrid, FETSEval, IFETSEval, \
+    MATSEval, IMATSEval, \
     TStepper as TS, TLoop, \
     TLine, BCSlice, BCDof, RTDofGraph
 from ibvpy.core.i_bcond import IBCond
@@ -157,7 +158,20 @@ class FETS1D52L4ULRH(BMCSLeafNode, FETSEval):
                            for r in self.r_m], dtype=np.float_)
         return np.einsum('mdi->mid', dN_mdi)
 
+    n_ip = Property(depends_on='w_m')
+
+    @cached_property
+    def _get_n_ip(self):
+        return len(self.w_m)
+
     node_name = 'Finite element parameters'
+
+    def get_eps(self, dN_Eimd, sN_Cim, U_ECid, dU_ECid):
+        eps1 = np.einsum('Emid,ECie->ECmde', dN_Eimd, U_ECid)
+        eps2 = np.einsum('Emie,ECid->ECmde', dN_Eimd, U_ECid)
+        eps_ECmde = (eps1 + eps2) / 2.0
+        s_ECmd = np.einsum('Cim,ECid->ECmd', sN_Cim, U_ECid)
+        return eps_ECmde, s_ECmd
 
     tree_view = View(
         VGroup(
@@ -257,6 +271,9 @@ class Bondix(BMCSTreeNode, Vis2D):
     n_E = Int(10, input=True)
 
     fets = Instance(FETSEval)
+
+    def _fets_default(self):
+        return FETS1D52L4ULRH(mats_eval=MATSEvalFatigue())
 
     sdomain = Property(Instance(IFEUniformDomain), depends_on='+input')
 

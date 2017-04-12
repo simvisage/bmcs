@@ -1,4 +1,7 @@
 
+from ibvpy.mats.mats1D.mats1D_eval import MATS1DEval
+from ibvpy.mats.mats_eval import IMATSEval
+from mathkit.mfn import MFnLineArray
 from numpy import \
     array, ones, zeros, outer, inner, transpose, dot, frompyfunc, \
     fabs, sqrt, linspace, vdot, identity, tensordot, \
@@ -11,12 +14,6 @@ from traits.api import \
     implements, Dict, Property, cached_property, Delegate
 from traitsui.api import \
     Item, View, HSplit, VSplit, VGroup, Group, Spring
-
-from ibvpy.core.tstepper import \
-    TStepper as TS
-from ibvpy.mats.mats1D.mats1D_eval import MATS1DEval
-from ibvpy.mats.mats_eval import IMATSEval
-from mathkit.mfn import MFnLineArray
 
 
 #---------------------------------------------------------------------------
@@ -128,9 +125,9 @@ class MATS1DElastic(MATS1DEval):
         '''
         return [
             RTDofGraph(name='strain - stress',
-                        var_x='eps_app', idx_x=0,
-                        var_y='sig_app', idx_y=0,
-                        record_on='update')
+                       var_x='eps_app', idx_x=0,
+                       var_y='sig_app', idx_y=0,
+                       record_on='update')
         ]
 
 if __name__ == '__main__':
@@ -139,7 +136,7 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------
 
     from ibvpy.core.tloop import TLoop, TLine
-    from ibvpy.api import BCDof
+    from ibvpy.api import BCDof, TStepper as TS
     from ibvpy.core.ibvp_solve import IBVPSolve as IS
     from ibvpy.api import RTDofGraph
     # tseval for a material model
@@ -149,9 +146,9 @@ if __name__ == '__main__':
             bcond_list=[BCDof(var='u', dof=0, value=1.)
                         ],
             rtrace_list=[RTDofGraph(name='strain 0 - stress 0',
-                                     var_x='eps_app', idx_x=0,
-                                     var_y='sig_app', idx_y=0,
-                                     record_on='update')
+                                    var_x='eps_app', idx_x=0,
+                                    var_y='sig_app', idx_y=0,
+                                    record_on='update')
                          ]
             )
 

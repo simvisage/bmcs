@@ -1,4 +1,8 @@
 
+from ibvpy.core.i_tstepper_eval import \
+    ITStepperEval
+from ibvpy.core.tstepper_eval import \
+    TStepperEval
 from numpy import zeros, linalg, tensordot, dot, min, max, argmax, array, pi, \
     append
 from scipy.linalg import eigh
@@ -7,11 +11,6 @@ from traits.api import \
     Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
     on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property, \
     Dict, Constant
-
-from ibvpy.core.i_tstepper_eval import \
-    ITStepperEval
-from ibvpy.core.tstepper_eval import \
-    TStepperEval
 
 
 #-------------------------------------------------------------------
@@ -67,6 +66,10 @@ class MATSEval(HasStrictTraits, TStepperEval):
     map_sig_mtx_to_eng = Callable(transient=True)
     compliance_mapping = Callable(transient=True)
     map_tns4_to_tns2 = Callable(transient=True)
+
+    state_array_size = Int(0)
+    '''Number of entries to be reserved at the level of a material point.
+    '''
 
     def get_state_array_size(self):
         return 0
@@ -195,41 +198,41 @@ class MATSEval(HasStrictTraits, TStepperEval):
                                      dof=0, value=0.01,
                                      time_function=lambda t: t)],
                 'rtrace_list': [RTDofGraph(name='strain - stress',
-                                            var_x='eps_app', idx_x=0,
-                                            var_y='sig_app', idx_y=0,
-                                            record_on='update'),
+                                           var_x='eps_app', idx_x=0,
+                                           var_y='sig_app', idx_y=0,
+                                           record_on='update'),
                                 RTDofGraph(name='strain - strain',
-                                            var_x='eps_app', idx_x=0,
-                                            var_y='eps_app', idx_y=1,
-                                            record_on='update'),
+                                           var_x='eps_app', idx_x=0,
+                                           var_y='eps_app', idx_y=1,
+                                           record_on='update'),
                                 RTDofGraph(name='stress - stress',
-                                            var_x='sig_app', idx_x=0,
-                                            var_y='sig_app', idx_y=1,
-                                            record_on='update'),
+                                           var_x='sig_app', idx_x=0,
+                                           var_y='sig_app', idx_y=1,
+                                           record_on='update'),
                                 RTDofGraph(name='Stress - Strain',
-                                            var_x='F_int', idx_x=0,
-                                            var_y='U_k', idx_y=0,
-                                            record_on='update'),
+                                           var_x='F_int', idx_x=0,
+                                           var_y='U_k', idx_y=0,
+                                           record_on='update'),
                                 RTDofGraph(name='Strain - Strain',
-                                            var_x='U_k', idx_x=0,
-                                            var_y='U_k', idx_y=1,
-                                            record_on='update'),
+                                           var_x='U_k', idx_x=0,
+                                           var_y='U_k', idx_y=1,
+                                           record_on='update'),
                                 RTDofGraph(name='Stress - Stress',
-                                            var_x='F_int', idx_x=0,
-                                            var_y='F_int', idx_y=1,
-                                            record_on='update'),
+                                           var_x='F_int', idx_x=0,
+                                           var_y='F_int', idx_y=1,
+                                           record_on='update'),
                                 RTDofGraph(name='sig1 - eps1',
-                                            var_x='F_int', idx_x=0,
-                                            var_y='U_k', idx_y=0,
-                                            record_on='update'),
+                                           var_x='F_int', idx_x=0,
+                                           var_y='U_k', idx_y=0,
+                                           record_on='update'),
                                 RTDofGraph(name='sig2 - sig3',
-                                            var_x='F_int', idx_x=1,
-                                            var_y='F_int', idx_y=2,
-                                            record_on='update'),
+                                           var_x='F_int', idx_x=1,
+                                           var_y='F_int', idx_y=2,
+                                           record_on='update'),
                                 RTDofGraph(name='eps2 - eps3',
-                                            var_x='U_k', idx_x=1,
-                                            var_y='U_k', idx_y=2,
-                                            record_on='update')
+                                           var_x='U_k', idx_x=1,
+                                           var_y='U_k', idx_y=2,
+                                           record_on='update')
                                 ],
                 'tline': TLine(step=0.1, max=1.0)
                 }
