@@ -14,27 +14,27 @@ from traits.api import \
 from traitsui.api import \
     View, UItem, Item, Group, VGroup, VSplit
 from util.traits.editors import MPLFigureEditor
-from view.plot2d import Viz2D, Vis2D
-from view.ui import BMCSTreeNode, BMCSLeafNode
-from view.window import BMCSWindow
 
 from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from mats_bondslip import MATSEvalFatigue
 import numpy as np
+from view.plot2d import Viz2D, Vis2D
+from view.ui import BMCSTreeNode, BMCSLeafNode
+from view.window import BMCSWindow
 
 
 # from ibvpy.api import TLoop, TLine, TStepper
 class Material(BMCSLeafNode):
 
     node_name = Str('material parameters')
-    E_b = Float(100,
+    E_b = Float(12900,
                 input=True,
                 label="E_b ",
                 desc="Bond Stiffness",
                 enter_set=True,
                 auto_set=False)
 
-    gamma = Float(10,
+    gamma = Float(60,
                   input=True,
                   label="Gamma ",
                   desc="Kinematic hardening modulus",
@@ -48,35 +48,35 @@ class Material(BMCSLeafNode):
               enter_set=True,
               auto_set=False)
 
-    S = Float(0.01,
+    S = Float(0.001,
               input=True,
               label="S ",
               desc="Damage cumulation parameter",
               enter_set=True,
               auto_set=False)
 
-    r = Float(1,
+    r = Float(0.7,
               input=True,
               label="r ",
               desc="Damage cumulation parameter",
               enter_set=True,
               auto_set=False)
 
-    c = Float(1.2,
+    c = Float(1.5,
               input=True,
               label="c ",
               desc="Damage cumulation parameter",
               enter_set=True,
               auto_set=False)
 
-    tau_pi_bar = Float(0.5,
+    tau_pi_bar = Float(4.5,
                        input=True,
                        label="Tau_pi_bar ",
                        desc="Reversibility limit",
                        enter_set=True,
                        auto_set=False)
 
-    pressure = Float(-5,
+    pressure = Float(0,
                      input=True,
                      label="Pressure",
                      desc="Lateral pressure",
@@ -113,10 +113,10 @@ class Material(BMCSLeafNode):
 class Geometry(BMCSLeafNode):
 
     node_name = 'geometry'
-    L_x = Range(1, 700, value=300)
-    A_m = Float(100 * 8 - 9 * 1.85, desc='matrix area [mm2]')
-    A_f = Float(9 * 1.85, desc='reinforcement area [mm2]')
-    P_b = Float(10., desc='perimeter of the bond interface [mm]')
+    L_x = Range(1, 700, value=42)
+    A_m = Float(15240, desc='matrix area [mm2]')
+    A_f = Float(153.9, desc='reinforcement area [mm2]')
+    P_b = Float(44, desc='perimeter of the bond interface [mm]')
 
     view = View(
         Item('L_x'),
@@ -148,7 +148,7 @@ class LoadingScenario(MFnLineArray, BMCSLeafNode):
 
     time = Range(0.00, 1.00, value=1.00)
 
-    d_t = Float(0.05)
+    d_t = Float(0.02)
     t_max = Float(1.)
     k_max = Float(200)
     tolerance = Float(1e-4)
@@ -339,7 +339,7 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
 
     n_e_x = Int(20, auto_set=False, enter_set=True)
 
-    w_max = Float(3, auto_set=False, enter_set=True)
+    w_max = Float(1, auto_set=False, enter_set=True)
 
     controlled_dof = Property
 
@@ -401,7 +401,7 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
     def _get_tline(self):
         # assign the parameters for solver and loading_scenario
         t_max = 1.0  # self.loading_scenario.t_max
-        d_t = 0.05  # self.loading_scenario.d_t
+        d_t = 0.02  # self.loading_scenario.d_t
         return TLine(min=0.0, step=d_t, max=t_max,
                      time_change_notifier=self.time_changed,
                      )
