@@ -1,11 +1,10 @@
 
+from ibvpy.core.i_bcond import IBCond
 from traits.api import \
     Instance,  \
     List
 from traitsui.api import \
     TableEditor, ObjectColumn
-
-from ibvpy.core.i_bcond import IBCond
 from view.ui import BMCSTreeNode
 
 
@@ -22,7 +21,7 @@ bcond_list_editor = TableEditor(
 
 class BCondMngr(BMCSTreeNode):
 
-    node_name = 'Boundary conditions'
+    node_name = 'boundary conditions'
 
     bcond_list = List(IBCond)
 

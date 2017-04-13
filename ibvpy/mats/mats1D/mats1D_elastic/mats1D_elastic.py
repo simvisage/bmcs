@@ -94,8 +94,8 @@ class MATS1DElastic(MATS1DEval):
 #        E   = self.E
 #        D_el = array([[E]])
 #        sigma = dot( D_el, eps_app_eng )
-        D_el = array([[self.stress_strain_curve.get_diff(eps_n1)]])
-        sigma = array([self.stress_strain_curve.get_value(eps_n1)])
+        D_el = array([[self.stress_strain_curve.diff(eps_n1)]])
+        sigma = array([self.stress_strain_curve(eps_n1)])
         # You print the stress you just computed and the value of the apparent
         # E
         return sigma, D_el

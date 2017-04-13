@@ -2,12 +2,12 @@
 Created on 12.01.2016
 @author: Yingxiong
 '''
-from ibvpy.api import BCDof
+from ibvpy.api import BCDof, IMATSEval, IFETSEval
 from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.mesh.fe_grid import FEGrid
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 from traits.api import HasTraits, Instance, \
-    Property, cached_property, Float, List, Array
+    Property, cached_property, Float, List
 
 from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from mats_bondslip import MATSEvalFatigue
@@ -27,18 +27,18 @@ class TStepper(HasTraits):
     '''Time stepper object for non-linear Newton-Raphson solver.
     '''
 
-    mats_eval = Property(Instance(MATSEvalFatigue))
+    mats_eval = Instance(IMATSEval)
     '''Finite element formulation object.
     '''
-    @cached_property
-    def _get_mats_eval(self):
+
+    def _mats_eval_default(self):
         return MATSEvalFatigue()
 
-    fets_eval = Property(Instance(FETS1D52ULRHFatigue))
+    fets_eval = Instance(IFETSEval)
     '''Finite element formulation object.
     '''
-    @cached_property
-    def _get_fets_eval(self):
+
+    def _fets_eval_default(self):
         return FETS1D52ULRHFatigue()
 
     A = Property()

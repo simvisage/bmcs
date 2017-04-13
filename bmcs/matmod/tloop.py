@@ -6,12 +6,14 @@ Created on 12.01.2016
 from traits.api import Int, HasStrictTraits, Instance, \
     Float, Property, property_depends_on, Callable, \
     Array, List
+from traitsui.api import View, Item
+from view.ui import BMCSLeafNode
 
 import numpy as np
 from tstepper import TStepper
 
 
-class TLine(HasStrictTraits):
+class TLine(BMCSLeafNode):
 
     '''
     Time line for the control parameter.
@@ -24,24 +26,25 @@ class TLine(HasStrictTraits):
 
     TODO - the slide bar is not read-only. How to include a real progress bar?
     '''
+    node_name = 'time range'
+
     min = Float(0.0)
     max = Float(1.0)
     step = Float(0.1)
     val = Float(0.0)
-    time = Property
-
-    @property_depends_on('val')
-    def _get_time(self):
-        return self.val
-
-    def _set_time(self, value):
-        self.val = value
 
     def _val_changed(self):
         if self.time_change_notifier:
             self.time_change_notifier(self.val)
 
     time_change_notifier = Callable
+
+    tree_view = View(
+        Item('min'),
+        Item('max'),
+        Item('step'),
+        Item('val', style='readonly')
+    )
 
 
 class TLoop(HasStrictTraits):
@@ -106,7 +109,6 @@ class TLoop(HasStrictTraits):
                     step_flag, U_k, d_U_k, eps, sig, t_n, t_n1, xs_pi, alpha, z, w)
 
                 K.apply_constraints(R)
-
                 d_U_k = K.solve()
                 d_U += d_U_k
                 if np.linalg.norm(R) < self.tolerance:
