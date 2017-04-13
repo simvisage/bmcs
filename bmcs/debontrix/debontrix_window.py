@@ -15,7 +15,7 @@ from traitsui.api import \
 from util.traits.editors.mpl_figure_editor import \
     MPLFigureEditor
 
-from debontrix import DOTSGridEval as DebonTrixModel, FETS1D52L4ULRH
+from debontrix import Bondix as DebonTrixModel, FETS1D52L4ULRH
 
 
 class DebonTrixWindow(HasStrictTraits):
@@ -99,13 +99,9 @@ class DebonTrixWindow(HasStrictTraits):
                 height=0.8,
                 title='Debontrix BMCS App',
                 resizable=True,
-                #                 handler=BMCSTreeViewHandler(),
-                #                 menubar=MenuBar(Menu(menu_exit, Separator(),
-                #                                      menu_save, menu_open,
-                #                                      name='File'))
                 )
 
 if __name__ == '__main__':
 
-    tv = DebonTrixWindow(model=DebonTrixModel(fets_eval=FETS1D52L4ULRH()))
+    tv = DebonTrixWindow(model=DebonTrixModel())
     tv.configure_traits()

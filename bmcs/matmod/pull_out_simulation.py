@@ -5,6 +5,7 @@ Created on 12.01.2016
 
 from bmcs.matmod.tloop import TLoop
 from bmcs.matmod.tstepper import TStepper
+from bmcs.view.ui import BMCSTreeNode, BMCSLeafNode
 from ibvpy.core.bcond_mngr import BCondMngr
 from matplotlib.figure import Figure
 from scipy.interpolate import interp1d

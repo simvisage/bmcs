@@ -7,11 +7,19 @@ from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.mesh.fe_grid import FEGrid
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 from traits.api import HasTraits, Instance, \
-    Property, cached_property, Float, List
+    Property, cached_property, Float, List, Array
 
 from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from mats_bondslip import MATSEvalFatigue
 import numpy as np
+
+n_C = 2
+
+ONE = np.ones((1,), dtype=np.float_)
+DELTA_cd = np.identity(n_C)
+c1 = np.arange(n_C) + 1
+SWITCH_C = np.power(-1.0, c1)
+SWITCH_CD = np.power(-1.0, c1[np.newaxis, :] + c1[:, np.newaxis])
 
 
 class TStepper(HasTraits):
@@ -45,16 +53,131 @@ class TStepper(HasTraits):
     # length
     L_x = Float(200)
 
-    domain = Property(Instance(FEGrid), depends_on='L_x')
+    sdomain = Property(Instance(FEGrid), depends_on='L_x')
     '''Diescretization object.
     '''
     @cached_property
-    def _get_domain(self):
+    def _get_sdomain(self):
         # Element definition
         domain = FEGrid(coord_max=(self.L_x,),
                         shape=(self.n_e_x,),
                         fets_eval=self.fets_eval)
         return domain
+
+    #=========================================================================
+    # index maps
+    #=========================================================================
+
+    dof_ECid = Property(depends_on='+input')
+    '''For a given element, layer, node number and dimension
+    return the dof number
+    '''
+    @cached_property
+    def _get_dof_ECid(self):
+        dof_EiCd = self.sdomain.dof_grid.cell_dof_map[..., np.newaxis]
+        return np.einsum('EiCd->ECid', dof_EiCd)
+
+    I_Ei = Property(depends_on='+input')
+    '''For a given element and its node number return the global index
+    of the node'''
+    @cached_property
+    def _get_I_Ei(self):
+        return self.sdomain.geo_grid.cell_grid.cell_node_map
+
+    dof_E = Property(depends_on='+input')
+    '''Get ordered array of degrees of freedom corresponding to each element.
+    '''
+    @cached_property
+    def _get_dof_E(self):
+        return self.dof_ECid.reshape(-1, self.fets_eval.n_e_dofs)
+
+    dof_ICd = Property(depends_on='+input')
+    '''Get degrees of freedom
+    '''
+    @cached_property
+    def _get_dof_ICd(self):
+        return self.sdomain.dof_grid.dofs
+
+    dofs = Property(depends_on='_input')
+    '''Get degrees of freedom flat'''
+    @cached_property
+    def _get_dofs(self):
+        return self.dof_ICd.flatten()
+    #=========================================================================
+    # Coordinate arrays
+    #=========================================================================
+
+    X_Id = Property(depends_on='+input')
+    'Coordinate of the node `I` in dimension `d`'
+    @cached_property
+    def _get_X_Id(self):
+        return self.sdomain.geo_grid.cell_grid.point_x_arr
+
+    X_Eid = Property(depends_on='+input')
+    'Coordinate of the node `i` in  element `E` in dimension `d`'
+    @cached_property
+    def _get_X_Eid(self):
+        return self.X_Id[self.I_Ei, :]
+
+    X_Emd = Property(depends_on='+input')
+    'Coordinate of the integration point `m` of an element `E` in dimension `d`'
+    @cached_property
+    def _get_X_Emd(self):
+        N_mi_geo = self.fets_eval.N_mi_geo
+        return np.einsum('mi,Eid->Emd', N_mi_geo, self.X_Eid)
+
+    X_J = Property(depends_on='+input')
+    '''Return ordered vector of nodal coordinates respecting the the order
+    of the flattened array of elements, nodes and spatial dimensions.'''
+    @cached_property
+    def _get_X_J(self):
+        return self.X_Eid.flatten()
+
+    X_M = Property(depends_on='+input')
+    '''Return ordered vector of global coordinates of integration points
+    respecting the the order of the flattened array of elements, 
+    nodes and spatial dimensions. Can be used for point-value visualization
+    of response variables.'''
+    @cached_property
+    def _get_X_M(self):
+        return self.X_Emd.flatten()
+
+    #=========================================================================
+    # cached time-independent terms
+    #=========================================================================
+    dN_Eimd = Property
+    '''Shape function derivatives in every integration point
+    '''
+
+    def _get_dN_Eimd(self):
+        return self.constant_terms[0]
+
+    sN_Cim = Property
+    '''Slip operator between the layers C = 0,1
+    '''
+
+    def _get_sN_Cim(self):
+        return self.constant_terms[1]
+
+    constant_terms = Property(depends_on='+input')
+    '''Procedure calculating all constant terms of the finite element
+    algorithm including the geometry mapping (Jacobi), shape 
+    functions and the kinematics needed
+    for the integration of stresses and stifnesses in every material point.
+    '''
+    @cached_property
+    def _get_constant_terms(self):
+        fet = self.fets_eval
+        dN_mid_geo = fet.dN_mid_geo
+        N_mi = fet.N_mi
+        dN_mid = fet.dN_mid
+        # Geometry approximation / Jacobi transformation
+        J_Emde = np.einsum('mid,Eie->Emde', dN_mid_geo, self.X_Eid)
+        J_inv_Emed = np.linalg.inv(J_Emde)
+        # Quadratic forms
+        dN_Eimd = np.einsum('mid,Eied->Eime', dN_mid, J_inv_Emed)
+        sN_Cim = np.einsum('C,mi->Cim', SWITCH_C, N_mi)
+        return dN_Eimd, sN_Cim
 
     # Boundary condition manager
     #
@@ -82,7 +205,7 @@ class TStepper(HasTraits):
     @cached_property
     def _get_J_mtx(self):
         fets_eval = self.fets_eval
-        domain = self.domain
+        domain = self.sdomain
         # [ d, n ]
         geo_r = fets_eval.geo_r.T
         # [ d, n, i ]
@@ -111,7 +234,7 @@ class TStepper(HasTraits):
         '''
         mats_eval = self.mats_eval
         fets_eval = self.fets_eval
-        domain = self.domain
+        domain = self.sdomain
 
         n_s = mats_eval.n_s - 1
 
@@ -172,7 +295,7 @@ class TStepper(HasTraits):
         '''
         mats_eval = self.mats_eval
         fets_eval = self.fets_eval
-        domain = self.domain
+        domain = self.sdomain
         elem_dof_map = domain.elem_dof_map
 
         n_e = domain.n_active_elems

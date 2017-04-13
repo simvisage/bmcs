@@ -92,7 +92,7 @@ class DemoModel(BMCSTreeNode):
     tree_node_list = List
 
     def _tree_node_list_default(self):
-        return [self.rt, self.bc, self.bc_dof]
+        return [self.rt, self.bc_dof]
 
     tline = Instance(TLine)
     '''Time range.
@@ -119,8 +119,6 @@ class DemoModel(BMCSTreeNode):
     def _get_tloop(self):
         return TimeLoop(tline=self.tline)
 
-    bc = Instance(TFunPWLInteractive, ())
-
     rt = Instance(ResponseTracer, ())
 
     bc_dof = Instance(BCDof)
@@ -138,6 +136,5 @@ class DemoModel(BMCSTreeNode):
 if __name__ == '__main__':
     model = DemoModel()
     tv = BMCSWindow(model=model)
-    model.bc.add_viz2d('time_function', 'boundary condition #1')
     model.rt.add_viz2d('time_profile', 'response tracer #1')
     tv.configure_traits()

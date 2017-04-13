@@ -4,10 +4,14 @@ Created on 12.01.2016
 @author: Yingxiong
 '''
 
-import numpy as np
-from ibvpy.fets.fets_eval import FETSEval , IFETSEval
+from ibvpy.fets.fets_eval import FETSEval, IFETSEval
 from traits.api import implements, Int, Array, \
-    Property, cached_property, Float
+    Property, cached_property, Float, List
+
+import numpy as np
+import sympy as sp
+
+r_ = sp.symbols('r')
 
 
 class FETS1D52ULRHFatigue(FETSEval):
@@ -93,3 +97,54 @@ class FETS1D52ULRHFatigue(FETSEval):
         Return the derivatives of the shape functions
         '''
         return self.get_dNr_geo_mtx(r_pnt)
+
+    r_m = Array(value=[[-1], [1]], dtype=np.float_)
+    w_m = Array(value=[1, 1], dtype=np.float_)
+
+    Nr_i_geo = List([(1 - r_) / 2.0,
+                     (1 + r_) / 2.0, ])
+
+    dNr_i_geo = List([- 1.0 / 2.0,
+                      1.0 / 2.0, ])
+
+    Nr_i = Nr_i_geo
+    dNr_i = dNr_i_geo
+
+    N_mi_geo = Property()
+
+    @cached_property
+    def _get_N_mi_geo(self):
+        return self.get_N_mi(sp.Matrix(self.Nr_i_geo, dtype=np.float_))
+
+    dN_mid_geo = Property()
+
+    @cached_property
+    def _get_dN_mid_geo(self):
+        return self.get_dN_mid(sp.Matrix(self.dNr_i_geo, dtype=np.float_))
+
+    N_mi = Property()
+
+    @cached_property
+    def _get_N_mi(self):
+        return self.get_N_mi(sp.Matrix(self.Nr_i, dtype=np.float_))
+
+    dN_mid = Property()
+
+    @cached_property
+    def _get_dN_mid(self):
+        return self.get_dN_mid(sp.Matrix(self.dNr_i, dtype=np.float_))
+
+    def get_N_mi(self, Nr_i):
+        return np.array([Nr_i.subs(r_, r)
+                         for r in self.r_m], dtype=np.float_)
+
+    def get_dN_mid(self, dNr_i):
+        dN_mdi = np.array([[dNr_i.subs(r_, r)]
+                           for r in self.r_m], dtype=np.float_)
+        return np.einsum('mdi->mid', dN_mdi)
+
+    n_ip = Property(depends_on='w_m')
+
+    @cached_property
+    def _get_n_ip(self):
+        return len(self.w_m)

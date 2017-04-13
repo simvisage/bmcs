@@ -7,7 +7,7 @@ Created on Mar 4, 2017
 from mathkit.mfn import MFnLineArray
 from traits.api import \
     List, Float, Int, Range, Property,\
-    cached_property, Bool, Callable
+    cached_property, Bool, Callable, on_trait_change
 from traitsui.api import \
     View, UItem, Item, Include, \
     VGroup, VSplit, spring, Tabbed
@@ -34,18 +34,24 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
     t_values = List(Float, [0])
     f_values = List(Float, [0])
 
-    n_f_values = Int(10, auto_set=False, enter_set=True)
+    n_f_values = Int(10,
+                     input=True,
+                     auto_set=False, enter_set=True)
 
-    f_min = Float(0.0, auto_set=False, enter_set=True,
+    f_min = Float(0.0, input=True,
+                  auto_set=False, enter_set=True,
                   label='F minimum')
 
-    f_max = Float(1.0, auto_set=False, enter_set=True,
+    f_max = Float(1.0,
+                  input=True,
+                  auto_set=False, enter_set=True,
                   label='F maximum')
 
     t_ref = Float(1.0, auto_set=False, enter_set=True,
                   label='Initial time range')
 
     f_value = Range(low='f_min', high='f_max', value=0,
+                    input=True,
                     auto_set=False, enter_set=True)
 
     enable_slider = Bool(True, disable_on_run=True)
@@ -66,7 +72,8 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
     def _get_d_t(self):
         return self.t_ref / self.n_f_values
 
-    def _f_value_changed(self):
+    @on_trait_change('+input')
+    def _update_xy_arrays(self):
         delta_f = self.f_value - self.f_values[-1]
         self.f_values.append(self.f_value)
         rel_step = delta_f / self.f_max
@@ -77,8 +84,6 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
         self.t_values.append(t_value)
         self.xdata = np.array(self.t_values)
         self.ydata = np.array(self.f_values)
-        print self.xdata
-        print self.ydata
         self.replot()
         if self.ui:
             self.ui.model.set_tmax(t_value)
