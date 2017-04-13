@@ -5,7 +5,6 @@ Created on 12.01.2016
 
 from bmcs.matmod.tloop import TLoop
 from bmcs.matmod.tstepper import TStepper
-from bmcs.view.ui import BMCSTreeNode, BMCSLeafNode
 from ibvpy.core.bcond_mngr import BCondMngr
 from matplotlib.figure import Figure
 from scipy.interpolate import interp1d
@@ -19,6 +18,7 @@ from util.traits.editors import MPLFigureEditor
 from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from mats_bondslip import MATSEvalFatigue
 import numpy as np
+from view.ui import BMCSTreeNode, BMCSLeafNode
 
 
 class Material(BMCSLeafNode):
