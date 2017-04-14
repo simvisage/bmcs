@@ -6,25 +6,36 @@ Created on 12.01.2016
 from bmcs.matmod.tloop import TLoop, TLine
 from bmcs.matmod.tstepper import TStepper
 from ibvpy.api import BCDof
+from ibvpy.core.bcond_mngr import BCondMngr
 from mathkit.mfn import MFnLineArray
 from traits.api import \
     Property, Instance, cached_property, Str, Enum, \
     Range, on_trait_change, List, Float, Trait, Int,\
-    Callable, Event
+    Callable, Event, HasStrictTraits
 from traitsui.api import \
     View, UItem, Item, Group, VGroup, VSplit
 from util.traits.editors import MPLFigureEditor
-
-from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from mats_bondslip import MATSEvalFatigue
-import numpy as np
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSTreeNode, BMCSLeafNode
 from view.window import BMCSWindow
 
+from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
+from mats_bondslip import MATSEvalFatigue
+import numpy as np
+
+
+class HasChangeNotifier(HasStrictTraits):
+
+    @on_trait_change('+input')
+    def input_change(self):
+        if self.notify_change:
+            self.notify_change()
+
+    notify_change = Callable
+
 
 # from ibvpy.api import TLoop, TLine, TStepper
-class Material(BMCSLeafNode):
+class Material(BMCSLeafNode, HasChangeNotifier):
 
     node_name = Str('material parameters')
     E_b = Float(12900,
@@ -90,33 +101,41 @@ class Material(BMCSLeafNode):
               enter_set=True,
               auto_set=False)
 
-    @on_trait_change('+input')
-    def input_change(self):
-        print 'INPUTCHAGE'
-        if self.notify_change:
-            self.notify_change()
-
-    notify_change = Callable
-
     view = View(VGroup(Group(Item('E_b'),
-                             Item('tau_pi_bar'), show_border=True, label='Bond Stiffness and reversibility limit'),
+                             Item('tau_pi_bar'), show_border=True,
+                             label='Bond Stiffness and reversibility limit'),
                        Group(Item('gamma'),
-                             Item('K'), show_border=True, label='Hardening parameters'),
+                             Item('K'), show_border=True,
+                             label='Hardening parameters'),
                        Group(Item('S'),
-                             Item('r'), Item('c'), show_border=True, label='Damage cumulation parameters'),
+                             Item('r'), Item('c'), show_border=True,
+                             label='Damage cumulation parameters'),
                        Group(Item('pressure'),
-                             Item('a'), show_border=True, label='Lateral Pressure')))
+                             Item('a'), show_border=True,
+                             label='Lateral Pressure')))
 
     tree_view = view
 
 
-class Geometry(BMCSLeafNode):
+class Geometry(BMCSLeafNode, HasChangeNotifier):
 
     node_name = 'geometry'
-    L_x = Range(1, 700, value=42)
-    A_m = Float(15240, desc='matrix area [mm2]')
-    A_f = Float(153.9, desc='reinforcement area [mm2]')
-    P_b = Float(44, desc='perimeter of the bond interface [mm]')
+    L_x = Float(45,
+                input=True,
+                auto_set=False, enter_set=True,
+                desc='embedded length')
+    A_m = Float(15240,
+                input=True,
+                auto_set=False, enter_set=True,
+                desc='matrix area [mm2]')
+    A_f = Float(153.9,
+                input=True,
+                auto_set=False, enter_set=True,
+                desc='reinforcement area [mm2]')
+    P_b = Float(44,
+                input=True,
+                auto_set=False, enter_set=True,
+                desc='perimeter of the bond interface [mm]')
 
     view = View(
         Item('L_x'),
@@ -313,7 +332,7 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
             self.tline,
             self.material,
             self.geometry,
-            self.tstepper.bcond_mngr,
+            self.bcond_mngr,
         ]
 
     material = Instance(Material)
@@ -335,7 +354,13 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
     geometry = Instance(Geometry)
 
     def _geometry_default(self):
-        return Geometry()
+        return Geometry(notify_change=self.report_geometry_change)
+
+    def report_geometry_change(self):
+        print 'report geometry changed'
+        self.geometry_changed = True
+
+    geometry_changed = Event
 
     n_e_x = Int(20, auto_set=False, enter_set=True)
 
@@ -363,7 +388,8 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
                                a=self.material.a,
                                pressure=self.material.pressure)
 
-    fets_eval = Property(Instance(FETS1D52ULRHFatigue))
+    fets_eval = Property(Instance(FETS1D52ULRHFatigue),
+                         depends_on='geometry_changed')
     '''Finite element time stepper implementing the corrector
     predictor operators at the element level'''
     @cached_property
@@ -373,26 +399,34 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
                                    P_b=self.geometry.P_b,
                                    A_f=self.geometry.A_f)
 
+    bcond_mngr = Property(Instance(TStepper),
+                          depends_on='material_changed,geometry_changed')
+    '''Boundary condition manager
+    '''
+    @cached_property
+    def _get_bcond_mngr(self):
+        bc_list = [BCDof(node_name='fixed left end', var='u',
+                         dof=0, value=0.0),
+                   BCDof(node_name='pull-out displacement', var='u',
+                         dof=self.controlled_dof, value=self.w_max,
+                         time_function=self.loading_scenario)]
+        return BCondMngr(bcond_list=bc_list)
+
     tstepper = Property(Instance(TStepper),
-                        depends_on='material_changed')
+                        depends_on='material_changed,geometry_changed')
     '''Objects representing the state of the model providing
     the predictor and corrector functionality needed for time-stepping
     algorithm.
     '''
     @cached_property
     def _get_tstepper(self):
-        bc_list = [BCDof(node_name='fixed left end', var='u',
-                         dof=0, value=0.0),
-                   BCDof(node_name='pull-out displacement', var='u',
-                         dof=self.controlled_dof, value=self.w_max,
-                         time_function=self.loading_scenario)]
-
+        print 'constructing tsteppr'
         return TStepper(node_name='Pull-out',
                         n_e_x=self.n_e_x,
                         mats_eval=self.mats_eval,
                         fets_eval=self.fets_eval,
                         L_x=self.geometry.L_x,
-                        bcond_list=bc_list
+                        bcond_mngr=self.bcond_mngr
                         )
 
     tline = Property(Instance(TLine))
@@ -407,7 +441,7 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
                      )
 
     tloop = Property(Instance(TLoop),
-                     depends_on='material_changed')
+                     depends_on='material_changed,geometry_changed')
     '''Algorithm controlling the time stepping.
     '''
     @cached_property
@@ -503,4 +537,6 @@ if __name__ == '__main__':
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'w', plot_fn='w')
     po.add_viz2d('F-w')
+    po.geometry.set(L_x=450)
+    po.material.set(tau_pi_bar=1)
     w.configure_traits()

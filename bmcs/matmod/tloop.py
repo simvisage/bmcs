@@ -5,7 +5,7 @@ Created on 12.01.2016
 '''
 from traits.api import Int, HasStrictTraits, Instance, \
     Float, Property, property_depends_on, Callable, \
-    Array, List
+    Array, List, Bool
 from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
 
@@ -67,8 +67,19 @@ class TLoop(HasStrictTraits):
     sig_record = List
     D_record = List
 
+    paused = Bool(False)
+    restart = Bool(True)
+
+    def init(self):
+        if self.paused:
+            self.paused = False
+        if self.restart:
+            self.tline.val = 0
+            self.restart = False
+
     def eval(self):
 
+        self.init()
         self.ts.apply_essential_bc()
 
         self.d_t = self.tline.step
@@ -98,12 +109,15 @@ class TLoop(HasStrictTraits):
         self.sig_record = [np.zeros_like(sig)]
         self.D_record = [np.zeros_like(D)]
 
-        while (t_n1 - self.tline.max) <= self.step_tolerance:
+        while (t_n1 - self.tline.max) <= self.step_tolerance and \
+                not (self.restart or self.paused):
+
             k = 0
             step_flag = 'predictor'
             d_U = np.zeros(n_dofs)
             d_U_k = np.zeros(n_dofs)
-            while k <= self.k_max:
+            while k <= self.k_max and \
+                    not (self.restart or self.paused):
 
                 R, F_int, K, eps, sig, xs_pi, alpha, z, w, D = self.ts.get_corr_pred(
                     step_flag, U_k, d_U_k, eps, sig, t_n, t_n1, xs_pi, alpha, z, w)
@@ -130,6 +144,9 @@ class TLoop(HasStrictTraits):
 
             if k >= self.k_max:
                 print ' ----------> No Convergence any more'
+                break
+            if self.restart or self.paused:
+                print 'interrupted iteration'
                 break
             t_n = t_n1
             t_n1 = t_n + self.d_t

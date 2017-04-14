@@ -103,7 +103,7 @@ class VizSheet(HasStrictTraits):
                 self.vot_slider = self.time
                 self.vot = self.time
 
-    n_cols = Int(1, label='Number of columns',
+    n_cols = Int(2, label='Number of columns',
                  tooltip='Defines a number of columns within the plot pane',
                  enter_set=True, auto_set=False)
 

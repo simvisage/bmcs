@@ -79,6 +79,12 @@ class TLine(HasTraits):
         if self.time_change_notifier:
             self.time_change_notifier(self.val)
 
+    steps_to_go = Property
+    '''Number of steps to go from the current state'''
+
+    def _get_steps_to_go(self):
+        return int((self.max - self.val) / self.step)
+
     time_change_notifier = Callable
 
     traits_view = View(HGroup(Item('min'),

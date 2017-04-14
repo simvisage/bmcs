@@ -27,11 +27,9 @@ Created on Mar 10, 2017
 
 import time
 
-# from PySide.QtCore import QSize, SIGNAL
-# from PySide.QtGui import QProgressDialog
 from ibvpy.api import BCDof, TLine
 from traits.api import Instance, List,  HasStrictTraits,\
-    Property, cached_property
+    Property, cached_property, Bool, Int
 from traitsui.api import View, Include, VGroup, UItem
 from view.ui import BMCSTreeNode
 from view.window import BMCSWindow
@@ -45,17 +43,27 @@ class TimeLoop(HasStrictTraits):
 
     tline = Instance(TLine)
 
+    paused = Bool(False)
+    restart = Bool(True)
+
+    def init_loop(self):
+        if self.paused:
+            self.paused = False
+        if self.restart:
+            self.tline.val = 0
+            self.restart = False
+
     def eval(self):
         '''this method is just called by the tloop_thread'''
-        n_steps = 5
 
-        # todo distinguish target time -- make a threaded
-        # interaction with the TLoop
-
+        self.init_loop()
         t_min = self.tline.val
         t_max = self.tline.max
+        n_steps = self.tline.steps_to_go
         tarray = np.linspace(t_min, t_max, n_steps)
         for idx, t in enumerate(tarray):
+            if self.restart or self.paused:
+                break
             time.sleep(1)
             self.tline.val = t
 

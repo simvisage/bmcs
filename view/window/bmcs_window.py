@@ -76,6 +76,12 @@ class RunThread(Thread):
             raise
         self.ui.running = False
 
+    def pause(self):
+        self.ui.model.tloop.paused = True
+
+    def stop(self):
+        self.ui.model.tloop.restart = True
+
 
 class BMCSWindow(HasStrictTraits):
 
@@ -108,10 +114,10 @@ class BMCSWindow(HasStrictTraits):
         self.tloop_thread.start()
 
     def pause(self):
-        pass
+        self.tloop_thread.pause()
 
     def stop(self):
-        pass
+        self.tloop_thread.stop()
 
     selected_node = Instance(HasStrictTraits)
 
