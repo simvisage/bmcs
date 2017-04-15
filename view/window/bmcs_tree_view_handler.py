@@ -16,6 +16,8 @@ from traitsui.api import \
     UIInfo, spring
 from traitsui.file_dialog import \
     open_file, save_file
+from traitsui.key_bindings import \
+    KeyBinding, KeyBindings
 from traitsui.menu import \
     Action
 
@@ -38,6 +40,18 @@ menu_open = Action(name='Open', action='menu_open')
 menu_exit = Action(name='Exit', action='menu_exit')
 '''Menubar action for terminating the view
 '''
+
+key_bindings = KeyBindings(
+    KeyBinding(binding1='Ctrl-r',
+               description='Run simulation',
+               method_name='run_action'),
+    KeyBinding(binding1='Ctrl-p',
+               description='Pause calculation',
+               method_name='pause_action'),
+    KeyBinding(binding1='Ctrl-s',
+               description='Stop calculation',
+               method_name='stop_action')
+)
 
 
 class BMCSTreeViewHandler(Handler):
@@ -125,17 +139,17 @@ class BMCSTreeViewHandler(Handler):
     # Toolbar actions
     #=========================================================================
 
-    def run(self, info):
+    def run_action(self, info):
         print 'Running action'
         info.object.run()
 
-    def interrupt(self, info):
-        print 'Running interrupt'
-        info.object.interrupt()
+    def pause_action(self, info):
+        print 'Running pause'
+        info.object.pause()
 
-    def continue_(self, info):
-        print 'Running continue'
-        info.object.continue_()
+    def stop_action(self, info):
+        print 'Running stop'
+        info.object.stop()
 
     def replot(self, info):
         print 'Running continue'
@@ -168,17 +182,17 @@ toolbar_actions = [Action(name="Run",
                           tooltip='Start computation',
                           enabled_when='enable_run',
                           image=ImageResource('kt-start'),
-                          action="run"),
+                          action="run_action"),
                    Action(name="Pause",
                           tooltip='Pause computation',
                           enabled_when='enable_pause',
                           image=ImageResource('kt-pause'),
-                          action="pause"),
+                          action="pause_action"),
                    Action(name="Stop",
                           tooltip='Stop computation',
                           enabled_when='enable_stop',
                           image=ImageResource('kt-stop'),
-                          action="stop"),
+                          action="stop_action"),
                    ]
 
 toolbar_actions += [Action(name=name,

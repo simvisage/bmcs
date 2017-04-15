@@ -10,12 +10,11 @@ from traits.api import \
     HasStrictTraits, Str, \
     Instance,  Event, Enum, \
     List,  Range, Int, Float, \
-    Property, cached_property, on_trait_change
-from traitsui.api import \
-    TabularEditor
+    Property, cached_property, \
+    on_trait_change, Bool
 from traitsui.api import \
     View, Item, UItem, VGroup, VSplit, \
-    HSplit
+    HSplit, HGroup, TabularEditor
 from traitsui.tabular_adapter import TabularAdapter
 from util.traits.editors import \
     MPLFigureEditor
@@ -90,15 +89,15 @@ class VizSheet(HasStrictTraits):
     def _vot_slider_changed(self):
         if self.mode == 'browse':
             if self.vot_slider >= self.time:
+                self.mode = 'monitor'
                 self.vot_slider = self.time
                 self.vot = self.time
-                self.mode = 'monitor'
             else:
                 self.vot = self.vot_slider
         elif self.mode == 'monitor':
             if self.vot_slider < self.time:
-                self.vot = self.vot_slider
                 self.mode = 'browse'
+                self.vot = self.vot_slider
             else:
                 self.vot_slider = self.time
                 self.vot = self.time
@@ -107,17 +106,38 @@ class VizSheet(HasStrictTraits):
                  tooltip='Defines a number of columns within the plot pane',
                  enter_set=True, auto_set=False)
 
+    def run_started(self):
+        self.mode = 'monitor'
+
+    def run_finished(self):
+        print 'run_finished'
+        self.skipped_steps = self.monitor_chunk_size
+        self.replot()
+
+    monitor_chunk_size = Int(1, label='Monitor each # steps')
+
+    skipped_steps = Int(0)
+
     @on_trait_change('vot,n_cols')
     def replot(self):
+        print 'plotting'
+        if self.mode == 'monitor' and \
+                self.skipped_steps < (self.monitor_chunk_size - 1):
+            self.skipped_steps += 1
+            return
         for ax, viz2d in zip(self.axes, self.viz2d_list):
             ax.clear()
             viz2d.plot(ax, self.vot)
         self.data_changed = True
+        self.skipped_steps = 0
 
     viz2d_list = List(Viz2D)
 
+    offline = Bool(False)
+
     def _viz2d_list_items_changed(self):
-        self.replot()
+        if not self.offline:
+            self.replot()
 
     selected_viz2d = Instance(Viz2D)
 
@@ -167,7 +187,10 @@ class VizSheet(HasStrictTraits):
                 ),
             ),
             VGroup(
-                Item('mode'),
+                HGroup(
+                    Item('mode'),
+                    Item('monitor_chunk_size'),
+                ),
                 Item('vot_slider', height=40),
             )
         ),

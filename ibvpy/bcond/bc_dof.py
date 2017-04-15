@@ -58,12 +58,16 @@ class BCDof(BMCSTreeNode):
 
     var = Enum('u', 'f', 'eps', 'sig',
                label='Variable',
+               BC=True
                )
     dof = Int(label='Degree of freedom',
+              BC=True,
               )
     value = Float(label='Value',
+                  BC=True,
                   )
     link_dofs = List(Int,
+                     BC=True,
                      label='Linear dependencies',
                      tooltip='Degrees of freedom linked\n'
                      'with the current by link coefficients')
@@ -75,6 +79,7 @@ class BCDof(BMCSTreeNode):
     linear combination of DOFs in the list (see the example below)
     '''
     link_coeffs = List(Float,
+                       BC=True,
                        label='Link coefficients',
                        tooltip='Multipliers for linear combination\n'
                        'equation')
@@ -82,7 +87,8 @@ class BCDof(BMCSTreeNode):
     Coefficients of the linear combination of DOFs specified in the
     above list.
     '''
-    time_function = Instance(MFnLineArray)
+    time_function = Instance(MFnLineArray,
+                             BC=True)
     '''
     Time function prescribing the evolution of the boundary condition.
     '''

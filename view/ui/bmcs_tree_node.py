@@ -1,18 +1,17 @@
 '''
 Created on 14. 4. 2014
 
-@author: Vancikv
+@author: rch
 '''
 
-from traits.api import Range
 from traits.api import \
     HasStrictTraits, Str, List, WeakRef, \
-    Property, cached_property
+    Property, cached_property, on_trait_change, Event
 from traitsui.api import \
     View
 
 
-class BMCSTreeNodeBase(HasStrictTraits):
+class BMCSNodeBase(HasStrictTraits):
 
     node_name = Str('<unnamed>')
 
@@ -25,19 +24,95 @@ class BMCSTreeNodeBase(HasStrictTraits):
         for tname in traits_names:
             setattr(self, tname, value)
 
+    parent = WeakRef
 
-class BMCSLeafNode(BMCSTreeNodeBase):
+    root = Property
+    '''Root node of tree node hierarchy
+    '''
+
+    def _get_root(self):
+        if self.parent:
+            return self.parent.root
+        return self
+
+
+class BMCSListeningTreeNodeMixIn(HasStrictTraits):
+
+    @on_trait_change('+TIME')
+    def _TIME_change(self):
+        if self.parent:
+            print 'TIME change'
+            self.root.TIME = True
+
+    @on_trait_change('+ALG')
+    def _ALG_change(self):
+        if self.parent:
+            print 'ALG change'
+            self.root.ALG = True
+
+    @on_trait_change('+GEO')
+    def _GEO_change(self):
+        if self.parent:
+            print 'GEO change'
+            self.root.GEO = True
+
+    @on_trait_change('+MESH')
+    def _MESH_change(self):
+        if self.parent:
+            print 'MESH change'
+            self.root.MESH = True
+
+    @on_trait_change('+MAT')
+    def _MAT_change(self):
+        if self.parent:
+            print 'MAT change'
+            self.root.MAT = True
+
+    @on_trait_change('+FE')
+    def _FE_change(self):
+        if self.parent:
+            print 'FE change'
+            self.root.FE = True
+
+    @on_trait_change('+CS')
+    def _CS_change(self):
+        if self.parent:
+            print 'CS change'
+            self.root.CS = True
+
+    @on_trait_change('+BC')
+    def _BC_change(self):
+        if self.parent:
+            print 'BC change'
+            self.root.BC = True
+
+
+class BMCSLeafNodeMixIn(HasStrictTraits):
     '''Base class of all model classes that can appear in a tree view.
     '''
+
+    def set_parents_recursively(self):
+        return
 
     def set_ui_recursively(self, ui):
         self.ui = ui
 
 
-class BMCSTreeNode(BMCSTreeNodeBase):
+class BMCSTreeNodeMixIn(HasStrictTraits):
     '''Base class of all model classes that can appear in a tree view.
     '''
     tree_node_list = List([])
+
+    def _tree_node_list_items_changed(self):
+        self.set_parents_recursively()
+
+    def _tree_node_list_changed(self):
+        self.set_parents_recursively()
+
+    def set_parents_recursively(self):
+        for n in self.tree_node_list:
+            n.parent = self
+            n.set_parents_recursively()
 
     def set_ui_recursively(self, ui):
         self.ui = ui
@@ -52,37 +127,49 @@ class BMCSTreeNode(BMCSTreeNodeBase):
         self.tree_node_list.append(node)
 
     def set_traits_with_metadata(self, value, **metadata):
-        super(BMCSTreeNode, self).set_traits_with_metadata(value, **metadata)
+        super(BMCSTreeNodeMixIn, self).set_traits_with_metadata(
+            value, **metadata)
         for node in self.tree_node_list:
             node.set_traits_with_metadata(value, **metadata)
 
 
-class ReinfLayoutTreeNode(BMCSTreeNode):
-    '''Class accommodating the list of all reinforcement components.
+class BMCSLeafNode(BMCSNodeBase,
+                   BMCSLeafNodeMixIn,
+                   BMCSListeningTreeNodeMixIn):
+    pass
+
+
+class BMCSTreeNode(BMCSNodeBase,
+                   BMCSTreeNodeMixIn,
+                   BMCSListeningTreeNodeMixIn):
+    pass
+
+
+class BMCSRootNode(BMCSNodeBase,
+                   BMCSTreeNodeMixIn):
+    '''Root node for the model hierarchy.
+
+    Types of generic change events within a numerical simulation
+
+    time discretization
+    algorithm parameters
+    geometry (dimensions, scaling, geometrical transformation)
+    spatial discretization (spatial meshing / decomposition parameters)
+    spatial approximation (finite elements - what happens within an element)
+    cross section (thickness, area, perimeter)
+    boundary conditions
+
     '''
-    node_name = Str('Reinforcement layout')
 
-    cs_state = WeakRef(HasStrictTraits)
+    TIME = Event
+    ALG = Event
+    GEO = Event
+    MESH = Event
+    MAT = Event
+    FE = Event
+    CS = Event
+    BC = Event
 
-    def __getstate__(self):
-        '''Overriding __getstate__ because of WeakRef usage
-        '''
-        state = super(HasStrictTraits, self).__getstate__()
-
-        for key in ['cs_state', 'cs_state_']:
-            if state.has_key(key):
-                del state[key]
-
-        return state
-
-    def plot(self, fig):
-        ax = fig.add_subplot(1, 1, 1)
-        self.cs_state.plot_geometry(ax)
-
-    tree_node_list = Property(
-        depends_on='cs_state.reinf_components_with_state')
-
-    @cached_property
-    def _get_tree_node_list(self):
-        self.cs_state.changed = True
-        return self.cs_state.reinf_components_with_state
+    def __init__(self, *args, **kw):
+        super(BMCSRootNode, self).__init__(*args, **kw)
+        self.set_parents_recursively()

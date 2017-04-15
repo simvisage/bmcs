@@ -31,7 +31,7 @@ from ibvpy.api import BCDof, TLine
 from traits.api import Instance, List,  HasStrictTraits,\
     Property, cached_property, Bool, Int
 from traitsui.api import View, Include, VGroup, UItem
-from view.ui import BMCSTreeNode
+from view.ui import BMCSRootNode
 from view.window import BMCSWindow
 
 import numpy as np
@@ -68,7 +68,7 @@ class TimeLoop(HasStrictTraits):
             self.tline.val = t
 
 
-class DemoModel(BMCSTreeNode):
+class DemoModel(BMCSRootNode):
     '''Demo model of the BMCS Window
 
     Shows how the time control within an application of BMCS

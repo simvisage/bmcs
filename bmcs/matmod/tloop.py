@@ -28,9 +28,15 @@ class TLine(BMCSLeafNode):
     '''
     node_name = 'time range'
 
-    min = Float(0.0)
-    max = Float(1.0)
-    step = Float(0.1)
+    min = Float(0.0,
+                TIME=True
+                )
+    max = Float(1.0,
+                TIME=True
+                )
+    step = Float(0.1,
+                 TIME=True
+                 )
     val = Float(0.0)
 
     def _val_changed(self):
@@ -40,7 +46,7 @@ class TLine(BMCSLeafNode):
     time_change_notifier = Callable
 
     tree_view = View(
-        Item('min'),
+        Item('min', full_size=True),
         Item('max'),
         Item('step'),
         Item('val', style='readonly')
@@ -61,10 +67,10 @@ class TLoop(HasStrictTraits):
     w_record = List([])
     U_record = Array(dtype=np.float_)
     F_record = Array(dtype=np.float_)
-    sf_record = Array(dtype=np.float_)
+    sf_Em_record = List
     t_record = List
     eps_record = List
-    sig_record = List
+    sig_EmC_record = List
     D_record = List
 
     paused = Bool(False)
@@ -100,18 +106,21 @@ class TLoop(HasStrictTraits):
         z = np.zeros((n_e, n_ip))
         w = np.zeros((n_e, n_ip))
 
+        sig_rec = np.zeros((n_e, n_ip, 2))
+        sf_rec = np.zeros((n_e, n_ip))
         self.w_record = [np.zeros((n_e, n_ip))]
         self.U_record = np.zeros(n_dofs)
         self.F_record = np.zeros(n_dofs)
-        self.sf_record = np.zeros(2 * n_e)
         self.t_record = [t_n]
         self.eps_record = [np.zeros_like(eps)]
-        self.sig_record = [np.zeros_like(sig)]
+        self.sig_EmC_record = [np.copy(sig_rec)]
+        self.sf_Em_record = [np.copy(sf_rec)]
         self.D_record = [np.zeros_like(D)]
 
         while (t_n1 - self.tline.max) <= self.step_tolerance and \
                 not (self.restart or self.paused):
 
+            print 't_n1', t_n1
             k = 0
             step_flag = 'predictor'
             d_U = np.zeros(n_dofs)
@@ -128,16 +137,13 @@ class TLoop(HasStrictTraits):
                 if np.linalg.norm(R) < self.tolerance:
                     self.F_record = np.vstack((self.F_record, F_int))
                     U_k += d_U
-                    self.U_record = np.vstack((self.U_record, U_k))
-                    self.sf_record = np.vstack(
-                        (self.sf_record, sig[:, :, 1].flatten()))
-                    self.eps_record.append(np.copy(eps))
-                    self.sig_record.append(np.copy(sig))
                     self.t_record.append(t_n1)
+                    self.U_record = np.vstack((self.U_record, U_k))
+                    self.eps_record.append(np.copy(eps))
+                    self.sig_EmC_record.append(sig[:, :, (0, 2)])
+                    self.sf_Em_record.append(np.copy(sig[:, :, 1]))
                     self.w_record.append(np.copy(w))
                     self.D_record.append(np.copy(D))
-                    # print 'eps=',eps
-                    # print'D=', D
                     break
                 k += 1
                 step_flag = 'corrector'
@@ -154,10 +160,16 @@ class TLoop(HasStrictTraits):
 
         return
 
-    def get_time_idx(self, vot):
+    def get_time_idx_arr(self, vot):
+        '''Get the index corresponding to visual time
+        '''
         x = self.t_record
         idx = np.array(np.arange(len(x)), dtype=np.float_)
-        return int(np.interp(vot, x, idx))
+        t_idx = np.interp(vot, x, idx)
+        return np.array(t_idx + 0.5, np.int_)
+
+    def get_time_idx(self, vot):
+        return int(self.get_time_idx_arr(vot))
 
 if __name__ == '__main__':
 
@@ -182,8 +194,8 @@ if __name__ == '__main__':
 
     tl = TLoop(ts=ts)
 
-    (U_record, F_record, sf_record, t_record,
-     eps_record, sig_record,  w_record, D_record) = tl.eval()
+    (U_record, F_record, sf_Em_record, t_record,
+     eps_record, sig_EmC_record,  w_record, D_record) = tl.eval()
     #U_record = np.vstack((U, U_record))
     #F_record = np.vstack((F, F_record))
 

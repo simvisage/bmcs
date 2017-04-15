@@ -309,7 +309,7 @@ class TStepper(HasTraits):
         #[n_e, n_dof_r, n_dim_dof]
         d_u_n = d_u_e.reshape(n_e, n_dof_r, n_nodal_dofs)
         #[n_e, n_ip, n_s]
-        d_eps = np.einsum('einsd,end->eis', self.B, d_u_n)
+        d_eps = np.einsum('Einsd,End->Eis', self.B, d_u_n)
         # print'B =', self.B
         # update strain
         eps += d_eps

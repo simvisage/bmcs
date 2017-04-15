@@ -16,11 +16,11 @@ from traitsui.api import \
 from traitsui.menu import \
     Menu, MenuBar, Separator
 from view.ui.bmcs_tree_node import \
-    BMCSTreeNode, BMCSLeafNode
+    BMCSRootNode, BMCSTreeNode, BMCSLeafNode
 
 from bmcs_tree_view_handler import \
     BMCSTreeViewHandler, plot_self, menu_save, \
-    menu_open, menu_exit, toolbar_actions
+    menu_open, menu_exit, toolbar_actions, key_bindings
 from bmcs_viz_sheet import VizSheet
 
 
@@ -35,7 +35,7 @@ else:
         ETSConfig.toolkit
 
 
-tree_node = TreeNode(node_for=[BMCSTreeNode],
+tree_node = TreeNode(node_for=[BMCSRootNode, BMCSTreeNode],
                      auto_open=False,
                      children='tree_node_list',
                      label='node_name',
@@ -68,6 +68,7 @@ class RunThread(Thread):
         self.ui = ui
 
     def run(self):
+        self.ui.start_event = True
         self.ui.running = True
         try:
             self.ui.model.tloop.eval()
@@ -75,6 +76,7 @@ class RunThread(Thread):
             self.ui.running = False
             raise
         self.ui.running = False
+        self.ui.finish_event = True
 
     def pause(self):
         self.ui.model.tloop.paused = True
@@ -87,10 +89,15 @@ class BMCSWindow(HasStrictTraits):
 
     '''View object for a cross section state.
     '''
-    model = Instance(BMCSTreeNode)
+    model = Instance(BMCSRootNode)
+
+    offline = DelegatesTo('viz_sheet')
 
     def _model_changed(self):
         self.model.set_ui_recursively(self)
+        tline = self.model.tloop.tline
+        self.viz_sheet.time_range_changed(tline.max)
+        self.viz_sheet.time_changed(tline.val)
 
     tloop_thread = Instance(RunThread)
 
@@ -106,6 +113,16 @@ class BMCSWindow(HasStrictTraits):
         self.enable_stop = self.running
         self.model.set_traits_with_metadata(self.enable_run,
                                             disable_on_run=True)
+
+    start_event = Event
+
+    def _start_event_fired(self):
+        self.viz_sheet.run_started()
+
+    finish_event = Event
+
+    def _finish_event_fired(self):
+        self.viz_sheet.run_finished()
 
     def run(self):
         if self.running:
@@ -185,6 +202,7 @@ class BMCSWindow(HasStrictTraits):
         title='BMCS',
         resizable=True,
         handler=BMCSTreeViewHandler(),
+        key_bindings=key_bindings,
         toolbar=ToolBar(*toolbar_actions,
                         image_size=(32, 32),
                         show_tool_names=False,
@@ -205,7 +223,7 @@ if __name__ == '__main__':
         BCDof(),
         BCSlice()]
     rt = ResponseTracer()
-    tr = BMCSTreeNode(node_name='model',
+    tr = BMCSRootNode(node_name='model',
                       tree_node_list=[BMCSTreeNode(node_name='subnode 1'),
                                       BMCSTreeNode(node_name='subnode 2'),
                                       rt,

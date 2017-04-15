@@ -10,13 +10,12 @@ from ibvpy.core.bcond_mngr import BCondMngr
 from mathkit.mfn import MFnLineArray
 from traits.api import \
     Property, Instance, cached_property, Str, Enum, \
-    Range, on_trait_change, List, Float, Trait, Int,\
-    Callable, Event, HasStrictTraits
+    Range, on_trait_change, List, Float, Trait, Int
 from traitsui.api import \
     View, UItem, Item, Group, VGroup, VSplit
 from util.traits.editors import MPLFigureEditor
 from view.plot2d import Viz2D, Vis2D
-from view.ui import BMCSTreeNode, BMCSLeafNode
+from view.ui import BMCSRootNode, BMCSLeafNode
 from view.window import BMCSWindow
 
 from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
@@ -24,21 +23,11 @@ from mats_bondslip import MATSEvalFatigue
 import numpy as np
 
 
-class HasChangeNotifier(HasStrictTraits):
-
-    @on_trait_change('+input')
-    def input_change(self):
-        if self.notify_change:
-            self.notify_change()
-
-    notify_change = Callable
-
-
-# from ibvpy.api import TLoop, TLine, TStepper
-class Material(BMCSLeafNode, HasChangeNotifier):
+class Material(BMCSLeafNode):
 
     node_name = Str('material parameters')
     E_b = Float(12900,
+                MAT=True,
                 input=True,
                 label="E_b ",
                 desc="Bond Stiffness",
@@ -46,6 +35,7 @@ class Material(BMCSLeafNode, HasChangeNotifier):
                 auto_set=False)
 
     gamma = Float(60,
+                  MAT=True,
                   input=True,
                   label="Gamma ",
                   desc="Kinematic hardening modulus",
@@ -53,6 +43,7 @@ class Material(BMCSLeafNode, HasChangeNotifier):
                   auto_set=False)
 
     K = Float(10,
+              MAT=True,
               input=True,
               label="K ",
               desc="Isotropic harening",
@@ -60,6 +51,7 @@ class Material(BMCSLeafNode, HasChangeNotifier):
               auto_set=False)
 
     S = Float(0.001,
+              MAT=True,
               input=True,
               label="S ",
               desc="Damage cumulation parameter",
@@ -67,6 +59,7 @@ class Material(BMCSLeafNode, HasChangeNotifier):
               auto_set=False)
 
     r = Float(0.7,
+              MAT=True,
               input=True,
               label="r ",
               desc="Damage cumulation parameter",
@@ -74,6 +67,7 @@ class Material(BMCSLeafNode, HasChangeNotifier):
               auto_set=False)
 
     c = Float(1.5,
+              MAT=True,
               input=True,
               label="c ",
               desc="Damage cumulation parameter",
@@ -81,6 +75,7 @@ class Material(BMCSLeafNode, HasChangeNotifier):
               auto_set=False)
 
     tau_pi_bar = Float(4.5,
+                       MAT=True,
                        input=True,
                        label="Tau_pi_bar ",
                        desc="Reversibility limit",
@@ -88,6 +83,7 @@ class Material(BMCSLeafNode, HasChangeNotifier):
                        auto_set=False)
 
     pressure = Float(0,
+                     MAT=True,
                      input=True,
                      label="Pressure",
                      desc="Lateral pressure",
@@ -95,6 +91,7 @@ class Material(BMCSLeafNode, HasChangeNotifier):
                      auto_set=False)
 
     a = Float(1.7,
+              MAT=True,
               input=True,
               label="a",
               desc="Lateral pressure coefficient",
@@ -117,18 +114,21 @@ class Material(BMCSLeafNode, HasChangeNotifier):
     tree_view = view
 
 
-class Geometry(BMCSLeafNode, HasChangeNotifier):
+class Geometry(BMCSLeafNode):
 
     node_name = 'geometry'
     L_x = Float(45,
+                GEO=True,
                 input=True,
                 auto_set=False, enter_set=True,
                 desc='embedded length')
     A_m = Float(15240,
+                CS=True,
                 input=True,
                 auto_set=False, enter_set=True,
                 desc='matrix area [mm2]')
     A_f = Float(153.9,
+                CS=True,
                 input=True,
                 auto_set=False, enter_set=True,
                 desc='reinforcement area [mm2]')
@@ -151,32 +151,34 @@ class LoadingScenario(MFnLineArray, BMCSLeafNode):
 
     node_name = Str('Loading Scenario')
     number_of_cycles = Int(1,
+                           BC=True,
                            input=True)
     maximum_loading = Float(1.0,
+                            BC=True,
                             input=True)
     unloading_ratio = Range(0., 1., value=0.5,
+                            BC=True,
                             input=True)
     number_of_increments = Int(10,
+                               BC=True,
                                input=True)
     loading_type = Enum("Monotonic", "Cyclic",
+                        BC=True,
                         input=True)
     amplitude_type = Enum("Increased_Amplitude", "Constant_Amplitude",
+                          BC=True,
                           input=True)
     loading_range = Enum("Non_symmetric", "Symmetric",
+                         BC=True,
                          input=True)
 
-    time = Range(0.00, 1.00, value=1.00)
-
-    d_t = Float(0.02)
     t_max = Float(1.)
-    k_max = Float(200)
-    tolerance = Float(1e-4)
 
     def __init__(self, *arg, **kw):
         super(LoadingScenario, self).__init__(*arg, **kw)
         self._update_xy_arrays()
 
-    @on_trait_change('+input')
+    @on_trait_change('+BC')
     def _update_xy_arrays(self):
         if (self.loading_type == "Monotonic"):
             self.number_of_cycles = 1
@@ -270,15 +272,35 @@ class LoadingScenario(MFnLineArray, BMCSLeafNode):
     tree_view = traits_view
 
 
+class Viz2DLoadControlFunction(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = 'Load control'
+
+    def plot(self, ax, vot, *args, **kw):
+        bc = self.vis2d.control_bc
+        val = bc.value
+        tloop = self.vis2d.tloop
+        t_arr = np.array(tloop.t_record, np.float_)
+        f_arr = val * bc.time_function(t_arr)
+        ax.plot(t_arr, f_arr, 'bo-')
+        vot_idx = tloop.get_time_idx(vot)
+        ax.plot([t_arr[vot_idx]], [f_arr[vot_idx]], 'ro')
+        var = bc.var
+
+
 class Viz2DPullOutFW(Viz2D):
     '''Plot adaptor for the pull-out simulator.
     '''
     label = 'F-W'
 
     def plot(self, ax, vot, *args, **kw):
+        idx = self.vis2d.tloop.get_time_idx(vot)
         P_t = self.vis2d.get_P_t()
         w_t = self.vis2d.get_w_t()
         ax.plot(w_t, P_t, *args, **kw)
+        P, w = P_t[idx], w_t[idx]
+        ax.plot([w], [P], 'ro')
 
 
 class Viz2DPullOutField(Viz2D):
@@ -292,8 +314,10 @@ class Viz2DPullOutField(Viz2D):
 
     plot_fn = Trait('u_C',
                     {'eps_C': 'plot_eps_C',
+                     'sig_C': 'plot_sig_C',
                      'u_C': 'plot_u_C',
                      's': 'plot_s',
+                     'sf': 'plot_sf',
                      'w': 'plot_w',
                      'Fint_C': 'plot_Fint_C'
                      },
@@ -320,7 +344,7 @@ class Viz2DPullOutField(Viz2D):
     )
 
 
-class PullOutSimulation(BMCSTreeNode, Vis2D):
+class PullOutSimulation(BMCSRootNode, Vis2D):
 
     node_name = 'pull out simulation'
 
@@ -338,13 +362,7 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
     material = Instance(Material)
 
     def _material_default(self):
-        return Material(notify_change=self.report_material_change)
-
-    def report_material_change(self):
-        print 'report material changed'
-        self.material_changed = True
-
-    material_changed = Event
+        return Material()
 
     loading_scenario = Instance(LoadingScenario)
 
@@ -354,13 +372,7 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
     geometry = Instance(Geometry)
 
     def _geometry_default(self):
-        return Geometry(notify_change=self.report_geometry_change)
-
-    def report_geometry_change(self):
-        print 'report geometry changed'
-        self.geometry_changed = True
-
-    geometry_changed = Event
+        return Geometry()
 
     n_e_x = Int(20, auto_set=False, enter_set=True)
 
@@ -372,7 +384,7 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
         return 2 + 2 * self.n_e_x - 1
 
     mats_eval = Property(Instance(MATSEvalFatigue),
-                         depends_on='material_changed')
+                         depends_on='MAT')
     '''Material model'''
     @cached_property
     def _get_mats_eval(self):
@@ -389,7 +401,7 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
                                pressure=self.material.pressure)
 
     fets_eval = Property(Instance(FETS1D52ULRHFatigue),
-                         depends_on='geometry_changed')
+                         depends_on='CS')
     '''Finite element time stepper implementing the corrector
     predictor operators at the element level'''
     @cached_property
@@ -399,12 +411,11 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
                                    P_b=self.geometry.P_b,
                                    A_f=self.geometry.A_f)
 
-    bcond_mngr = Property(Instance(TStepper),
-                          depends_on='material_changed,geometry_changed')
+    bcond_mngr = Instance(BCondMngr)
     '''Boundary condition manager
     '''
-    @cached_property
-    def _get_bcond_mngr(self):
+
+    def _bcond_mngr_default(self):
         bc_list = [BCDof(node_name='fixed left end', var='u',
                          dof=0, value=0.0),
                    BCDof(node_name='pull-out displacement', var='u',
@@ -412,15 +423,22 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
                          time_function=self.loading_scenario)]
         return BCondMngr(bcond_list=bc_list)
 
+    control_bc = Property(depends_on='BC')
+    '''Control boundary condition - make it accessible directly
+    for the visualization adapter as property
+    '''
+    @cached_property
+    def _get_control_bc(self):
+        return self.bcond_mngr.bcond_list[1]
+
     tstepper = Property(Instance(TStepper),
-                        depends_on='material_changed,geometry_changed')
+                        depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
     '''Objects representing the state of the model providing
     the predictor and corrector functionality needed for time-stepping
     algorithm.
     '''
     @cached_property
     def _get_tstepper(self):
-        print 'constructing tsteppr'
         return TStepper(node_name='Pull-out',
                         n_e_x=self.n_e_x,
                         mats_eval=self.mats_eval,
@@ -429,10 +447,9 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
                         bcond_mngr=self.bcond_mngr
                         )
 
-    tline = Property(Instance(TLine))
+    tline = Instance(TLine)
 
-    @cached_property
-    def _get_tline(self):
+    def _tline_default(self):
         # assign the parameters for solver and loading_scenario
         t_max = 1.0  # self.loading_scenario.t_max
         d_t = 0.02  # self.loading_scenario.d_t
@@ -440,16 +457,21 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
                      time_change_notifier=self.time_changed,
                      )
 
+    k_max = Int(200,
+                ALG=True)
+    tolerance = Float(1e-4,
+                      ALG=True)
+
     tloop = Property(Instance(TLoop),
-                     depends_on='material_changed,geometry_changed')
+                     depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
     '''Algorithm controlling the time stepping.
     '''
     @cached_property
     def _get_tloop(self):
 
-        k_max = self.loading_scenario.k_max
-        tolerance = self.loading_scenario.tolerance
-
+        k_max = self.k_max
+        tolerance = self.tolerance
+        print 'NEW TLOOP'
         return TLoop(ts=self.tstepper, k_max=k_max,
                      tolerance=tolerance,
                      tline=self.tline)
@@ -488,11 +510,30 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
         eps_EmdC = np.einsum('Eimd,ECid->EmdC', self.tstepper.dN_Eimd, d_ECid)
         return eps_EmdC.reshape(-1, 2)
 
+    def get_sig_C(self, vot):
+        '''Get streses in the components 
+        @todo: unify the index protocol
+        for eps and sig. Currently eps uses multi-layer indexing, sig
+        is extracted from the material model format.
+        '''
+        idx = self.tloop.get_time_idx(vot)
+        return self.tloop.sig_EmC_record[idx].reshape(-1, 2)
+
     def get_s(self, vot):
         '''Slip between the two material phases'''
         d_ECid = self.get_d_ECid(vot)
         s_Emd = np.einsum('Cim,ECid->Emd', self.tstepper.sN_Cim, d_ECid)
         return s_Emd.flatten()
+
+    def get_sf(self, vot):
+        '''Get the shear flow in the interface
+        @todo: unify the index protocol
+        for eps and sig. Currently eps uses multi-layer indexing, sig
+        is extracted from the material model format.
+        '''
+        idx = self.tloop.get_time_idx(vot)
+        sf = self.tloop.sf_Em_record[idx].flatten()
+        return sf
 
     def get_P_t(self):
         F_array = np.array(self.tloop.F_record, dtype=np.float_)
@@ -512,11 +553,17 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
     def plot_u_C(self, ax, vot):
         ax.plot(self.tstepper.X_J, self.get_u_C(vot))
 
+    def plot_eps_C(self, ax, vot):
+        ax.plot(self.tstepper.X_M, self.get_eps_C(vot))
+
+    def plot_sig_C(self, ax, vot):
+        ax.plot(self.tstepper.X_M, self.get_sig_C(vot))
+
     def plot_s(self, ax, vot):
         ax.plot(self.tstepper.X_J, self.get_s(vot))
 
-    def plot_eps_C(self, ax, vot):
-        ax.plot(self.tstepper.X_M, self.get_eps_C(vot))
+    def plot_sf(self, ax, vot):
+        ax.plot(self.tstepper.X_J, self.get_sf(vot))
 
     def plot_w(self, ax, vot):
         ax.plot(self.tstepper.X_J, self.get_w(vot))
@@ -525,18 +572,31 @@ class PullOutSimulation(BMCSTreeNode, Vis2D):
                       )
 
     viz2d_classes = {'field': Viz2DPullOutField,
-                     'F-w': Viz2DPullOutFW
+                     'F-w': Viz2DPullOutFW,
+                     'load function': Viz2DLoadControlFunction,
                      }
 
 
 if __name__ == '__main__':
-    po = PullOutSimulation(n_e_x=20)
-    w = BMCSWindow(model=po)
+    po = PullOutSimulation(n_e_x=100, k_max=500)
+#     po.geometry.set(L_x=450)
+    po.tline.step = 0.5
+    po.bcond_mngr.bcond_list[1].value = 0.01
+#     print po.tloop
+#     po.material.set(tau_pi_bar=1)
+#     print po.tloop
+    po.tloop.eval()
+
+    w = BMCSWindow(model=po,
+                   offline=True)
+    po.add_viz2d('load function')
+    po.add_viz2d('F-w')
     po.add_viz2d('field', 'u_C', plot_fn='u_C')
+    po.add_viz2d('field', 'w', plot_fn='w')
     po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
     po.add_viz2d('field', 's', plot_fn='s')
-    po.add_viz2d('field', 'w', plot_fn='w')
-    po.add_viz2d('F-w')
-    po.geometry.set(L_x=450)
-    po.material.set(tau_pi_bar=1)
+    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+    po.add_viz2d('field', 'sf', plot_fn='sf')
+    w.set(offline=False)
+#     po.material.set(tau_pi_bar=1)
     w.configure_traits()
