@@ -41,22 +41,14 @@ PyQT: http://www.riverbankcomputing.co.uk/software/pyqt/intro
 '''
                           )
 
-#     from bmcs.debontrix import \
-#         debontrix
-
-    from bmcs.debontrix.debontrix_window import \
-        DebonTrixWindow
-
-    from bmcs.debontrix.debontrix_window import \
-        DebonTrixModel, FETS1D2L
-    tv = DebonTrixWindow(model=DebonTrixModel(fets_eval=FETS1D2L()))
-    tv.configure_traits()
+    from bmcs.debontrix import run_debontrix_cumslide
+    run_debontrix_cumslide()
 
 
 def close():
     """ This closes the oricreate application.
     """
-    bmcs.window.close()
+    pass
 
 if __name__ == '__main__':
     main()

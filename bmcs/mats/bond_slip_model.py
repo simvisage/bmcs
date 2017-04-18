@@ -308,6 +308,6 @@ if __name__ == '__main__':
     w = BMCSWindow(model=bs)
     # po.add_viz2d('F-w')
     # po.add_viz2d('field')
-    rt = po.ts.rtrace_mngr['Fi,right over w_right']
-    rt.add_viz2d('time function')
+    #rt = po.ts.rtrace_mngr['Fi,right over w_right']
+    #rt.add_viz2d('time function')
     w.configure_traits()

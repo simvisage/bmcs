@@ -3,8 +3,6 @@ Created on 12.01.2016
 @author: Yingxiong, ABaktheer, RChudoba
 '''
 
-from bmcs.matmod.tloop import TLoop, TLine
-from bmcs.matmod.tstepper import TStepper
 from ibvpy.api import BCDof
 from ibvpy.core.bcond_mngr import BCondMngr
 from mathkit.mfn import MFnLineArray
@@ -15,11 +13,13 @@ from traitsui.api import \
     View, UItem, Item, Group, VGroup, VSplit
 from util.traits.editors import MPLFigureEditor
 from view.plot2d import Viz2D, Vis2D
-from view.ui import BMCSRootNode, BMCSLeafNode
-from view.window import BMCSWindow
+from view.ui import BMCSLeafNode
+from view.window import BMCSModel, BMCSWindow, TLine
 
-from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from mats_bondslip import MATSEvalFatigue
+from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
+from bmcs.mats.mats_bondslip import MATSEvalFatigue
+from bmcs.mats.tloop import TLoop
+from bmcs.mats.tstepper import TStepper
 import numpy as np
 
 
@@ -344,7 +344,7 @@ class Viz2DPullOutField(Viz2D):
     )
 
 
-class PullOutSimulation(BMCSRootNode, Vis2D):
+class PullOutSimulation(BMCSModel, Vis2D):
 
     node_name = 'pull out simulation'
 
@@ -358,6 +358,15 @@ class PullOutSimulation(BMCSRootNode, Vis2D):
             self.geometry,
             self.bcond_mngr,
         ]
+
+    def eval(self):
+        return self.tloop.eval()
+
+    def paused(self):
+        self.tloop.paused = True
+
+    def stop(self):
+        self.tloop.restart = True
 
     material = Instance(Material)
 
@@ -577,10 +586,10 @@ class PullOutSimulation(BMCSRootNode, Vis2D):
                      }
 
 
-if __name__ == '__main__':
+def run_debontrix_cumslide():
     po = PullOutSimulation(n_e_x=100, k_max=500)
 #     po.geometry.set(L_x=450)
-    po.tline.step = 0.5
+    po.tline.step = 0.05
     po.bcond_mngr.bcond_list[1].value = 0.01
 #     print po.tloop
 #     po.material.set(tau_pi_bar=1)
@@ -596,7 +605,10 @@ if __name__ == '__main__':
     po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-    po.add_viz2d('field', 'sf', plot_fn='sf')
     w.set(offline=False)
+    po.add_viz2d('field', 'sf', plot_fn='sf')
 #     po.material.set(tau_pi_bar=1)
     w.configure_traits()
+
+if __name__ == '__main__':
+    run_debontrix_cumslide()

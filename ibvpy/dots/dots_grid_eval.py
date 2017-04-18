@@ -6,12 +6,14 @@ Created on Mar 4, 2017
 '''
 from ibvpy.api import \
     TStepperEval, IFETSEval
+from ibvpy.core.i_sdomain import ISDomain
 from mathkit.matrix_la import \
     SysMtxArray
 from traits.api import \
     Array, \
     Property, cached_property, \
     Instance, Float
+
 import numpy as np
 
 
@@ -30,6 +32,8 @@ class DOTSGridEval(TStepperEval):
     #=========================================================================
     # Original code, might be obsolete
     #=========================================================================
+    sdomain = Instance(ISDomain)
+
     def new_cntl_var(self):
         return np.zeros(self.sdomain.n_dofs, np.float_)
 

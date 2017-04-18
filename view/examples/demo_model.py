@@ -27,16 +27,18 @@ Created on Mar 10, 2017
 
 import time
 
-from ibvpy.api import BCDof, TLine
+from ibvpy.api import BCDof
 from traits.api import Instance, List,  HasStrictTraits,\
     Property, cached_property, Bool, Int
 from traitsui.api import View, Include, VGroup, UItem
 from view.ui import BMCSRootNode
 from view.window import BMCSWindow
+from view.window.bmcs_window import BMCSModel
 
 import numpy as np
 from response_tracer import ResponseTracer
 from tfun_pwl_interactive import TFunPWLInteractive
+from view.window.tline import TLine
 
 
 class TimeLoop(HasStrictTraits):
@@ -59,7 +61,7 @@ class TimeLoop(HasStrictTraits):
         self.init_loop()
         t_min = self.tline.val
         t_max = self.tline.max
-        n_steps = self.tline.steps_to_go
+        n_steps = 5
         tarray = np.linspace(t_min, t_max, n_steps)
         for idx, t in enumerate(tarray):
             if self.restart or self.paused:
@@ -68,7 +70,7 @@ class TimeLoop(HasStrictTraits):
             self.tline.val = t
 
 
-class DemoModel(BMCSRootNode):
+class DemoModel(BMCSModel):
     '''Demo model of the BMCS Window
 
     Shows how the time control within an application of BMCS
@@ -126,6 +128,9 @@ class DemoModel(BMCSRootNode):
     @cached_property
     def _get_tloop(self):
         return TimeLoop(tline=self.tline)
+
+    def eval(self):
+        self.tloop.eval()
 
     rt = Instance(ResponseTracer, ())
 

@@ -15,6 +15,7 @@ from traitsui.api import \
     HSplit
 from traitsui.menu import \
     Menu, MenuBar, Separator
+from view.plot2d import Vis2D
 from view.ui.bmcs_tree_node import \
     BMCSRootNode, BMCSTreeNode, BMCSLeafNode
 
@@ -22,6 +23,7 @@ from bmcs_tree_view_handler import \
     BMCSTreeViewHandler, plot_self, menu_save, \
     menu_open, menu_exit, toolbar_actions, key_bindings
 from bmcs_viz_sheet import VizSheet
+from tline import TLine
 
 
 if ETSConfig.toolkit == 'wx':
@@ -71,7 +73,7 @@ class RunThread(Thread):
         self.ui.start_event = True
         self.ui.running = True
         try:
-            self.ui.model.tloop.eval()
+            self.ui.model.eval()
         except Exception as e:
             self.ui.running = False
             raise
@@ -79,27 +81,44 @@ class RunThread(Thread):
         self.ui.finish_event = True
 
     def pause(self):
-        self.ui.model.tloop.paused = True
+        self.ui.model.paused = True
 
     def stop(self):
-        self.ui.model.tloop.restart = True
+        self.ui.model.restart = True
+
+
+class BMCSModel(BMCSRootNode):
+
+    tline = Instance(TLine)
+
+    def _tline_default(self):
+        return TLine()
+
+    def eval(self):
+        return
+
+    def paused(self):
+        pass
+
+    def stop(self):
+        pass
 
 
 class BMCSWindow(HasStrictTraits):
 
     '''View object for a cross section state.
     '''
-    model = Instance(BMCSRootNode)
+    model = Instance(BMCSModel)
 
     offline = DelegatesTo('viz_sheet')
 
     def _model_changed(self):
         self.model.set_ui_recursively(self)
-        tline = self.model.tloop.tline
+        tline = self.model.tline
         self.viz_sheet.time_range_changed(tline.max)
         self.viz_sheet.time_changed(tline.val)
 
-    tloop_thread = Instance(RunThread)
+    run_thread = Instance(RunThread)
 
     running = Bool(False)
 
@@ -127,14 +146,15 @@ class BMCSWindow(HasStrictTraits):
     def run(self):
         if self.running:
             return
-        self.tloop_thread = RunThread(ui=self)
-        self.tloop_thread.start()
+        self.run_thread = RunThread(ui=self)
+        print 'STARTING THREAD'
+        self.run_thread.start()
 
     def pause(self):
-        self.tloop_thread.pause()
+        self.model.pause()
 
     def stop(self):
-        self.tloop_thread.stop()
+        self.model.stop()
 
     selected_node = Instance(HasStrictTraits)
 
@@ -223,13 +243,13 @@ if __name__ == '__main__':
         BCDof(),
         BCSlice()]
     rt = ResponseTracer()
-    tr = BMCSRootNode(node_name='model',
-                      tree_node_list=[BMCSTreeNode(node_name='subnode 1'),
-                                      BMCSTreeNode(node_name='subnode 2'),
-                                      rt,
-                                      bc_mngr
-                                      ])
-
+    tr = BMCSModel(node_name='model',
+                   tree_node_list=[BMCSTreeNode(node_name='subnode 1'),
+                                   BMCSTreeNode(node_name='subnode 2'),
+                                   rt,
+                                   bc_mngr
+                                   ])
+    tr.tree_node_list += [tr.tline]
     tv = BMCSWindow(model=tr)
     rt.add_viz2d('time_profile')
     tv.configure_traits()

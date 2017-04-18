@@ -68,7 +68,6 @@ and in boundary conditions.
 '''
 
 
-from bmcs.matmod.mats_bondslip import MATSEvalFatigue
 from ibvpy.api import \
     FEGrid, FETSEval, IFETSEval, \
     MATSEval, IMATSEval, \
@@ -86,8 +85,9 @@ from traits.api import \
 from traitsui.api import \
     View, Include, Item, UItem, VGroup
 from view.plot2d import Viz2D, Vis2D
-from view.ui import BMCSTreeNode, BMCSLeafNode
+from view.ui import BMCSTreeNode, BMCSLeafNode, BMCSRootNode
 
+from bmcs.mats.mats_bondslip import MATSEvalFatigue
 import numpy as np
 import sympy as sp
 from view.examples.tfun_pwl_interactive import TFunPWLInteractive
@@ -251,7 +251,7 @@ class Viz2DPullOutField(Viz2D):
     )
 
 
-class Bondix(BMCSTreeNode, Vis2D):
+class BontrixLin(BMCSRootNode, Vis2D):
     '''Linear elastic calculation of pull-out problem.
     '''
 
@@ -464,13 +464,13 @@ class Bondix(BMCSTreeNode, Vis2D):
                      'F-w': Viz2DPullOutFW}
 
 
-if __name__ == '__main__':
+def run_debontrix_lin():
     from view.window import BMCSWindow
 
-    po = Bondix(fets=FETS1D52L4ULRH(),
-                n_E=5,
-                L_x=1.0,
-                G=1.0)
+    po = BontrixLin(fets=FETS1D52L4ULRH(),
+                    n_E=5,
+                    L_x=1.0,
+                    G=1.0)
 
     w = BMCSWindow(model=po)
     # po.add_viz2d('F-w')
@@ -478,3 +478,6 @@ if __name__ == '__main__':
     rt = po.ts.rtrace_mngr['Fi,right over w_right']
     rt.add_viz2d('time function')
     w.configure_traits()
+
+if __name__ == '__main__':
+    run_debontrix_lin()
