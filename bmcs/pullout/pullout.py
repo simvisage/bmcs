@@ -3,6 +3,10 @@ Created on 12.01.2016
 @author: Yingxiong, ABaktheer, RChudoba
 '''
 
+from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
+from bmcs.mats.mats_bondslip import MATSEvalFatigue
+from bmcs.mats.tloop import TLoop
+from bmcs.mats.tstepper import TStepper
 from ibvpy.api import BCDof
 from ibvpy.core.bcond_mngr import BCondMngr
 from mathkit.mfn import MFnLineArray
@@ -16,10 +20,6 @@ from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow, TLine
 
-from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from bmcs.mats.mats_bondslip import MATSEvalFatigue
-from bmcs.mats.tloop import TLoop
-from bmcs.mats.tstepper import TStepper
 import numpy as np
 
 
@@ -586,7 +586,7 @@ class PullOutSimulation(BMCSModel, Vis2D):
                      }
 
 
-def run_debontrix_cumslide():
+def run_pullout():
     po = PullOutSimulation(n_e_x=100, k_max=500)
 #     po.geometry.set(L_x=450)
     po.tline.step = 0.05
@@ -611,4 +611,4 @@ def run_debontrix_cumslide():
     w.configure_traits()
 
 if __name__ == '__main__':
-    run_debontrix_cumslide()
+    run_pullout()

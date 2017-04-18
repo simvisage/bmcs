@@ -36,7 +36,7 @@ setup(
     entry_points={
         'gui_scripts': [
             'bmcs_ack = bmcs.scripts.screenmix_app:main',
-            'bmcs_pullout = bmcs.scripts.debontrix_app:main',
+            'bmcs_pullout = bmcs.scripts.pullout_app:main',
             'bmcs_crack = bmcs.scripts.cracktrix_app:main',
             'bmcs_bundle = bmcs.scripts.bundltrix_app:main',
             'bmcs_mxn = bmcs.scripts.mxntrix_app:main',

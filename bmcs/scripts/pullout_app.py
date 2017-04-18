@@ -41,8 +41,8 @@ PyQT: http://www.riverbankcomputing.co.uk/software/pyqt/intro
 '''
                           )
 
-    from bmcs.debontrix import run_debontrix_cumslide
-    run_debontrix_cumslide()
+    from bmcs.pullout import run_pullout
+    run_pullout()
 
 
 def close():
