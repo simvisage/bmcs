@@ -35,6 +35,7 @@ setup(
     long_description='',
     entry_points={
         'gui_scripts': [
+            'bmcs_bond_slip = bmcs.scripts.bond_slip_app:main',
             'bmcs_ack = bmcs.scripts.screenmix_app:main',
             'bmcs_pullout = bmcs.scripts.pullout_app:main',
             'bmcs_crack = bmcs.scripts.cracktrix_app:main',
