@@ -591,10 +591,7 @@ def run_pullout():
 #     po.geometry.set(L_x=450)
     po.tline.step = 0.05
     po.bcond_mngr.bcond_list[1].value = 0.01
-#     print po.tloop
-#     po.material.set(tau_pi_bar=1)
-#     print po.tloop
-    po.tloop.eval()
+#    po.tloop.eval()
 
     w = BMCSWindow(model=po,
                    offline=True)
@@ -607,7 +604,6 @@ def run_pullout():
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
     w.set(offline=False)
     po.add_viz2d('field', 'sf', plot_fn='sf')
-#     po.material.set(tau_pi_bar=1)
     w.configure_traits()
 
 if __name__ == '__main__':
