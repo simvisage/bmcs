@@ -14,6 +14,7 @@ from traitsui.api import \
 from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSLeafNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
+
 from bmcs.pullout.pullout import LoadingScenario
 from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
