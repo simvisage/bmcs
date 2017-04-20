@@ -5,6 +5,7 @@ Created on 12.12.2016
 '''
 
 
+from bmcs.pullout.pullout import LoadingScenario
 from scipy.interpolate import interp1d
 from traits.api import \
     HasTraits, Property, Instance, cached_property, Str, Button, Enum, \
@@ -12,14 +13,13 @@ from traits.api import \
 from traitsui.api import \
     View, Item, Group, VGroup, HSplit, TreeEditor, TreeNode
 from util.traits.editors import MPLFigureEditor
-
-from bmcs.pullout.pullout import LoadingScenario
-import matplotlib.gridspec as gridspec
-from mats_bondslip_1 import MATSEval
-import numpy as np
 from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSRootNode, BMCSLeafNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
+
+import matplotlib.gridspec as gridspec
+from mats_bondslip_1 import MATSEBondSlipEP
+import numpy as np
 
 
 class Material(BMCSLeafNode):
@@ -118,16 +118,16 @@ class BondSlipModel(BMCSModel, Vis2D):
     def _loading_scenario_default(self):
         return LoadingScenario()
 
-    mats_eval = Property(Instance(MATSEval), depends_on='MAT')
+    mats_eval = Property(Instance(MATSEBondSlipEP), depends_on='MAT')
 
     @cached_property
     def _get_mats_eval(self):
-        return MATSEval(E_b=self.material.E_b,
-                        gamma=self.material.gamma,
-                        tau_bar=self.material.tau_bar,
-                        K=self.material.K,
-                        alpha=self.material.alpha,
-                        beta=self.material.beta)
+        return MATSEBondSlipEP(E_b=self.material.E_b,
+                               gamma=self.material.gamma,
+                               tau_bar=self.material.tau_bar,
+                               K=self.material.K,
+                               alpha=self.material.alpha,
+                               beta=self.material.beta)
 
     t_arr = Array(np.float_)
     s_arr = Array(np.float_)

@@ -159,7 +159,7 @@ class LoadingScenario(MFnLineArray, BMCSLeafNode):
     unloading_ratio = Range(0., 1., value=0.5,
                             BC=True,
                             input=True)
-    number_of_increments = Int(10,
+    number_of_increments = Int(20,
                                BC=True,
                                input=True)
     loading_type = Enum("Monotonic", "Cyclic",
@@ -222,17 +222,29 @@ class LoadingScenario(MFnLineArray, BMCSLeafNode):
             d_arr = np.hstack([np.linspace(d_history[i], d_history[i + 1], self.number_of_increments)
                                for i in range(len(d_levels) - 1)])
 
+#         if (self.amplitude_type == "Constant_Amplitude" and
+#                 self.loading_range == "Non_symmetric"):
+#             # d_1 = np.zeros(self.number_of_cycles*2 + 1)
+#             d_1 = np.zeros(1)
+#             d_2 = np.linspace(
+#                 0, self.maximum_loading, self.number_of_cycles * 2)
+#             d_2.reshape(-1, 2)[:, 0] = self.maximum_loading
+#             d_2.reshape(-1, 2)[:, 1] = self.maximum_loading * \
+#                 self.unloading_ratio
+#             d_history = d_2.flatten()
+#             d_arr = np.hstack((d_1, d_history))
+
         if (self.amplitude_type == "Constant_Amplitude" and
                 self.loading_range == "Non_symmetric"):
-            # d_1 = np.zeros(self.number_of_cycles*2 + 1)
-            d_1 = np.zeros(1)
-            d_2 = np.linspace(
+            d_levels = np.linspace(
                 0, self.maximum_loading, self.number_of_cycles * 2)
-            d_2.reshape(-1, 2)[:, 0] = self.maximum_loading
-            d_2.reshape(-1, 2)[:, 1] = self.maximum_loading * \
-                self.unloading_ratio
-            d_history = d_2.flatten()
-            d_arr = np.hstack((d_1, d_history))
+            d_levels.reshape(-1, 2)[:,
+                                    0] = self.maximum_loading * self.unloading_ratio
+            d_levels[0] = 0
+            d_levels.reshape(-1, 2)[:, 1] = self.maximum_loading
+            d_history = d_levels.flatten()
+            d_arr = np.hstack([np.linspace(d_history[i], d_history[i + 1], self.number_of_increments)
+                               for i in range(len(d_levels) - 1)])
 
         t_arr = np.linspace(0, self.t_max, len(d_arr))
         self.xdata = t_arr
