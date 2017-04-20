@@ -5,14 +5,32 @@ Created on 05.12.2016
 '''
 
 #from scipy.misc import derivative
-from scipy.optimize import newton
-from traits.api import implements, Int, Array, HasTraits, Instance, \
-    Property, cached_property, Constant, Float, List
+from ibvpy.api import MATSEval, IMATSEval
+from traits.api import implements,  \
+    Constant, Float, WeakRef
 
 import numpy as np
 
 
-class MATSEBondSlipEP(HasTraits):
+class MATSBondSlipBase(MATSEval):
+
+    implements(IMATSEval)
+
+    material = WeakRef
+
+
+class MATSBondSlipEP(MATSBondSlipBase):
+    '''Elastic plastic model of the bond
+    '''
+
+    def _material_changed(self):
+        self.set(E_b=self.material.E_b,
+                 gamma=self.material.gamma,
+                 tau_bar=self.material.tau_bar,
+                 K=self.material.K,
+                 alpha=self.material.alpha,
+                 beta=self.material.beta
+                 )
 
     E_m = Float(28484, tooltip='Stiffness of the matrix [MPa]',
                 auto_set=True, enter_set=True)
@@ -46,43 +64,6 @@ class MATSEBondSlipEP(HasTraits):
     alpha = Float(1.0)
     beta = Float(1.0)
     g = lambda self, k: 1. / (1 + np.exp(-self.alpha * k + 6.)) * self.beta
-
-#     def get_corr_pred(self, eps, d_eps, sig, t_n, t_n1, alpha, q, kappa):
-#         #         g = lambda k: 0.8 - 0.8 * np.exp(-k)
-#         #         g = lambda k: 1. / (1 + np.exp(-2 * k + 6.))
-#         n_e, n_ip, n_s = eps.shape
-#         D = np.zeros((n_e, n_ip, 3, 3))
-#         D[:, :, 0, 0] = self.E_m
-#         D[:, :, 2, 2] = self.E_f
-#
-#         sig_trial = sig[:, :, 1] / \
-#             (1 - self.g(kappa)) + self.E_b * d_eps[:, :, 1]
-#         xi_trial = sig_trial - q
-#         f_trial = abs(xi_trial) - (self.tau_bar + self.K * alpha)
-#
-#         # print'f_trial', f_trial
-#         elas = f_trial <= 1e-8
-#         plas = f_trial > 1e-8
-#         d_sig = np.einsum('...st,...t->...s', D, d_eps)
-#         sig += d_sig
-#
-#         d_gamma = f_trial / (self.E_b + self.K + self.gamma) * plas
-#         alpha += d_gamma
-#         kappa += d_gamma
-#         q += d_gamma * self.gamma * np.sign(xi_trial)
-#         w = self.g(kappa)
-#         # print'w=',w
-#
-#         sig_e = sig_trial - d_gamma * self.E_b * np.sign(xi_trial)
-#         sig[:, :, 1] = (1 - w) * sig_e
-#
-# #         E_p = -self.E_b / (self.E_b + self.K + self.gamma) * derivative(self.g, kappa, dx=1e-6) * sig_e \
-# #             + (1 - w) * self.E_b * (self.K + self.gamma) / \
-# #             (self.E_b + self.K + self.gamma)
-#
-#         D[:, :, 1, 1] = (1 - w) * self.E_b * elas + E_p * plas
-#         print'D_ed=', D[:, :, 1, 1]
-#         return sig, D, alpha, q, kappa
 
     n_s = Constant(3)
 
@@ -130,3 +111,13 @@ class MATSEBondSlipEP(HasTraits):
             sig_e_arr[i] = sig_e
 
         return sig_n_arr, sig_e_arr, w_arr
+
+
+class MATSBondSlipD(MATSBondSlipBase):
+    '''Damage model of bond.
+    '''
+
+
+class MATSBondSlipDP(MATSBondSlipBase):
+    '''Damage - plasticity model of bond.
+    '''

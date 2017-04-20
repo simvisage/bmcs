@@ -5,21 +5,18 @@ Created on 12.12.2016
 '''
 
 
-from scipy.interpolate import interp1d
+from ibvpy.api import IMATSEval
 from traits.api import \
-    HasTraits, Property, Instance, cached_property, Str, Button, Enum, \
-    Range, on_trait_change, Array, List, Float
+    Property, Instance, cached_property, Str, \
+    Array, List, Float, Trait
 from traitsui.api import \
-    View, Item, Group, VGroup, HSplit, TreeEditor, TreeNode
-from util.traits.editors import MPLFigureEditor
-
-from bmcs.pullout.pullout import LoadingScenario
-import matplotlib.gridspec as gridspec
-from mats_bondslip_1 import MATSEval
-import numpy as np
+    View, Item, Group, VGroup
 from view.plot2d import Vis2D, Viz2D
-from view.ui import BMCSRootNode, BMCSLeafNode
+from view.ui import BMCSLeafNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
+from bmcs.pullout.pullout import LoadingScenario
+from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
+import numpy as np
 
 
 class Material(BMCSLeafNode):
@@ -118,16 +115,19 @@ class BondSlipModel(BMCSModel, Vis2D):
     def _loading_scenario_default(self):
         return LoadingScenario()
 
-    mats_eval = Property(Instance(MATSEval), depends_on='MAT')
+    material_model = Trait('plasticity',
+                           {'damage': MATSBondSlipD,
+                            'plasticity': MATSBondSlipEP,
+                            'damage-plasticity': MATSBondSlipDP,
+                            },
+                           MAT=True
+                           )
+
+    mats_eval = Property(Instance(IMATSEval), depends_on='MAT')
 
     @cached_property
     def _get_mats_eval(self):
-        return MATSEval(E_b=self.material.E_b,
-                        gamma=self.material.gamma,
-                        tau_bar=self.material.tau_bar,
-                        K=self.material.K,
-                        alpha=self.material.alpha,
-                        beta=self.material.beta)
+        return self.material_model_(material=self.material)
 
     t_arr = Array(np.float_)
     s_arr = Array(np.float_)
@@ -151,10 +151,12 @@ class BondSlipModel(BMCSModel, Vis2D):
     viz2d_classes = {'bond stress-slip': Viz2DStressSlip,
                      'bond damage-slip': Viz2DDamageSlip}
 
+    tree_view = View(Item('material_model'))
+
 
 def run_bond_slip_model():
     bsm = BondSlipModel()
-    w = BMCSWindow(model=bsm)
+    w = BMCSWindow(model=bsm, n_cols=1)
     bsm.add_viz2d('bond stress-slip')
     bsm.add_viz2d('bond damage-slip')
     w.configure_traits()

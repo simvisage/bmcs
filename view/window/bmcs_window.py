@@ -111,6 +111,7 @@ class BMCSWindow(HasStrictTraits):
     model = Instance(BMCSModel)
 
     offline = DelegatesTo('viz_sheet')
+    n_cols = DelegatesTo('viz_sheet')
 
     def _model_changed(self):
         self.model.set_ui_recursively(self)
