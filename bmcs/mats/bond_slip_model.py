@@ -4,7 +4,7 @@ Created on 12.12.2016
 @author: abaktheer
 '''
 
-from bmcs.view.ui import BMCSTreeNode, BMCSLeafNode
+
 from matplotlib.figure import Figure
 from scipy.interpolate import interp1d
 from traits.api import \
@@ -13,7 +13,9 @@ from traits.api import \
 from traitsui.api import \
     View, Item, Group, VGroup
 from util.traits.editors import MPLFigureEditor
+from view.ui import BMCSTreeNode, BMCSLeafNode
 from view.window import BMCSWindow
+
 import matplotlib.gridspec as gridspec
 from mats_bondslip import MATSEvalFatigue
 import numpy as np
