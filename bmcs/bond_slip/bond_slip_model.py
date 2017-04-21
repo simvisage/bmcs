@@ -5,6 +5,7 @@ Created on 12.12.2016
 '''
 
 
+from bmcs.pullout.pullout import LoadingScenario
 from ibvpy.api import IMATSEval
 from traits.api import \
     Property, Instance, cached_property, Str, \
@@ -15,7 +16,6 @@ from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSLeafNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
 
-from bmcs.pullout.pullout import LoadingScenario
 from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 
@@ -30,7 +30,7 @@ class Material(BMCSLeafNode):
                 enter_set=True,
                 auto_set=False)
 
-    gamma = Float(60,
+    gamma = Float(0,
                   MAT=True,
                   label="Gamma",
                   desc="Kinematic hardening modulus",
@@ -46,31 +46,37 @@ class Material(BMCSLeafNode):
 
     tau_bar = Float(5,
                     MAT=True,
-                    label="Tau_pi_bar ",
-                    desc="Reversibility limit",
+                    label="Tau_0",
+                    desc="yield stress",
                     enter_set=True,
                     auto_set=False)
 
     alpha = Float(1.0,
                   MAT=True,
-                  )
+                  label="alpha",
+                  desc="parameter controls the damage function",
+                  enter_set=True,
+                  auto_set=False)
+
     beta = Float(1.0,
                  MAT=True,
-                 )
+                 label="beta",
+                 desc="parameter controls the damage function",
+                 enter_set=True,
+                 auto_set=False)
 
     view = View(VGroup(Group(Item('E_b'),
-                             Item('tau_bar'), show_border=True, label='Bond Stiffness and reversibility limit'),
+                             Item('tau_bar'), show_border=True, label='Bond Stiffness and yield stress'),
                        Group(Item('gamma'),
                              Item('K'), show_border=True, label='Hardening parameters'),
                        Group(Item('alpha'),
-                             Item('beta'), label='Damage cumulation parameters')))
-
+                             Item('beta'), label='Damage parameters'),))
     tree_view = view
 
 
 class Viz2DStressSlip(Viz2D):
 
-    def plot(self, ax, vot, *args, **kw):  # , color='blue', linestyle='-',
+    def plot(self, ax, vot, *args, **kw):
 
         s_arr = self.vis2d.s_arr
         tau_arr = self.vis2d.tau_arr
@@ -85,7 +91,7 @@ class Viz2DStressSlip(Viz2D):
 
 class Viz2DDamageSlip(Viz2D):
 
-    def plot(self, ax, vot, *args, **kw):  # , color='blue', linestyle='-',
+    def plot(self, ax, vot, *args, **kw):
 
         s_arr = self.vis2d.s_arr
         omega_arr = self.vis2d.omega_arr
