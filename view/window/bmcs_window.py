@@ -91,6 +91,16 @@ class BMCSModel(BMCSRootNode):
 
     tline = Instance(TLine)
 
+    def time_changed(self, time):
+        self.ui.viz_sheet.time_changed(time)
+
+    def time_range_changed(self, tmax):
+        self.tline.max = tmax
+        self.ui.viz_sheet.time_range_changed(tmax)
+
+    def set_tmax(self, time):
+        self.time_range_changed(time)
+
     def _tline_default(self):
         return TLine()
 

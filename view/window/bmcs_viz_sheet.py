@@ -43,6 +43,12 @@ tabular_editor = TabularEditor(
 class VizSheet(HasStrictTraits):
     '''Trait definition.
     '''
+
+    def __init__(self, *args, **kw):
+        super(VizSheet, self).__init__(*args, **kw)
+        self.on_trait_change(self.viz2d_list_items_changed,
+                             'viz2d_list_items')
+
     name = Str
 
     min = Float(0.0)
@@ -135,7 +141,8 @@ class VizSheet(HasStrictTraits):
 
     offline = Bool(False)
 
-    def _viz2d_list_items_changed(self):
+    def viz2d_list_items_changed(self):
+        print 'VIZ2D_items_changed'
         if not self.offline:
             self.replot()
 

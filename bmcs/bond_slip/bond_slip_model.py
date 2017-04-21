@@ -6,11 +6,15 @@ Created on 12.12.2016
 
 
 from ibvpy.api import IMATSEval
+from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import \
     Property, Instance, cached_property, Str, \
-    Array, List, Float, Trait
+    Array, List, Float, Trait, on_trait_change, Bool, Dict, \
+    Enum
 from traitsui.api import \
     View, Item, Group, VGroup
+from traitsui.editors.enum_editor import EnumEditor
+from view.examples.tfun_pwl_interactive import TFunPWLInteractive
 from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSLeafNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
@@ -68,33 +72,34 @@ class Material(BMCSLeafNode):
     tree_view = view
 
 
-class Viz2DStressSlip(Viz2D):
+class Viz2DBondHistory(Viz2D):
 
-    def plot(self, ax, vot, *args, **kw):  # , color='blue', linestyle='-',
+    def __init__(self, *args, **kw):
+        super(Viz2DBondHistory, self).__init__(*args, **kw)
+        self.on_trait_change(self._set_sv_names, 'vis2d.material_model')
+        self._set_sv_names()
 
-        s_arr = self.vis2d.s_arr
-        tau_arr = self.vis2d.tau_arr
-        tau_arr_e = self.vis2d.tau_arr_e
-        ax.plot(s_arr, tau_arr, label='Plastic-Damage')
-        ax.plot(s_arr, tau_arr_e, '--k', label='Elastic-Plastic')
+    x_sv_name = Str
+    y_sv_name = Str
+    sv_names = List([])
+
+    def _set_sv_names(self):
+        self.sv_names = self.vis2d.sv_names
+
+    def plot(self, ax, vot, *args, **kw):
+
+        xdata = self.vis2d.get_sv_hist(self.x_sv_name)
+        ydata = self.vis2d.get_sv_hist(self.y_sv_name)
+        ax.plot(xdata, ydata)
         ax.set_title('Slip - Stress')
-        ax.set_xlabel('Slip')
-        ax.set_ylabel('Stress')
+        ax.set_xlabel(self.x_sv_name)
+        ax.set_ylabel(self.y_sv_name)
         ax.legend()
 
-
-class Viz2DDamageSlip(Viz2D):
-
-    def plot(self, ax, vot, *args, **kw):  # , color='blue', linestyle='-',
-
-        s_arr = self.vis2d.s_arr
-        omega_arr = self.vis2d.omega_arr
-
-        ax.plot(s_arr, omega_arr)
-        ax.set_title('Slip - Damage')
-        ax.set_xlabel('Slip')
-        ax.set_ylabel('Damage')
-        ax.set_ylim([0, 1])
+    traits_view = View(
+        Item('x_sv_name', editor=EnumEditor(name='sv_names')),
+        Item('y_sv_name', editor=EnumEditor(name='sv_names'))
+    )
 
 
 class BondSlipModel(BMCSModel, Vis2D):
@@ -104,63 +109,177 @@ class BondSlipModel(BMCSModel, Vis2D):
     tree_node_list = List([])
 
     def _tree_node_list_default(self):
-        return [self.material, self.loading_scenario]
+        return [self.material,
+                self.loading_scenario]
+
+    @on_trait_change('MAT,+BC')
+    def _update_node_list(self):
+        self.tree_node_list = [self.material, self.loading_scenario]
 
     material = Instance(Material)
+    '''Record of material parameters that are accessed by the
+    individual models.
+    '''
 
     def _material_default(self):
         return Material()
 
-    loading_scenario = Instance(LoadingScenario)
+    interaction_type = Trait('interactive',
+                             {'interactive': TFunPWLInteractive,
+                              'predefined': LoadingScenario},
+                             BC=True,
+                             )
+    '''Type of control - either interactive or predefined.
+    '''
+
+    def _interaction_type_changed(self):
+        print 'assigning interaction type'
+        self.loading_scenario = self.interaction_type_()
+
+    loading_scenario = Instance(MFnLineArray)
+    '''Loading scenario in form of a function that maps the time variable
+    to the control slip.
+    '''
 
     def _loading_scenario_default(self):
-        return LoadingScenario()
+        return TFunPWLInteractive()
 
     material_model = Trait('plasticity',
                            {'damage': MATSBondSlipD,
                             'plasticity': MATSBondSlipEP,
                             'damage-plasticity': MATSBondSlipDP,
                             },
+                           enter_set=True, auto_set=False,
                            MAT=True
                            )
+    '''Available material models.
+    '''
 
     mats_eval = Property(Instance(IMATSEval), depends_on='MAT')
-
+    '''Instance of the material model.
+    '''
     @cached_property
     def _get_mats_eval(self):
         return self.material_model_(material=self.material)
 
-    t_arr = Array(np.float_)
-    s_arr = Array(np.float_)
-    tau_arr = Array(np.float_)
-    tau_arr_e = Array(np.float_)
-    omega_arr = Array(np.float_)
+    sv_names = Property(List(Str), depends_on='material_model')
+    '''Names of state variables of the current material model.
+    '''
+    @cached_property
+    def _get_sv_names(self):
+        return self.mats_eval.sv_names
 
-    def eval(self):
-        self.t_arr = self.loading_scenario.xdata
-        self.s_arr = self.loading_scenario.ydata
-        self.tau_arr, self.tau_arr_e, self.omega_arr = \
-            self.mats_eval.get_bond_slip(self.s_arr)
-        return
+    sv_hist = Dict((Str, List))
+    '''Record of state variables. The number of names of the variables
+    depend on the active material model. See s_names.
+    '''
+
+    def _sv_hist_default(self):
+        sv_hist = {}
+        for sv_name in ['t', 's'] + self.sv_names:
+            sv_hist[sv_name] = []
+        return sv_hist
+
+    @on_trait_change('MAT')
+    def _sv_hist_reset(self):
+        for sv_name in ['t', 's'] + self.sv_names:
+            self.sv_hist[sv_name] = []
 
     def paused(self):
         raise NotImplemented
 
     def stop(self):
+        self._sv_hist_reset()
         raise NotImplemented
 
-    viz2d_classes = {'bond stress-slip': Viz2DStressSlip,
-                     'bond damage-slip': Viz2DDamageSlip}
+    paused = Bool(False)
+    restart = Bool(True)
 
-    tree_view = View(Item('material_model'))
+    def init_loop(self):
+        if self.paused:
+            self.paused = False
+        if self.restart:
+            self.tline.val = 0
+            self.restart = False
+
+    def eval(self):
+        '''this method is just called by the tloop_thread'''
+
+        self.init_loop()
+        t_min = self.tline.val
+        t_max = self.tline.max
+        n_steps = 10
+        tarray = np.linspace(t_min, t_max, n_steps)
+        sv_names = ['t', 's'] + self.sv_names
+        sv_records = [[] for s_n in sv_names]
+
+        s_last = 0
+        state_vars = self.mats_eval.init_state_vars()
+        for idx, t in enumerate(tarray):
+            if self.restart or self.paused:
+                break
+            s = self.loading_scenario(t)
+            d_s = s - s_last
+            state_vars = \
+                self.mats_eval.get_next_state(s, d_s, state_vars)
+            self.tline.val = t
+
+            # record the current simulation step
+            for sv_record, state in zip(sv_records,
+                                        (t, s) + state_vars):
+                sv_record.append(np.copy(state))
+
+        # append the data to the previous simulation steps
+        for sv_name, sv_record in zip(sv_names, sv_records):
+            self.sv_hist[sv_name].append(np.array(sv_record))
+
+    def get_sv_hist(self, sv_name):
+        return np.vstack(self.sv_hist[sv_name])
+
+    viz2d_classes = {'bond history': Viz2DBondHistory}
+
+    tree_view = View(Item('material_model'),
+                     Item('interaction_type'))
 
 
 def run_bond_slip_model():
-    bsm = BondSlipModel()
+    bsm = BondSlipModel(interaction_type='predefined',
+                        material_model='damage-plasticity')
     w = BMCSWindow(model=bsm, n_cols=1)
-    bsm.add_viz2d('bond stress-slip')
-    bsm.add_viz2d('bond damage-slip')
+    bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
+    bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
+    bsm.add_viz2d('bond history', 's_p-s', x_sv_name='s', y_sv_name='s_p')
     w.configure_traits()
 
+
+def run_interactive_test():
+    bsm = BondSlipModel(interaction_type='interactive')
+    print 'set f_val'
+    bsm.loading_scenario.f_value = 0.1
+    print 'eval'
+    bsm.eval()
+    print 'set f_val'
+    bsm.loading_scenario.f_value = 0.4
+    print 'eval'
+    bsm.eval()
+    print bsm.sv_hist.keys()
+    print bsm.get_sv_hist('omega')
+
+
+def run_predefined_load_test():
+    bsm = BondSlipModel(interaction_type='predefined',
+                        material_model='damage')
+    print 'set f_val'
+    bsm.loading_scenario.f_value = 0.1
+    print 'eval'
+    bsm.eval()
+    print 'set f_val'
+    bsm.loading_scenario.f_value = 0.4
+    print 'eval'
+    bsm.eval()
+    print bsm.sv_hist.keys()
+    print bsm.get_sv_hist('omega')
+
 if __name__ == '__main__':
+    # run_test()
     run_bond_slip_model()

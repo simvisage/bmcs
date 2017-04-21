@@ -146,7 +146,8 @@ class BMCSTreeNode(BMCSNodeBase,
 
 
 class BMCSRootNode(BMCSNodeBase,
-                   BMCSTreeNodeMixIn):
+                   BMCSTreeNodeMixIn,
+                   BMCSListeningTreeNodeMixIn):
     '''Root node for the model hierarchy.
 
     Types of generic change events within a numerical simulation

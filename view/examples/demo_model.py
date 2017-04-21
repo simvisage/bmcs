@@ -29,16 +29,15 @@ import time
 
 from ibvpy.api import BCDof
 from traits.api import Instance, List,  HasStrictTraits,\
-    Property, cached_property, Bool, Int
+    Property, cached_property, Bool
 from traitsui.api import View, Include, VGroup, UItem
-from view.ui import BMCSRootNode
 from view.window import BMCSWindow
 from view.window.bmcs_window import BMCSModel
+from view.window.tline import TLine
 
 import numpy as np
 from response_tracer import ResponseTracer
 from tfun_pwl_interactive import TFunPWLInteractive
-from view.window.tline import TLine
 
 
 class TimeLoop(HasStrictTraits):
