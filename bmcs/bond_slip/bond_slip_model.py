@@ -9,8 +9,7 @@ from ibvpy.api import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import \
     Property, Instance, cached_property, Str, \
-    Array, List, Float, Trait, on_trait_change, Bool, Dict, \
-    Enum
+    List, Float, Trait, on_trait_change, Bool, Dict
 from traitsui.api import \
     View, Item, Group, VGroup
 from traitsui.editors.enum_editor import EnumEditor
@@ -34,7 +33,7 @@ class Material(BMCSLeafNode):
                 enter_set=True,
                 auto_set=False)
 
-    gamma = Float(60,
+    gamma = Float(0,
                   MAT=True,
                   label="Gamma",
                   desc="Kinematic hardening modulus",
@@ -50,25 +49,31 @@ class Material(BMCSLeafNode):
 
     tau_bar = Float(5,
                     MAT=True,
-                    label="Tau_pi_bar ",
-                    desc="Reversibility limit",
+                    label="Tau_0",
+                    desc="yield stress",
                     enter_set=True,
                     auto_set=False)
 
     alpha = Float(1.0,
                   MAT=True,
-                  )
+                  label="alpha",
+                  desc="parameter controls the damage function",
+                  enter_set=True,
+                  auto_set=False)
+
     beta = Float(1.0,
                  MAT=True,
-                 )
+                 label="beta",
+                 desc="parameter controls the damage function",
+                 enter_set=True,
+                 auto_set=False)
 
     view = View(VGroup(Group(Item('E_b'),
-                             Item('tau_bar'), show_border=True, label='Bond Stiffness and reversibility limit'),
+                             Item('tau_bar'), show_border=True, label='Bond Stiffness and yield stress'),
                        Group(Item('gamma'),
                              Item('K'), show_border=True, label='Hardening parameters'),
                        Group(Item('alpha'),
-                             Item('beta'), label='Damage cumulation parameters')))
-
+                             Item('beta'), label='Damage parameters'),))
     tree_view = view
 
 
@@ -232,6 +237,8 @@ class BondSlipModel(BMCSModel, Vis2D):
         # append the data to the previous simulation steps
         for sv_name, sv_record in zip(sv_names, sv_records):
             self.sv_hist[sv_name].append(np.array(sv_record))
+        print self.sv_hist['kappa']
+        print self.sv_hist['omega']
 
     def get_sv_hist(self, sv_name):
         return np.vstack(self.sv_hist[sv_name])
@@ -242,12 +249,30 @@ class BondSlipModel(BMCSModel, Vis2D):
                      Item('interaction_type'))
 
 
-def run_bond_slip_model():
+def run_bond_slip_model_dp():
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='damage-plasticity')
     w = BMCSWindow(model=bsm, n_cols=1)
     bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
     bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
+    bsm.add_viz2d('bond history', 's_p-s', x_sv_name='s', y_sv_name='s_p')
+    w.configure_traits()
+
+
+def run_bond_slip_model_d():
+    bsm = BondSlipModel(interaction_type='predefined',
+                        material_model='damage')
+    w = BMCSWindow(model=bsm, n_cols=1)
+    bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
+    bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
+    w.configure_traits()
+
+
+def run_bond_slip_model_p():
+    bsm = BondSlipModel(interaction_type='predefined',
+                        material_model='plasticity')
+    w = BMCSWindow(model=bsm, n_cols=1)
+    bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
     bsm.add_viz2d('bond history', 's_p-s', x_sv_name='s', y_sv_name='s_p')
     w.configure_traits()
 
@@ -269,17 +294,12 @@ def run_interactive_test():
 def run_predefined_load_test():
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='damage')
-    print 'set f_val'
-    bsm.loading_scenario.f_value = 0.1
-    print 'eval'
     bsm.eval()
-    print 'set f_val'
-    bsm.loading_scenario.f_value = 0.4
-    print 'eval'
-    bsm.eval()
-    print bsm.sv_hist.keys()
+    print bsm.get_sv_hist('s')
+    print bsm.get_sv_hist('tau')
+    print bsm.get_sv_hist('kappa')
     print bsm.get_sv_hist('omega')
 
 if __name__ == '__main__':
-    # run_test()
-    run_bond_slip_model()
+    run_predefined_load_test()
+    # run_bond_slip_model_d()
