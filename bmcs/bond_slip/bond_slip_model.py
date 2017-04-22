@@ -1,7 +1,7 @@
 '''
 Created on 12.12.2016
 
-@author: abaktheer
+@author: abaktheer, rch
 '''
 
 
@@ -96,7 +96,6 @@ class Viz2DBondHistory(Viz2D):
         xdata = self.vis2d.get_sv_hist(self.x_sv_name)
         ydata = self.vis2d.get_sv_hist(self.y_sv_name)
         ax.plot(xdata, ydata)
-        ax.set_title('Slip - Stress')
         ax.set_xlabel(self.x_sv_name)
         ax.set_ylabel(self.y_sv_name)
         ax.legend()
@@ -172,7 +171,7 @@ class BondSlipModel(BMCSModel, Vis2D):
     '''
     @cached_property
     def _get_sv_names(self):
-        return self.mats_eval.sv_names
+        return ['t', 's'] + self.mats_eval.sv_names
 
     sv_hist = Dict((Str, List))
     '''Record of state variables. The number of names of the variables
@@ -181,13 +180,13 @@ class BondSlipModel(BMCSModel, Vis2D):
 
     def _sv_hist_default(self):
         sv_hist = {}
-        for sv_name in ['t', 's'] + self.sv_names:
+        for sv_name in self.sv_names:
             sv_hist[sv_name] = []
         return sv_hist
 
     @on_trait_change('MAT')
     def _sv_hist_reset(self):
-        for sv_name in ['t', 's'] + self.sv_names:
+        for sv_name in self.sv_names:
             self.sv_hist[sv_name] = []
 
     def paused(self):
@@ -215,7 +214,7 @@ class BondSlipModel(BMCSModel, Vis2D):
         t_max = self.tline.max
         n_steps = 10
         tarray = np.linspace(t_min, t_max, n_steps)
-        sv_names = ['t', 's'] + self.sv_names
+        sv_names = self.sv_names
         sv_records = [[] for s_n in sv_names]
 
         s_last = 0
@@ -237,8 +236,6 @@ class BondSlipModel(BMCSModel, Vis2D):
         # append the data to the previous simulation steps
         for sv_name, sv_record in zip(sv_names, sv_records):
             self.sv_hist[sv_name].append(np.array(sv_record))
-        print self.sv_hist['kappa']
-        print self.sv_hist['omega']
 
     def get_sv_hist(self, sv_name):
         return np.vstack(self.sv_hist[sv_name])
@@ -293,13 +290,13 @@ def run_interactive_test():
 
 def run_predefined_load_test():
     bsm = BondSlipModel(interaction_type='predefined',
-                        material_model='damage')
+                        material_model='damage-plasticity')
     bsm.eval()
     print bsm.get_sv_hist('s')
     print bsm.get_sv_hist('tau')
-    print bsm.get_sv_hist('kappa')
-    print bsm.get_sv_hist('omega')
+    print bsm.get_sv_hist('s_p')
+    print bsm.get_sv_hist('z')
 
 if __name__ == '__main__':
-    run_predefined_load_test()
-    # run_bond_slip_model_d()
+    # run_predefined_load_test()
+    run_bond_slip_model_d()
