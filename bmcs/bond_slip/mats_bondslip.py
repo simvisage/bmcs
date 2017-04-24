@@ -62,6 +62,7 @@ class MATSBondSlipEP(MATSBondSlipBase):
               desc="Isotropic harening modulus",
               enter_set=True,
               auto_set=False)
+
     tau_bar = Float(5,
                     label="Tau_0 ",
                     desc="yield stress",
@@ -123,12 +124,17 @@ class MATSBondSlipD(MATSBondSlipBase):
                     enter_set=True,
                     auto_set=False)
 
+    s_f = Float(0.001,
+                label="s_f",
+                desc="parameter controls the damage function",
+                enter_set=True,
+                auto_set=False)
+
     g_fn = Callable
 
     def _g_fn_default(self):
-        alpha = 1.0
-        beta = 1.0
-        return lambda k: 1. / (1 + np.exp(-alpha * k + 6.)) * beta
+        s_0 = self.tau_bar / self.E_b
+        return lambda k:  1. - (s_0 / k) * np.exp(-1 * (k - s_0) / self.s_f)
 
     sv_names = ['tau',
                 'tau_e',
@@ -160,8 +166,7 @@ class MATSBondSlipDP(MATSBondSlipBase):
                  gamma=self.material.gamma,
                  tau_bar=self.material.tau_bar,
                  K=self.material.K,
-                 alpha=self.material.alpha,
-                 beta=self.material.beta
+                 s_f=self.material.s_f
                  )
 
     E_b = Float(12900,
@@ -187,19 +192,14 @@ class MATSBondSlipDP(MATSBondSlipBase):
                     enter_set=True,
                     auto_set=False)
 
-    alpha = Float(1.0,
-                  label="alpha",
-                  desc="parameter controls the damage function",
-                  enter_set=True,
-                  auto_set=False)
+    s_f = Float(1.0,
+                label="s_f",
+                desc="parameter controls the damage function",
+                enter_set=True,
+                auto_set=False)
 
-    beta = Float(1.0,
-                 label="beta",
-                 desc="parameter controls the damage function",
-                 enter_set=True,
-                 auto_set=False)
-
-    g = lambda self, k: 1. / (1 + np.exp(-self.alpha * k + 6.)) * self.beta
+    g = lambda self, k: 1. - ((self.tau_bar / self.E_b) / k) * \
+        np.exp(-1 * (k - (self.tau_bar / self.E_b)) / self.s_f)
 
     sv_names = ['tau',
                 'tau_ep',
