@@ -70,6 +70,10 @@ class RunThread(Thread):
         self.ui = ui
 
     def run(self):
+        self.ui.model.run()
+
+    def xrun(self):
+        self.ui.model.init()
         self.ui.start_event = True
         self.ui.running = True
         try:
@@ -91,6 +95,11 @@ class BMCSModel(BMCSRootNode):
 
     tline = Instance(TLine)
 
+    def _tline_default(self):
+        return TLine(min=0.0, step=0.1, max=0.0,
+                     time_change_notifier=self.time_changed,
+                     )
+
     def time_changed(self, time):
         self.ui.viz_sheet.time_changed(time)
 
@@ -101,8 +110,8 @@ class BMCSModel(BMCSRootNode):
     def set_tmax(self, time):
         self.time_range_changed(time)
 
-    def _tline_default(self):
-        return TLine()
+    def init(self):
+        return
 
     def eval(self):
         return
@@ -112,6 +121,19 @@ class BMCSModel(BMCSRootNode):
 
     def stop(self):
         pass
+
+    def run(self):
+        print 'IN RuN'
+        self.init()
+        self.ui.start_event = True
+        self.ui.running = True
+        try:
+            self.eval()
+        except Exception as e:
+            self.ui.running = False
+            raise
+        self.ui.running = False
+        self.ui.finish_event = True
 
 
 class BMCSWindow(HasStrictTraits):
@@ -132,7 +154,6 @@ class BMCSWindow(HasStrictTraits):
     run_thread = Instance(RunThread)
 
     running = Bool(False)
-
     enable_run = Bool(True)
     enable_pause = Bool(False)
     enable_stop = Bool(False)
@@ -140,7 +161,6 @@ class BMCSWindow(HasStrictTraits):
     def _running_changed(self):
         self.enable_run = not self.running
         self.enable_pause = self.running
-        self.enable_stop = self.running
         self.model.set_traits_with_metadata(self.enable_run,
                                             disable_on_run=True)
 
@@ -157,15 +177,17 @@ class BMCSWindow(HasStrictTraits):
     def run(self):
         if self.running:
             return
-        self.run_thread = RunThread(ui=self)
-        print 'STARTING THREAD'
-        self.run_thread.start()
+        self.enable_stop = True
+        self.model.run()
+        #self.run_thread = RunThread(ui=self)
+        # self.run_thread.start()
 
     def pause(self):
         self.model.pause()
 
     def stop(self):
         self.model.stop()
+        self.enable_stop = False
 
     selected_node = Instance(HasStrictTraits)
 

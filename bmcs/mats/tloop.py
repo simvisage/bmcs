@@ -8,10 +8,10 @@ from traits.api import Int, HasStrictTraits, Instance, \
     Array, List, Bool
 from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
+from view.window.tline import TLine
 
 import numpy as np
 from tstepper import TStepper
-from view.window.tline import TLine
 
 
 class TLoop(HasStrictTraits):
@@ -52,7 +52,7 @@ class TLoop(HasStrictTraits):
         self.ts.apply_essential_bc()
 
         self.d_t = self.tline.step
-        t_n = 0.
+        t_n = self.tline.val
         t_n1 = t_n
         n_dofs = self.ts.sdomain.n_dofs
         n_e = self.ts.sdomain.n_active_elems

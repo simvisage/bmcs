@@ -11,12 +11,13 @@ http://markmail.org/message/z3hnoqruk56g2bje
 adapted and tested to work with PySide from Anaconda in March 2014
 """
 
-import matplotlib
-from matplotlib.backends.backend_qt4 import NavigationToolbar2QT
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4 import \
+    NavigationToolbar2QT
+from matplotlib.backends.backend_qt4agg import \
+    FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from pyface.qt import QtGui, QtCore
-from traits.api import Any, Instance
+from pyface.qt import QtGui
+from traits.api import Instance
 from traitsui.qt4.basic_editor_factory import BasicEditorFactory
 from traitsui.qt4.editor import Editor
 
@@ -24,6 +25,8 @@ from traitsui.qt4.editor import Editor
 class _MPLFigureEditor(Editor):
 
     scrollable = True
+
+    toolbar = True
 
     def init(self, parent):
         self.control = self._create_canvas(parent)
@@ -35,11 +38,29 @@ class _MPLFigureEditor(Editor):
         figure.canvas.mpl_connect('key_press_event', self.key_press_callback)
         figure.canvas.draw()
 
-    def _create_canvas(self, parent):
+    def x_create_canvas(self, parent):
         """ Create the MPL canvas. """
         # matplotlib commands to create a canvas
         mpl_canvas = FigureCanvas(self.value)
         return mpl_canvas
+
+    def _create_canvas(self, parent):
+        """ Create the MPL canvas. """
+        # matplotlib commands to create a canvas
+        frame = QtGui.QWidget()
+        mpl_canvas = FigureCanvas(self.value)
+        mpl_canvas.setParent(frame)
+
+        vbox = QtGui.QVBoxLayout()
+
+        if self.toolbar:
+            mpl_toolbar = NavigationToolbar2QT(mpl_canvas, frame)
+            vbox.addWidget(mpl_toolbar)
+
+        vbox.addWidget(mpl_canvas)
+        frame.setLayout(vbox)
+
+        return frame
 
     def key_press_callback(self, event):
         'whenever a key is pressed'

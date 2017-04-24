@@ -65,7 +65,7 @@ class TimeLoop(HasStrictTraits):
         for idx, t in enumerate(tarray):
             if self.restart or self.paused:
                 break
-            time.sleep(1)
+            time.sleep(0.1)
             self.tline.val = t
 
 
@@ -101,7 +101,7 @@ class DemoModel(BMCSModel):
     tree_node_list = List
 
     def _tree_node_list_default(self):
-        return [self.rt, self.bc_dof]
+        return [self.tline, self.rt, self.bc_dof]
 
     tline = Instance(TLine)
     '''Time range.

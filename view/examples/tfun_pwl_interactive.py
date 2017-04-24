@@ -34,6 +34,11 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
     t_values = List(Float, [0])
     f_values = List(Float, [0])
 
+    def reset(self):
+        self.f_values = [0]
+        self.t_values = [0]
+        self.f_value = self.f_min
+
     n_f_values = Int(10,
                      input=True,
                      auto_set=False, enter_set=True)
@@ -72,11 +77,10 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
     def _get_d_t(self):
         return self.t_ref / self.n_f_values
 
-    @on_trait_change('+input')
     def _update_xy_arrays(self):
         delta_f = self.f_value - self.f_values[-1]
         self.f_values.append(self.f_value)
-        rel_step = delta_f / self.f_max
+        rel_step = delta_f / (self.f_max - self.f_min)
         delta_t = rel_step * self.t_ref
         t_value = np.fabs(delta_t) + self.t_values[-1]
         n_steps = int(t_value / self.t_snap) + 1
@@ -85,12 +89,16 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
         self.xdata = np.array(self.t_values)
         self.ydata = np.array(self.f_values)
         self.replot()
+
+    def _f_value_changed(self):
+        self._update_xy_arrays()
+        t_value = self.t_values[-1]
+        f_value = self.f_values[-1]
         if self.ui:
             self.ui.model.set_tmax(t_value)
             if self.run_eagerly:
+                print 'LS-run', t_value, f_value
                 self.ui.run()
-
-    notify_change = Callable(None)
 
     def get_ty_data(self, vot):
         return self.t_values, self.f_values

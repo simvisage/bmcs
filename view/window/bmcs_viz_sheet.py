@@ -112,13 +112,18 @@ class VizSheet(HasStrictTraits):
                  tooltip='Defines a number of columns within the plot pane',
                  enter_set=True, auto_set=False)
 
+    offline = Bool(True)
+
     def run_started(self):
+        print 'RUN STARTED'
+        self.offline = False
         self.mode = 'monitor'
 
     def run_finished(self):
-        print 'run_finished'
         self.skipped_steps = self.monitor_chunk_size
         self.replot()
+        self.offline = True
+        print 'RUN FINISHED'
 
     monitor_chunk_size = Int(1, label='Monitor each # steps')
 
@@ -126,7 +131,11 @@ class VizSheet(HasStrictTraits):
 
     @on_trait_change('vot,n_cols')
     def replot(self):
-        print 'plotting'
+        print 'REPLOT'
+        if self.offline:
+            print 'OFFLINE'
+            return
+        print 'ONLINE'
         if self.mode == 'monitor' and \
                 self.skipped_steps < (self.monitor_chunk_size - 1):
             self.skipped_steps += 1
@@ -139,12 +148,8 @@ class VizSheet(HasStrictTraits):
 
     viz2d_list = List(Viz2D)
 
-    offline = Bool(False)
-
     def viz2d_list_items_changed(self):
-        print 'VIZ2D_items_changed'
-        if not self.offline:
-            self.replot()
+        self.replot()
 
     selected_viz2d = Instance(Viz2D)
 

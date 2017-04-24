@@ -5,8 +5,10 @@ Created on 05.12.2016
 '''
 
 from ibvpy.api import MATSEval, IMATSEval
+from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import implements,  \
-    Constant, Float, WeakRef, List, Str, Property, cached_property
+    Constant, Float, WeakRef, List, Str, Property, cached_property, \
+    HasStrictTraits, Instance, Callable
 
 import numpy as np
 
@@ -106,8 +108,7 @@ class MATSBondSlipD(MATSBondSlipBase):
     def _material_changed(self):
         self.set(E_b=self.material.E_b,
                  tau_bar=self.material.tau_bar,
-                 alpha=self.material.alpha,
-                 beta=self.material.beta
+                 g_fn=self.material.omega_fn
                  )
 
     E_b = Float(12900,
@@ -122,31 +123,18 @@ class MATSBondSlipD(MATSBondSlipBase):
                     enter_set=True,
                     auto_set=False)
 
-    alpha = Float(1.0,
-                  label="alpha",
-                  desc="parameter controls the damage function",
-                  enter_set=True,
-                  auto_set=False)
+    g_fn = Callable
 
-    beta = Float(1.0,
-                 label="beta",
-                 desc="parameter controls the damage function",
-                 enter_set=True,
-                 auto_set=False)
-
-    g = lambda self, k: 1. / (1 + np.exp(-self.alpha * k + 6.)) * self.beta
+    def _g_fn_default(self):
+        alpha = 1.0
+        beta = 1.0
+        return lambda k: 1. / (1 + np.exp(-alpha * k + 6.)) * beta
 
     sv_names = ['tau',
                 'tau_e',
                 'kappa',
                 'omega',
                 ]
-
-    s0 = Property(depends_on='tau_bar,E_b')
-
-    @cached_property
-    def _get_s0(self):
-        return self.tau_bar / self.E_b
 
     def get_next_state(self, s, d_s, s_vars):
 
@@ -155,9 +143,7 @@ class MATSBondSlipD(MATSBondSlipBase):
         # get the maximum slip achieved so far
         kappa = np.max(np.array([kappa, np.fabs(s)]), axis=0)
 
-        elas_idx = np.where(kappa <= self.s0)[0]
-        kappa[elas_idx] = self.s0
-        omega = self.g(np.fabs(kappa))
+        omega = self.g_fn(np.fabs(kappa))
 
         tau_e = self.E_b * s
         tau = (1. - omega) * tau_e
@@ -165,11 +151,6 @@ class MATSBondSlipD(MATSBondSlipBase):
 
 
 class MATSBondSlipDP(MATSBondSlipBase):
-    sv_names = ['tau',
-                'tau_e',
-                'z',
-                'xxxxxxxxxxxxx',
-                's_p']
 
     '''Damage - plasticity model of bond.
     '''
