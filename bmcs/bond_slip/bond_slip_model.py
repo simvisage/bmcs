@@ -539,7 +539,7 @@ def run_bond_slip_model_d():
                              amplitude_type='constant'
                              )
     bsm.loading_scenario.set(number_of_cycles=1,
-                             maximum_loading=0.004,
+                             maximum_loading=0.01,
                              unloading_ratio=0.5)
     bsm.run()
     w.configure_traits()
@@ -612,4 +612,4 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_interactive_test_d()
     # run_predefined_load_test()
-    run_bond_slip_model_dp()
+    run_bond_slip_model_d()

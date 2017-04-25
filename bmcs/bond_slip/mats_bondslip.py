@@ -109,7 +109,6 @@ class MATSBondSlipD(MATSBondSlipBase):
     def _material_changed(self):
         self.set(E_b=self.material.E_b,
                  tau_bar=self.material.tau_bar,
-                 s_f=self.material.omega_fn.s_f,
                  g_fn=self.material.omega_fn
                  )
 
@@ -125,17 +124,17 @@ class MATSBondSlipD(MATSBondSlipBase):
                     enter_set=True,
                     auto_set=False)
 
-    s_f = Float(0.001,
-                label="s_f",
-                desc="parameter controls the damage function",
-                enter_set=True,
-                auto_set=False)
+#     s_f = Float(0.001,
+#                 label="s_f",
+#                 desc="parameter controls the damage function",
+#                 enter_set=True,
+#                 auto_set=False)
 
     g_fn = Callable
 
-    def _g_fn_default(self):
-        s_0 = self.tau_bar / self.E_b
-        return lambda k:  1. - (s_0 / k) * np.exp(-1 * (k - s_0) / self.s_f)
+#     def _g_fn_default(self):
+#         s_0 = self.tau_bar / self.E_b
+#         return lambda k:  1. - (s_0 / k) * np.exp(-1 * (k - s_0) / self.s_f)
 
     sv_names = ['tau',
                 'tau_e',
@@ -194,11 +193,11 @@ class MATSBondSlipDP(MATSBondSlipBase):
                     enter_set=True,
                     auto_set=False)
 
-    s_f = Float(1.0,
-                label="s_f",
-                desc="parameter controls the damage function",
-                enter_set=True,
-                auto_set=False)
+#     s_f = Float(1.0,
+#                 label="s_f",
+#                 desc="parameter controls the damage function",
+#                 enter_set=True,
+#                 auto_set=False)
 
     g_fn = Callable
 
