@@ -11,7 +11,6 @@ Created on 12.12.2016
 '''
 
 
-from bmcs.pullout.pullout import LoadingScenario
 from ibvpy.api import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import \
@@ -26,6 +25,7 @@ from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSLeafNode, BMCSTreeNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
 
+from bmcs.pullout.pullout import LoadingScenario
 from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 
@@ -214,6 +214,7 @@ class AbaqusDamageFn(BMCSLeafNode, PlottableFn):
         frac = (1 - np.exp(-alpha * sk)) / (1 - np.exp(-alpha))
 
         omega[d_idx] = 1 - s_0 / k * (1 - frac)
+        omega[np.where(omega > 1.0)] = 1.0
         return omega
 
     traits_view = View(
@@ -518,7 +519,7 @@ class BondSlipModel(BMCSModel, Vis2D):
                      Item('interaction_type'))
 
 
-def run_bond_slip_model_dp():
+def run_bond_damage_plasticity():
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='damage-plasticity')
     w = BMCSWindow(model=bsm, n_cols=1)
@@ -529,7 +530,7 @@ def run_bond_slip_model_dp():
     w.configure_traits()
 
 
-def run_bond_slip_model_d():
+def run_bond_damage():
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='damage')
     w = BMCSWindow(model=bsm, n_cols=1)
@@ -545,7 +546,7 @@ def run_bond_slip_model_d():
     w.configure_traits()
 
 
-def run_bond_slip_model_p():
+def run_bond_plasticity():
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='plasticity',
                         n_steps=2000)
@@ -560,8 +561,6 @@ def run_bond_slip_model_p():
     bsm.loading_scenario.set(number_of_cycles=3,
                              maximum_loading=0.004,
                              unloading_ratio=0)
-    bsm.material.gamma = 100
-    bsm.run()
     bsm.material.set(gamma=101, K=-150)
     bsm.run()
     w.configure_traits()
@@ -612,4 +611,4 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_interactive_test_d()
     # run_predefined_load_test()
-    run_bond_slip_model_d()
+    run_bond_damage()
