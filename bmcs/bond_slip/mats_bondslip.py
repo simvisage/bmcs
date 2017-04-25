@@ -109,6 +109,7 @@ class MATSBondSlipD(MATSBondSlipBase):
     def _material_changed(self):
         self.set(E_b=self.material.E_b,
                  tau_bar=self.material.tau_bar,
+                 s_f=self.material.omega_fn.s_f,
                  g_fn=self.material.omega_fn
                  )
 
@@ -162,11 +163,12 @@ class MATSBondSlipDP(MATSBondSlipBase):
     '''
 
     def _material_changed(self):
+        print 'MATERIAL RESET TO', self.material.omega_fn.node_name
         self.set(E_b=self.material.E_b,
                  gamma=self.material.gamma,
                  tau_bar=self.material.tau_bar,
                  K=self.material.K,
-                 s_f=self.material.s_f
+                 g_fn=self.material.omega_fn
                  )
 
     E_b = Float(12900,
@@ -198,8 +200,18 @@ class MATSBondSlipDP(MATSBondSlipBase):
                 enter_set=True,
                 auto_set=False)
 
-    g = lambda self, k: 1. - ((self.tau_bar / self.E_b) / k) * \
-        np.exp(-1 * (k - (self.tau_bar / self.E_b)) / self.s_f)
+    g_fn = Callable
+
+#     def _g_fn_default(self):
+#         s_0 = self.tau_bar / self.E_b
+#         return lambda k:  1. - (s_0 / k) * np.exp(-1 * (k - s_0) / self.s_f)
+#
+#     g_fn_hardening = Callable
+#
+#     def x_g_fn_hardening_default(self):
+#         s_0 = self.tau_bar / self.E_b
+# return lambda k:  1. / (1. + np.exp(-1. * self.alpha_2 * k + 6.)) *
+# self.alpha_1
 
     sv_names = ['tau',
                 'tau_ep',
@@ -234,6 +246,6 @@ class MATSBondSlipDP(MATSBondSlipBase):
 
         # apply damage law to the effective stress
         kappa = np.max(np.array([kappa, np.fabs(s)]), axis=0)
-        omega = self.g(kappa)
+        omega = self.g_fn(kappa)
         tau = (1. - omega) * tau_ep
         return tau, tau_ep, z, alpha, kappa, omega, s_p

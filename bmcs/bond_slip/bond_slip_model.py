@@ -17,7 +17,7 @@ from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import \
     Property, Instance, cached_property, Str, \
     List, Float, Trait, on_trait_change, Bool, Dict,\
-    HasStrictTraits, Int, Tuple
+    HasStrictTraits, Int, Tuple, Interface, implements
 from traitsui.api import \
     View, Item, UItem, Group, VGroup, VSplit
 from traitsui.editors.enum_editor import EnumEditor
@@ -57,9 +57,17 @@ class PlottableFn(HasStrictTraits):
     traits_view = View(UItem('fn'))
 
 
-class DamageFn(BMCSLeafNode, PlottableFn):
+class IDamageFn(Interface):
+    pass
 
-    s_0 = Float(1e-4,
+
+class JirasekDamageFn(BMCSLeafNode, PlottableFn):
+
+    node_name = 'Jirasek damage function'
+
+    implements(IDamageFn)
+
+    s_0 = Float(5. / 12900.,
                 MAT=True,
                 input=True,
                 label="s_0",
@@ -75,7 +83,7 @@ class DamageFn(BMCSLeafNode, PlottableFn):
                 enter_set=True,
                 auto_set=False)
 
-    plot_max = 1e-3
+    plot_max = 1e-2
 
     def __call__(self, kappa):
         s_0 = self.s_0
@@ -99,8 +107,73 @@ class DamageFn(BMCSLeafNode, PlottableFn):
         )
     )
 
+    tree_view = traits_view
 
-class DamageAbaqusFn(BMCSLeafNode, PlottableFn):
+
+class LiDamageFn(BMCSLeafNode, PlottableFn):
+
+    node_name = 'Li damage function'
+
+    implements(IDamageFn)
+
+    s_0 = Float(0.00001,
+                MAT=True,
+                input=True,
+                label="s_0",
+                desc="parameter controls the damage function",
+                enter_set=True,
+                auto_set=False)
+
+    alpha_1 = Float(1.,
+                    MAT=True,
+                    input=True,
+                    label="alpha_1",
+                    desc="parameter controls the damage function",
+                    enter_set=True,
+                    auto_set=False)
+
+    alpha_2 = Float(1000.,
+                    MAT=True,
+                    input=True,
+                    label="alpha_2",
+                    desc="parameter controls the damage function",
+                    enter_set=True,
+                    auto_set=False)
+
+    plot_max = 1e-2
+
+    def __call__(self, kappa):
+        alpha_1 = self.alpha_1
+        alpha_2 = self.alpha_2
+        s_0 = self.s_0
+        omega = np.zeros_like(kappa, dtype=np.float_)
+        d_idx = np.where(kappa >= s_0)[0]
+        k = kappa[d_idx]
+        omega[d_idx] = 1. / (1. + np.exp(-1. * alpha_2 * k + 6.)) * alpha_1
+        return omega
+
+    traits_view = View(
+        VGroup(
+            VGroup(
+                Item('s_0', full_size=True, resizable=True),
+                Item('alpha_1'),
+                Item('alpha_2'),
+                Item('plot_max'),
+            ),
+            VGroup(
+                UItem('fn@', height=300)
+            )
+        )
+    )
+
+    tree_view = traits_view
+
+
+class AbaqusDamageFn(BMCSLeafNode, PlottableFn):
+
+    node_name = 'Abaqus damage function'
+
+    implements(IDamageFn)
 
     s_0 = Float(0.0004,
                 MAT=True,
@@ -157,8 +230,7 @@ class DamageAbaqusFn(BMCSLeafNode, PlottableFn):
         )
     )
 
-df = DamageAbaqusFn()
-df.configure_traits()
+    tree_view = traits_view
 
 
 class Material(BMCSTreeNode):
@@ -168,7 +240,11 @@ class Material(BMCSTreeNode):
     def _tree_node_list_default(self):
         return [self.omega_fn, ]
 
-    node_name = Str('material parameters')
+    @on_trait_change('omega_fn_type')
+    def _update_node_list(self):
+        self.tree_node_list = [self.omega_fn]
+
+    node_name = 'material parameters'
 
     E_b = Float(12900.0,
                 MAT=True,
@@ -207,10 +283,22 @@ class Material(BMCSTreeNode):
         s_0 = self.tau_bar / self.E_b
         self.omega_fn.s_0 = s_0
 
-    omega_fn = Instance(DamageFn)
+    omega_fn_type = Trait('li',
+                          dict(li=LiDamageFn,
+                               jirasek=JirasekDamageFn,
+                               abaqus=AbaqusDamageFn),
+                          MAT=True,
+                          )
+
+    @on_trait_change('omega_fn_type')
+    def _reset_omega_fn(self):
+        self.omega_fn = self.omega_fn_type_()
+
+    omega_fn = Instance(IDamageFn,
+                        MAT=True)
 
     def _omega_fn_default(self):
-        return DamageFn()
+        return LiDamageFn()
 
     view = View(
         Group(
@@ -229,6 +317,7 @@ class Material(BMCSTreeNode):
                         label='Hardening parameters'
                     ),
                 ),
+                Item('omega_fn_type', full_size=True, resizable=True),
                 Group(
                     UItem('omega_fn@', full_size=True, resizable=True),
                     show_border=True,
@@ -436,6 +525,7 @@ def run_bond_slip_model_dp():
     bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
     bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
     bsm.add_viz2d('bond history', 's_p-s', x_sv_name='s', y_sv_name='s_p')
+    bsm.loading_scenario.set(maximum_loading=0.01)
     w.configure_traits()
 
 
@@ -522,4 +612,4 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_interactive_test_d()
     # run_predefined_load_test()
-    run_bond_slip_model_d()
+    run_bond_slip_model_dp()
