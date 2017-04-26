@@ -11,6 +11,7 @@ Created on 12.12.2016
 '''
 
 
+from bmcs.pullout.pullout import LoadingScenario
 from ibvpy.api import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import \
@@ -25,7 +26,6 @@ from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSLeafNode, BMCSTreeNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
 
-from bmcs.pullout.pullout import LoadingScenario
 from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 
@@ -611,8 +611,4 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_interactive_test_d()
     # run_predefined_load_test()
-<<<<<<< HEAD
-    run_bond_slip_model_dp()
-=======
     run_bond_damage()
->>>>>>> branch 'master' of https://github.com/simvisage/bmcs.git
