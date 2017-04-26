@@ -83,14 +83,15 @@ class MATSBondSlipEP(MATSBondSlipBase):
         # trial stress - assuming elastic increment.
         tau_e_trial = self.E_b * (s - s_p)
         X = self.gamma * alpha
-        f_trial = np.abs(tau_e_trial - X) - self.K * z - self.tau_bar
+        h = max(0., (self.tau_bar + self.K * z))
+        f_trial = np.abs(tau_e_trial - X) - h
         tau = tau_e_trial
 
         # identify values beyond the elastic limit
         plas_idx = np.where(f_trial > self.ZERO_THRESHOLD)[0]
 
         # plastic multiplier
-        d_lambda = f_trial[plas_idx] / (self.E_b + self.K + self.gamma)
+        d_lambda = f_trial[plas_idx] / (self.E_b + abs(self.K) + self.gamma)
 
         # return mapping for isotropic and kinematic hardening
         grad_f = np.sign(tau_e_trial[plas_idx] - X)
@@ -124,17 +125,7 @@ class MATSBondSlipD(MATSBondSlipBase):
                     enter_set=True,
                     auto_set=False)
 
-#     s_f = Float(0.001,
-#                 label="s_f",
-#                 desc="parameter controls the damage function",
-#                 enter_set=True,
-#                 auto_set=False)
-
     g_fn = Callable
-
-#     def _g_fn_default(self):
-#         s_0 = self.tau_bar / self.E_b
-#         return lambda k:  1. - (s_0 / k) * np.exp(-1 * (k - s_0) / self.s_f)
 
     sv_names = ['tau',
                 'tau_e',
@@ -193,24 +184,7 @@ class MATSBondSlipDP(MATSBondSlipBase):
                     enter_set=True,
                     auto_set=False)
 
-#     s_f = Float(1.0,
-#                 label="s_f",
-#                 desc="parameter controls the damage function",
-#                 enter_set=True,
-#                 auto_set=False)
-
     g_fn = Callable
-
-#     def _g_fn_default(self):
-#         s_0 = self.tau_bar / self.E_b
-#         return lambda k:  1. - (s_0 / k) * np.exp(-1 * (k - s_0) / self.s_f)
-#
-#     g_fn_hardening = Callable
-#
-#     def x_g_fn_hardening_default(self):
-#         s_0 = self.tau_bar / self.E_b
-# return lambda k:  1. / (1. + np.exp(-1. * self.alpha_2 * k + 6.)) *
-# self.alpha_1
 
     sv_names = ['tau',
                 'tau_ep',
@@ -227,14 +201,15 @@ class MATSBondSlipDP(MATSBondSlipBase):
         # trial stress - assuming elastic increment.
         tau_e_trial = self.E_b * (s - s_p)
         X = self.gamma * alpha
-        f_trial = np.abs(tau_e_trial - X) - self.K * z - self.tau_bar
+        h = max(0., (self.tau_bar + self.K * z))
+        f_trial = np.abs(tau_e_trial - X) - h
         tau_ep = tau_e_trial
 
         # identify values beyond the elastic limit
         plas_idx = np.where(f_trial > self.ZERO_THRESHOLD)[0]
 
         # plastic multiplier
-        d_lambda = f_trial[plas_idx] / (self.E_b + self.K + self.gamma)
+        d_lambda = f_trial[plas_idx] / (self.E_b + abs(self.K) + self.gamma)
 
         # return mapping for isotropic and kinematic hardening
         grad_f = np.sign(tau_e_trial[plas_idx] - X)

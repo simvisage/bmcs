@@ -611,4 +611,6 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_interactive_test_d()
     # run_predefined_load_test()
-    run_bond_damage()
+    # run_bond_damage()
+    # run_bond_plasticity()
+    run_bond_damage_plasticity()
