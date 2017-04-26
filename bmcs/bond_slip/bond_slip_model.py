@@ -11,7 +11,6 @@ Created on 12.12.2016
 '''
 
 
-from bmcs.pullout.pullout import LoadingScenario
 from ibvpy.api import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import \
@@ -26,6 +25,7 @@ from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSLeafNode, BMCSTreeNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
 
+from bmcs.pullout.pullout import LoadingScenario, Viz2DLoadControlFunction
 from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 
@@ -61,19 +61,21 @@ class IDamageFn(Interface):
     pass
 
 
-class JirasekDamageFn(BMCSLeafNode, PlottableFn):
-
-    node_name = 'Jirasek damage function'
-
-    implements(IDamageFn)
-
-    s_0 = Float(5. / 12900.,
+class DamageFn(BMCSLeafNode, PlottableFn):
+    s_0 = Float(0.0004,
                 MAT=True,
                 input=True,
                 label="s_0",
                 desc="parameter controls the damage function",
                 enter_set=True,
                 auto_set=False)
+
+
+class JirasekDamageFn(DamageFn):
+
+    node_name = 'Jirasek damage function'
+
+    implements(IDamageFn)
 
     s_f = Float(0.001,
                 MAT=True,
@@ -97,7 +99,7 @@ class JirasekDamageFn(BMCSLeafNode, PlottableFn):
     traits_view = View(
         VGroup(
             VGroup(
-                Item('s_0', full_size=True, resizable=True),
+                Item('s_0', style='readonly', full_size=True, resizable=True),
                 Item('s_f'),
                 Item('plot_max'),
             ),
@@ -110,19 +112,11 @@ class JirasekDamageFn(BMCSLeafNode, PlottableFn):
     tree_view = traits_view
 
 
-class LiDamageFn(BMCSLeafNode, PlottableFn):
+class LiDamageFn(DamageFn):
 
     node_name = 'Li damage function'
 
     implements(IDamageFn)
-
-    s_0 = Float(0.00001,
-                MAT=True,
-                input=True,
-                label="s_0",
-                desc="parameter controls the damage function",
-                enter_set=True,
-                auto_set=False)
 
     alpha_1 = Float(1.,
                     MAT=True,
@@ -132,7 +126,7 @@ class LiDamageFn(BMCSLeafNode, PlottableFn):
                     enter_set=True,
                     auto_set=False)
 
-    alpha_2 = Float(1000.,
+    alpha_2 = Float(2000.,
                     MAT=True,
                     input=True,
                     label="alpha_2",
@@ -155,7 +149,7 @@ class LiDamageFn(BMCSLeafNode, PlottableFn):
     traits_view = View(
         VGroup(
             VGroup(
-                Item('s_0', full_size=True, resizable=True),
+                Item('s_0', style='readonly', full_size=True, resizable=True),
                 Item('alpha_1'),
                 Item('alpha_2'),
                 Item('plot_max'),
@@ -169,19 +163,11 @@ class LiDamageFn(BMCSLeafNode, PlottableFn):
     tree_view = traits_view
 
 
-class AbaqusDamageFn(BMCSLeafNode, PlottableFn):
+class AbaqusDamageFn(DamageFn):
 
     node_name = 'Abaqus damage function'
 
     implements(IDamageFn)
-
-    s_0 = Float(0.0004,
-                MAT=True,
-                input=True,
-                label="s_0",
-                desc="parameter controls the damage function",
-                enter_set=True,
-                auto_set=False)
 
     s_u = Float(0.003,
                 MAT=True,
@@ -220,7 +206,8 @@ class AbaqusDamageFn(BMCSLeafNode, PlottableFn):
     traits_view = View(
         VGroup(
             VGroup(
-                Item('s_0', full_size=True, resizable=True),
+                Item('s_0', style='readonly',
+                     full_size=True, resizable=True),
                 Item('s_u'),
                 Item('alpha'),
                 Item('plot_max'),
@@ -279,10 +266,12 @@ class Material(BMCSTreeNode):
         super(Material, self).__init__(*args, **kw)
         self._update_s0()
 
+    s_0 = Float
+
     @on_trait_change('tau_bar,E_b')
     def _update_s0(self):
-        s_0 = self.tau_bar / self.E_b
-        self.omega_fn.s_0 = s_0
+        self.s_0 = self.tau_bar / self.E_b
+        self.omega_fn.s_0 = self.s_0
 
     omega_fn_type = Trait('li',
                           dict(li=LiDamageFn,
@@ -291,9 +280,9 @@ class Material(BMCSTreeNode):
                           MAT=True,
                           )
 
-    @on_trait_change('omega_fn_type')
+    @on_trait_change('omega_fn_type,s_0')
     def _reset_omega_fn(self):
-        self.omega_fn = self.omega_fn_type_()
+        self.omega_fn = self.omega_fn_type_(s_0=self.s_0)
 
     omega_fn = Instance(IDamageFn,
                         MAT=True)
@@ -500,8 +489,10 @@ class BondSlipModel(BMCSModel, Vis2D):
             self.state_vars = \
                 self.mats_eval.get_next_state(s, d_s, self.state_vars)
             # record the current simulation step
+            # @todo: fix this to avoid array
+            t_ = np.array([t], dtype=np.float_)
             for sv_record, state in zip(sv_records,
-                                        (t, s) + self.state_vars):
+                                        (t_, s) + self.state_vars):
                 sv_record.append(np.copy(state))
 
         # append the data to the previous simulation steps
@@ -513,35 +504,31 @@ class BondSlipModel(BMCSModel, Vis2D):
     def get_sv_hist(self, sv_name):
         return np.vstack(self.sv_hist[sv_name])
 
-    viz2d_classes = {'bond history': Viz2DBondHistory}
+    viz2d_classes = {'bond history': Viz2DBondHistory,
+                     'load function': Viz2DLoadControlFunction,
+                     }
 
     tree_view = View(Item('material_model'),
                      Item('interaction_type'))
 
 
-def run_bond_slip_model_dp():
-    bsm = BondSlipModel(interaction_type='predefined',
-                        material_model='damage-plasticity')
-    w = BMCSWindow(model=bsm, n_cols=1)
-    bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
-    bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
-    bsm.add_viz2d('bond history', 's_p-s', x_sv_name='s', y_sv_name='s_p')
-    bsm.loading_scenario.set(maximum_loading=0.01)
-    w.configure_traits()
-
-
 def run_bond_slip_model_d():
     bsm = BondSlipModel(interaction_type='predefined',
-                        material_model='damage')
-    w = BMCSWindow(model=bsm, n_cols=1)
+                        material_model='damage',
+                        )
+    w = BMCSWindow(model=bsm, n_cols=2)
+    bsm.add_viz2d('bond history', 's-t', x_sv_name='t', y_sv_name='s')
     bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
     bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
+    bsm.add_viz2d('bond history', 'kappa-s', x_sv_name='s', y_sv_name='kappa')
     bsm.loading_scenario.set(loading_type='cyclic',
                              amplitude_type='constant'
                              )
     bsm.loading_scenario.set(number_of_cycles=1,
-                             maximum_loading=0.01,
+                             maximum_loading=0.005,
                              unloading_ratio=0.5)
+    bsm.material.omega_fn_type = 'jirasek'
+    bsm.material.omega_fn.s_f = 0.003
     bsm.run()
     w.configure_traits()
 
@@ -551,6 +538,7 @@ def run_bond_slip_model_p():
                         material_model='plasticity',
                         n_steps=2000)
     w = BMCSWindow(model=bsm, n_cols=2)
+    bsm.add_viz2d('bond history', 's-t', x_sv_name='t', y_sv_name='s')
     bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
     bsm.add_viz2d('bond history', 's_p-s', x_sv_name='s', y_sv_name='s_p')
     bsm.add_viz2d('bond history', 'z-s', x_sv_name='s', y_sv_name='z')
@@ -558,10 +546,28 @@ def run_bond_slip_model_p():
     bsm.loading_scenario.set(loading_type='cyclic',
                              amplitude_type='constant'
                              )
-    bsm.loading_scenario.set(number_of_cycles=3,
-                             maximum_loading=0.004,
-                             unloading_ratio=0)
-    bsm.material.set(gamma=101, K=-150)
+    bsm.loading_scenario.set(number_of_cycles=1,
+                             maximum_loading=0.005)
+    bsm.material.set(gamma=0, K=-0)
+    bsm.run()
+    w.configure_traits()
+
+
+def run_bond_slip_model_dp():
+    bsm = BondSlipModel(interaction_type='predefined',
+                        material_model='damage-plasticity',
+                        n_steps=100,)
+    w = BMCSWindow(model=bsm, n_cols=2)
+    bsm.add_viz2d('bond history', 's-t', x_sv_name='t', y_sv_name='s')
+    bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
+    bsm.add_viz2d('bond history', 's_p-s', x_sv_name='s', y_sv_name='s_p')
+    bsm.add_viz2d('bond history', 'z-s', x_sv_name='s', y_sv_name='z')
+    bsm.add_viz2d('bond history', 'alpha-s', x_sv_name='s', y_sv_name='alpha')
+    bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
+    bsm.loading_scenario.set(maximum_loading=0.005)
+    bsm.material.omega_fn_type = 'li'
+    bsm.material.set(gamma=0, K=1000)
+    bsm.material.omega_fn.set(alpha_1=1.0, alpha_2=2000)
     bsm.run()
     w.configure_traits()
 
@@ -611,4 +617,4 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_interactive_test_d()
     # run_predefined_load_test()
-    run_bond_slip_model_p()
+    run_bond_slip_model_dp()
