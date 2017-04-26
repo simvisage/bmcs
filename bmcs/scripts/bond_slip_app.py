@@ -13,8 +13,13 @@ import sys
 # A bmcs mayavi instance so we can close it correctly.
 bmcs = None
 
+from bmcs.bond_slip import \
+    run_bond_slip_model_p, \
+    run_bond_slip_model_d, \
+    run_bond_slip_model_dp
 
-def main():
+
+def run_bond_app(run_bond_slip_model):
     """This starts up the oricreate application.
     """
     global bmcs
@@ -41,7 +46,6 @@ PyQT: http://www.riverbankcomputing.co.uk/software/pyqt/intro
 '''
                           )
 
-    from bmcs.bond_slip import run_bond_slip_model
     run_bond_slip_model()
 
 
@@ -50,5 +54,17 @@ def close():
     """
     pass
 
+
+def run_d():
+    run_bond_app(run_bond_slip_model_d)
+
+
+def run_p():
+    run_bond_app(run_bond_slip_model_p)
+
+
+def run_dp():
+    run_bond_app(run_bond_slip_model_dp)
+
 if __name__ == '__main__':
-    main()
+    run_dp()

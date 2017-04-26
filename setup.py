@@ -12,7 +12,7 @@ def read(fname):
 
 setup(
     name="bmcs",
-    version="0.0.1a19",
+    version="0.0.1a21",
     author="Rostislav Chudoba, Yionxiung Li, Abedulgader Baktheer, Alexander Scholzen",
     author_email="rostislav.chudoba@rwth-aachen.de",
     description=("Suite of educational packages for to the course "
@@ -28,12 +28,9 @@ setup(
     long_description='',
     entry_points={
         'gui_scripts': [
-            'bmcs_bond_slip = bmcs.scripts.bond_slip_app:main',
-            'bmcs_ack = bmcs.scripts.screenmix_app:main',
-            'bmcs_pullout = bmcs.scripts.pullout_app:main',
-            'bmcs_crack = bmcs.scripts.cracktrix_app:main',
-            'bmcs_bundle = bmcs.scripts.bundltrix_app:main',
-            'bmcs_mxn = bmcs.scripts.mxntrix_app:main',
+            'bmcs_bond_p = bmcs.scripts.bond_slip_app:run_p',
+            'bmcs_bond_d = bmcs.scripts.bond_slip_app:run_d',
+            'bmcs_bond_dp = bmcs.scripts.bond_slip_app:run_dp',
         ],
     },
     classifiers=[
