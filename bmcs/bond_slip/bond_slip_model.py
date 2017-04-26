@@ -519,7 +519,7 @@ class BondSlipModel(BMCSModel, Vis2D):
                      Item('interaction_type'))
 
 
-def run_bond_damage_plasticity():
+def run_bond_slip_model_dp():
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='damage-plasticity')
     w = BMCSWindow(model=bsm, n_cols=1)
@@ -530,7 +530,7 @@ def run_bond_damage_plasticity():
     w.configure_traits()
 
 
-def run_bond_damage():
+def run_bond_slip_model_d():
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='damage')
     w = BMCSWindow(model=bsm, n_cols=1)
@@ -546,7 +546,7 @@ def run_bond_damage():
     w.configure_traits()
 
 
-def run_bond_plasticity():
+def run_bond_slip_model_p():
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='plasticity',
                         n_steps=2000)
@@ -611,4 +611,4 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_interactive_test_d()
     # run_predefined_load_test()
-    run_bond_damage()
+    run_bond_slip_model_p()
