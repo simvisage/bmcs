@@ -449,7 +449,7 @@ class BondSlipModel(BMCSModel, Vis2D):
     @on_trait_change('MAT,BC,+BC')
     def signal_mat_changed(self):
         # @todo: review this - this sends a signal to the ui window
-        # that the currentcalculation needs to be abandoned, since
+        # that the current calculation needs to be abandoned, since
         # continuation is not possible. The ui then initiates the reset
         # of the model state and of the loading history.
         if self.ui:
@@ -613,6 +613,7 @@ def run_predefined_load_test():
     print bsm.get_sv_hist('tau')
     print bsm.get_sv_hist('s_p')
     print bsm.get_sv_hist('z')
+
 
 if __name__ == '__main__':
     # run_interactive_test_d()
