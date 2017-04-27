@@ -48,7 +48,6 @@ class TLoop(HasStrictTraits):
 
     def eval(self):
 
-        self.init()
         self.ts.apply_essential_bc()
 
         self.d_t = self.tline.step
@@ -133,6 +132,7 @@ class TLoop(HasStrictTraits):
 
     def get_time_idx(self, vot):
         return int(self.get_time_idx_arr(vot))
+
 
 if __name__ == '__main__':
 

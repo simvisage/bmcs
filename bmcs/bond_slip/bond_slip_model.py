@@ -21,11 +21,11 @@ from traits.api import \
 from traitsui.api import \
     View, Item, UItem, Group, VGroup, VSplit
 from traitsui.editors.enum_editor import EnumEditor
-from view.examples.tfun_pwl_interactive import TFunPWLInteractive
 from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSLeafNode, BMCSTreeNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
 
+from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 

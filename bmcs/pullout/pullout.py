@@ -291,6 +291,9 @@ class Viz2DLoadControlFunction(Viz2D):
         val = bc.value
         tloop = self.vis2d.tloop
         t_arr = np.array(tloop.t_record, np.float_)
+        if len(t_arr) == 0:
+            return
+        print 't_arr', t_arr
         f_arr = val * bc.time_function(t_arr)
         ax.plot(t_arr, f_arr, 'bo-')
         vot_idx = tloop.get_time_idx(vot)
@@ -353,7 +356,7 @@ class Viz2DPullOutField(Viz2D):
     )
 
 
-class PullOutSimulation(BMCSModel, Vis2D):
+class PullOutModel(BMCSModel, Vis2D):
 
     node_name = 'pull out simulation'
 
@@ -368,7 +371,11 @@ class PullOutSimulation(BMCSModel, Vis2D):
             self.bcond_mngr,
         ]
 
+    def init(self):
+        self.tloop.init()
+
     def eval(self):
+        print 'EVAL'
         return self.tloop.eval()
 
     def pause(self):
@@ -596,14 +603,13 @@ class PullOutSimulation(BMCSModel, Vis2D):
 
 
 def run_pullout():
-    po = PullOutSimulation(n_e_x=100, k_max=500)
+    po = PullOutModel(n_e_x=100, k_max=500)
 #     po.geometry.set(L_x=450)
     po.tline.step = 0.05
     po.bcond_mngr.bcond_list[1].value = 0.01
-#    po.tloop.eval()
+    print po.tloop
 
-    w = BMCSWindow(model=po,
-                   offline=True)
+    w = BMCSWindow(model=po)
     po.add_viz2d('load function')
     po.add_viz2d('F-w')
     po.add_viz2d('field', 'u_C', plot_fn='u_C')
@@ -611,9 +617,9 @@ def run_pullout():
     po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-    w.set(offline=False)
     po.add_viz2d('field', 'sf', plot_fn='sf')
     w.configure_traits()
+
 
 if __name__ == '__main__':
     run_pullout()
