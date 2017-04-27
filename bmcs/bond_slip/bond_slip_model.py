@@ -617,4 +617,4 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_interactive_test_d()
     # run_predefined_load_test(
-    run_bond_slip_model_dp()
+    run_bond_slip_model_p()
