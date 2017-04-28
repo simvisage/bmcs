@@ -12,6 +12,7 @@ Created on 12.12.2016
 
 
 from bmcs.pullout.pullout import LoadingScenario, Viz2DLoadControlFunction
+from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from ibvpy.api import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import \
@@ -25,7 +26,6 @@ from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSLeafNode, BMCSTreeNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
 
-from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 
@@ -512,7 +512,7 @@ class BondSlipModel(BMCSModel, Vis2D):
                      Item('interaction_type'))
 
 
-def run_bond_slip_model_d():
+def run_bond_slip_model_d(*args, **kw):
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='damage',
                         )
@@ -530,10 +530,10 @@ def run_bond_slip_model_d():
     bsm.material.omega_fn_type = 'jirasek'
     bsm.material.omega_fn.s_f = 0.003
     bsm.run()
-    w.configure_traits()
+    w.configure_traits(*args, **kw)
 
 
-def run_bond_slip_model_p():
+def run_bond_slip_model_p(*args, **kw):
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='plasticity',
                         n_steps=2000)
@@ -550,10 +550,10 @@ def run_bond_slip_model_p():
                              maximum_loading=0.005)
     bsm.material.set(gamma=0, K=-0)
     bsm.run()
-    w.configure_traits()
+    w.configure_traits(*args, **kw)
 
 
-def run_bond_slip_model_dp():
+def run_bond_slip_model_dp(*args, **kw):
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='damage-plasticity',
                         n_steps=100,)
@@ -564,12 +564,15 @@ def run_bond_slip_model_dp():
     bsm.add_viz2d('bond history', 'z-s', x_sv_name='s', y_sv_name='z')
     bsm.add_viz2d('bond history', 'alpha-s', x_sv_name='s', y_sv_name='alpha')
     bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
+    bsm.loading_scenario.set(loading_type='cyclic',
+                             amplitude_type='constant'
+                             )
     bsm.loading_scenario.set(maximum_loading=0.005)
     bsm.material.omega_fn_type = 'li'
     bsm.material.set(gamma=0, K=1000)
     bsm.material.omega_fn.set(alpha_1=1.0, alpha_2=2000)
     bsm.run()
-    w.configure_traits()
+    w.configure_traits(*args, **kw)
 
 
 def run_interactive_test():

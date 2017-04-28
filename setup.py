@@ -10,9 +10,10 @@ from setuptools import setup, find_packages
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+
 setup(
     name="bmcs",
-    version="0.0.1a22",
+    version="0.0.1a24",
     author="Rostislav Chudoba, Yionxiung Li, Abedulgader Baktheer, Alexander Scholzen",
     author_email="rostislav.chudoba@rwth-aachen.de",
     description=("Suite of educational packages for to the course "
@@ -28,9 +29,7 @@ setup(
     long_description='',
     entry_points={
         'gui_scripts': [
-            'bmcs_bond_p = bmcs.scripts.bond_slip_app:run_p',
-            'bmcs_bond_d = bmcs.scripts.bond_slip_app:run_d',
-            'bmcs_bond_dp = bmcs.scripts.bond_slip_app:run_dp',
+            'bmcs = bmcs.scripts.bmcs_app:run_bmcs_launcher',
         ],
     },
     classifiers=[
