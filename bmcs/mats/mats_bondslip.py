@@ -73,6 +73,10 @@ class MATSEvalFatigue(MATSEval):
               enter_set=True,
               auto_set=False)
 
+    n_s = Constant(4)
+
+    state_array_size = Int(4)
+
     def get_corr_pred(self, eps, d_eps, sig, t_n, t_n1, xs_pi, alpha, z, w):
 
         n_e, n_ip, n_s = eps.shape
