@@ -15,10 +15,9 @@ from traitsui.api import \
     HSplit
 from traitsui.menu import \
     Menu, MenuBar, Separator
-from view.plot2d import Vis2D
 from view.ui.bmcs_tree_node import \
     BMCSRootNode, BMCSTreeNode, BMCSLeafNode
-
+from bmcs_model import BMCSModel
 from bmcs_tree_view_handler import \
     BMCSTreeViewHandler, plot_self, menu_save, \
     menu_open, menu_exit, toolbar_actions, key_bindings
@@ -91,56 +90,17 @@ class RunThread(Thread):
         self.ui.model.restart = True
 
 
-class BMCSModel(BMCSRootNode):
-
-    tline = Instance(TLine)
-
-    def _tline_default(self):
-        return TLine(min=0.0, step=0.1, max=0.0,
-                     time_change_notifier=self.time_changed,
-                     )
-
-    def time_changed(self, time):
-        self.ui.viz_sheet.time_changed(time)
-
-    def time_range_changed(self, tmax):
-        self.tline.max = tmax
-        self.ui.viz_sheet.time_range_changed(tmax)
-
-    def set_tmax(self, time):
-        self.time_range_changed(time)
-
-    def init(self):
-        return
-
-    def eval(self):
-        return
-
-    def paused(self):
-        pass
-
-    def stop(self):
-        pass
-
-    def run(self):
-        print 'IN RuN'
-        self.init()
-        self.ui.start_event = True
-        self.ui.running = True
-        try:
-            self.eval()
-        except Exception as e:
-            self.ui.running = False
-            raise
-        self.ui.running = False
-        self.ui.finish_event = True
-
-
 class BMCSWindow(HasStrictTraits):
 
     '''View object for a cross section state.
     '''
     model = Instance(BMCSModel)
+    '''Model of the studied phoenomenon.
+    '''
+
+    viz_sheet = Instance(VizSheet, ())
+    '''Sheet for 2d visualization.
+    '''
 
     offline = DelegatesTo('viz_sheet')
     n_cols = DelegatesTo('viz_sheet')
@@ -205,12 +165,7 @@ class BMCSWindow(HasStrictTraits):
     def get_vot_range(self):
         return self.viz_sheet.get_vot_range()
 
-    def set_vot(self, vot):
-        self.viz_sheet.set_vot(vot)
-
     vot = DelegatesTo('viz_sheet')
-
-    viz_sheet = Instance(VizSheet, ())
 
     data_changed = Event
 

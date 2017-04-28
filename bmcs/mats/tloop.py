@@ -37,6 +37,26 @@ class TLoop(HasStrictTraits):
     paused = Bool(False)
     restart = Bool(True)
 
+    def reset_sv_hist(self):
+        n_dofs = self.ts.sdomain.n_dofs
+        n_e = self.ts.sdomain.n_active_elems
+        n_ip = self.ts.fets_eval.n_gp
+        n_s = 3
+        sig_rec = np.zeros((n_e, n_ip, 2))
+        sf_rec = np.zeros((n_e, n_ip))
+        eps = np.zeros((n_e, n_ip, n_s))
+        sig = np.zeros((n_e, n_ip, n_s))
+        self.w_record = [np.zeros((n_e, n_ip))]
+        self.U_record = np.zeros(n_dofs)
+        self.F_record = np.zeros(n_dofs)
+        t_n = self.tline.val
+        self.t_record = [t_n]
+        self.eps_record = [np.zeros_like(eps)]
+        self.sig_EmC_record = [np.copy(sig_rec)]
+        self.sf_Em_record = [np.copy(sf_rec)]
+        D = np.zeros((n_e, n_ip, n_s, n_s))
+        self.D_record = [np.zeros_like(D)]
+
     def init(self):
         print 'INIT'
         if self.paused:
@@ -44,6 +64,8 @@ class TLoop(HasStrictTraits):
         if self.restart:
             print 'RESET TIME'
             self.tline.val = 0
+            self.reset_sv_hist()
+
             self.restart = False
 
     def eval(self):
@@ -61,28 +83,16 @@ class TLoop(HasStrictTraits):
         U_k = np.zeros(n_dofs)
         eps = np.zeros((n_e, n_ip, n_s))
         sig = np.zeros((n_e, n_ip, n_s))
-        D = np.zeros((n_e, n_ip, 3, 3))
+        D = np.zeros((n_e, n_ip, n_s, n_s))
 
         xs_pi = np.zeros((n_e, n_ip))
         alpha = np.zeros((n_e, n_ip))
         z = np.zeros((n_e, n_ip))
         w = np.zeros((n_e, n_ip))
 
-        sig_rec = np.zeros((n_e, n_ip, 2))
-        sf_rec = np.zeros((n_e, n_ip))
-        self.w_record = [np.zeros((n_e, n_ip))]
-        self.U_record = np.zeros(n_dofs)
-        self.F_record = np.zeros(n_dofs)
-        self.t_record = [t_n]
-        self.eps_record = [np.zeros_like(eps)]
-        self.sig_EmC_record = [np.copy(sig_rec)]
-        self.sf_Em_record = [np.copy(sf_rec)]
-        self.D_record = [np.zeros_like(D)]
-
         while (t_n1 - self.tline.max) <= self.step_tolerance and \
                 not (self.restart or self.paused):
 
-            print 't_n1', t_n1
             k = 0
             step_flag = 'predictor'
             d_U = np.zeros(n_dofs)

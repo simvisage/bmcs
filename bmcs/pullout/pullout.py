@@ -8,121 +8,27 @@ from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSEvalFatigue
 from bmcs.mats.tloop import TLoop
 from bmcs.mats.tstepper import TStepper
+from bmcs.time_functions import \
+    LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof
 from ibvpy.core.bcond_mngr import BCondMngr
-from mathkit.mfn import MFnLineArray
 from traits.api import \
-    Property, Instance, cached_property, Str, Enum, \
-    Range, on_trait_change, List, Float, Trait, Int
+    Property, Instance, cached_property, \
+    Bool, List, Float, Trait, Int
 from traitsui.api import \
-    View, UItem, Item, Group, VGroup, VSplit
-from util.traits.editors import MPLFigureEditor
+    View, Item
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow, TLine
-
+from bmcs.bond_slip.bond_material_params import MaterialParams
 import numpy as np
 
 
-class Material(BMCSLeafNode):
+class CrossSection(BMCSLeafNode):
+    '''Parameters of the pull-out cross section
+    '''
+    node_name = 'cross-section'
 
-    node_name = Str('material parameters')
-    E_b = Float(12900,
-                MAT=True,
-                input=True,
-                label="E_b ",
-                desc="Bond Stiffness",
-                enter_set=True,
-                auto_set=False)
-
-    gamma = Float(60,
-                  MAT=True,
-                  input=True,
-                  label="Gamma ",
-                  desc="Kinematic hardening modulus",
-                  enter_set=True,
-                  auto_set=False)
-
-    K = Float(10,
-              MAT=True,
-              input=True,
-              label="K ",
-              desc="Isotropic harening",
-              enter_set=True,
-              auto_set=False)
-
-    S = Float(0.001,
-              MAT=True,
-              input=True,
-              label="S ",
-              desc="Damage cumulation parameter",
-              enter_set=True,
-              auto_set=False)
-
-    r = Float(0.7,
-              MAT=True,
-              input=True,
-              label="r ",
-              desc="Damage cumulation parameter",
-              enter_set=True,
-              auto_set=False)
-
-    c = Float(1.5,
-              MAT=True,
-              input=True,
-              label="c ",
-              desc="Damage cumulation parameter",
-              enter_set=True,
-              auto_set=False)
-
-    tau_pi_bar = Float(4.5,
-                       MAT=True,
-                       input=True,
-                       label="Tau_pi_bar ",
-                       desc="Reversibility limit",
-                       enter_set=True,
-                       auto_set=False)
-
-    pressure = Float(0,
-                     MAT=True,
-                     input=True,
-                     label="Pressure",
-                     desc="Lateral pressure",
-                     enter_set=True,
-                     auto_set=False)
-
-    a = Float(1.7,
-              MAT=True,
-              input=True,
-              label="a",
-              desc="Lateral pressure coefficient",
-              enter_set=True,
-              auto_set=False)
-
-    view = View(VGroup(Group(Item('E_b'),
-                             Item('tau_pi_bar'), show_border=True,
-                             label='Bond Stiffness and reversibility limit'),
-                       Group(Item('gamma'),
-                             Item('K'), show_border=True,
-                             label='Hardening parameters'),
-                       Group(Item('S'),
-                             Item('r'), Item('c'), show_border=True,
-                             label='Damage cumulation parameters'),
-                       Group(Item('pressure'),
-                             Item('a'), show_border=True,
-                             label='Lateral Pressure')))
-
-    tree_view = view
-
-
-class Geometry(BMCSLeafNode):
-
-    node_name = 'geometry'
-    L_x = Float(45,
-                GEO=True,
-                input=True,
-                auto_set=False, enter_set=True,
-                desc='embedded length')
     A_m = Float(15240,
                 CS=True,
                 input=True,
@@ -139,7 +45,6 @@ class Geometry(BMCSLeafNode):
                 desc='perimeter of the bond interface [mm]')
 
     view = View(
-        Item('L_x'),
         Item('A_m'),
         Item('A_f'),
         Item('P_b')
@@ -148,158 +53,20 @@ class Geometry(BMCSLeafNode):
     tree_view = view
 
 
-class LoadingScenario(MFnLineArray, BMCSLeafNode):
+class Geometry(BMCSLeafNode):
 
-    def reset(self):
-        return
-    node_name = Str('loading scenario')
-    loading_type = Enum("monotonic", "cyclic",
-                        enter_set=True, auto_set=False,
-                        BC=True,
-                        input=True)
-    number_of_cycles = Int(1,
-                           enter_set=True, auto_set=False,
-                           BC=True,
-                           input=True)
-    maximum_loading = Float(1.0,
-                            enter_set=True, auto_set=False,
-                            BC=True,
-                            input=True)
-    unloading_ratio = Range(0., 1., value=0.5,
-                            enter_set=True, auto_set=False,
-                            BC=True,
-                            input=True)
-    number_of_increments = Int(20,
-                               enter_set=True, auto_set=False,
-                               BC=True,
-                               input=True)
-    amplitude_type = Enum("increasing", "constant",
-                          enter_set=True, auto_set=False,
-                          BC=True,
-                          input=True)
-    loading_range = Enum("non-symmetric", "symmetric",
-                         enter_set=True, auto_set=False,
-                         BC=True,
-                         input=True)
+    node_name = 'geometry'
+    L_x = Float(45,
+                GEO=True,
+                input=True,
+                auto_set=False, enter_set=True,
+                desc='embedded length')
 
-    t_max = Float(1.)
-
-    def __init__(self, *arg, **kw):
-        super(LoadingScenario, self).__init__(*arg, **kw)
-        self._update_xy_arrays()
-
-    @on_trait_change('+BC')
-    def _update_xy_arrays(self):
-        if(self.loading_type == "monotonic"):
-            self.number_of_cycles = 1
-            d_levels = np.linspace(
-                0, self.maximum_loading, self.number_of_cycles * 2)
-            d_levels[0] = 0
-            d_levels.reshape(-1, 2)[:, 0] *= 0
-            d_history = d_levels.flatten()
-            d_arr = np.hstack([np.linspace(d_history[i], d_history[i + 1],
-                                           self.number_of_increments)
-                               for i in range(len(d_levels) - 1)])
-
-        if(self.amplitude_type == "increasing" and
-                self.loading_range == "symmetric"):
-            d_levels = np.linspace(
-                0, self.maximum_loading, self.number_of_cycles * 2)
-            d_levels.reshape(-1, 2)[:, 0] *= -1
-            d_history = d_levels.flatten()
-            d_arr = np.hstack([np.linspace(d_history[i], d_history[i + 1],
-                                           self.number_of_increments)
-                               for i in range(len(d_levels) - 1)])
-
-        if(self.amplitude_type == "increasing" and
-                self.loading_range == "non-symmetric"):
-            d_levels = np.linspace(
-                0, self.maximum_loading, self.number_of_cycles * 2)
-            d_levels.reshape(-1, 2)[:, 0] *= 0
-            d_history = d_levels.flatten()
-            d_arr = np.hstack([np.linspace(d_history[i], d_history[i + 1],
-                                           self.number_of_increments)
-                               for i in range(len(d_levels) - 1)])
-
-        if(self.amplitude_type == "constant" and
-                self.loading_range == "symmetric"):
-            d_levels = np.linspace(
-                0, self.maximum_loading, self.number_of_cycles * 2)
-            d_levels.reshape(-1, 2)[:, 0] = -self.maximum_loading
-            d_levels[0] = 0
-            d_levels.reshape(-1, 2)[:, 1] = self.maximum_loading
-            d_history = d_levels.flatten()
-            d_arr = np.hstack([np.linspace(d_history[i], d_history[i + 1], self.number_of_increments)
-                               for i in range(len(d_levels) - 1)])
-
-        if(self.amplitude_type == "constant" and
-                self.loading_range == "non-symmetric"):
-            d_levels = np.linspace(
-                0, self.maximum_loading, self.number_of_cycles * 2)
-            d_levels.reshape(-1, 2)[:,
-                                    0] = self.maximum_loading * self.unloading_ratio
-            d_levels[0] = 0
-            d_levels.reshape(-1, 2)[:, 1] = self.maximum_loading
-            d_history = d_levels.flatten()
-            d_arr = np.hstack([np.linspace(d_history[i], d_history[i + 1], self.number_of_increments)
-                               for i in range(len(d_levels) - 1)])
-
-        t_arr = np.linspace(0, self.t_max, len(d_arr))
-        self.xdata = t_arr
-        self.ydata = d_arr
-        self.replot()
-
-    traits_view = View(
-        VGroup(
-            VSplit(
-                VGroup(
-                    Group(
-                        Item('loading_type',
-                             full_size=True, resizable=True
-                             )
-                    ),
-                    Group(
-                        Item('maximum_loading',
-                             full_size=True, resizable=True)
-                    ),
-                    Group(
-                        Item('number_of_cycles',
-                             full_size=True, resizable=True),
-                        Item('amplitude_type'),
-                        Item('loading_range'),
-                        Item('unloading_ratio'),
-                        show_border=True, label='Cyclic load inputs'),
-                    scrollable=True
-                ),
-                UItem('figure', editor=MPLFigureEditor(),
-                      height=300,
-                      resizable=True,
-                      springy=True),
-            )
-        )
+    view = View(
+        Item('L_x'),
     )
 
-    tree_view = traits_view
-
-
-class Viz2DLoadControlFunction(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = 'Load control'
-
-    def plot(self, ax, vot, *args, **kw):
-        bc = self.vis2d.control_bc
-        val = bc.value
-        tloop = self.vis2d.tloop
-        t_arr = np.array(tloop.t_record, np.float_)
-        if len(t_arr) == 0:
-            return
-        print 't_arr', t_arr
-        f_arr = val * bc.time_function(t_arr)
-        ax.plot(t_arr, f_arr, 'bo-')
-        vot_idx = tloop.get_time_idx(vot)
-        ax.plot([t_arr[vot_idx]], [f_arr[vot_idx]], 'ro')
-        var = bc.var
+    tree_view = view
 
 
 class Viz2DPullOutFW(Viz2D):
@@ -341,6 +108,12 @@ class Viz2DPullOutField(Viz2D):
     def plot(self, ax, vot, *args, **kw):
         getattr(self.vis2d, self.plot_fn_)(ax, vot, *args, **kw)
         ymin, ymax = ax.get_ylim()
+        if self.adaptive_y_range:
+            if self.initial_plot:
+                self.y_max = ymax
+                self.y_min = ymin
+                self.initial_plot = False
+                return
         self.y_max = max(ymax, self.y_max)
         self.y_min = min(ymin, self.y_min)
         ax.set_ylim(ymin=self.y_min, ymax=self.y_max)
@@ -349,6 +122,9 @@ class Viz2DPullOutField(Viz2D):
                   auto_set=False, enter_set=True)
     y_min = Float(0.0, label='Y-min value',
                   auto_set=False, enter_set=True)
+
+    adaptive_y_range = Bool(True)
+    initial_plot = Bool(True)
 
     traits_view = View(
         Item('plot_fn'),
@@ -368,6 +144,7 @@ class PullOutModel(BMCSModel, Vis2D):
         return [
             self.tline,
             self.material,
+            self.cross_section,
             self.geometry,
             self.bcond_mngr,
         ]
@@ -376,7 +153,6 @@ class PullOutModel(BMCSModel, Vis2D):
         self.tloop.init()
 
     def eval(self):
-        print 'EVAL'
         return self.tloop.eval()
 
     def pause(self):
@@ -385,15 +161,20 @@ class PullOutModel(BMCSModel, Vis2D):
     def stop(self):
         self.tloop.restart = True
 
-    material = Instance(Material)
+    material = Instance(MaterialParams)
 
     def _material_default(self):
-        return Material()
+        return MaterialParams()
 
     loading_scenario = Instance(LoadingScenario)
 
     def _loading_scenario_default(self):
         return LoadingScenario()
+
+    cross_section = Instance(CrossSection)
+
+    def _cross_section_default(self):
+        return CrossSection()
 
     geometry = Instance(Geometry)
 
@@ -446,10 +227,9 @@ class PullOutModel(BMCSModel, Vis2D):
     predictor operators at the element level'''
     @cached_property
     def _get_fets_eval(self):
-        # assign the geometry parameters
-        return FETS1D52ULRHFatigue(A_m=self.geometry.A_m,
-                                   P_b=self.geometry.P_b,
-                                   A_f=self.geometry.A_f)
+        return FETS1D52ULRHFatigue(A_m=self.cross_section.A_m,
+                                   P_b=self.cross_section.P_b,
+                                   A_f=self.cross_section.A_f)
 
     bcond_mngr = Instance(BCondMngr)
     '''Boundary condition manager
@@ -511,7 +291,6 @@ class PullOutModel(BMCSModel, Vis2D):
 
         k_max = self.k_max
         tolerance = self.tolerance
-        print 'NEW TLOOP'
         return TLoop(ts=self.tstepper, k_max=k_max,
                      tolerance=tolerance,
                      tline=self.tline)
@@ -619,10 +398,15 @@ class PullOutModel(BMCSModel, Vis2D):
 
 def run_pullout():
     po = PullOutModel(n_e_x=100, k_max=500)
-#     po.geometry.set(L_x=450)
-    po.tline.step = 0.05
+    po.tline.step = 0.005
     po.bcond_mngr.bcond_list[1].value = 0.01
-    print po.tloop
+
+    po.loading_scenario.set(loading_type='cyclic',
+                            amplitude_type='constant'
+                            )
+    po.loading_scenario.set(number_of_cycles=6,
+                            maximum_loading=1)
+    po.run()
 
     w = BMCSWindow(model=po)
     po.add_viz2d('load function')
@@ -633,6 +417,9 @@ def run_pullout():
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
     po.add_viz2d('field', 'sf', plot_fn='sf')
+
+    w.offline = False
+    w.finish_event = True
     w.configure_traits()
 
 

@@ -11,220 +11,26 @@ Created on 12.12.2016
 '''
 
 
-from bmcs.pullout.pullout import LoadingScenario, Viz2DLoadControlFunction
+from bmcs.time_functions import \
+    LoadingScenario, Viz2DLoadControlFunction
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from ibvpy.api import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import \
     Property, Instance, cached_property, Str, \
     List, Float, Trait, on_trait_change, Bool, Dict,\
-    HasStrictTraits, Int, Tuple, Interface, implements
+    Int, Tuple
 from traitsui.api import \
     View, Item, UItem, Group, VGroup, VSplit
 from traitsui.editors.enum_editor import EnumEditor
 from view.plot2d import Vis2D, Viz2D
-from view.ui import BMCSLeafNode, BMCSTreeNode
+from view.ui import BMCSTreeNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
-
+from bmcs.mats.mats_damage_fn import \
+    IDamageFn, \
+    LiDamageFn, JirasekDamageFn, AbaqusDamageFn
 from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
-
-
-class PlottableFn(HasStrictTraits):
-
-    plot_min = Float(0.0, input=True,
-                     enter_set=True, auto_set=False)
-    plot_max = Float(1.0, input=True,
-                     enter_set=True, auto_set=False)
-
-    fn = Instance(MFnLineArray)
-
-    def _fn_default(self):
-        return MFnLineArray()
-
-    def __init__(self, *args, **kw):
-        super(PlottableFn, self).__init__(*args, **kw)
-        self.update()
-
-    @on_trait_change('+input')
-    def update(self):
-        n_vals = 200
-        xdata = np.linspace(self.plot_min, self.plot_max, n_vals)
-        ydata = self.__call__(xdata)
-        self.fn.set(xdata=xdata, ydata=ydata)
-        self.fn.replot()
-
-    traits_view = View(UItem('fn'))
-
-
-class IDamageFn(Interface):
-    pass
-
-
-class DamageFn(BMCSLeafNode, PlottableFn):
-    s_0 = Float(0.0004,
-                MAT=True,
-                input=True,
-                label="s_0",
-                desc="parameter controls the damage function",
-                enter_set=True,
-                auto_set=False)
-
-
-class JirasekDamageFn(DamageFn):
-
-    node_name = 'Jirasek damage function'
-
-    implements(IDamageFn)
-
-    s_f = Float(0.001,
-                MAT=True,
-                input=True,
-                label="s_f",
-                desc="parameter controls the damage function",
-                enter_set=True,
-                auto_set=False)
-
-    plot_max = 1e-2
-
-    def __call__(self, kappa):
-        s_0 = self.s_0
-        s_f = self.s_f
-        omega = np.zeros_like(kappa, dtype=np.float_)
-        d_idx = np.where(kappa >= s_0)[0]
-        k = kappa[d_idx]
-        omega[d_idx] = 1. - s_0 / k * np.exp(-1 * (k - s_0) / s_f)
-        return omega
-
-    traits_view = View(
-        VGroup(
-            VGroup(
-                Item('s_0', style='readonly', full_size=True, resizable=True),
-                Item('s_f'),
-                Item('plot_max'),
-            ),
-            VGroup(
-                UItem('fn@', height=300)
-            )
-        )
-    )
-
-    tree_view = traits_view
-
-
-class LiDamageFn(DamageFn):
-
-    node_name = 'Li damage function'
-
-    implements(IDamageFn)
-
-    alpha_1 = Float(1.,
-                    MAT=True,
-                    input=True,
-                    label="alpha_1",
-                    desc="parameter controls the damage function",
-                    enter_set=True,
-                    auto_set=False)
-
-    alpha_2 = Float(2000.,
-                    MAT=True,
-                    input=True,
-                    label="alpha_2",
-                    desc="parameter controls the damage function",
-                    enter_set=True,
-                    auto_set=False)
-
-    plot_max = 1e-2
-
-    def __call__(self, kappa):
-        alpha_1 = self.alpha_1
-        alpha_2 = self.alpha_2
-        s_0 = self.s_0
-        omega = np.zeros_like(kappa, dtype=np.float_)
-        d_idx = np.where(kappa >= s_0)[0]
-        k = kappa[d_idx]
-        omega[d_idx] = 1. / (1. + np.exp(-1. * alpha_2 * k + 6.)) * alpha_1
-        return omega
-
-    def _get_function(self):
-        alpha_1 = self.alpha_1
-        alpha_2 = self.alpha_2
-        g = lambda k: 1. / (1 + np.exp(-1. * alpha_2 * k + 6.)) * alpha_1
-        return g
-
-    traits_view = View(
-        VGroup(
-            VGroup(
-                Item('s_0', style='readonly', full_size=True, resizable=True),
-                Item('alpha_1'),
-                Item('alpha_2'),
-                Item('plot_max'),
-            ),
-            VGroup(
-                UItem('fn@', height=300)
-            )
-        )
-    )
-
-    tree_view = traits_view
-
-
-class AbaqusDamageFn(DamageFn):
-
-    node_name = 'Abaqus damage function'
-
-    implements(IDamageFn)
-
-    s_u = Float(0.003,
-                MAT=True,
-                input=True,
-                label="s_u",
-                desc="parameter controls the damage function",
-                enter_set=True,
-                auto_set=False)
-
-    alpha = Float(0.1,
-                  MAT=True,
-                  input=True,
-                  label="alpha",
-                  desc="parameter controlling the slop of damage",
-                  enter_set=True,
-                  auto_set=False)
-
-    plot_max = 1e-3
-
-    def __call__(self, kappa):
-        s_0 = self.s_0
-        s_u = self.s_u
-        alpha = self.alpha
-
-        omega = np.zeros_like(kappa, dtype=np.float_)
-        d_idx = np.where(kappa >= s_0)[0]
-        k = kappa[d_idx]
-
-        sk = (k - s_0) / (s_u - s_0)
-        frac = (1 - np.exp(-alpha * sk)) / (1 - np.exp(-alpha))
-
-        omega[d_idx] = 1 - s_0 / k * (1 - frac)
-        omega[np.where(omega > 1.0)] = 1.0
-        return omega
-
-    traits_view = View(
-        VGroup(
-            VGroup(
-                Item('s_0', style='readonly',
-                     full_size=True, resizable=True),
-                Item('s_u'),
-                Item('alpha'),
-                Item('plot_max'),
-            ),
-            VGroup(
-                UItem('fn@', height=300)
-            )
-        )
-    )
-
-    tree_view = traits_view
 
 
 class Material(BMCSTreeNode):
@@ -452,15 +258,6 @@ class BondSlipModel(BMCSModel, Vis2D):
     _paused = Bool(False)
     _restart = Bool(True)
 
-    @on_trait_change('MAT,BC,+BC')
-    def signal_mat_changed(self):
-        # @todo: review this - this sends a signal to the ui window
-        # that the current calculation needs to be abandoned, since
-        # continuation is not possible. The ui then initiates the reset
-        # of the model state and of the loading history.
-        if self.ui:
-            self.ui.stop()
-
     n_steps = Int(1000, ALG=True,
                   enter_set=True, auto_set=False)
 
@@ -478,14 +275,12 @@ class BondSlipModel(BMCSModel, Vis2D):
         '''this method is just called by the tloop_thread'''
 
         t_max = self.loading_scenario.xdata[-1]
-        print 'EVAL', t_max
         self.set_tmax(t_max)
         t_min = self.tline.val
         n_steps = self.n_steps
         tarray = np.linspace(t_min, t_max, n_steps)
         sv_names = self.sv_names
         sv_records = [[] for s_n in sv_names]
-
         s_last = 0
         for idx, t in enumerate(tarray):
             if self._restart or self._paused:
