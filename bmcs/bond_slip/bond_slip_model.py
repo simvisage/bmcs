@@ -146,6 +146,12 @@ class LiDamageFn(DamageFn):
         omega[d_idx] = 1. / (1. + np.exp(-1. * alpha_2 * k + 6.)) * alpha_1
         return omega
 
+    def _get_function(self):
+        alpha_1 = self.alpha_1
+        alpha_2 = self.alpha_2
+        g = lambda k: 1. / (1 + np.exp(-1. * alpha_2 * k + 6.)) * alpha_1
+        return g
+
     traits_view = View(
         VGroup(
             VGroup(

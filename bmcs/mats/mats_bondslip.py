@@ -5,19 +5,18 @@ Created on 05.12.2016
 '''
 
 from ibvpy.api import MATSEval
-from scipy.optimize import newton
-from traits.api import implements, Int, Array, HasTraits, Instance, \
-    Constant, Float, List
+from traits.api import implements, Int, Array, \
+    Constant, Float
 
 import numpy as np
 
 
 class MATSEvalFatigue(MATSEval):
 
-    E_m = Float(28484, tooltip='Stiffness of the matrix [MPa]',
+    E_m = Float(30000, tooltip='Stiffness of the matrix [MPa]',
                 auto_set=True, enter_set=True)
 
-    E_f = Float(170000, tooltip='Stiffness of the fiber [MPa]',
+    E_f = Float(200000, tooltip='Stiffness of the fiber [MPa]',
                 auto_set=False, enter_set=False)
 
     E_b = Float(200,
@@ -74,10 +73,6 @@ class MATSEvalFatigue(MATSEval):
               enter_set=True,
               auto_set=False)
 
-    n_s = Constant(4)
-
-    state_array_size = Int(4)
-
     def get_corr_pred(self, eps, d_eps, sig, t_n, t_n1, xs_pi, alpha, z, w):
 
         n_e, n_ip, n_s = eps.shape
@@ -103,27 +98,13 @@ class MATSEvalFatigue(MATSEval):
         delta_lamda = f / (self.E_b / (1 - w) + self.gamma + self.K) * plas
         # update all the state variables
 
-        '''
-        w_new = w.flatten()
-        delta_lamda_new = delta_lamda.flatten()
-        Y_new = Y.flatten()
-        
-        for i in range (len(w_new)):
-            f_w_n = lambda w_n :  w_n - w_new[i] - ((1 - w_n) ** self.c) * (delta_lamda_new[i] * (Y_new[i] / self.S) ** self.r)
-            f_w_n2 = lambda w_n : 1 + self.c * ((1 - w_n) ** (self.c - 1)) * (delta_lamda_new[i] * (Y_new[i] / self.S) ** self.r)
-            w_n = newton(f_w_n, 0., fprime=f_w_n2 , tol=1e-6, maxiter=50) 
-            w_new[i] = w_n 
-            
-        w = w_new.reshape(-1, 2)  
-        '''
-        #w = w + (1 - w)** self.c * (delta_lamda * (Y / self.S) ** self.r)
-
         xs_pi = xs_pi + delta_lamda * np.sign(sig_pi_trial - X) / (1 - w)
         Y = 0.5 * self.E_b * (eps[:, :, 1] - xs_pi) ** 2
+
         w = w + (1 - w) ** self.c * (delta_lamda * (Y / self.S) ** self.r)
 
         sig[:, :, 1] = (1 - w) * self.E_b * (eps[:, :, 1] - xs_pi)
-        X = X + self.gamma * delta_lamda * np.sign(sig_pi_trial - X)
+        #X = X + self.gamma * delta_lamda * np.sign(sig_pi_trial - X)
         alpha = alpha + delta_lamda * np.sign(sig_pi_trial - X)
         z = z + delta_lamda
 
@@ -184,13 +165,6 @@ class MATSEvalFatigue(MATSEval):
                     (self.E_b / (1 - w_i) + self.gamma + self.K)
                 # update all the state variables
 
-                ''' 
-                f_w_n = lambda w_n :  w_n - w_i - ((1 - w_n) ** c) * (delta_lamda * (Y_i / S) ** r)
-                f_w_n2 = lambda w_n : 1 + c * ((1 - w_n) ** (c - 1)) * (delta_lamda * (Y_i / S) ** r)
-                w_n = newton(f_w_n, 0., fprime=f_w_n2 , tol=1e-6, maxiter=10) 
-                w_i = w_n
-                '''
-
                 xs_pi_i = xs_pi_i + delta_lamda * \
                     np.sign(tau_i_1 - X_i) / (1 - w_i)
 
@@ -211,3 +185,36 @@ class MATSEvalFatigue(MATSEval):
             xs_pi_cum[i] = xs_pi_cum_i
 
         return tau_arr, w_arr, xs_pi_arr, xs_pi_cum
+
+
+class MATSBondSlipDP(MATSEval):
+
+    E_m = Float(30000, tooltip='Stiffness of the matrix [MPa]',
+                auto_set=True, enter_set=True)
+
+    E_f = Float(200000, tooltip='Stiffness of the fiber [MPa]',
+                auto_set=False, enter_set=False)
+
+    E_b = Float(200,
+                label="E_b",
+                desc="Bond stiffness",
+                enter_set=True,
+                auto_set=False)
+
+    gamma = Float(0,
+                  label="Gamma",
+                  desc="Kinematic hardening modulus",
+                  enter_set=True,
+                  auto_set=False)
+
+    K = Float(0,
+              label="K",
+              desc="Isotropic harening",
+              enter_set=True,
+              auto_set=False)
+
+    tau_bar = Float(5,
+                    label="Tau_pi_bar",
+                    desc="Reversibility limit",
+                    enter_set=True,
+                    auto_set=False)
