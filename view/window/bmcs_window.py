@@ -159,17 +159,25 @@ class BMCSWindow(HasStrictTraits):
     enable_stop = Bool(False)
 
     def _running_changed(self):
+        '''If the simulation is running disable the run botton,
+        enable the pause button and disable changes in all 
+        input parameters.
+        '''
         self.enable_run = not self.running
         self.enable_pause = self.running
         self.model.set_traits_with_metadata(self.enable_run,
                                             disable_on_run=True)
 
     start_event = Event
+    '''Event announcing the start of the calculation
+    '''
 
     def _start_event_fired(self):
         self.viz_sheet.run_started()
 
     finish_event = Event
+    '''Event announcing the start of the calculation
+    '''
 
     def _finish_event_fired(self):
         self.viz_sheet.run_finished()
@@ -178,9 +186,9 @@ class BMCSWindow(HasStrictTraits):
         if self.running:
             return
         self.enable_stop = True
-        self.model.run()
-        #self.run_thread = RunThread(ui=self)
-        # self.run_thread.start()
+        # self.model.run()
+        self.run_thread = RunThread(ui=self)
+        self.run_thread.start()
 
     def pause(self):
         self.model.pause()
@@ -265,6 +273,7 @@ class BMCSWindow(HasStrictTraits):
                              menu_save, menu_open,
                              name='File'))
     )
+
 
 if __name__ == '__main__':
 

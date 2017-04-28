@@ -35,9 +35,9 @@ from view.window import BMCSWindow
 from view.window.bmcs_window import BMCSModel
 from view.window.tline import TLine
 
+from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 import numpy as np
 from response_tracer import ResponseTracer
-from tfun_pwl_interactive import TFunPWLInteractive
 
 
 class TimeLoop(HasStrictTraits):
@@ -65,7 +65,7 @@ class TimeLoop(HasStrictTraits):
         for idx, t in enumerate(tarray):
             if self.restart or self.paused:
                 break
-            time.sleep(0.1)
+            time.sleep(1)
             self.tline.val = t
 
 
@@ -144,6 +144,7 @@ class DemoModel(BMCSModel):
             UItem('bc_dof@', height=500)
         )
     )
+
 
 if __name__ == '__main__':
     model = DemoModel()

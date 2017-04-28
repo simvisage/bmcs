@@ -28,6 +28,7 @@ class Viz2DAdapter(TabularAdapter):
 
 #-- Tabular Editor Definition --------------------------------------------
 
+
 # The tabular editor works in conjunction with an adapter class, derived from
 # TabularAdapter.
 tabular_editor = TabularEditor(
@@ -81,6 +82,10 @@ class VizSheet(HasStrictTraits):
 
     mode = Enum('monitor', 'browse')
 
+    def _mode_changed(self):
+        if self.mode == 'browse':
+            self.offline = False
+
     time = Float(0.0)
 
     def time_range_changed(self, max_):
@@ -113,6 +118,14 @@ class VizSheet(HasStrictTraits):
                  enter_set=True, auto_set=False)
 
     offline = Bool(True)
+    '''If the sheet is offline, the plot refresh is inactive.
+    The sheet starts in offline mode and is activated once the signal
+    run_started has been received. Upon run_finished the 
+    the sheet goes directly into the offline mode again.
+    
+    If the user switches to browser mode, the vizsheet gets online 
+    and reploting is activated.
+    '''
 
     def run_started(self):
         print 'RUN STARTED'
@@ -210,6 +223,7 @@ class VizSheet(HasStrictTraits):
         width=0.8, height=0.8,
         buttons=['OK', 'Cancel']
     )
+
 
 if __name__ == '__main__':
 
