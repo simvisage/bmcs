@@ -3,6 +3,7 @@ Created on 12.01.2016
 @author: Yingxiong, ABaktheer, RChudoba
 '''
 
+from bmcs.bond_slip.mats_bondslip import MATSBondSlipDP
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSEvalFatigue
 from bmcs.mats.tloop import TLoop
@@ -424,6 +425,20 @@ class PullOutModel(BMCSModel, Vis2D):
                                c=self.material.c,
                                a=self.material.a,
                                pressure=self.material.pressure)
+
+
+#     mats_eval = Property(Instance(MATSBondSlipDP),
+#                          depends_on='MAT')
+#     '''Material model'''
+#     @cached_property
+#     def _get_mats_eval(self):
+#         # assign the material parameters
+#         print 'new material model'
+#         return MATSBondSlipDP(E_b=self.material.E_b,
+#                                gamma=self.material.gamma,
+#                                tau_bar=self.material.tau_bar,
+#                                K=self.material.K,
+#                                )
 
     fets_eval = Property(Instance(FETS1D52ULRHFatigue),
                          depends_on='CS')
