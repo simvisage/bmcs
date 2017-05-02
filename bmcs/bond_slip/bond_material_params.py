@@ -16,6 +16,15 @@ class MaterialParams(BMCSLeafNode):
     '''Record of material parameters of an interface layer
     '''
     node_name = Str('material parameters')
+
+    E_f = Float(240000,
+                MAT=True,
+                input=True,
+                label="E_f ",
+                desc="Reinforcement stiffness",
+                enter_set=True,
+                auto_set=False)
+
     E_b = Float(12900,
                 MAT=True,
                 input=True,
