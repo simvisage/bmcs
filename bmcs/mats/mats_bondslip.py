@@ -8,6 +8,9 @@ from ibvpy.api import MATSEval
 from traits.api import implements, Int, Array, \
     Constant, Float, Tuple
 
+from mats_damage_fn import LiDamageFn, JirasekDamageFn, AbaqusDamageFn
+
+
 import numpy as np
 
 
@@ -123,75 +126,6 @@ class MATSEvalFatigue(MATSEval):
 
         return sig, D, xs_pi, alpha, z, w
 
-    def get_bond_slip(self, s_arr):
-        '''for plotting the bond slip fatigue - Initial version modified modified threshold with cumulation-2 implicit
-        '''
-        # arrays to store the values
-        # nominal stress
-        tau_arr = np.zeros_like(s_arr)
-        # damage factor
-        w_arr = np.zeros_like(s_arr)
-        # sliding slip
-        xs_pi_arr = np.zeros_like(s_arr)
-        # max sliding
-        s_max = np.zeros_like(s_arr)
-        # max stress
-        tau_max = np.zeros_like(s_arr)
-        # cumulative sliding
-        xs_pi_cum = np.zeros_like(s_arr)
-
-        # state variables
-        tau_i = 0
-        alpha_i = 0.
-        xs_pi_i = 0
-        z_i = 0.
-        w_i = 0.  # damage
-        X_i = self.gamma * alpha_i
-        delta_lamda = 0
-        Z = self.K * z_i
-        xs_pi_cum_i = 0
-
-        for i in range(1, len(s_arr)):
-            # print 'increment', i
-            s_i = s_arr[i]
-
-            tau_i = (1 - w_i) * self.E_b * (s_i - xs_pi_i)
-
-            tau_i_1 = self.E_b * (s_i - xs_pi_i)
-
-            Y_i = 0.5 * self.E_b * (s_i - xs_pi_i) ** 2
-
-            # Threshold
-            f_pi_i = np.fabs(tau_i_1 - X_i) - \
-                self.tau_pi_bar - Z + self.a * self.pressure / 3
-
-            if f_pi_i > 1e-6:
-                # Return mapping
-                delta_lamda = f_pi_i / \
-                    (self.E_b / (1 - w_i) + self.gamma + self.K)
-                # update all the state variables
-
-                xs_pi_i = xs_pi_i + delta_lamda * \
-                    np.sign(tau_i_1 - X_i) / (1 - w_i)
-
-                Y_i = 0.5 * self.E_b * (s_i - xs_pi_i) ** 2
-
-                w_i = w_i + ((1 - w_i) ** self.c) * \
-                    (delta_lamda * (Y_i / self.S) ** self.r)
-
-                tau_i = self.E_b * (1 - w_i) * (s_i - xs_pi_i)
-                X_i = X_i + self.gamma * delta_lamda * np.sign(tau_i_1 - X_i)
-                alpha_i = alpha_i + delta_lamda * np.sign(tau_i_1 - X_i)
-                z_i = z_i + delta_lamda
-                xs_pi_cum_i = xs_pi_cum_i + delta_lamda
-
-            tau_arr[i] = tau_i
-            w_arr[i] = w_i
-            xs_pi_arr[i] = xs_pi_i
-            xs_pi_cum[i] = xs_pi_cum_i
-
-        return tau_arr, w_arr, xs_pi_arr, xs_pi_cum
-
 
 class MATSBondSlipDP(MATSEval):
 
@@ -201,19 +135,19 @@ class MATSBondSlipDP(MATSEval):
     E_f = Float(200000, tooltip='Stiffness of the fiber [MPa]',
                 auto_set=False, enter_set=False)
 
-    E_b = Float(200,
+    E_b = Float(12900,
                 label="E_b",
                 desc="Bond stiffness",
                 enter_set=True,
                 auto_set=False)
 
-    gamma = Float(0,
+    gamma = Float(100,
                   label="Gamma",
                   desc="Kinematic hardening modulus",
                   enter_set=True,
                   auto_set=False)
 
-    K = Float(0,
+    K = Float(1000,
               label="K",
               desc="Isotropic harening",
               enter_set=True,
@@ -224,3 +158,56 @@ class MATSBondSlipDP(MATSEval):
                     desc="Reversibility limit",
                     enter_set=True,
                     auto_set=False)
+
+    state_array_size = Int(5)
+
+    alpha_1 = 1.
+    alpha_2 = 100.
+
+    def omega(self, k):
+        return 1. / (1 + np.exp(-1. * self.alpha_2 * k + 6.)) * self.alpha_1
+
+    def omega_dereviative(self, k):
+        return (self.alpha_1 * self.alpha_2 * np.exp(-1. * self.alpha_2 * k + 6.)) / (1 + np.exp(-1. * self.alpha_2 * k + 6.)) ** 2
+
+    def get_corr_pred(self, s, d_s, tau, t_n, t_n1, s_p, alpha, z, kappa, omega):
+
+        n_e, n_ip, n_s = s.shape
+        D = np.zeros((n_e, n_ip, 3, 3))
+        D[:, :, 0, 0] = self.E_m
+        D[:, :, 2, 2] = self.E_f
+
+        sig_pi_trial = self.E_b * (s[:, :, 1] - s_p)
+
+        Z = self.K * z
+        X = self.gamma * alpha
+        f = np.fabs(sig_pi_trial - X) - self.tau_bar - Z
+
+        elas = f <= 1e-6
+        plas = f > 1e-6
+
+        d_tau = np.einsum('...st,...t->...s', D, d_s)
+        tau += d_tau
+
+        # Return mapping
+        delta_lamda = f / (self.E_b + self.gamma + self.K) * plas
+        # update all the state variables
+
+        s_p = s_p + delta_lamda * np.sign(sig_pi_trial - X)
+        z = z + delta_lamda
+        alpha = alpha + delta_lamda * np.sign(sig_pi_trial - X)
+
+        kappa = np.max(np.array([kappa, np.fabs(s[:, :, 1])]), axis=0)
+        omega = self.omega(kappa)
+        tau[:, :, 1] = (1 - omega) * self.E_b * (s[:, :, 1] - s_p)
+
+        # Consistent tangent operator
+        D_ed = -self.E_b / (self.E_b + self.K + self.gamma) * self.omega_dereviative(kappa) * self.E_b * (s[:, :, 1] - s_p) \
+            + (1 - omega) * self.E_b * (self.K + self.gamma) / \
+            (self.E_b + self.K + self.gamma)
+
+        D[:, :, 1, 1] = (1 - omega) * self.E_b * elas + D_ed * plas
+
+        return tau, D, s_p, alpha, z, kappa, omega
+
+    n_s = Constant(5)
