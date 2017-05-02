@@ -29,7 +29,6 @@ class RTraceViz2D(Viz2D):
         # to obtain the right profile of data.
         # @todo improve the transform functionality
         #
-        print 'vot', vot
         if len(self.vis2d._tdata) == 0:
             return
         tdata = np.array(self.vis2d._tdata)
@@ -38,8 +37,6 @@ class RTraceViz2D(Viz2D):
         y_min, y_max = self.vis2d.trace.yrange
         xdata = self.vis2d.trace.xdata
         fn_t_x = ip.splrep(tdata, xdata,  s=0, k=3)
-        print 'tdata', tdata
-        print 'xdata', xdata
         x = ip.splev(vot, fn_t_x, der=0)
         print 'x', x
         ax.plot([x, x], [y_min, y_max])
@@ -334,6 +331,7 @@ class RTraceArraySnapshot(RTrace):
         # @todo:
         self.x = np.zeros((0,), dtype='float_')
         self.y = np.zeros((0,), dtype='float_')
+
 
 if __name__ == '__main__':
 

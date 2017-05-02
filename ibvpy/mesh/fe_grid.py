@@ -1,4 +1,11 @@
 
+from ibvpy.fets.i_fets_eval import IFETSEval
+from ibvpy.mesh.cell_grid.cell_array import ICellView, CellView, CellArray, ICellArraySource
+from ibvpy.mesh.cell_grid.cell_grid import CellGrid
+from ibvpy.mesh.cell_grid.cell_spec import CellSpec
+from ibvpy.mesh.cell_grid.dof_grid import DofCellGrid, DofCellView
+from ibvpy.mesh.cell_grid.geo_grid import GeoCellGrid, GeoCellView
+from ibvpy.rtrace.rt_domain import RTraceDomain
 from numpy import copy, zeros, array_equal
 from traits.api import \
     Instance, Array, Int, on_trait_change, Property, cached_property, \
@@ -11,13 +18,6 @@ from fe_grid_activation_map import FEGridActivationMap
 from fe_grid_idx_slice import FEGridIdxSlice
 from fe_grid_ls_slice import FEGridLevelSetSlice
 from i_fe_uniform_domain import IFEUniformDomain
-from ibvpy.fets.i_fets_eval import IFETSEval
-from ibvpy.mesh.cell_grid.cell_array import ICellView, CellView, CellArray, ICellArraySource
-from ibvpy.mesh.cell_grid.cell_grid import CellGrid
-from ibvpy.mesh.cell_grid.cell_spec import CellSpec
-from ibvpy.mesh.cell_grid.dof_grid import DofCellGrid, DofCellView
-from ibvpy.mesh.cell_grid.geo_grid import GeoCellGrid, GeoCellView
-from ibvpy.rtrace.rt_domain import RTraceDomain
 
 
 #-----------------------------------------------------------------------------
@@ -45,6 +45,7 @@ class PointListTabularAdapter (TabularAdapter):
         return str(self.row)
 
 #-- Tabular Editor Definition --------------------------------------------
+
 
 point_list_tabular_editor = TabularEditor(
     adapter=PointListTabularAdapter(),
@@ -755,6 +756,7 @@ class FECellView(CellView):
                        scrollable=True,
                        width=0.6,
                        height=0.2)
+
 
 if __name__ == '__main__':
 

@@ -4,11 +4,11 @@ Created on 12.01.2016
 @author: Yingxiong
 '''
 from traits.api import Int, HasStrictTraits, Instance, \
-    Float, Property, property_depends_on, Callable, \
-    Array, List, Bool
+    Float, on_trait_change, Callable, \
+    Array, List, Bool, Property, cached_property, Str, Dict
 from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
-from view.window.tline import TLine
+from ibvpy.core.tline import TLine
 
 import numpy as np
 from tstepper import TStepper
@@ -65,7 +65,6 @@ class TLoop(HasStrictTraits):
             print 'RESET TIME'
             self.tline.val = 0
             self.reset_sv_hist()
-
             self.restart = False
 
     def eval(self):
@@ -130,7 +129,7 @@ class TLoop(HasStrictTraits):
             t_n1 = t_n + self.d_t
             self.tline.val = min(t_n, self.tline.max)
 
-        return
+        return U_k
 
     def get_time_idx_arr(self, vot):
         '''Get the index corresponding to visual time

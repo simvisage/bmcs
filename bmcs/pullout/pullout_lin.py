@@ -68,6 +68,8 @@ and in boundary conditions.
 '''
 
 
+from bmcs.mats.mats_bondslip import MATSEvalFatigue
+from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from ibvpy.api import \
     FEGrid, FETSEval, IFETSEval, \
     MATSEval, IMATSEval, \
@@ -85,12 +87,10 @@ from traits.api import \
 from traitsui.api import \
     View, Include, Item, UItem, VGroup
 from view.plot2d import Viz2D, Vis2D
-from view.ui import BMCSTreeNode, BMCSLeafNode, BMCSRootNode
-
-from bmcs.mats.mats_bondslip import MATSEvalFatigue
+from view.ui import BMCSTreeNode, BMCSLeafNode
+from view.window import BMCSModel
 import numpy as np
 import sympy as sp
-from view.examples.tfun_pwl_interactive import TFunPWLInteractive
 
 
 n_C = 2
@@ -251,7 +251,7 @@ class Viz2DPullOutField(Viz2D):
     )
 
 
-class BontrixLin(BMCSRootNode, Vis2D):
+class PullOutModelLin(BMCSModel, Vis2D):
     '''Linear elastic calculation of pull-out problem.
     '''
 
@@ -343,15 +343,17 @@ class BontrixLin(BMCSRootNode, Vis2D):
                      time_change_notifier=self.time_changed,
                      )
 
-    def time_changed(self, time):
-        self.ui.viz_sheet.time_changed(time)
+    def init(self):
+        self.tloop.init()
 
-    def time_range_changed(self, tmax):
-        self.tline.max = tmax
-        self.ui.viz_sheet.time_range_changed(tmax)
+    def eval(self):
+        return self.tloop.eval()
 
-    def set_tmax(self, time):
-        self.time_range_changed(time)
+    def pause(self):
+        self.tloop.paused = True
+
+    def stop(self):
+        self.tloop.restart = True
 
     K_Eij = Property(depends_on='+input,+bc_changed')
 
@@ -467,10 +469,10 @@ class BontrixLin(BMCSRootNode, Vis2D):
 def run_debontrix_lin():
     from view.window import BMCSWindow
 
-    po = BontrixLin(fets=FETS1D52L4ULRH(),
-                    n_E=5,
-                    L_x=1.0,
-                    G=1.0)
+    po = PullOutModelLin(fets=FETS1D52L4ULRH(),
+                         n_E=5,
+                         L_x=1.0,
+                         G=1.0)
 
     w = BMCSWindow(model=po)
     # po.add_viz2d('F-w')
@@ -478,6 +480,7 @@ def run_debontrix_lin():
     rt = po.ts.rtrace_mngr['Fi,right over w_right']
     rt.add_viz2d('time function')
     w.configure_traits()
+
 
 if __name__ == '__main__':
     run_debontrix_lin()

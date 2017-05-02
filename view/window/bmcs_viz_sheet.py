@@ -166,6 +166,13 @@ class VizSheet(HasStrictTraits):
 
     selected_viz2d = Instance(Viz2D)
 
+    figure = Instance(Figure)
+
+    def _figure_default(self):
+        figure = Figure(facecolor='white')
+        figure.set_tight_layout(True)
+        return figure
+
     axes = Property(List, depends_on='viz2d_list,viz2d_list_items,n_cols')
     '''Derived axes objects reflecting the layout of plot pane
     and the individual. 
@@ -180,12 +187,6 @@ class VizSheet(HasStrictTraits):
                 for i in range(n_fig)]
 
     data_changed = Event
-
-    figure = Instance(Figure)
-
-    def _figure_default(self):
-        figure = Figure(facecolor='white')
-        return figure
 
     # Traits view definition:
     traits_view = View(

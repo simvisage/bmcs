@@ -8,7 +8,7 @@ from traits.api import Int, HasStrictTraits, Instance, \
     Array, List, Bool
 from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
-from view.window.tline import TLine
+from ibvpy.core.tline import TLine
 
 import numpy as np
 from tstepper_dp import TStepper

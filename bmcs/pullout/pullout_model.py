@@ -1,20 +1,17 @@
 '''
 Created on 12.01.2016
-@author: Yingxiong, ABaktheer, RChudoba
+@author: RChudoba, ABaktheer, Yingxiong
 
-@todo: enable recalculation after the initial offline run
-@todo: reset viz adapters upon recalculation to forget their axes lims
-@todo: introduce a switch for left and right supports
+@todo: derive the size of the state array.
+
 '''
 
 from bmcs.bond_slip.mats_bondslip import MATSBondSlipDP
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSEvalFatigue
-from bmcs.mats.tloop import TLoop
-from bmcs.mats.tstepper import TStepper
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
-from ibvpy.api import BCDof, FEGrid, BCSlice
+from ibvpy.api import BCDof, FEGrid, BCSlice, TStepper, TLoop
 from ibvpy.core.bcond_mngr import BCondMngr
 from traits.api import \
     Property, Instance, cached_property, \
@@ -22,142 +19,20 @@ from traits.api import \
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
-from view.ui import BMCSLeafNode
-from view.window import BMCSModel, BMCSWindow, TLine
+from view.window import BMCSModel, BMCSWindow
+
 from bmcs.bond_slip.bond_material_params import MaterialParams
+from ibvpy.core.tline import TLine
 import numpy as np
-
-
-class CrossSection(BMCSLeafNode):
-    '''Parameters of the pull-out cross section
-    '''
-    node_name = 'cross-section'
-
-    A_m = Float(15240,
-                CS=True,
-                input=True,
-                auto_set=False, enter_set=True,
-                desc='matrix area [mm2]')
-    A_f = Float(153.9,
-                CS=True,
-                input=True,
-                auto_set=False, enter_set=True,
-                desc='reinforcement area [mm2]')
-    P_b = Float(44,
-                input=True,
-                auto_set=False, enter_set=True,
-                desc='perimeter of the bond interface [mm]')
-
-    view = View(
-        Item('A_m'),
-        Item('A_f'),
-        Item('P_b')
-    )
-
-    tree_view = view
-
-
-class Geometry(BMCSLeafNode):
-
-    node_name = 'geometry'
-    L_x = Float(45,
-                GEO=True,
-                input=True,
-                auto_set=False, enter_set=True,
-                desc='embedded length')
-
-    view = View(
-        Item('L_x'),
-    )
-
-    tree_view = view
-
-
-class Viz2DPullOutFW(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = 'F-W'
-
-    def plot(self, ax, vot, *args, **kw):
-        idx = self.vis2d.tloop.get_time_idx(vot)
-        P_t = self.vis2d.get_P_t()
-        ymin, ymax = np.min(P_t), np.max(P_t)
-        L_y = ymax - ymin
-        ymax += 0.05 * L_y
-        ymin -= 0.05 * L_y
-        w_0, w_L = self.vis2d.get_w_t()
-        xmin, xmax = np.min(w_L), np.max(w_L)
-        L_x = xmax - xmin
-        xmax += 0.03 * L_x
-        xmin -= 0.03 * L_x
-        ax.plot(w_L, P_t, linewidth=2, color='black', alpha=0.4,
-                label='P(w;x=L)')
-        ax.plot(w_0, P_t, linewidth=1, color='magenta', alpha=0.4,
-                label='P(w;x=0)')
-        ax.set_ylim(ymin=ymin, ymax=ymax)
-        ax.set_xlim(xmin=xmin, xmax=xmax)
-        ax.set_ylabel('pull-out force P [kN]')
-        ax.set_xlabel('pull-out slip w [mm]')
-        P, w = P_t[idx], w_L[idx]
-        ax.plot([w], [P], 'o', color='black', markersize=10)
-        P, w = P_t[idx], w_0[idx]
-        ax.plot([w], [P], 'o', color='magenta', markersize=10)
-        ax.legend(loc=4)
-
-
-class Viz2DPullOutField(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = Property(depends_on='plot_fn')
-
-    @cached_property
-    def _get_label(self):
-        return 'field: %s' % self.plot_fn
-
-    plot_fn = Trait('u_C',
-                    {'eps_C': 'plot_eps_C',
-                     'sig_C': 'plot_sig_C',
-                     'u_C': 'plot_u_C',
-                     's': 'plot_s',
-                     'sf': 'plot_sf',
-                     'w': 'plot_w',
-                     'Fint_C': 'plot_Fint_C',
-                     'eps_f(s)': 'plot_eps_s',
-                     },
-                    label='Field',
-                    tooltip='Select the field to plot'
-                    )
-
-    def plot(self, ax, vot, *args, **kw):
-        getattr(self.vis2d, self.plot_fn_)(ax, vot, *args, **kw)
-        ymin, ymax = ax.get_ylim()
-        if self.adaptive_y_range:
-            if self.initial_plot:
-                self.y_max = ymax
-                self.y_min = ymin
-                self.initial_plot = False
-                return
-        self.y_max = max(ymax, self.y_max)
-        self.y_min = min(ymin, self.y_min)
-        ax.set_ylim(ymin=self.y_min, ymax=self.y_max)
-
-    y_max = Float(1.0, label='Y-max value',
-                  auto_set=False, enter_set=True)
-    y_min = Float(0.0, label='Y-min value',
-                  auto_set=False, enter_set=True)
-
-    adaptive_y_range = Bool(True)
-    initial_plot = Bool(True)
-
-    traits_view = View(
-        Item('plot_fn'),
-        Item('y_min', ),
-        Item('y_max', )
-    )
+from pullout import \
+    CrossSection, Geometry, Viz2DPullOutFW, Viz2DPullOutField
 
 
 class PullOutModel(BMCSModel, Vis2D):
 
+    #=========================================================================
+    # Tree node attributes
+    #=========================================================================
     node_name = 'pull out simulation'
 
     tree_node_list = List([])
@@ -172,6 +47,9 @@ class PullOutModel(BMCSModel, Vis2D):
             self.bcond_mngr,
         ]
 
+    #=========================================================================
+    # Interactive control of the time loop
+    #=========================================================================
     def init(self):
         self.tloop.init()
 
@@ -184,6 +62,9 @@ class PullOutModel(BMCSModel, Vis2D):
     def stop(self):
         self.tloop.restart = True
 
+    #=========================================================================
+    # Test setup parameters
+    #=========================================================================
     material = Instance(MaterialParams)
 
     def _material_default(self):
@@ -204,6 +85,9 @@ class PullOutModel(BMCSModel, Vis2D):
     def _geometry_default(self):
         return Geometry()
 
+    #=========================================================================
+    # Discretization
+    #=========================================================================
     n_e_x = Int(20, auto_set=False, enter_set=True)
 
     w_max = Float(1, auto_set=False, enter_set=True)
@@ -225,6 +109,9 @@ class PullOutModel(BMCSModel, Vis2D):
         #fe_grid[-1, -1].dofs
         return 2 + 2 * self.n_e_x - 1
 
+    #=========================================================================
+    # Material model
+    #=========================================================================
     mats_eval = Property(Instance(MATSEvalFatigue),
                          depends_on='MAT')
     '''Material model'''
@@ -256,15 +143,19 @@ class PullOutModel(BMCSModel, Vis2D):
 #                                K=self.material.K,
 #                                )
 
+    #=========================================================================
+    # Finite element type
+    #=========================================================================
     fets_eval = Property(Instance(FETS1D52ULRHFatigue),
-                         depends_on='CS')
+                         depends_on='CS,MAT')
     '''Finite element time stepper implementing the corrector
     predictor operators at the element level'''
     @cached_property
     def _get_fets_eval(self):
         return FETS1D52ULRHFatigue(A_m=self.cross_section.A_m,
                                    P_b=self.cross_section.P_b,
-                                   A_f=self.cross_section.A_f)
+                                   A_f=self.cross_section.A_f,
+                                   mats_eval=self.mats_eval)
 
     bcond_mngr = Instance(BCondMngr)
     '''Boundary condition manager
@@ -296,19 +187,29 @@ class PullOutModel(BMCSModel, Vis2D):
                       shape=(self.n_e_x,),
                       fets_eval=self.fets_eval)
 
+#     dots = Property(Instance(DOTSGridEval), depends_on='+input')
+#
+#     @cached_property
+#     def _get_dots(self):
+#         return DOTSGridEval(fets_eval=self.fets_eval,
+#                             mats_eval=self.mats_eval,
+#                             sdomain=self.fe_grid
+#                             )
     tstepper = Property(Instance(TStepper),
-                        depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
+                        depends_on='MAT,GEO,MESH,CS,ALG,BC')
     '''Objects representing the state of the model providing
     the predictor and corrector functionality needed for time-stepping
     algorithm.
     '''
     @cached_property
     def _get_tstepper(self):
-        return TStepper(mats_eval=self.mats_eval,
-                        fets_eval=self.fets_eval,
-                        sdomain=self.fe_grid,
-                        bcond_mngr=self.bcond_mngr
-                        )
+        #self.fe_grid.dots = self.dots
+        print 'new tstepper'
+        ts = TStepper(
+            sdomain=self.fe_grid,
+            bcond_mngr=self.bcond_mngr
+        )
+        return ts
 
     tline = Instance(TLine)
 
@@ -331,10 +232,11 @@ class PullOutModel(BMCSModel, Vis2D):
     '''
     @cached_property
     def _get_tloop(self):
-
         k_max = self.k_max
+
         tolerance = self.tolerance
-        return TLoop(ts=self.tstepper, k_max=k_max,
+        print 'new tloop', self.tstepper
+        return TLoop(tstepper=self.tstepper, k_max=k_max,
                      tolerance=tolerance,
                      tline=self.tline)
 
@@ -397,6 +299,9 @@ class PullOutModel(BMCSModel, Vis2D):
         w_0 = d_t_ECid[:, 0, 1, 0, 0]
         w_L = d_t_ECid[:, -1, 1, -1, -1]
         return w_0, w_L
+
+        U_array = np.array(self.tloop.U_record, dtype=np.float_)
+        return U_array[:, (self.free_end_dof, self.controlled_dof)]
 
     def get_w(self, vot):
         '''Damage variables
@@ -466,17 +371,9 @@ class PullOutModel(BMCSModel, Vis2D):
         X_J = self.tstepper.X_J
         w = self.get_w(vot)
         ax.fill_between(X_J, 0, w, facecolor='lightcoral', alpha=0.3)
-        ax.plot(X_J, w, linewidth=2, color='lightcoral', label='bond')
+        ax.plot(X_J, w, linewidth=2, color='lightcoral')
         ax.set_ylabel('damage')
         ax.set_xlabel('bond length')
-        ax.legend(loc=2)
-
-    def plot_eps_s(self, ax, vot):
-        eps_C = self.get_eps_C(vot).T
-        s = self.get_s(vot)
-        ax.plot(eps_C[1], s, linewidth=2, color='lightcoral')
-        ax.set_ylabel('reinforcement strain')
-        ax.set_xlabel('slip')
 
     trait_view = View(Item('fets_eval'),
                       )
@@ -489,30 +386,10 @@ class PullOutModel(BMCSModel, Vis2D):
 
 def run_pullout():
     po = PullOutModel(n_e_x=100, k_max=500)
-    po.tline.step = 0.005
+    po.tline.step = 0.01
     po.bcond_mngr.bcond_list[1].value = 0.01
-
-    po.loading_scenario.set(loading_type='cyclic',
-                            amplitude_type='constant'
-                            )
-    po.loading_scenario.set(number_of_cycles=6,
-                            amplitude_type='increasing',
-                            maximum_loading=1)
-    po.run()
-
-    w = BMCSWindow(model=po)
-    po.add_viz2d('load function')
-    po.add_viz2d('F-w')
-    po.add_viz2d('field', 'u_C', plot_fn='u_C')
-    po.add_viz2d('field', 'w', plot_fn='w')
-    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
-    po.add_viz2d('field', 's', plot_fn='s')
-    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-    po.add_viz2d('field', 'sf', plot_fn='sf')
-
-    w.offline = False
-    w.finish_event = True
-    w.configure_traits()
+    po.init()
+    print po.tstepper.sdomain.dots.dots_list[0].dots_integ.state_array.shape
 
 
 if __name__ == '__main__':
