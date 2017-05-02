@@ -211,6 +211,9 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
 
     state_array_size = Int(5)
 
+    alpha_1 = 0.
+    alpha_2 = 100.
+
     def omega(self, k):
         return self.omega_fn(k)
 
