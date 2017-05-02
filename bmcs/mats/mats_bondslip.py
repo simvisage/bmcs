@@ -6,11 +6,13 @@ Created on 05.12.2016
 
 from ibvpy.api import MATSEval
 from traits.api import implements, Int, Array, \
-    Constant, Float, Tuple
+    Constant, Float, Tuple, List, on_trait_change, \
+    Instance, Trait, Bool
+from traitsui.api import View, VGroup, Item, UItem
+from view.ui import BMCSTreeNode
 
-from mats_damage_fn import LiDamageFn, JirasekDamageFn, AbaqusDamageFn
-
-
+from mats_damage_fn import \
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn
 import numpy as np
 
 
@@ -127,48 +129,93 @@ class MATSEvalFatigue(MATSEval):
         return sig, D, xs_pi, alpha, z, w
 
 
-class MATSBondSlipDP(MATSEval):
+class MATSBondSlipDP(MATSEval, BMCSTreeNode):
+
+    node_name = 'bond model: damage-plasticity'
+
+    tree_node_list = List([])
+
+    def _tree_node_list_default(self):
+        return [self.omega_fn, ]
+
+    @on_trait_change('omega_fn_type')
+    def _update_node_list(self):
+        self.tree_node_list = [self.omega_fn]
 
     E_m = Float(30000, tooltip='Stiffness of the matrix [MPa]',
+                MAT=True,
                 auto_set=True, enter_set=True)
 
     E_f = Float(200000, tooltip='Stiffness of the fiber [MPa]',
+                MAT=True,
                 auto_set=False, enter_set=False)
 
     E_b = Float(12900,
                 label="E_b",
                 desc="Bond stiffness",
+                MAT=True,
                 enter_set=True,
                 auto_set=False)
 
     gamma = Float(100,
                   label="Gamma",
                   desc="Kinematic hardening modulus",
+                  MAT=True,
                   enter_set=True,
                   auto_set=False)
 
     K = Float(1000,
               label="K",
               desc="Isotropic harening",
+              MAT=True,
               enter_set=True,
               auto_set=False)
 
     tau_bar = Float(5,
                     label="Tau_pi_bar",
                     desc="Reversibility limit",
+                    MAT=True,
                     enter_set=True,
                     auto_set=False)
 
+    uncoupled_dp = Bool(False,
+                        MAT=True,
+                        label='Uncoupled d-p'
+                        )
+    s_0 = Float
+
+    @on_trait_change('tau_bar,E_b')
+    def _update_s0(self):
+        if self.link_dp:
+            self.s_0 = self.tau_bar / self.E_b
+            self.omega_fn.s_0 = self.s_0
+
+    omega_fn_type = Trait('li',
+                          dict(li=LiDamageFn,
+                               jirasek=JirasekDamageFn,
+                               abaqus=AbaqusDamageFn),
+                          MAT=True,
+                          )
+
+    @on_trait_change('omega_fn_type,s_0')
+    def _reset_omega_fn(self):
+        self.omega_fn = self.omega_fn_type_(s_0=self.s_0)
+
+    omega_fn = Instance(IDamageFn,
+                        MAT=True)
+
+    def _omega_fn_default(self):
+        return LiDamageFn(alpha_1=1.,
+                          alpha_2=100.
+                          )
+
     state_array_size = Int(5)
 
-    alpha_1 = 1.
-    alpha_2 = 100.
-
     def omega(self, k):
-        return 1. / (1 + np.exp(-1. * self.alpha_2 * k + 6.)) * self.alpha_1
+        return self.omega_fn(k)
 
-    def omega_dereviative(self, k):
-        return (self.alpha_1 * self.alpha_2 * np.exp(-1. * self.alpha_2 * k + 6.)) / (1 + np.exp(-1. * self.alpha_2 * k + 6.)) ** 2
+    def omega_derivative(self, k):
+        return self.omega_fn.diff(k)
 
     def get_corr_pred(self, s, d_s, tau, t_n, t_n1, s_p, alpha, z, kappa, omega):
 
@@ -202,7 +249,7 @@ class MATSBondSlipDP(MATSEval):
         tau[:, :, 1] = (1 - omega) * self.E_b * (s[:, :, 1] - s_p)
 
         # Consistent tangent operator
-        D_ed = -self.E_b / (self.E_b + self.K + self.gamma) * self.omega_dereviative(kappa) * self.E_b * (s[:, :, 1] - s_p) \
+        D_ed = -self.E_b / (self.E_b + self.K + self.gamma) * self.omega_derivative(kappa) * self.E_b * (s[:, :, 1] - s_p) \
             + (1 - omega) * self.E_b * (self.K + self.gamma) / \
             (self.E_b + self.K + self.gamma)
 
@@ -211,3 +258,22 @@ class MATSBondSlipDP(MATSEval):
         return tau, D, s_p, alpha, z, kappa, omega
 
     n_s = Constant(5)
+
+    tree_view = View(
+        VGroup(
+            VGroup(
+                Item('E_m', full_size=True, resizable=True),
+                Item('E_f'),
+                Item('E_b'),
+                Item('gamma'),
+                Item('K'),
+                Item('tau_bar'),
+            ),
+            VGroup(
+                Item('uncoupled_dp'),
+                Item('s_0'),  # , enabled_when='uncoupled_dp'),
+                Item('omega_fn_type'),
+            ),
+            UItem('omega_fn@')
+        )
+    )

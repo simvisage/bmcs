@@ -3,7 +3,7 @@ from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import \
     Instance, \
     Float, on_trait_change,\
-    HasStrictTraits, Interface, implements
+    HasStrictTraits, Interface, implements, Range
 from traitsui.api import \
     View, Item, UItem, VGroup
 from view.ui import BMCSLeafNode
@@ -39,7 +39,12 @@ class PlottableFn(HasStrictTraits):
 
 
 class IDamageFn(Interface):
-    pass
+
+    def __call__(self, k):
+        '''get the value of the function'''
+
+    def diff(self, k):
+        '''get the first derivative of the function'''
 
 
 class DamageFn(BMCSLeafNode, PlottableFn):
@@ -50,6 +55,9 @@ class DamageFn(BMCSLeafNode, PlottableFn):
                 desc="parameter controls the damage function",
                 enter_set=True,
                 auto_set=False)
+
+    def diff(self, k):
+        return self.fn.diff(k)
 
 
 class JirasekDamageFn(DamageFn):
@@ -99,7 +107,7 @@ class LiDamageFn(DamageFn):
 
     implements(IDamageFn)
 
-    alpha_1 = Float(1.,
+    alpha_1 = Range(value=1., low=0.0, high=1.0,
                     MAT=True,
                     input=True,
                     label="alpha_1",
@@ -127,12 +135,10 @@ class LiDamageFn(DamageFn):
         omega[d_idx] = 1. / (1. + np.exp(-1. * alpha_2 * k + 6.)) * alpha_1
         return omega
 
-    def _get_function(self):
-        alpha_1 = self.alpha_1
-        alpha_2 = self.alpha_2
-
-        def g(k): return 1. / (1 + np.exp(-1. * alpha_2 * k + 6.)) * alpha_1
-        return g
+    def diff(self, kappa):
+        return ((self.alpha_1 * self.alpha_2 *
+                 np.exp(-1. * self.alpha_2 * kappa + 6.)) /
+                (1 + np.exp(-1. * self.alpha_2 * kappa + 6.)) ** 2)
 
     traits_view = View(
         VGroup(

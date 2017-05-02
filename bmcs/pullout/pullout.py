@@ -121,7 +121,8 @@ class Viz2DPullOutField(Viz2D):
                      's': 'plot_s',
                      'sf': 'plot_sf',
                      'w': 'plot_w',
-                     'Fint_C': 'plot_Fint_C'
+                     'Fint_C': 'plot_Fint_C',
+                     'eps_f(s)': 'plot_eps_s',
                      },
                     label='Field',
                     tooltip='Select the field to plot'
@@ -397,9 +398,6 @@ class PullOutModel(BMCSModel, Vis2D):
         w_L = d_t_ECid[:, -1, 1, -1, -1]
         return w_0, w_L
 
-        U_array = np.array(self.tloop.U_record, dtype=np.float_)
-        return U_array[:, (self.free_end_dof, self.controlled_dof)]
-
     def get_w(self, vot):
         '''Damage variables
         '''
@@ -472,6 +470,13 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.set_ylabel('damage')
         ax.set_xlabel('bond length')
         ax.legend(loc=2)
+
+    def plot_eps_s(self, ax, vot):
+        eps_C = self.get_eps_C(vot).T
+        s = self.get_s(vot)
+        ax.plot(eps_C[1], s, linewidth=2, color='lightcoral')
+        ax.set_ylabel('reinforcement strain')
+        ax.set_xlabel('slip')
 
     trait_view = View(Item('fets_eval'),
                       )
