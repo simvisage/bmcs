@@ -6,7 +6,7 @@ Created on 05.12.2016
 
 from ibvpy.api import MATSEval
 from traits.api import implements, Int, Array, \
-    Constant, Float
+    Constant, Float, Tuple
 
 import numpy as np
 
@@ -76,6 +76,8 @@ class MATSEvalFatigue(MATSEval):
     n_s = Constant(4)
 
     state_array_size = Int(4)
+
+    state_arr_shape = Tuple((4,))
 
     def get_corr_pred(self, eps, d_eps, sig, t_n, t_n1, xs_pi, alpha, z, w):
 

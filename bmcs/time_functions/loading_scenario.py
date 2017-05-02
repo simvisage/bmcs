@@ -159,6 +159,9 @@ class Viz2DLoadControlFunction(Viz2D):
         if len(t_arr) == 0:
             return
         f_arr = val * bc.time_function(t_arr)
-        ax.plot(t_arr, f_arr, 'bo-')
+        ax.plot(t_arr, f_arr, color='black')
+        ax.set_ylabel('load factor')
+        ax.set_xlabel('time')
         vot_idx = tloop.get_time_idx(vot)
-        ax.plot([t_arr[vot_idx]], [f_arr[vot_idx]], 'ro')
+        ax.plot([t_arr[vot_idx]], [f_arr[vot_idx]], 'o',
+                color='black', markersize=10)

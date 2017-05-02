@@ -5,7 +5,7 @@ Created on Mar 4, 2017
 
 '''
 from ibvpy.api import \
-    TStepperEval, IFETSEval
+    TStepperEval, IFETSEval, IMATSEval
 from ibvpy.core.i_sdomain import ISDomain
 from mathkit.matrix_la import \
     SysMtxArray
@@ -55,10 +55,18 @@ class DOTSGridEval(TStepperEval):
         #
         n_elems = self.sdomain.n_elems
         n_ip = self.fets_eval.n_ip
-        state_arr_size = self.fets_eval.state_arr_size
-        return np.zeros((n_elems, n_ip, state_arr_size), dtype=np.float_)
+        state_arr_shape = self.mats_eval.state_arr_shape
+        return np.zeros((n_elems, n_ip) + state_arr_shape, dtype=np.float_)
 
-    fets_eval = Instance(IFETSEval)
+    fets_eval = Property(Instance(IFETSEval))
+
+    def _get_fets_eval(self):
+        return self.sdomain.fets_eval
+
+    mats_eval = Property(Instance(IMATSEval))
+
+    def _get_mats_eval(self):
+        return self.fets_eval.mats_eval
 
     #=========================================================================
     # index maps
@@ -223,11 +231,12 @@ class DOTSGridEval(TStepperEval):
     def get_corr_pred2(self, sctx, U, dU, tn, tn1, F_int, *args, **kw):
 
         fets = self.fets_eval
+        mats = self.mats_eval
         sa = self.state_array
         U_ECid = U[self.dof_ECid]
         dU_ECid = dU[self.dof_ECid]
         eps_ECmdf, deps_ECmdf = fets.get_eps(self.dN_Eimd, U_ECid, dU_ECid)
-        sig_ECmdf, D_ECmdfgh = fets.get_sig_D(eps_ECmdf, deps_ECmdf, sa)
+        sig_ECmdf, D_ECmdfgh = mats.get_corr_pred2(eps_ECmdf, deps_ECmdf, sa)
 
         n_e_dofs = self.fets_eval.n_e_dofs
         #

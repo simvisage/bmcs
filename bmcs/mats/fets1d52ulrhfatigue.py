@@ -4,12 +4,14 @@ Created on 12.01.2016
 @author: Yingxiong
 '''
 
+from ibvpy.dots.dots_grid_eval import DOTSGridEval
 from ibvpy.fets.fets_eval import FETSEval, IFETSEval
 from traits.api import implements, Int, Array, \
     Property, cached_property, Float, List
 
 import numpy as np
 import sympy as sp
+
 
 r_ = sp.symbols('r')
 
@@ -43,6 +45,8 @@ class FETS1D52ULRHFatigue(FETSEval):
     vtk_r = Array(value=[[-1.], [1.]])
     vtk_cells = [[0, 1]]
     vtk_cell_types = 'Line'
+
+    dots_class = DOTSGridEval
 
     n_dof_r = Property
     '''Number of node positions associated with degrees of freedom. 

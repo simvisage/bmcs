@@ -10,10 +10,10 @@ from bmcs.utils import \
     get_outfile
 from pyface.api import ImageResource
 from traits.api import \
-    Button, Instance, WeakRef
+    Button, Instance, WeakRef, Str
 from traitsui.api import \
     View, Item, HGroup, Handler, \
-    UIInfo, spring
+    UIInfo, spring, VGroup
 from traitsui.file_dialog import \
     open_file, save_file
 from traitsui.key_bindings import \
@@ -65,17 +65,20 @@ class BMCSTreeViewHandler(Handler):
     ok = Button('OK')
     cancel = Button('Cancel')
     delete = Button('OK')
-    exit_dialog = ('Do you really wish to end '
-                   'the session? Any unsaved data '
-                   'will be lost.')
+    exit_dialog = Str(label='Do you really wish to end '
+                      'the session? Any unsaved data '
+                      'will be lost.')
 
-    exit_view = View(Item(name='', label=exit_dialog),
-                     HGroup(Item('ok', show_label=False, springy=True),
-                            Item('cancel', show_label=False, springy=True)
-                            ),
-                     title='Exit dialog',
-                     kind='live'
-                     )
+    exit_view = View(
+        VGroup(
+            Item('exit_dialog'),
+            HGroup(Item('ok', show_label=False, springy=True),
+                   Item('cancel', show_label=False, springy=True)
+                   ),
+        ),
+        title='Exit dialog',
+        kind='live'
+    )
 
     del_view = View(
         HGroup(
@@ -170,6 +173,7 @@ class BMCSTreeViewHandler(Handler):
     def load(self, info):
         info.object.load()
 
+
 action_strings = \
     [('Plot', 'replot', 'Replot current diagrams'),
      ('Clear', 'clear', 'Clear current diagrams'),
@@ -195,7 +199,7 @@ toolbar_actions = [Action(name="Run",
                           action="stop_action"),
                    ]
 
-toolbar_actions += [Action(name=name,
-                           action=action,
-                           tooltip=tooltip)
-                    for name, action, tooltip in action_strings]
+# toolbar_actions += [Action(name=name,
+#                            action=action,
+#                            tooltip=tooltip)
+#                     for name, action, tooltip in action_strings]

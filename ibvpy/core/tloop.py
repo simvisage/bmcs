@@ -37,6 +37,7 @@ from traitsui.api import \
 from traitsui.menu import OKButton, CancelButton, \
     Action
 
+from ibvpy.core.tline import TLine
 import numpy as np
 
 
@@ -48,7 +49,7 @@ if LOGGING_ON:
     log = logging.getLogger('info')
 
 
-class TLine(HasTraits):
+class XTLine(HasTraits):
 
     '''
     Time line for the control parameter.
@@ -300,6 +301,19 @@ class TLoop(IBVResource):
 
     # Tolerance in the time variable to end the iteration.
     step_tolerance = Float(1e-8)
+
+    paused = Bool(False)
+    restart = Bool(True)
+
+    def init(self):
+        print 'INIT'
+        if self.paused:
+            self.paused = False
+        if self.restart:
+            print 'RESET TIME'
+            self.tline.val = 0
+            self.setup()
+            self.restart = False
 
     # specify type of 'linalg.norm'
     # default 'ord = None' returns 2-norm
@@ -642,6 +656,7 @@ class TLoop(IBVResource):
         height=0.75, width=0.75,
         buttons=[OKButton, CancelButton]
     )
+
 
 if LOGGING_ON:
     import logging.config

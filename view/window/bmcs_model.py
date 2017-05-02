@@ -8,7 +8,7 @@ from traits.api import \
     Instance, on_trait_change
 from view.ui.bmcs_tree_node import \
     BMCSRootNode
-from tline import TLine
+from ibvpy.core.tline import TLine
 
 
 class BMCSModel(BMCSRootNode):
@@ -28,11 +28,13 @@ class BMCSModel(BMCSRootNode):
                      )
 
     def time_changed(self, time):
-        self.ui.viz_sheet.time_changed(time)
+        if self.ui:
+            self.ui.viz_sheet.time_changed(time)
 
     def time_range_changed(self, tmax):
         self.tline.max = tmax
-        self.ui.viz_sheet.time_range_changed(tmax)
+        if self.ui:
+            self.ui.viz_sheet.time_range_changed(tmax)
 
     def set_tmax(self, time):
         self.time_range_changed(time)
@@ -57,7 +59,8 @@ class BMCSModel(BMCSRootNode):
         try:
             self.eval()
         except Exception as e:
-            self.ui.running = False
+            if self.ui:
+                self.ui.running = False
             raise
         if self.ui:
             self.ui.running = False

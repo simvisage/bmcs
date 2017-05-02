@@ -2,12 +2,12 @@
 Created on 12.01.2016
 @author: Yingxiong
 '''
-from ibvpy.api import BCDof, IMATSEval, IFETSEval
+from ibvpy.api import \
+    BCDof, IMATSEval, IFETSEval, FEGrid
 from ibvpy.core.bcond_mngr import BCondMngr
-from ibvpy.mesh.fe_grid import FEGrid
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 from traits.api import HasTraits, Instance, \
-    Property, cached_property, Float, List
+    Property, cached_property, List
 
 from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from mats_bondslip import MATSEvalFatigue
@@ -48,22 +48,7 @@ class TStepper(HasTraits):
     def _get_A(self):
         return np.array([self.fets_eval.A_m, self.fets_eval.P_b, self.fets_eval.A_f])
 
-    # Number of elements
-    n_e_x = 20
-    # length
-    L_x = Float(200)
-
-    sdomain = Property(Instance(FEGrid), depends_on='L_x')
-    '''Diescretization object.
-    '''
-    @cached_property
-    def _get_sdomain(self):
-        # Element definition
-        domain = FEGrid(coord_max=(self.L_x,),
-                        shape=(self.n_e_x,),
-                        fets_eval=self.fets_eval)
-        return domain
-
+    sdomain = Instance(FEGrid)
     #=========================================================================
     # index maps
     #=========================================================================

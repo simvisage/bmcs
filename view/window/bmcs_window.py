@@ -22,8 +22,7 @@ from bmcs_tree_view_handler import \
     BMCSTreeViewHandler, plot_self, menu_save, \
     menu_open, menu_exit, toolbar_actions, key_bindings
 from bmcs_viz_sheet import VizSheet
-from tline import TLine
-
+from ibvpy.core.tline import TLine
 
 if ETSConfig.toolkit == 'wx':
     from traitsui.wx.tree_editor import \
@@ -214,7 +213,7 @@ class BMCSWindow(HasStrictTraits):
         #        dock='tab',
         id='bmcs.id',
         width=1.0,
-        height=0.9,
+        height=1.0,
         title='BMCS',
         resizable=True,
         handler=BMCSTreeViewHandler(),
