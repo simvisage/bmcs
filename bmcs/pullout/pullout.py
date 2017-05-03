@@ -129,8 +129,7 @@ class Viz2DPullOutField(Viz2D):
                     )
 
     def plot(self, ax, vot, *args, **kw):
-        getattr(self.vis2d, self.plot_fn_)(ax, vot, *args, **kw)
-        ymin, ymax = ax.get_ylim()
+        ymin, ymax = getattr(self.vis2d, self.plot_fn_)(ax, vot, *args, **kw)
         if self.adaptive_y_range:
             if self.initial_plot:
                 self.y_max = ymax

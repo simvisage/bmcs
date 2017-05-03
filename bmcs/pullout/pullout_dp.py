@@ -247,6 +247,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.set_ylabel('displacement')
         ax.set_xlabel('bond length')
         ax.legend(loc=2)
+        return np.min(u_C), np.max(u_C)
 
     def plot_eps_C(self, ax, vot):
         X_M = self.tstepper.X_M
@@ -259,6 +260,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot([0, L], [0, 0], color='black')
         ax.set_ylabel('strain')
         ax.set_xlabel('bond length')
+        return np.min(eps_C), np.max(eps_C)
 
     def plot_sig_C(self, ax, vot):
         X_M = self.tstepper.X_M
@@ -275,6 +277,9 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot([0, L], [0, 0], color='black')
         ax.set_ylabel('stress flow')
         ax.set_xlabel('bond length')
+        F_min = min(np.min(F_m), np.min(F_f))
+        F_max = min(np.max(F_m), np.max(F_f))
+        return F_min, F_max
 
     def plot_s(self, ax, vot):
         X_J = self.tstepper.X_J
@@ -283,6 +288,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot(X_J, s, linewidth=2, color='lightcoral')
         ax.set_ylabel('slip')
         ax.set_xlabel('bond length')
+        return np.min(s), np.max(s)
 
     def plot_sf(self, ax, vot):
         X_J = self.tstepper.X_J
@@ -291,6 +297,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot(X_J, sf, linewidth=2, color='lightcoral')
         ax.set_ylabel('shear flow')
         ax.set_xlabel('bond length')
+        return np.min(sf), np.max(sf)
 
     def plot_w(self, ax, vot):
         X_J = self.tstepper.X_J
@@ -300,6 +307,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.set_ylabel('damage')
         ax.set_xlabel('bond length')
         ax.legend(loc=2)
+        return 0.0, 1.05
 
     def plot_eps_s(self, ax, vot):
         eps_C = self.get_eps_C(vot).T

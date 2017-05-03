@@ -128,7 +128,6 @@ class VizSheet(HasStrictTraits):
     '''
 
     def run_started(self):
-        print 'RUN STARTED'
         self.offline = False
         self.mode = 'monitor'
 
@@ -136,7 +135,6 @@ class VizSheet(HasStrictTraits):
         self.skipped_steps = self.monitor_chunk_size
         self.replot()
         self.offline = True
-        print 'RUN FINISHED'
 
     monitor_chunk_size = Int(1, label='Monitor each # steps')
 
@@ -144,11 +142,8 @@ class VizSheet(HasStrictTraits):
 
     @on_trait_change('vot,n_cols')
     def replot(self):
-        print 'REPLOT'
         if self.offline:
-            print 'OFFLINE'
             return
-        print 'ONLINE'
         if self.mode == 'monitor' and \
                 self.skipped_steps < (self.monitor_chunk_size - 1):
             self.skipped_steps += 1
