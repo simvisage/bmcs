@@ -142,36 +142,36 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
     def _update_node_list(self):
         self.tree_node_list = [self.omega_fn]
 
-    E_m = Float(30000, tooltip='Stiffness of the matrix [MPa]',
+    E_m = Float(30000.0, tooltip='Stiffness of the matrix [MPa]',
                 MAT=True,
                 auto_set=True, enter_set=True)
 
-    E_f = Float(200000, tooltip='Stiffness of the fiber [MPa]',
+    E_f = Float(200000.0, tooltip='Stiffness of the fiber [MPa]',
                 MAT=True,
                 auto_set=False, enter_set=False)
 
-    E_b = Float(12900,
+    E_b = Float(12900.0,
                 label="E_b",
                 desc="Bond stiffness",
                 MAT=True,
                 enter_set=True,
                 auto_set=False)
 
-    gamma = Float(100,
+    gamma = Float(100.0,
                   label="Gamma",
                   desc="Kinematic hardening modulus",
                   MAT=True,
                   enter_set=True,
                   auto_set=False)
 
-    K = Float(1000,
+    K = Float(1000.0,
               label="K",
               desc="Isotropic harening",
               MAT=True,
               enter_set=True,
               auto_set=False)
 
-    tau_bar = Float(5,
+    tau_bar = Float(5.0,
                     label="Tau_pi_bar",
                     desc="Reversibility limit",
                     MAT=True,
@@ -184,20 +184,25 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
                         )
     s_0 = Float
 
+    def __init__(self, *args, **kw):
+        super(MATSBondSlipDP, self).__init__(*args, **kw)
+        self._update_s0()
+
     @on_trait_change('tau_bar,E_b')
     def _update_s0(self):
-        if self.link_dp:
+        if not self.uncoupled_dp:
             self.s_0 = self.tau_bar / self.E_b
             self.omega_fn.s_0 = self.s_0
 
     omega_fn_type = Trait('li',
                           dict(li=LiDamageFn,
-                               jirasek=JirasekDamageFn,
-                               abaqus=AbaqusDamageFn),
+                               #                         jirasek=JirasekDamageFn,
+                               #                         abaqus=AbaqusDamageFn
+                               ),
                           MAT=True,
                           )
 
-    @on_trait_change('omega_fn_type,s_0')
+    @on_trait_change('omega_fn_type')
     def _reset_omega_fn(self):
         self.omega_fn = self.omega_fn_type_(s_0=self.s_0)
 
@@ -205,14 +210,12 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
                         MAT=True)
 
     def _omega_fn_default(self):
+        # return JirasekDamageFn()
         return LiDamageFn(alpha_1=1.,
                           alpha_2=100.
                           )
 
     state_array_size = Int(5)
-
-    alpha_1 = 0.
-    alpha_2 = 100.
 
     def omega(self, k):
         return self.omega_fn(k)
@@ -280,3 +283,8 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
             UItem('omega_fn@')
         )
     )
+
+
+if __name__ == '__main__':
+    m = MATSBondSlipDP()
+    m.configure_traits()

@@ -422,7 +422,7 @@ class PullOutModel(BMCSModel, Vis2D):
                      }
 
 
-def run_pullout():
+def run_pullout_const_shear(*args, **kw):
     po = PullOutModel(n_x=200, w_max=1.5)
     po.geometry.set(L_x=800)
 #     po.cross_section.set(A_f=4.5, P_b=1.0)
@@ -438,10 +438,10 @@ def run_pullout():
     po.add_viz2d('field', 'strain', plot_fn='eps')
 #    po.add_viz2d('field', 'sig', plot_fn='sig')
 
-    w.finish_event = True
     w.offline = False
-    w.configure_traits()
+    w.finish_event = True
+    w.configure_traits(*args, **kw)
 
 
 if __name__ == '__main__':
-    run_pullout()
+    run_pullout_const_shear()

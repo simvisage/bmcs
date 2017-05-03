@@ -5,6 +5,8 @@ Created on 12.01.2016
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSBondSlipDP
+from bmcs.mats.tloop_dp import TLoop
+from bmcs.mats.tstepper_dp import TStepper
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof
@@ -15,11 +17,8 @@ from traits.api import \
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
-
 from view.window import BMCSModel, BMCSWindow, TLine
 
-from bmcs.mats.tloop_dp import TLoop
-from bmcs.mats.tstepper_dp import TStepper
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     CrossSection, Geometry
@@ -325,16 +324,14 @@ class PullOutModel(BMCSModel, Vis2D):
                      }
 
 
-def run_pullout():
-    po = PullOutModel(n_e_x=100, k_max=500)
+def run_pullout_dp(*args, **kw):
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
     po.tline.step = 0.005
-    po.bcond_mngr.bcond_list[1].value = 0.01
-
-    po.loading_scenario.set(loading_type='cyclic',
-                            amplitude_type='constant'
-                            )
-    po.loading_scenario.set(number_of_cycles=6,
-                            maximum_loading=1)
+    po.geometry.L_x = 200.0
+    po.loading_scenario.set(loading_type='monotonic')
+    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
+    po.mats_eval.set(gamma=0.0, K=15.0, tau_bar=45.0)
+    po.mats_eval.omega_fn.set(alpha_2=1.0, plot_max=10.0)
     po.run()
 
     w = BMCSWindow(model=po)
@@ -350,8 +347,8 @@ def run_pullout():
 
     w.offline = False
     w.finish_event = True
-    w.configure_traits()
+    w.configure_traits(*args, **kw)
 
 
 if __name__ == '__main__':
-    run_pullout()
+    run_pullout_dp()

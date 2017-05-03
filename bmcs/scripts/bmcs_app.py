@@ -13,8 +13,11 @@ from bmcs.bond_slip import \
     run_bond_slip_model_p, \
     run_bond_slip_model_d, \
     run_bond_slip_model_dp
+from bmcs.pullout import \
+    run_pullout_const_shear, \
+    run_pullout_dp
 from traits.api import HasTraits, Button
-from traitsui.api import View, UItem
+from traitsui.api import View, UItem, VGroup, Group
 
 
 # A bmcs mayavi instance so we can close it correctly.
@@ -23,30 +26,56 @@ bmcs = None
 
 class BMCSLauncher(HasTraits):
 
-    launch_bond_slip_model_d = Button(label='Bond-slip (damage)')
+    #=========================================================================
+    # Lecture #2
+    #=========================================================================
+    bond_slip_model_d = Button(label='Damage')
 
-    def _launch_bond_slip_model_d_fired(self):
+    def _bond_slip_model_d_fired(self):
         run_bond_slip_model_d(kind='live')
 
-    launch_bond_slip_model_p = Button(label='Bond-slip (plasticity)')
+    bond_slip_model_p = Button(label='Plasticity')
 
-    def _launch_bond_slip_model_p_fired(self):
+    def _bond_slip_model_p_fired(self):
         run_bond_slip_model_p(kind='live')
 
-    launch_bond_slip_model_dp = Button(label='Bond-slip (damage-plasticity')
+    bond_slip_model_dp = Button(label='Damage-plasticity')
 
-    def _launch_bond_slip_model_dp_fired(self):
+    def _bond_slip_model_dp_fired(self):
         run_bond_slip_model_dp(kind='live')
 
-    run_bond_pullout = Button()
+    #=========================================================================
+    # Lecture #3
+    #=========================================================================
+    pullout_model_const_shear = Button(label='Constant shear')
+
+    def _pullout_model_const_shear_fired(self):
+        run_pullout_const_shear(kind='live')
+
+    pullout_model_dp = Button(label='Damage-plasticity')
+
+    def _pullout_model_dp_fired(self):
+        run_pullout_dp(kind='live')
 
     view = View(
-        UItem('launch_bond_slip_model_d',
-              full_size=True, resizable=True),
-        UItem('launch_bond_slip_model_p',
-              full_size=True, resizable=True),
-        UItem('launch_bond_slip_model_dp',
-              full_size=True, resizable=True),
+        VGroup(
+            Group(
+                UItem('bond_slip_model_d',
+                      full_size=True, resizable=True),
+                UItem('bond_slip_model_p',
+                      full_size=True, resizable=True),
+                UItem('bond_slip_model_dp',
+                      full_size=True, resizable=True),
+                label='Bond-slip models, lecture #2'
+            ),
+            Group(
+                UItem('pullout_model_const_shear',
+                      full_size=True, resizable=True),
+                UItem('pullout_model_dp',
+                      full_size=True, resizable=True),
+                label='Pull-out models, lecture #3'
+            )
+        ),
         title='BMCS application launcher',
         width=500,
         buttons=['OK']
