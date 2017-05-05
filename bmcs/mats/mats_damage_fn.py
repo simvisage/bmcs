@@ -85,6 +85,11 @@ class JirasekDamageFn(DamageFn):
         omega[d_idx] = 1. - s_0 / k * np.exp(-1 * (k - s_0) / s_f)
         return omega
 
+    def diff(self, kappa):
+        s_0 = self.s_0
+        s_f = self.s_f
+        return ((s_0 / (kappa * s_f)) - (s_0 / kappa)) * np.exp(-(kappa - s_0) / (s_f))
+
     traits_view = View(
         VGroup(
             VGroup(
@@ -196,6 +201,16 @@ class AbaqusDamageFn(DamageFn):
         omega[d_idx] = 1 - s_0 / k * (1 - frac)
         omega[np.where(omega > 1.0)] = 1.0
         return omega
+
+    def diff(self, kappa):
+        s_0 = self.s_0
+        s_u = self.s_u
+        alpha = self.alpha
+        return (- s_0 * np.exp(alpha * (kappa - s_0) /
+                               (s_u - s_0)) * ((s_u - s_0) *
+                                               np.exp(alpha * (kappa - s_0) /
+                                                      (s_u - s_0)) + np.exp(alpha) * (alpha * kappa - s_u + s_0))
+                / ((np.exp(alpha) - 1) * kappa**2 * (s_u - s_0)))
 
     traits_view = View(
         VGroup(
