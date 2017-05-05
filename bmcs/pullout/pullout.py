@@ -7,6 +7,7 @@ Created on 12.01.2016
 @todo: introduce a switch for left and right supports
 '''
 
+from bmcs.bond_slip.bond_material_params import MaterialParams
 from bmcs.bond_slip.mats_bondslip import MATSBondSlipDP
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSEvalFatigue
@@ -24,7 +25,7 @@ from traitsui.api import \
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow, TLine
-from bmcs.bond_slip.bond_material_params import MaterialParams
+
 import numpy as np
 
 
@@ -43,7 +44,12 @@ class CrossSection(BMCSLeafNode):
                 input=True,
                 auto_set=False, enter_set=True,
                 desc='reinforcement area [mm2]')
+<<<<<<< HEAD
     P_b = Float(2.,
+=======
+    P_b = Float(44,
+                CS=True,
+>>>>>>> branch 'master' of https://github.com/simvisage/bmcs.git
                 input=True,
                 auto_set=False, enter_set=True,
                 desc='perimeter of the bond interface [mm]')
@@ -96,7 +102,7 @@ class Viz2DPullOutFW(Viz2D):
                 label='P(w;x=0)')
         ax.set_ylim(ymin=ymin, ymax=ymax)
         ax.set_xlim(xmin=xmin, xmax=xmax)
-        ax.set_ylabel('pull-out force P [kN]')
+        ax.set_ylabel('pull-out force P [N]')
         ax.set_xlabel('pull-out slip w [mm]')
         P, w = P_t[idx], w_L[idx]
         ax.plot([w], [P], 'o', color='black', markersize=10)
@@ -129,8 +135,7 @@ class Viz2DPullOutField(Viz2D):
                     )
 
     def plot(self, ax, vot, *args, **kw):
-        getattr(self.vis2d, self.plot_fn_)(ax, vot, *args, **kw)
-        ymin, ymax = ax.get_ylim()
+        ymin, ymax = getattr(self.vis2d, self.plot_fn_)(ax, vot, *args, **kw)
         if self.adaptive_y_range:
             if self.initial_plot:
                 self.y_max = ymax
@@ -414,8 +419,8 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot(X_M, u_C[1], linewidth=2, color='orange', label='reinf')
         ax.fill_between(X_M, 0, u_C[1], facecolor='orange', alpha=0.2)
         ax.plot([0, L], [0, 0], color='black')
-        ax.set_ylabel('displacement')
-        ax.set_xlabel('bond length')
+        ax.set_ylabel('displacement: u [mm]')
+        ax.set_xlabel('bond length: x [mm]')
         ax.legend(loc=2)
 
     def plot_eps_C(self, ax, vot):
@@ -427,8 +432,8 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot(X_M, eps_C[1], linewidth=2, color='orange',)
         ax.fill_between(X_M, 0, eps_C[1], facecolor='orange', alpha=0.2)
         ax.plot([0, L], [0, 0], color='black')
-        ax.set_ylabel('strain')
-        ax.set_xlabel('bond length')
+        ax.set_ylabel('strain: eps [-]')
+        ax.set_xlabel('bond length: x [mm]')
 
     def plot_sig_C(self, ax, vot):
         X_M = self.tstepper.X_M
@@ -443,24 +448,24 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot(X_M, F_f, linewidth=2, color='orange')
         ax.fill_between(X_M, 0, F_f, facecolor='orange', alpha=0.2)
         ax.plot([0, L], [0, 0], color='black')
-        ax.set_ylabel('stress flow')
-        ax.set_xlabel('bond length')
+        ax.set_ylabel('stress flow: A * sig [N]')
+        ax.set_xlabel('bond length: x [mm]')
 
     def plot_s(self, ax, vot):
         X_J = self.tstepper.X_J
         s = self.get_s(vot)
         ax.fill_between(X_J, 0, s, facecolor='lightcoral', alpha=0.3)
         ax.plot(X_J, s, linewidth=2, color='lightcoral')
-        ax.set_ylabel('slip')
-        ax.set_xlabel('bond length')
+        ax.set_ylabel('slip: s [mm]')
+        ax.set_xlabel('bond length: x [mm]')
 
     def plot_sf(self, ax, vot):
         X_J = self.tstepper.X_J
         sf = self.get_sf(vot)
         ax.fill_between(X_J, 0, sf, facecolor='lightcoral', alpha=0.3)
         ax.plot(X_J, sf, linewidth=2, color='lightcoral')
-        ax.set_ylabel('shear flow')
-        ax.set_xlabel('bond length')
+        ax.set_ylabel('shear flow: shear flow [MPa]')
+        ax.set_xlabel('bond length: x [mm]')
 
     def plot_w(self, ax, vot):
         X_J = self.tstepper.X_J

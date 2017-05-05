@@ -5,6 +5,8 @@ Created on 12.01.2016
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSBondSlipDP
+from bmcs.mats.tloop_dp import TLoop
+from bmcs.mats.tstepper_dp import TStepper
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof
@@ -15,11 +17,8 @@ from traits.api import \
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
-
 from view.window import BMCSModel, BMCSWindow, TLine
 
-from bmcs.mats.tloop_dp import TLoop
-from bmcs.mats.tstepper_dp import TStepper
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     CrossSection, Geometry
@@ -247,6 +246,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.set_ylabel('displacement')
         ax.set_xlabel('bond length')
         ax.legend(loc=2)
+        return np.min(u_C), np.max(u_C)
 
     def plot_eps_C(self, ax, vot):
         X_M = self.tstepper.X_M
@@ -259,6 +259,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot([0, L], [0, 0], color='black')
         ax.set_ylabel('strain')
         ax.set_xlabel('bond length')
+        return np.min(eps_C), np.max(eps_C)
 
     def plot_sig_C(self, ax, vot):
         X_M = self.tstepper.X_M
@@ -275,6 +276,9 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot([0, L], [0, 0], color='black')
         ax.set_ylabel('stress flow')
         ax.set_xlabel('bond length')
+        F_min = min(np.min(F_m), np.min(F_f))
+        F_max = min(np.max(F_m), np.max(F_f))
+        return F_min, F_max
 
     def plot_s(self, ax, vot):
         X_J = self.tstepper.X_J
@@ -283,6 +287,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot(X_J, s, linewidth=2, color='lightcoral')
         ax.set_ylabel('slip')
         ax.set_xlabel('bond length')
+        return np.min(s), np.max(s)
 
     def plot_sf(self, ax, vot):
         X_J = self.tstepper.X_J
@@ -291,6 +296,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot(X_J, sf, linewidth=2, color='lightcoral')
         ax.set_ylabel('shear flow')
         ax.set_xlabel('bond length')
+        return np.min(sf), np.max(sf)
 
     def plot_w(self, ax, vot):
         X_J = self.tstepper.X_J
@@ -300,6 +306,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.set_ylabel('damage')
         ax.set_xlabel('bond length')
         ax.legend(loc=2)
+        return 0.0, 1.05
 
     def plot_eps_s(self, ax, vot):
         eps_C = self.get_eps_C(vot).T
@@ -317,16 +324,14 @@ class PullOutModel(BMCSModel, Vis2D):
                      }
 
 
-def run_pullout():
-    po = PullOutModel(n_e_x=100, k_max=500)
+def run_pullout_dp(*args, **kw):
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
     po.tline.step = 0.005
-    po.bcond_mngr.bcond_list[1].value = 0.01
-
-    po.loading_scenario.set(loading_type='cyclic',
-                            amplitude_type='constant'
-                            )
-    po.loading_scenario.set(number_of_cycles=6,
-                            maximum_loading=1)
+    po.geometry.L_x = 200.0
+    po.loading_scenario.set(loading_type='monotonic')
+    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
+    po.mats_eval.set(gamma=0.0, K=15.0, tau_bar=45.0)
+    po.mats_eval.omega_fn.set(alpha_2=1.0, plot_max=10.0)
     po.run()
 
     w = BMCSWindow(model=po)
@@ -342,8 +347,8 @@ def run_pullout():
 
     w.offline = False
     w.finish_event = True
-    w.configure_traits()
+    w.configure_traits(*args, **kw)
 
 
 if __name__ == '__main__':
-    run_pullout()
+    run_pullout_dp()

@@ -82,7 +82,7 @@ class JirasekDamageFn(DamageFn):
         omega = np.zeros_like(kappa, dtype=np.float_)
         d_idx = np.where(kappa >= s_0)[0]
         k = kappa[d_idx]
-        omega[d_idx] = 1. - s_0 / k * np.exp(-1 * (k - s_0) / s_f)
+        omega[d_idx] = 1. - s_0 / k * np.exp(-1 * (k - s_0) / (s_f - s_0))
         return omega
 
     def diff(self, kappa):
@@ -192,7 +192,7 @@ class AbaqusDamageFn(DamageFn):
         alpha = self.alpha
 
         omega = np.zeros_like(kappa, dtype=np.float_)
-        d_idx = np.where(kappa >= s_0)[0]
+        d_idx = np.where(kappa > s_0)[0]
         k = kappa[d_idx]
 
         sk = (k - s_0) / (s_u - s_0)

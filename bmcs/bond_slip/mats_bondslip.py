@@ -268,3 +268,8 @@ class MATSBondSlipDP(MATSBondSlipBase):
 #         D[:, :, 1, 1] = (1 - omega) * self.E_b * elas + D_ed * plas
 #
 #         return tau, D, s_p, alpha, z, kappa, omega
+
+
+if __name__ == '__main__':
+    m = MATSBondSlipDP()
+    m.configure_traits()
