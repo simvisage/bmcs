@@ -201,6 +201,7 @@ class MATSBondSlipDP(MATSBondSlipBase):
         # trial stress - assuming elastic increment.
         tau_e_trial = self.E_b * (s - s_p)
         X = self.gamma * alpha
+
         h = max(0., (self.tau_bar + self.K * z))
         f_trial = np.abs(tau_e_trial - X) - h
         tau_ep = tau_e_trial

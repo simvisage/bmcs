@@ -196,8 +196,8 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
 
     omega_fn_type = Trait('li',
                           dict(li=LiDamageFn,
-                               #                         jirasek=JirasekDamageFn,
-                               #                         abaqus=AbaqusDamageFn
+                               jirasek=JirasekDamageFn,
+                               abaqus=AbaqusDamageFn
                                ),
                           MAT=True,
                           )
@@ -223,7 +223,8 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
     def omega_derivative(self, k):
         return self.omega_fn.diff(k)
 
-    def get_corr_pred(self, s, d_s, tau, t_n, t_n1, s_p, alpha, z, kappa, omega):
+    def get_corr_pred(self, s, d_s, tau, t_n, t_n1,
+                      s_p, alpha, z, kappa, omega):
 
         n_e, n_ip, n_s = s.shape
         D = np.zeros((n_e, n_ip, 3, 3))

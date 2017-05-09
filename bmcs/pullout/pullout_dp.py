@@ -176,6 +176,11 @@ class PullOutModel(BMCSModel, Vis2D):
         dof_ECid = self.tstepper.dof_ECid
         return d[dof_ECid]
 
+    X_M = Property
+
+    def _get_X_M(self):
+        return self.tstepper.X_M
+
     def get_u_C(self, vot):
         '''Displacement field
         '''
@@ -264,6 +269,7 @@ class PullOutModel(BMCSModel, Vis2D):
     def plot_sig_C(self, ax, vot):
         X_M = self.tstepper.X_M
         sig_C = self.get_sig_C(vot).T
+
         A_m = self.cross_section.A_m
         A_f = self.cross_section.A_f
         L = self.geometry.L_x
@@ -314,6 +320,19 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.plot(eps_C[1], s, linewidth=2, color='lightcoral')
         ax.set_ylabel('reinforcement strain')
         ax.set_xlabel('slip')
+
+    t = Property
+
+    def _get_t(self):
+        return np.array(self.tloop.t_record, dtype=np.float_)
+
+    sig_tC = Property
+
+    def _get_sig_tC(self):
+        n_t = len(self.tloop.t_record)
+        sig_tEmC = np.array(self.tloop.sig_EmC_record, dtype=np.float_)
+        sig_tC = sig_tEmC.reshape(n_t, -1, 2)
+        return sig_tC
 
     trait_view = View(Item('fets_eval'),
                       )

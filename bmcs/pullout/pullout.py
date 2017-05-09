@@ -44,12 +44,8 @@ class CrossSection(BMCSLeafNode):
                 input=True,
                 auto_set=False, enter_set=True,
                 desc='reinforcement area [mm2]')
-<<<<<<< HEAD
-    P_b = Float(2.,
-=======
     P_b = Float(44,
                 CS=True,
->>>>>>> branch 'master' of https://github.com/simvisage/bmcs.git
                 input=True,
                 auto_set=False, enter_set=True,
                 desc='perimeter of the bond interface [mm]')
