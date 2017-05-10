@@ -150,4 +150,7 @@ def example04_damage():
 
 
 if __name__ == "__main__":
-    example03_kinematic_hardening()()
+    # example_01_anchorage_length()()
+    # example03_kinematic_hardening()()
+    example2_isotropic_hardening()()
+    # example04_damage()()

@@ -234,8 +234,19 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         sig_pi_trial = self.E_b * (s[:, :, 1] - s_p)
 
         Z = self.K * z
+
+        # for handeling the negative values of isotropic hardening
+        h_1 = self.tau_bar + Z
+        pos_iso = h_1 > 1e-6
+
         X = self.gamma * alpha
-        f = np.fabs(sig_pi_trial - X) - self.tau_bar - Z
+
+        # for handeling the negative values of kinematic hardening
+        # h_2 = h * np.sign(sig_pi_trial - X) * \
+        #    np.sign(sig_pi_trial) + X * np.sign(sig_pi_trial)
+        #pos_kin = h_2 > 1e-6
+
+        f = np.fabs(sig_pi_trial - X) - h_1 * pos_iso
 
         elas = f <= 1e-6
         plas = f > 1e-6
@@ -244,9 +255,10 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         tau += d_tau
 
         # Return mapping
-        delta_lamda = f / (self.E_b + self.gamma + self.K) * plas
-        # update all the state variables
+        delta_lamda = f / \
+            (self.E_b + self.gamma + np.fabs(self.K)) * plas
 
+        # update all the state variables
         s_p = s_p + delta_lamda * np.sign(sig_pi_trial - X)
         z = z + delta_lamda
         alpha = alpha + delta_lamda * np.sign(sig_pi_trial - X)
@@ -256,9 +268,9 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         tau[:, :, 1] = (1 - omega) * self.E_b * (s[:, :, 1] - s_p)
 
         # Consistent tangent operator
-        D_ed = -self.E_b / (self.E_b + self.K + self.gamma) * self.omega_derivative(kappa) * self.E_b * (s[:, :, 1] - s_p) \
-            + (1 - omega) * self.E_b * (self.K + self.gamma) / \
-            (self.E_b + self.K + self.gamma)
+        D_ed = -self.E_b * self.omega_derivative(kappa) * self.E_b * (s[:, :, 1] - s_p) \
+            + (1 - omega) * self.E_b * (np.fabs(self.K) + self.gamma) / \
+            (self.E_b + np.fabs(self.K) + self.gamma)
 
         D[:, :, 1, 1] = (1 - omega) * self.E_b * elas + D_ed * plas
 
