@@ -14,8 +14,8 @@ import numpy as np
 
 
 def get_pullout_model_carbon_concrete(w_max):
-    po = PullOutModel(n_e_x=100, k_max=500, w_max=w_max)
-    po.tline.step = 0.005
+    po = PullOutModel(n_e_x=200, k_max=500, w_max=w_max)
+    po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic',
                             amplitude_type='constant',
                             loading_range='non-symmetric'
@@ -50,6 +50,9 @@ def example_01_parameter_calibration():
     in shown in BMCS topic 3.3  
     '''
     po = get_pullout_model_carbon_concrete(w_max=2.5)
+
+    show_pullout_model(po)
+
     L_array = np.array([150, 200], dtype=np.float_)
 
     import pylab
@@ -64,7 +67,7 @@ def example_01_parameter_calibration():
     pylab.show()
 
 
-def example_02_length_dependency():
+def example_02_length_dependence():
     po = get_pullout_model_carbon_concrete(w_max=5.0)
     po.loading_scenario.loading_type = 'monotonic'
 
@@ -117,13 +120,14 @@ def example_04_isotropic_hardening():
     '''Show the effect of strain softening represented 
     by kinematic or isotripic hardening.
     '''
-    po = PullOutModel(n_e_x=10, k_max=50, w_max=0.15)
+    po = PullOutModel(n_e_x=100, k_max=50, w_max=0.01)
     po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic')
     po.loading_scenario.set(number_of_cycles=1)
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(gamma=0.0, K=-300.0, tau_bar=45.0)
-    po.mats_eval.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=10.0)
+    po.geometry.L_x = 1.0
+    po.material.set(gamma=0.0, K=-8000.0, tau_bar=45.0)
+    po.material.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=10.0)
     po.run()
 
     show_pullout_model(po)
@@ -143,8 +147,8 @@ def example_05_kinematic_hardening():
     po.loading_scenario.set(number_of_cycles=1)
     po.geometry.L_x = 1.0
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(K=0.0, gamma=-5000.0, tau_bar=45.0)
-    po.mats_eval.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=10.0)
+    po.material.set(K=0.0, gamma=-5000.0, tau_bar=45.0)
+    po.material.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=10.0)
     po.run()
 
     show_pullout_model(po)
@@ -154,33 +158,34 @@ def example_06_damage_softening():
     '''Show the effect of strain softening represented 
     by negative kinematic hardening.
 
-    @todo - fix - the values of stress upon loading should not 
-    go to negative range.
-
     @todo: motivate fracture energy
 
     '''
-    po = PullOutModel(n_e_x=100, k_max=1000, w_max=0.01)
+    po = PullOutModel(n_e_x=100, k_max=1000, w_max=1.0)
     po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic')
     po.loading_scenario.set(number_of_cycles=1)
-    po.geometry.L_x = 1.0
+    po.geometry.L_x = 1000.0
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(K=100000.0, gamma=-0.0, tau_bar=45.0)
-    po.mats_eval.omega_fn.set(alpha_1=1.0, alpha_2=1400.0, plot_max=0.01)
+    po.material.set(K=100000.0, gamma=-0.0, tau_bar=45.0)
+    po.material.omega_fn.set(alpha_1=1.0, alpha_2=1000.0, plot_max=0.01)
     po.run()
 
     show_pullout_model(po)
 
 
 def example_07_damage_length_dependency():
-    po = PullOutModel(n_e_x=100, k_max=1000, w_max=0.04)
+    w_max = 0.07
+    po = PullOutModel(n_e_x=80, k_max=1000, w_max=w_max)
     po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic')
     po.loading_scenario.set(number_of_cycles=1)
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(K=100000.0, gamma=-0.0, tau_bar=45.0)
-    po.mats_eval.omega_fn.set(alpha_1=1.0, alpha_2=1000.0, plot_max=0.01)
+    po.material.set(K=100000.0, gamma=-0.0, tau_bar=45.0)
+    po.material.omega_fn.set(alpha_1=1.0, alpha_2=1000.0, plot_max=0.01)
+    sig_f_max = 1600.00
+    A_f = po.cross_section.A_f
+    P_f_max = A_f * sig_f_max
 
     po.run()
 
@@ -193,8 +198,10 @@ def example_07_damage_length_dependency():
         P = po.get_P_t()
         w0, wL = po.get_w_t()
         pylab.plot(wL, P, label='L=%f' % L)
+    pylab.plot([0.0, w_max], [P_f_max, P_f_max], label='yarn strength')
     pylab.legend()
     pylab.show()
+    show_pullout_model(po)
 
 
 if __name__ == "__main__":

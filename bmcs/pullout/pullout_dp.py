@@ -13,7 +13,7 @@ from ibvpy.api import BCDof
 from ibvpy.core.bcond_mngr import BCondMngr
 from traits.api import \
     Property, Instance, cached_property, \
-    List, Float, Int
+    List, Float, Int, DelegatesTo
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
@@ -84,6 +84,11 @@ class PullOutModel(BMCSModel, Vis2D):
 
     def _mats_eval_default(self):
         return MATSBondSlipDP()
+
+    material = Property
+
+    def _get_material(self):
+        return self.mats_eval
 
     fets_eval = Property(Instance(FETS1D52ULRHFatigue),
                          depends_on='CS')
