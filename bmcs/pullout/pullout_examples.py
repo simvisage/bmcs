@@ -187,7 +187,6 @@ def example_07_damage_length_dependency():
     import pylab
 
     L_array = np.logspace(0, 3, 8)
-    print L_array
     for L in L_array:
         po.geometry.L_x = L
         po.run()
@@ -199,10 +198,10 @@ def example_07_damage_length_dependency():
 
 
 if __name__ == "__main__":
-    # example_01_parameter_calibration()
+    example_01_parameter_calibration()
     # example_02_length_dependency()
     # example_03_anchorage_length()
     # example_04_isotropic_hardening()
     # example_05_kinematic_hardening()
     # example_06_damage_softening()
-    example_07_damage_length_dependency()
+    # example_07_damage_length_dependency()

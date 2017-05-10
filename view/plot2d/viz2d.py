@@ -28,7 +28,7 @@ class Viz2D(HasStrictTraits):
     def plot(self, ax, vot=0):
         self.vis2d.plot(ax, vot)
 
-    def reset(self):
+    def reset(self, ax):
         pass
 
     view = View(

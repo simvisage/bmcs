@@ -129,6 +129,9 @@ class VizSheet(HasStrictTraits):
 
     def run_started(self):
         self.offline = False
+        for ax, viz2d in zip(self.axes, self.viz2d_list):
+            ax.clear()
+            viz2d.reset(ax)
         self.mode = 'monitor'
 
     def run_finished(self):
