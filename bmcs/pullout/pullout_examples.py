@@ -50,7 +50,6 @@ def example_01_parameter_calibration():
     in shown in BMCS topic 3.3  
     '''
     po = get_pullout_model_carbon_concrete(w_max=2.5)
-
     show_pullout_model(po)
 
     L_array = np.array([150, 200], dtype=np.float_)
