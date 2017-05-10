@@ -2,6 +2,9 @@
 Created on May 9, 2017
 
 @author: rch
+
+@todo: interface simplification - mats_eval -> material
+n_e_x -> n_e
 '''
 
 from view.window.bmcs_window import BMCSWindow
@@ -10,59 +13,23 @@ from bmcs.api import PullOutModel
 import numpy as np
 
 
-def example_01_anchorage_length():
-    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
-    po.tline.step = 0.01
-    po.loading_scenario.set(loading_type='cyclic')
-    po.loading_scenario.set(number_of_cycles=1)
+def get_pullout_model_carbon_concrete(w_max):
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=w_max)
+    po.tline.step = 0.005
+    po.loading_scenario.set(loading_type='cyclic',
+                            amplitude_type='constant',
+                            loading_range='non-symmetric'
+                            )
+    po.loading_scenario.set(number_of_cycles=2,
+                            unloading_ratio=0.98,
+                            )
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(gamma=0.0, K=15.0, tau_bar=45.0)
-    po.mats_eval.omega_fn.set(alpha_2=1.0, plot_max=10.0)
-    po.run()
-
-    x = po.X_M
-    t = po.t
-
-    L_array = np.linspace(10, 2000, 10)
-    sig_max_array = []
-    for L in L_array:
-        po.geometry.L_x = L
-        po.run()
-        sig_f = po.sig_tC[:, :, 1]
-        sig_max = np.max(sig_f)
-        sig_max_array.append(sig_max)
-
-    w = BMCSWindow(model=po)
-    po.add_viz2d('field', 'u_C', plot_fn='u_C')
-    po.add_viz2d('field', 'w', plot_fn='w')
-    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
-    po.add_viz2d('field', 's', plot_fn='s')
-    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-    po.add_viz2d('field', 'sf', plot_fn='sf')
-#
-    w.offline = False
-    w.finish_event = True
-
-    w.configure_traits()
-
-    import pylab
-    pylab.plot(L_array, sig_max_array)
-    pylab.show()
+    po.mats_eval.set(gamma=25.0, K=0.0, tau_bar=2.5 * 9.0)
+    po.mats_eval.omega_fn.set(alpha_1=1.0, alpha_2=2, plot_max=2.8)
+    return po
 
 
-def example2_isotropic_hardening():
-    '''Show the effect of strain softening represented 
-    by kinematic or isotripic hardening.
-    '''
-    po = PullOutModel(n_e_x=10, k_max=50, w_max=0.15)
-    po.tline.step = 0.01
-    po.loading_scenario.set(loading_type='cyclic')
-    po.loading_scenario.set(number_of_cycles=1)
-    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(gamma=0.0, K=-800.0, tau_bar=45.0)
-    po.mats_eval.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=10.0)
-    po.run()
-
+def show_pullout_model(po):
     w = BMCSWindow(model=po)
     po.add_viz2d('load function')
     po.add_viz2d('F-w')
@@ -72,14 +39,97 @@ def example2_isotropic_hardening():
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
     po.add_viz2d('field', 'sf', plot_fn='sf')
-#
+
     w.offline = False
     w.finish_event = True
-
     w.configure_traits()
 
 
-def example03_kinematic_hardening():
+def example_01_parameter_calibration():
+    '''Fit the test responce of a textile carbon concrete cross section
+    in shown in BMCS topic 3.3  
+    '''
+    po = get_pullout_model_carbon_concrete(w_max=2.5)
+    L_array = np.array([150, 200], dtype=np.float_)
+
+    import pylab
+    for L in L_array:
+        po.geometry.L_x = L
+        po.run()
+        P = po.get_P_t()
+        w0, wL = po.get_w_t()
+        pylab.plot(wL, P, label='L=%d [mm]' % L)
+
+    pylab.legend(loc=2)
+    pylab.show()
+
+
+def example_02_length_dependency():
+    po = get_pullout_model_carbon_concrete(w_max=5.0)
+    po.loading_scenario.loading_type = 'monotonic'
+
+    L_array = np.array([200, 300, 400, 500, 600, 700], dtype=np.float_)
+    import pylab
+
+    for L in L_array:
+        po.geometry.L_x = L
+        po.run()
+        P = po.get_P_t()
+        w0, wL = po.get_w_t()
+        pylab.plot(wL, P, label='L=%d [mm]' % L)
+
+    pylab.legend(loc=2)
+    pylab.show()
+
+
+def example_03_anchorage_length():
+    w_max = 5.0  # mm
+    po = get_pullout_model_carbon_concrete(w_max=5.0)
+    po.loading_scenario.loading_type = 'monotonic'
+
+    A_f = po.cross_section.A_f
+    sig_f_max = 1600.00
+    P_f_max = A_f * sig_f_max
+    L_array = np.array([200, 300, 400, 500, 600, 700], dtype=np.float_)
+    import pylab
+    pylab.subplot(1, 2, 1)
+
+    max_sig_list = []
+    for L in L_array:
+        po.geometry.L_x = L
+        po.run()
+        P = po.get_P_t()
+        max_sig_list.append(np.max(P) / A_f)
+        w0, wL = po.get_w_t()
+        pylab.plot(wL, P, label='L=%d [mm]' % L)
+
+    pylab.plot([0.0, w_max], [P_f_max, P_f_max], label='yarn strength')
+    pylab.legend(loc=2)
+
+    pylab.subplot(1, 2, 2)
+    pylab.plot([0.0, np.max(L_array)],
+               [sig_f_max, sig_f_max], label='yarn strength')
+    pylab.plot(L_array, max_sig_list)
+    pylab.show()
+
+
+def example_04_isotropic_hardening():
+    '''Show the effect of strain softening represented 
+    by kinematic or isotripic hardening.
+    '''
+    po = PullOutModel(n_e_x=10, k_max=50, w_max=0.15)
+    po.tline.step = 0.01
+    po.loading_scenario.set(loading_type='cyclic')
+    po.loading_scenario.set(number_of_cycles=1)
+    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
+    po.mats_eval.set(gamma=0.0, K=-300.0, tau_bar=45.0)
+    po.mats_eval.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=10.0)
+    po.run()
+
+    show_pullout_model(po)
+
+
+def example_05_kinematic_hardening():
     '''Show the effect of strain softening represented 
     by negative kinematic hardening.
 
@@ -97,23 +147,10 @@ def example03_kinematic_hardening():
     po.mats_eval.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=10.0)
     po.run()
 
-    w = BMCSWindow(model=po)
-    po.add_viz2d('load function')
-    po.add_viz2d('F-w')
-    po.add_viz2d('field', 'u_C', plot_fn='u_C')
-    po.add_viz2d('field', 'w', plot_fn='w')
-    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
-    po.add_viz2d('field', 's', plot_fn='s')
-    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-    po.add_viz2d('field', 'sf', plot_fn='sf')
-#
-    w.offline = False
-    w.finish_event = True
-
-    w.configure_traits()
+    show_pullout_model(po)
 
 
-def example04_damage():
+def example_06_damage_softening():
     '''Show the effect of strain softening represented 
     by negative kinematic hardening.
 
@@ -133,21 +170,39 @@ def example04_damage():
     po.mats_eval.omega_fn.set(alpha_1=1.0, alpha_2=1400.0, plot_max=0.01)
     po.run()
 
-    w = BMCSWindow(model=po)
-    po.add_viz2d('load function')
-    po.add_viz2d('F-w')
-    po.add_viz2d('field', 'u_C', plot_fn='u_C')
-    po.add_viz2d('field', 'w', plot_fn='w')
-    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
-    po.add_viz2d('field', 's', plot_fn='s')
-    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-    po.add_viz2d('field', 'sf', plot_fn='sf')
-#
-    w.offline = False
-    w.finish_event = True
+    show_pullout_model(po)
 
-    w.configure_traits()
+
+def example_07_damage_length_dependency():
+    po = PullOutModel(n_e_x=100, k_max=1000, w_max=0.04)
+    po.tline.step = 0.01
+    po.loading_scenario.set(loading_type='cyclic')
+    po.loading_scenario.set(number_of_cycles=1)
+    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
+    po.mats_eval.set(K=100000.0, gamma=-0.0, tau_bar=45.0)
+    po.mats_eval.omega_fn.set(alpha_1=1.0, alpha_2=1000.0, plot_max=0.01)
+
+    po.run()
+
+    import pylab
+
+    L_array = np.logspace(0, 3, 8)
+    print L_array
+    for L in L_array:
+        po.geometry.L_x = L
+        po.run()
+        P = po.get_P_t()
+        w0, wL = po.get_w_t()
+        pylab.plot(wL, P, label='L=%f' % L)
+    pylab.legend()
+    pylab.show()
 
 
 if __name__ == "__main__":
-    example03_kinematic_hardening()()
+    # example_01_parameter_calibration()
+    # example_02_length_dependency()
+    # example_03_anchorage_length()
+    # example_04_isotropic_hardening()
+    # example_05_kinematic_hardening()
+    # example_06_damage_softening()
+    example_07_damage_length_dependency()

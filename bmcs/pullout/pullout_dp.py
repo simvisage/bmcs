@@ -67,9 +67,12 @@ class PullOutModel(BMCSModel, Vis2D):
     def _geometry_default(self):
         return Geometry()
 
-    n_e_x = Int(20, auto_set=False, enter_set=True)
+    n_e_x = Int(20, MESH=True, auto_set=False, enter_set=True)
 
     w_max = Float(1, auto_set=False, enter_set=True)
+
+    def x_w_max_changed(self):
+        self.bcond_mngr.bcond_list[1].value = self.w_max
 
     controlled_dof = Property
 
