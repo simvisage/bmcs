@@ -46,7 +46,8 @@ class TStepper(HasTraits):
     '''
 
     def _get_A(self):
-        return np.array([self.fets_eval.A_m, self.fets_eval.P_b, self.fets_eval.A_f])
+        return np.array([self.fets_eval.A_m, self.fets_eval.P_b,
+                         self.fets_eval.A_f])
 
     # Number of elements
     n_e_x = 20

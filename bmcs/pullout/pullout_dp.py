@@ -13,7 +13,7 @@ from ibvpy.api import BCDof
 from ibvpy.core.bcond_mngr import BCondMngr
 from traits.api import \
     Property, Instance, cached_property, \
-    List, Float, Int, DelegatesTo
+    List, Float, Int, DelegatesTo, Trait, on_trait_change
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
@@ -78,6 +78,14 @@ class PullOutModel(BMCSModel, Vis2D):
 
     def _get_controlled_dof(self):
         return 2 + 2 * self.n_e_x - 1
+
+    mats_type = Trait('dp',
+                      {'damage-plasticity': MATSBondSlipDP,
+                       'multilinear': MATSMultilinear})
+
+    @on_trait_change('mats_type')
+    def _set_mats_eval(self):
+        self.mats_eval = self.mats_type_()
 
     mats_eval = Instance(MATSBondSlipDP)
     '''Material model'''

@@ -4,8 +4,8 @@ Example script of bond - pullout evaluation.
 
 from view.window.bmcs_window import BMCSWindow
 
-from bmcs.api import PullOutModel
 import numpy as np
+from pullout_dp import PullOutModel
 
 
 def get_pullout_model_carbon_concrete(w_max):

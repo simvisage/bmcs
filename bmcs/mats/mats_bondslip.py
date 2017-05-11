@@ -5,6 +5,7 @@ Created on 05.12.2016
 '''
 
 from ibvpy.api import MATSEval
+from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import implements, Int, Array, \
     Constant, Float, Tuple, List, on_trait_change, \
     Instance, Trait, Bool
@@ -234,19 +235,8 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         sig_pi_trial = self.E_b * (s[:, :, 1] - s_p)
 
         Z = self.K * z
-
-        # for handeling the negative values of isotropic hardening
-        h_1 = self.tau_bar + Z
-        pos_iso = h_1 > 1e-6
-
         X = self.gamma * alpha
-
-        # for handeling the negative values of kinematic hardening
-        # h_2 = h * np.sign(sig_pi_trial - X) * \
-        #    np.sign(sig_pi_trial) + X * np.sign(sig_pi_trial)
-        #pos_kin = h_2 > 1e-6
-
-        f = np.fabs(sig_pi_trial - X) - h_1 * pos_iso
+        f = np.fabs(sig_pi_trial - X) - self.tau_bar - Z
 
         elas = f <= 1e-6
         plas = f > 1e-6
@@ -255,10 +245,9 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         tau += d_tau
 
         # Return mapping
-        delta_lamda = f / \
-            (self.E_b + self.gamma + np.fabs(self.K)) * plas
-
+        delta_lamda = f / (self.E_b + self.gamma + self.K) * plas
         # update all the state variables
+
         s_p = s_p + delta_lamda * np.sign(sig_pi_trial - X)
         z = z + delta_lamda
         alpha = alpha + delta_lamda * np.sign(sig_pi_trial - X)
@@ -268,9 +257,9 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         tau[:, :, 1] = (1 - omega) * self.E_b * (s[:, :, 1] - s_p)
 
         # Consistent tangent operator
-        D_ed = -self.E_b * self.omega_derivative(kappa) * self.E_b * (s[:, :, 1] - s_p) \
-            + (1 - omega) * self.E_b * (np.fabs(self.K) + self.gamma) / \
-            (self.E_b + np.fabs(self.K) + self.gamma)
+        D_ed = -self.E_b / (self.E_b + self.K + self.gamma) * self.omega_derivative(kappa) * self.E_b * (s[:, :, 1] - s_p) \
+            + (1 - omega) * self.E_b * (self.K + self.gamma) / \
+            (self.E_b + self.K + self.gamma)
 
         D[:, :, 1, 1] = (1 - omega) * self.E_b * elas + D_ed * plas
 
@@ -298,6 +287,74 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
     )
 
 
+slip = np.array([0.,  0.18965517,  0.37931034,  0.56896552,  0.75862069,
+                 0.94827586,  1.13793103,  1.32758621,  1.51724138,  1.70689655,
+                 1.89655172,  2.0862069,  2.27586207,  2.46551724,  2.65517241,
+                 2.84482759,  3.03448276,  3.22413793,  3.4137931,  3.60344828,
+                 3.79310345,  3.98275862,  4.17241379,  4.36206897,  4.55172414,
+                 4.74137931,  4.93103448,  5.12068966,  5.31034483,  5.5])
+
+bond = np. array([0.,  40.56519694,  43.86730345,  42.37807371,
+                  43.5272407,  44.29410001,  46.04230264,  47.89711984,
+                  50.03209956,  52.23118918,  54.40193739,  56.67975395,
+                  58.97599182,  61.26809043,  63.60529275,  65.92661789,
+                  68.22558581,  70.39763384,  72.49000557,  74.44268819,
+                  76.16535426,  77.70806171,  79.20875264,  80.78660257,
+                  82.08287581,  83.26309573,  84.31540923,  85.18093017,
+                  85.99297513,  86.50752229])
+
+
+class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
+
+    def __init__(self, *args, **kw):
+        super(MATSBondSlipMultiLinear, self).__init__(*args, **kw)
+        self.bs_law.replot()
+
+    E_m = Float(30000.0, tooltip='Stiffness of the matrix [MPa]',
+                MAT=True,
+                auto_set=True, enter_set=True)
+
+    E_f = Float(200000.0, tooltip='Stiffness of the fiber [MPa]',
+                MAT=True,
+                auto_set=False, enter_set=False)
+
+    bs_law = Instance(MFnLineArray)
+
+    def _bs_law_default(self):
+        return MFnLineArray(
+            xdata=[slip],
+            ydata=[bond])
+
+    def get_corr_pred(self, s, d_s, tau, t_n, t_n1,
+                      s_p, alpha, z, kappa, omega):
+
+        n_e, n_ip, n_s = s.shape
+        D = np.zeros((n_e, n_ip, 3, 3))
+        D[:, :, 0, 0] = self.E_m
+        D[:, :, 2, 2] = self.E_f
+
+        d_tau = np.einsum('...st,...t->...s', D, d_s)
+        tau += d_tau
+        tau[:, :, 1] = self.bs_law(s[:, :, 1])
+
+        D_tau = self.bs_law.diff(s)
+
+        D[:, :, 1, 1] = D_tau
+
+        return tau, D, s_p, alpha, z, kappa, omega
+
+    tree_view = View(
+        VGroup(
+            VGroup(
+                Item('E_m', full_size=True, resizable=True),
+                Item('E_f'),
+            ),
+            UItem('bs_law@')
+        )
+    )
+
+
 if __name__ == '__main__':
     m = MATSBondSlipDP()
+
     m.configure_traits()

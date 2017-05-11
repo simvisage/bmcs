@@ -143,6 +143,7 @@ class MFnLineArray(BMCSLeafNode):
 
     traits_view = tree_view
 
+
 if __name__ == '__main__':
     import pylab as plt
 
