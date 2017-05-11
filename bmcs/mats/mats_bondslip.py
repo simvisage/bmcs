@@ -13,7 +13,8 @@ from traitsui.api import View, VGroup, Item, UItem
 from view.ui import BMCSTreeNode
 
 from mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
+    PlottableFn
 import numpy as np
 
 
@@ -287,35 +288,17 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
     )
 
 
-slip = np.array([0.,  0.18965517,  0.37931034,  0.56896552,  0.75862069,
-                 0.94827586,  1.13793103,  1.32758621,  1.51724138,  1.70689655,
-                 1.89655172,  2.0862069,  2.27586207,  2.46551724,  2.65517241,
-                 2.84482759,  3.03448276,  3.22413793,  3.4137931,  3.60344828,
-                 3.79310345,  3.98275862,  4.17241379,  4.36206897,  4.55172414,
-                 4.74137931,  4.93103448,  5.12068966,  5.31034483,  5.5])
-
-bond = np. array([0.,  40.56519694,  43.86730345,  42.37807371,
-                  43.5272407,  44.29410001,  46.04230264,  47.89711984,
-                  50.03209956,  52.23118918,  54.40193739,  56.67975395,
-                  58.97599182,  61.26809043,  63.60529275,  65.92661789,
-                  68.22558581,  70.39763384,  72.49000557,  74.44268819,
-                  76.16535426,  77.70806171,  79.20875264,  80.78660257,
-                  82.08287581,  83.26309573,  84.31540923,  85.18093017,
-                  85.99297513,  86.50752229])
-
-
 class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
     def __init__(self, *args, **kw):
         super(MATSBondSlipMultiLinear, self).__init__(*args, **kw)
-        print self.bs_law.xdata
         self.bs_law.replot()
 
-    E_m = Float(30000.0, tooltip='Stiffness of the matrix [MPa]',
+    E_m = Float(28000.0, tooltip='Stiffness of the matrix [MPa]',
                 MAT=True,
                 auto_set=True, enter_set=True)
 
-    E_f = Float(200000.0, tooltip='Stiffness of the fiber [MPa]',
+    E_f = Float(170000.0, tooltip='Stiffness of the fiber [MPa]',
                 MAT=True,
                 auto_set=False, enter_set=False)
 
@@ -323,8 +306,10 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
     def _bs_law_default(self):
         return MFnLineArray(
-            xdata=[slip],
-            ydata=[bond])
+            xdata=[0, 0],
+            ydata=[0, 1])
+
+    n_s = Constant(5)
 
     def get_corr_pred(self, s, d_s, tau, t_n, t_n1,
                       s_p, alpha, z, kappa, omega):
@@ -336,9 +321,11 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
         d_tau = np.einsum('...st,...t->...s', D, d_s)
         tau += d_tau
-        tau[:, :, 1] = self.bs_law(s[:, :, 1])
+        s = s[:, :, 1]
+        shape = s.shape
+        tau[:, :, 1] = self.bs_law(s.flatten()).reshape(*shape)
 
-        D_tau = self.bs_law.diff(s)
+        D_tau = self.bs_law.diff(s.flatten()).reshape(*shape)
 
         D[:, :, 1, 1] = D_tau
 

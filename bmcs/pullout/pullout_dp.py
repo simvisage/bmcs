@@ -4,19 +4,19 @@ Created on 12.01.2016
 '''
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from bmcs.mats.mats_bondslip import MATSBondSlipDP
+from bmcs.mats.mats_bondslip import MATSBondSlipDP, MATSBondSlipMultiLinear
 from bmcs.mats.tloop_dp import TLoop
 from bmcs.mats.tstepper_dp import TStepper
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
-from ibvpy.api import BCDof
+from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
 from traits.api import \
     Property, Instance, cached_property, \
-    List, Float, Int, DelegatesTo, Trait, on_trait_change
+    List, Float, Int, Trait, on_trait_change
 from traitsui.api import \
     View, Item
-from view.plot2d import Viz2D, Vis2D
+from view.plot2d import Vis2D
 from view.window import BMCSModel, BMCSWindow, TLine
 
 import numpy as np
@@ -33,6 +33,15 @@ class PullOutModel(BMCSModel, Vis2D):
     def _tree_node_list_default(self):
 
         return [
+            self.tline,
+            self.mats_eval,
+            self.cross_section,
+            self.geometry,
+            self.bcond_mngr,
+        ]
+
+    def _update_node_list(self):
+        self.tree_node_list = [
             self.tline,
             self.mats_eval,
             self.cross_section,
@@ -79,19 +88,20 @@ class PullOutModel(BMCSModel, Vis2D):
     def _get_controlled_dof(self):
         return 2 + 2 * self.n_e_x - 1
 
-    mats_type = Trait('dp',
-                      {'damage-plasticity': MATSBondSlipDP,
-                       'multilinear': MATSMultilinear})
+    mats_eval_type = Trait('damage-plasticity',
+                           {'damage-plasticity': MATSBondSlipDP,
+                            'multilinear': MATSBondSlipMultiLinear})
 
-    @on_trait_change('mats_type')
+    @on_trait_change('mats_eval_type')
     def _set_mats_eval(self):
-        self.mats_eval = self.mats_type_()
+        self.mats_eval = self.mats_eval_type_()
+        self._update_node_list()
 
-    mats_eval = Instance(MATSBondSlipDP)
+    mats_eval = Instance(IMATSEval)
     '''Material model'''
 
     def _mats_eval_default(self):
-        return MATSBondSlipDP()
+        return self.mats_eval_type_()
 
     material = Property
 
