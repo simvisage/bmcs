@@ -241,7 +241,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
 
         X = self.gamma * alpha
 
-        # for handeling the negative values of kinematic hardening
+        # for handeling the negative values of kinematic hardening (not yet)
         # h_2 = h * np.sign(sig_pi_trial - X) * \
         #    np.sign(sig_pi_trial) + X * np.sign(sig_pi_trial)
         #pos_kin = h_2 > 1e-6
@@ -268,7 +268,8 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         tau[:, :, 1] = (1 - omega) * self.E_b * (s[:, :, 1] - s_p)
 
         # Consistent tangent operator
-        D_ed = -self.E_b * self.omega_derivative(kappa) * self.E_b * (s[:, :, 1] - s_p) \
+        D_ed = - self.E_b / (self.E_b + np.fabs(self.K) + self.gamma) * \
+            self.omega_derivative(kappa) * self.E_b * (s[:, :, 1] - s_p) \
             + (1 - omega) * self.E_b * (np.fabs(self.K) + self.gamma) / \
             (self.E_b + np.fabs(self.K) + self.gamma)
 
