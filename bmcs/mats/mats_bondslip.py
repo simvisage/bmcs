@@ -308,6 +308,7 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
     def __init__(self, *args, **kw):
         super(MATSBondSlipMultiLinear, self).__init__(*args, **kw)
+        print self.bs_law.xdata
         self.bs_law.replot()
 
     E_m = Float(30000.0, tooltip='Stiffness of the matrix [MPa]',
@@ -355,6 +356,5 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
 
 if __name__ == '__main__':
-    m = MATSBondSlipDP()
-
+    m = MATSBondSlipMultiLinear()
     m.configure_traits()
