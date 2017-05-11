@@ -1,7 +1,7 @@
 
 import unittest
 
-from bmcs.pullout.pullout import PullOutModel
+import bmcs.pullout.lecture04 as l04
 
 
 class TestLecture04(unittest.TestCase):
@@ -11,22 +11,18 @@ class TestLecture04(unittest.TestCase):
     def setUp(self):
         '''Test combination ULS/SLS.
         '''
-        self.po = PullOutModel(n_e_x=100, k_max=500)
-        self.po.tline.step = 0.1
+        self.po = l04.get_pullout_model_carbon_concrete()
 
     def test_pullout_model(self):
         '''  
         '''
         po = self.po
-        po.tline.step = 0.1
-        po.bcond_mngr.bcond_list[1].value = 0.01
 
-        po.loading_scenario.set(loading_type='monotonic',
-                                )
+        po.tline.step = 1.0
+        po.loading_scenario.set(loading_type='monotonic')
         po.run()
-
         u3 = po.tloop.U_record[-1, -3]
-        self.assertAlmostEqual(u3, 0.00986152263039)
+        self.assertAlmostEqual(u3, 4.99853183996)
 
     def tearDown(self):
         '''

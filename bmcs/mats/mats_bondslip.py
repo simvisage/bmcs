@@ -236,8 +236,19 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         sig_pi_trial = self.E_b * (s[:, :, 1] - s_p)
 
         Z = self.K * z
+
+        # for handeling the negative values of isotropic hardening
+        h_1 = self.tau_bar + Z
+        pos_iso = h_1 > 1e-6
+
         X = self.gamma * alpha
-        f = np.fabs(sig_pi_trial - X) - self.tau_bar - Z
+
+        # for handeling the negative values of kinematic hardening (not yet)
+        # h_2 = h * np.sign(sig_pi_trial - X) * \
+        #    np.sign(sig_pi_trial) + X * np.sign(sig_pi_trial)
+        #pos_kin = h_2 > 1e-6
+
+        f = np.fabs(sig_pi_trial - X) - h_1 * pos_iso
 
         elas = f <= 1e-6
         plas = f > 1e-6
@@ -246,7 +257,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         tau += d_tau
 
         # Return mapping
-        delta_lamda = f / (self.E_b + self.gamma + self.K) * plas
+        delta_lamda = f / (self.E_b + self.gamma + np.fabs(self.K)) * plas
         # update all the state variables
 
         s_p = s_p + delta_lamda * np.sign(sig_pi_trial - X)

@@ -2,28 +2,30 @@
 Example script of bond - pullout evaluation.
 '''
 
+from bmcs.api import PullOutModel
 from view.window.bmcs_window import BMCSWindow
 
-from bmcs.api import PullOutModel
 import numpy as np
 
 
-def get_pullout_model_carbon_concrete(w_max):
+def get_pullout_model_carbon_concrete(w_max=5.0, step=0.01):
     '''Helper method to get the constructing the default
     configuration of the pullout model.
     '''
     po = PullOutModel(n_e_x=200, k_max=500, w_max=w_max)
-    po.tline.step = 0.01
+    po.tline.step = step
     po.loading_scenario.set(loading_type='cyclic',
                             amplitude_type='constant',
                             loading_range='non-symmetric'
                             )
-    po.loading_scenario.set(number_of_cycles=2,
+    po.loading_scenario.set(number_of_cycles=1,
                             unloading_ratio=0.98,
                             )
-    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(gamma=25.0, K=0.0, tau_bar=2.5 * 9.0)
-    po.mats_eval.omega_fn.set(alpha_1=1.0, alpha_2=2, plot_max=2.8)
+    po.geometry.L_x = 100.0
+    po.cross_section.set(A_f=16.67, P_b=9.0, A_m=1540.0)
+    po.mats_eval.set(E_m=28480, E_f=170000)
+    po.mats_eval.set(gamma=1.5, K=0.0, tau_bar=5.0)
+    po.mats_eval.omega_fn.set(alpha_1=1.0, alpha_2=1, plot_max=2.8)
     return po
 
 
@@ -43,13 +45,22 @@ def show(po):
     w.configure_traits()
 
 
-def e01_calibration():
+def e01_preconfigure_and_start_app(step=0.01):
+    '''Fit the test responce of a textile carbon concrete cross section
+    in shown in BMCS topic 3.3  
+    '''
+    po = get_pullout_model_carbon_concrete(w_max=5.0, step=step)
+    po.run()
+    show(po)
+
+
+def e02_compare_two_simulations():
     '''Fit the test responce of a textile carbon concrete cross section
     in shown in BMCS topic 3.3  
     '''
     po = get_pullout_model_carbon_concrete(w_max=2.5)
 
-    L_array = np.array([150, 200], dtype=np.float_)
+    L_array = np.array([75, 100], dtype=np.float_)
 
     import pylab
     for L in L_array:
@@ -63,7 +74,7 @@ def e01_calibration():
     pylab.show()
 
 
-def e02_length_dependence():
+def e03_study_length_dependence():
     po = get_pullout_model_carbon_concrete(w_max=5.0)
     po.loading_scenario.loading_type = 'monotonic'
 
@@ -201,7 +212,7 @@ def e07_damage_length_dependency():
 
 
 if __name__ == "__main__":
-    e01_calibration()
+    e01_preconfigure_and_start_app(step=1.0)
 #     e02_length_dependence()
 #     e03_anchorage_length()
 #     e04_isotropic_hardening()
