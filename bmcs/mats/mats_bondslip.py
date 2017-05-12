@@ -301,6 +301,8 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
 
 class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
+    node_name = "multilinear bond law"
+
     def __init__(self, *args, **kw):
         super(MATSBondSlipMultiLinear, self).__init__(*args, **kw)
         self.bs_law.replot()
