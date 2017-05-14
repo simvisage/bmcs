@@ -142,9 +142,12 @@ class LiDamageFn(DamageFn):
         return omega
 
     def diff(self, kappa):
-        return ((self.alpha_1 * self.alpha_2 *
-                 np.exp(-1. * self.alpha_2 * kappa + 6.)) /
-                (1 + np.exp(-1. * self.alpha_2 * kappa + 6.)) ** 2)
+        alpha_1 = self.alpha_1
+        alpha_2 = self.alpha_2
+        s_0 = self.s_0
+        return ((alpha_1 * alpha_2 *
+                 np.exp(-1. * alpha_2 * (kappa - s_0) + 6.)) /
+                (1 + np.exp(-1. * alpha_2 * (kappa - s_0) + 6.)) ** 2)
 
     traits_view = View(
         VGroup(

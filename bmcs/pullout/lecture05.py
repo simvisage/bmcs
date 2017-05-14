@@ -146,5 +146,5 @@ if __name__ == "__main__":
     #    e51_isotropic_hardening()
     #     e52_kinematic_hardening()
     # e53_damage_softening()
-    e54_damage_length_dependency()
-    # e55_damage_element_size()
+    # e54_damage_length_dependency()
+    e55_damage_element_size()

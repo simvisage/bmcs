@@ -83,9 +83,6 @@ class PullOutModel(BMCSModel, Vis2D):
 
     w_max = Float(1, auto_set=False, enter_set=True)
 
-    def x_w_max_changed(self):
-        self.bcond_mngr.bcond_list[1].value = self.w_max
-
     controlled_dof = Property
 
     def _get_controlled_dof(self):
@@ -265,6 +262,7 @@ class PullOutModel(BMCSModel, Vis2D):
         sf_t_Em = np.array(self.tloop.sf_Em_record)
         w_ip = self.fets_eval.ip_weights
         J_det = self.tstepper.J_det
+        sN_Cim = self.tstepper.sN_Cim
         P_b = self.cross_section.P_b
         shear_integ = np.einsum('tEm,m,em->t', sf_t_Em, w_ip, J_det) * P_b
         return shear_integ

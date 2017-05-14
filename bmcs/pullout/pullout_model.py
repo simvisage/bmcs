@@ -6,23 +6,23 @@ Created on 12.01.2016
 
 '''
 
-from bmcs.bond_slip.mats_bondslip import MATSBondSlipDP
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from bmcs.mats.mats_bondslip import MATSEvalFatigue
+from bmcs.mats.mats_bondslip import \
+    MATSBondSlipDP, MATSBondSlipMultiLinear, MATSEvalFatigue
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
-from ibvpy.api import BCDof, FEGrid, BCSlice, TStepper, TLoop
+from ibvpy.api import \
+    BCDof, FEGrid, BCSlice, TStepper, TLoop, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
+from ibvpy.core.tline import TLine
 from traits.api import \
     Property, Instance, cached_property, \
-    Bool, List, Float, Trait, Int
+    Bool, List, Float, Trait, Int, on_trait_change
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
 from view.window import BMCSModel, BMCSWindow
 
-from bmcs.bond_slip.bond_material_params import MaterialParams
-from ibvpy.core.tline import TLine
 import numpy as np
 from pullout import \
     CrossSection, Geometry, Viz2DPullOutFW, Viz2DPullOutField
@@ -41,10 +41,21 @@ class PullOutModel(BMCSModel, Vis2D):
 
         return [
             self.tline,
-            self.material,
+            self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.bcond_mngr,
+            self.fixed_bc,
+            self.control_bc
+        ]
+
+    def _update_node_list(self):
+        self.tree_node_list = [
+            self.tline,
+            self.mats_eval,
+            self.cross_section,
+            self.geometry,
+            self.fixed_bc,
+            self.control_bc
         ]
 
     #=========================================================================
@@ -65,11 +76,6 @@ class PullOutModel(BMCSModel, Vis2D):
     #=========================================================================
     # Test setup parameters
     #=========================================================================
-    material = Instance(MaterialParams)
-
-    def _material_default(self):
-        return MaterialParams()
-
     loading_scenario = Instance(LoadingScenario)
 
     def _loading_scenario_default(self):
@@ -105,43 +111,34 @@ class PullOutModel(BMCSModel, Vis2D):
     fixed_dof = Property
 
     def _get_fixed_dof(self):
-        #fe_grid = self.tstepper.sdomain
-        #fe_grid[-1, -1].dofs
-        return 2 + 2 * self.n_e_x - 1
+        return 0
 
     #=========================================================================
     # Material model
     #=========================================================================
-    mats_eval = Property(Instance(MATSEvalFatigue),
-                         depends_on='MAT')
+    mats_eval_type = Trait('fatigue',
+                           {'fatigue': MATSEvalFatigue,
+                            'damage-plasticity': MATSBondSlipDP,
+                            'multilinear': MATSBondSlipMultiLinear},
+                           MAT=True
+                           )
+
+    @on_trait_change('mats_eval_type')
+    def _set_mats_eval(self):
+        self.mats_eval = self.mats_eval_type_()
+        self._update_node_list()
+
+    mats_eval = Instance(IMATSEval,
+                         MAT=True)
     '''Material model'''
-    @cached_property
-    def _get_mats_eval(self):
-        # assign the material parameters
-        print 'new material model'
-        return MATSEvalFatigue(E_b=self.material.E_b,
-                               gamma=self.material.gamma,
-                               S=self.material.S,
-                               tau_pi_bar=self.material.tau_pi_bar,
-                               r=self.material.r,
-                               K=self.material.K,
-                               c=self.material.c,
-                               a=self.material.a,
-                               pressure=self.material.pressure)
 
+    def _mats_eval_default(self):
+        return self.mats_eval_type_()
 
-#     mats_eval = Property(Instance(MATSBondSlipDP),
-#                          depends_on='MAT')
-#     '''Material model'''
-#     @cached_property
-#     def _get_mats_eval(self):
-#         # assign the material parameters
-#         print 'new material model'
-#         return MATSBondSlipDP(E_b=self.material.E_b,
-#                                gamma=self.material.gamma,
-#                                tau_bar=self.material.tau_bar,
-#                                K=self.material.K,
-#                                )
+    material = Property
+
+    def _get_material(self):
+        return self.mats_eval
 
     #=========================================================================
     # Finite element type
@@ -157,27 +154,34 @@ class PullOutModel(BMCSModel, Vis2D):
                                    A_f=self.cross_section.A_f,
                                    mats_eval=self.mats_eval)
 
-    bcond_mngr = Instance(BCondMngr)
+    bcond_mngr = Property(Instance(BCondMngr),
+                          depends_on='BC,MESH')
     '''Boundary condition manager
     '''
-
-    def _bcond_mngr_default(self):
-        bc_list = [BCDof(node_name='fixed left end', var='u',
-                         dof=0, value=0.0),
-                   BCDof(node_name='pull-out displacement', var='u',
-                         dof=self.controlled_dof, value=self.w_max,
-                         time_function=self.loading_scenario)]
+    @cached_property
+    def _get_bcond_mngr(self):
+        bc_list = [self.fixed_bc,
+                   self.control_bc]
         return BCondMngr(bcond_list=bc_list)
 
-    control_bc = Property(depends_on='BC')
+    fixed_bc = Property(depends_on='BC,MESH')
+    '''Foxed boundary condition'''
+    @cached_property
+    def _get_fixed_bc(self):
+        return BCDof(node_name='fixed left end', var='u',
+                     dof=0, value=0.0)
+
+    control_bc = Property(depends_on='BC,MESH')
     '''Control boundary condition - make it accessible directly
     for the visualization adapter as property
     '''
     @cached_property
     def _get_control_bc(self):
-        return self.bcond_mngr.bcond_list[1]
+        return BCDof(node_name='pull-out displacement', var='u',
+                     dof=self.controlled_dof, value=self.w_max,
+                     time_function=self.loading_scenario)
 
-    fe_grid = Property(Instance(FEGrid), depends_on='GEO,MESH,FE')
+    fe_grid = Property(Instance(FEGrid), depends_on='MAT,GEO,MESH,FE')
     '''Diescretization object.
     '''
     @cached_property
@@ -187,14 +191,6 @@ class PullOutModel(BMCSModel, Vis2D):
                       shape=(self.n_e_x,),
                       fets_eval=self.fets_eval)
 
-#     dots = Property(Instance(DOTSGridEval), depends_on='+input')
-#
-#     @cached_property
-#     def _get_dots(self):
-#         return DOTSGridEval(fets_eval=self.fets_eval,
-#                             mats_eval=self.mats_eval,
-#                             sdomain=self.fe_grid
-#                             )
     tstepper = Property(Instance(TStepper),
                         depends_on='MAT,GEO,MESH,CS,ALG,BC')
     '''Objects representing the state of the model providing
@@ -387,7 +383,10 @@ class PullOutModel(BMCSModel, Vis2D):
 def run_pullout():
     po = PullOutModel(n_e_x=100, k_max=500)
     po.tline.step = 0.01
-    po.bcond_mngr.bcond_list[1].value = 0.01
+    po.control_bc.value = 0.01
+    po.init()
+    print po.tstepper.sdomain.dots.dots_list[0].dots_integ.state_array.shape
+    po.mats_eval_type = 'damage-plasticity'
     po.init()
     print po.tstepper.sdomain.dots.dots_list[0].dots_integ.state_array.shape
 
