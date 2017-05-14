@@ -65,24 +65,22 @@ def e53_damage_softening():
     '''Show the effect of strain softening represented 
     by negative kinematic hardening.
 
-    @todo: motivate fracture energy
-
+    @todo: motivate fracture energy.
     '''
-    po = PullOutModel(n_e_x=100, k_max=1000, w_max=0.08)
+    po = PullOutModel(n_e_x=100, k_max=1000, w_max=0.1)
     po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic')
     po.loading_scenario.set(number_of_cycles=1)
-    po.geometry.L_x = 1000.0
+    po.geometry.L_x = 200.0
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
     po.material.set(K=100000.0, gamma=-0.0, tau_bar=45.0)
     po.material.omega_fn.set(alpha_1=1.0, alpha_2=1000.0, plot_max=0.01)
     po.run()
-
     show(po)
 
 
 def e54_damage_length_dependency():
-    w_max = 0.07
+    w_max = 0.1
     po = PullOutModel(n_e_x=80, k_max=1000, w_max=w_max)
     po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic')
@@ -98,17 +96,50 @@ def e54_damage_length_dependency():
 
     import pylab
 
-    L_array = np.logspace(0, 3, 8)
+    L_max = np.log10(200.0)
+    L_array = np.logspace(0, L_max, 8)
     for L in L_array:
         po.geometry.L_x = L
         po.run()
         P = po.get_P_t()
         w0, wL = po.get_w_t()
+        pylab.subplot(2, 1, 1)
         pylab.plot(wL, P, label='L=%f' % L)
-    pylab.plot([0.0, w_max], [P_f_max, P_f_max], label='yarn strength')
+        shear_integ = po.get_shear_integ()
+        pylab.subplot(2, 1, 2)
+        pylab.plot(wL, shear_integ, label='L=%f' % L)
+
+#    pylab.plot([0.0, w_max], [P_f_max, P_f_max], label='yarn strength')
     pylab.legend()
     pylab.show()
     show(po)
+
+
+def e55_damage_element_size():
+    w_max = 0.1
+    po = PullOutModel(n_e_x=80, k_max=1000, w_max=w_max)
+    po.tline.step = 0.01
+    po.loading_scenario.set(loading_type='cyclic')
+    po.loading_scenario.set(number_of_cycles=1)
+    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
+    po.material.set(K=100000.0, gamma=-0.0, tau_bar=45.0)
+    po.material.omega_fn.set(alpha_1=1.0, alpha_2=1000.0, plot_max=0.01)
+    po.geometry.L_x = 200.0
+
+    import pylab
+
+    n_e_array = [20, 40, 60, 80, 100]
+    for n_e_x in n_e_array:
+        po.n_e_x = n_e_x
+        po.run()
+        P = po.get_P_t()
+        w0, wL = po.get_w_t()
+        pylab.subplot(2, 2, 1)
+        pylab.plot(wL, P, label='n_e=%d' % n_e_x)
+        ax = pylab.subplot(2, 1, 2)
+        po.plot_sf(ax, 1.0)
+    pylab.legend()
+    pylab.show()
 
 
 if __name__ == "__main__":
@@ -116,3 +147,4 @@ if __name__ == "__main__":
     #     e52_kinematic_hardening()
     # e53_damage_softening()
     e54_damage_length_dependency()
+    # e55_damage_element_size()

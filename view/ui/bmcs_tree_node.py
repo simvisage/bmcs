@@ -52,15 +52,13 @@ class BMCSListeningTreeNodeMixIn(HasStrictTraits):
 
     @on_trait_change('+GEO')
     def _GEO_change(self):
-        if self.parent:
-            print 'GEO change'
-            self.root.GEO = True
+        print 'GEO change'
+        self.root.GEO = True
 
     @on_trait_change('+MESH')
     def _MESH_change(self):
-        if self.parent:
-            print 'MESH change'
-            self.root.MESH = True
+        print 'MESH change'
+        self.root.MESH = True
 
     @on_trait_change('+MAT')
     def _MAT_change(self):

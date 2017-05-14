@@ -114,6 +114,6 @@ def e43_study_length_dependence():
 
 
 if __name__ == "__main__":
-    # e41_preconfigure_and_start_app()
+    e41_preconfigure_and_start_app()
     # e42_compare_two_simulations()
-    e43_study_length_dependence()
+    # e43_study_length_dependence()

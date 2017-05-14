@@ -137,7 +137,8 @@ class LiDamageFn(DamageFn):
         omega = np.zeros_like(kappa, dtype=np.float_)
         d_idx = np.where(kappa >= s_0)[0]
         k = kappa[d_idx]
-        omega[d_idx] = 1. / (1. + np.exp(-1. * alpha_2 * k + 6.)) * alpha_1
+        omega[d_idx] = 1. / \
+            (1. + np.exp(-1. * alpha_2 * (k - s_0) + 6.)) * alpha_1
         return omega
 
     def diff(self, kappa):

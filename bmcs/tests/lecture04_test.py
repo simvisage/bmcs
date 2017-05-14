@@ -22,7 +22,7 @@ class TestLecture04(unittest.TestCase):
         po.loading_scenario.set(loading_type='monotonic')
         po.run()
         u3 = po.tloop.U_record[-1, -3]
-        self.assertAlmostEqual(u3, 4.99853183996)
+        self.assertAlmostEqual(u3, 4.99853169651)
 
     def tearDown(self):
         '''

@@ -11,6 +11,7 @@ from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
+from ipywidgets.widgets.interaction import fixed
 from traits.api import \
     Property, Instance, cached_property, \
     List, Float, Int, Trait, on_trait_change
@@ -37,7 +38,8 @@ class PullOutModel(BMCSModel, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.bcond_mngr,
+            self.fixed_bc,
+            self.control_bc
         ]
 
     def _update_node_list(self):
@@ -46,7 +48,8 @@ class PullOutModel(BMCSModel, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.bcond_mngr,
+            self.fixed_bc,
+            self.control_bc
         ]
 
     def init(self):
@@ -118,25 +121,32 @@ class PullOutModel(BMCSModel, Vis2D):
                                    P_b=self.cross_section.P_b,
                                    A_f=self.cross_section.A_f)
 
-    bcond_mngr = Instance(BCondMngr)
+    bcond_mngr = Property(Instance(BCondMngr),
+                          depends_on='BC,MESH')
     '''Boundary condition manager
     '''
-
-    def _bcond_mngr_default(self):
-        bc_list = [BCDof(node_name='fixed left end', var='u',
-                         dof=0, value=0.0),
-                   BCDof(node_name='pull-out displacement', var='u',
-                         dof=self.controlled_dof, value=self.w_max,
-                         time_function=self.loading_scenario)]
+    @cached_property
+    def _get_bcond_mngr(self):
+        bc_list = [self.fixed_bc,
+                   self.control_bc]
         return BCondMngr(bcond_list=bc_list)
 
-    control_bc = Property(depends_on='BC')
+    fixed_bc = Property(depends_on='BC,MESH')
+    '''Foxed boundary condition'''
+    @cached_property
+    def _get_fixed_bc(self):
+        return BCDof(node_name='fixed left end', var='u',
+                     dof=0, value=0.0)
+
+    control_bc = Property(depends_on='BC,MESH')
     '''Control boundary condition - make it accessible directly
     for the visualization adapter as property
     '''
     @cached_property
     def _get_control_bc(self):
-        return self.bcond_mngr.bcond_list[1]
+        return BCDof(node_name='pull-out displacement', var='u',
+                     dof=self.controlled_dof, value=self.w_max,
+                     time_function=self.loading_scenario)
 
     tstepper = Property(Instance(TStepper),
                         depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
@@ -245,6 +255,19 @@ class PullOutModel(BMCSModel, Vis2D):
         idx = self.tloop.get_time_idx(vot)
         sf = self.tloop.sf_Em_record[idx].flatten()
         return sf
+
+    def get_shear_integ(self):
+        #         d_ECid = self.get_d_ECid(vot)
+        #         s_Emd = np.einsum('Cim,ECid->Emd', self.tstepper.sN_Cim, d_ECid)
+        #         idx = self.tloop.get_time_idx(vot)
+        #         sf = self.tloop.sf_Em_record[idx]
+
+        sf_t_Em = np.array(self.tloop.sf_Em_record)
+        w_ip = self.fets_eval.ip_weights
+        J_det = self.tstepper.J_det
+        P_b = self.cross_section.P_b
+        shear_integ = np.einsum('tEm,m,em->t', sf_t_Em, w_ip, J_det) * P_b
+        return shear_integ
 
     def get_P_t(self):
         F_array = np.array(self.tloop.F_record, dtype=np.float_)
