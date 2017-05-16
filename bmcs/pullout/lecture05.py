@@ -2,6 +2,8 @@
 Example script of bond - pullout evaluation.
 '''
 
+from bmcs.mats.mats_damage_fn import \
+    LiDamageFn, JirasekDamageFn, AbaqusDamageFn
 from view.window.bmcs_window import BMCSWindow
 
 import numpy as np
@@ -18,6 +20,8 @@ def show(po):
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
     po.add_viz2d('field', 'sf', plot_fn='sf')
+    po.add_viz2d('dissipation', 'dissipation')
+    po.add_viz2d('dissipation rate', 'dissipation rate')
 
     w.offline = False
     w.finish_event = True
@@ -34,8 +38,8 @@ def e51_isotropic_hardening():
     po.loading_scenario.set(number_of_cycles=1)
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
     po.geometry.L_x = 1.0
-    po.material.set(gamma=0.0, K=-1000.0, tau_bar=45.0)
-    po.material.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=10.0)
+    po.material.set(gamma=0.0, K=-100.0, tau_bar=100.0)
+    po.material.omega_fn.set(alpha_1=0.89, alpha_2=1.0, plot_max=10.0)
     po.run()
 
     show(po)
@@ -92,10 +96,7 @@ def e54_damage_length_dependency():
     A_f = po.cross_section.A_f
     P_f_max = A_f * sig_f_max
 
-    po.run()
-
     import pylab
-
     L_max = np.log10(200.0)
     L_array = np.logspace(0, L_max, 8)
     for L in L_array:
@@ -109,7 +110,7 @@ def e54_damage_length_dependency():
         pylab.subplot(2, 1, 2)
         pylab.plot(wL, shear_integ, label='L=%f' % L)
 
-#    pylab.plot([0.0, w_max], [P_f_max, P_f_max], label='yarn strength')
+    pylab.plot([0.0, w_max], [P_f_max, P_f_max], label='yarn strength')
     pylab.legend()
     pylab.show()
     show(po)
@@ -143,8 +144,8 @@ def e55_damage_element_size():
 
 
 if __name__ == "__main__":
-    #    e51_isotropic_hardening()
+    e51_isotropic_hardening()
     #     e52_kinematic_hardening()
     # e53_damage_softening()
     # e54_damage_length_dependency()
-    e55_damage_element_size()
+    # e55_damage_element_size()

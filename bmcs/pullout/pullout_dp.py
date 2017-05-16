@@ -11,18 +11,51 @@ from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
-from ipywidgets.widgets.interaction import fixed
+from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
     List, Float, Int, Trait, on_trait_change
 from traitsui.api import \
     View, Item
-from view.plot2d import Vis2D
+from view.plot2d import Vis2D, Viz2D
 from view.window import BMCSModel, BMCSWindow, TLine
 
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     CrossSection, Geometry
+
+
+class Viz2DEnergyPlot(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = 'line plot'
+
+    def plot(self, ax, vot, *args, **kw):
+        t = self.vis2d.get_t()
+        U_bar_t = self.vis2d.get_U_bar_t()
+        W_t = self.vis2d.get_W_t()
+        ax.plot(t, U_bar_t, color='black')
+        ax.plot(t, W_t, color='black')
+        ax.fill_between(t, W_t, U_bar_t, facecolor='blue', alpha=0.2)
+
+
+class Viz2DEnergyRatesPlot(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = 'line plot'
+
+    def plot(self, ax, vot, *args, **kw):
+        t = self.vis2d.get_t()
+        U_bar_t = self.vis2d.get_U_bar_t()
+        W_t = self.vis2d.get_W_t()
+
+        G = W_t - U_bar_t
+        tck = ip.splrep(t, G, s=0, k=1)
+        dG = ip.splev(t, tck, der=1)
+
+        ax.plot(t, dG, color='black')
+        ax.fill_between(t, 0, dG, facecolor='blue', alpha=0.2)
 
 
 class PullOutModel(BMCSModel, Vis2D):
@@ -267,6 +300,26 @@ class PullOutModel(BMCSModel, Vis2D):
         shear_integ = np.einsum('tEm,m,em->t', sf_t_Em, w_ip, J_det) * P_b
         return shear_integ
 
+    def get_W_t(self):
+        P_t = self.get_P_t()
+        w_0, w_L = self.get_w_t()
+
+        W_t = []
+        for i, w in enumerate(w_L):
+            W_t.append(np.trapz(P_t[:i + 1], w_L[:i + 1]))
+        return W_t
+
+    def get_U_bar_t(self):
+        A = self.tstepper.A
+        sig_t = np.array(self.tloop.sig_record)
+        eps_t = np.array(self.tloop.eps_record)
+        w_ip = self.fets_eval.ip_weights
+        J_det = self.tstepper.J_det
+        U_bar_t = np.einsum('m,Em,s,tEms,tEms->t',
+                            w_ip, J_det, A, sig_t, eps_t)
+
+        return U_bar_t / 2.0
+
     def get_P_t(self):
         F_array = np.array(self.tloop.F_record, dtype=np.float_)
         return F_array[:, self.controlled_dof]
@@ -278,6 +331,10 @@ class PullOutModel(BMCSModel, Vis2D):
         w_0 = d_t_ECid[:, 0, 1, 0, 0]
         w_L = d_t_ECid[:, -1, 1, -1, -1]
         return w_0, w_L
+
+    def get_wL_t(self):
+        w_0, w_L = self.get_w_t()
+        return w_L
 
     def get_w(self, vot):
         '''Damage variables
@@ -371,6 +428,9 @@ class PullOutModel(BMCSModel, Vis2D):
     t = Property
 
     def _get_t(self):
+        return self.get_t()
+
+    def get_t(self):
         return np.array(self.tloop.t_record, dtype=np.float_)
 
     sig_tC = Property
@@ -387,6 +447,8 @@ class PullOutModel(BMCSModel, Vis2D):
     viz2d_classes = {'field': Viz2DPullOutField,
                      'F-w': Viz2DPullOutFW,
                      'load function': Viz2DLoadControlFunction,
+                     'dissipation': Viz2DEnergyPlot,
+                     'dissipation rate': Viz2DEnergyRatesPlot
                      }
 
 
@@ -409,7 +471,10 @@ def run_pullout_dp(*args, **kw):
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
     po.add_viz2d('field', 'sf', plot_fn='sf')
-#    po.add_viz2d('field', 'eps_f(s)', plot_fn='eps_f(s)')
+    po.add_viz2d('dissipation', 'dissipation',
+                 get_x='get_t', get_y='get_U_bar_t')
+    po.add_viz2d('dissipation rate', 'dissipation rate',
+                 get_x='get_t', get_y='get_W_t')
 
     w.offline = False
     w.finish_event = True
