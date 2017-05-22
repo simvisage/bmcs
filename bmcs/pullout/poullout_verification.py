@@ -8,7 +8,7 @@ import bmcs.pullout.lecture04 as l04
 import numpy as np
 
 
-def multilinear_bond_slip_law():
+def multilinear_bond_slip_law_sbr_jbielak():
     '''This is the verification of the calculation by Li. 
     '''
 
@@ -46,5 +46,33 @@ def multilinear_bond_slip_law():
     l04.show(po)
 
 
+def multilinear_bond_slip_law_epoxy_tvlach():
+    '''This is the verification of the calculation by Li. 
+    '''
+
+    po = l04.PullOutModel(n_e_x=200, k_max=500, w_max=0.15)
+    po.tline.step = 0.01
+    po.loading_scenario.set(loading_type='cyclic',
+                            amplitude_type='constant',
+                            loading_range='non-symmetric'
+                            )
+    po.loading_scenario.set(number_of_cycles=1,
+                            unloading_ratio=0.98,
+                            )
+    po.geometry.set(L_x=12.0)
+    po.cross_section.set(A_f=2.2, P_b=1.0, A_m=10000.0 - 2.0)
+    po.mats_eval_type = 'multilinear'
+    po.mats_eval.set(E_m=49200.0, E_f=29500.0)
+    po.mats_eval.bs_law.set(
+        xdata=[0, 1e-6, 0.005, 0.035, 0.065, 0.095, 0.15],
+        ydata=[0., 10.12901536,   39.9247595,
+               84.22654625,  101.35300195,
+               134.23784515, 158.97974139]
+    )
+    po.mats_eval.bs_law.replot()
+    po.run()
+    l04.show(po)
+
+
 if __name__ == '__main__':
-    multilinear_bond_slip_law()
+    multilinear_bond_slip_law_epoxy_tvlach()

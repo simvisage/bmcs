@@ -18,29 +18,34 @@ from mats_damage_fn import \
 import numpy as np
 
 
-class MATSEvalFatigue(MATSEval):
+class MATSEvalFatigue(MATSEval, BMCSTreeNode):
 
     E_m = Float(30000, tooltip='Stiffness of the matrix [MPa]',
+                MAT=True,
                 auto_set=True, enter_set=True)
 
     E_f = Float(200000, tooltip='Stiffness of the fiber [MPa]',
+                MAT=True,
                 auto_set=False, enter_set=False)
 
     E_b = Float(200,
                 label="G",
                 desc="Shear Stiffness",
+                MAT=True,
                 enter_set=True,
                 auto_set=False)
 
     gamma = Float(0,
                   label="Gamma",
                   desc="Kinematic hardening modulus",
+                  MAT=True,
                   enter_set=True,
                   auto_set=False)
 
     K = Float(0,
               label="K",
               desc="Isotropic harening",
+              MAT=True,
               enter_set=True,
               auto_set=False)
 
@@ -48,41 +53,45 @@ class MATSEvalFatigue(MATSEval):
               label="S",
               desc="Damage cumulation parameter",
               enter_set=True,
+              MAT=True,
               auto_set=False)
 
     r = Float(1,
               label="r",
               desc="Damage cumulation parameter",
+              MAT=True,
               enter_set=True,
               auto_set=False)
 
     c = Float(1,
               label="c",
               desc="Damage cumulation parameter",
+              MAT=True,
               enter_set=True,
               auto_set=False)
 
     tau_pi_bar = Float(5,
                        label="Tau_pi_bar",
                        desc="Reversibility limit",
+                       MAT=True,
                        enter_set=True,
                        auto_set=False)
 
     pressure = Float(-5,
                      label="Pressure",
                      desc="Lateral pressure",
+                     MAT=True,
                      enter_set=True,
                      auto_set=False)
 
     a = Float(1.7,
               label="a",
               desc="Lateral pressure coefficient",
+              MAT=True,
               enter_set=True,
               auto_set=False)
 
     n_s = Constant(4)
-
-    state_array_size = Int(4)
 
     state_arr_shape = Tuple((4,))
 
@@ -184,6 +193,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
                         MAT=True,
                         label='Uncoupled d-p'
                         )
+
     s_0 = Float
 
     def __init__(self, *args, **kw):
@@ -217,13 +227,20 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
                           alpha_2=100.
                           )
 
-    state_array_size = Int(5)
+    state_arr_shape = Tuple((5,))
 
     def omega(self, k):
         return self.omega_fn(k)
 
     def omega_derivative(self, k):
         return self.omega_fn.diff(k)
+
+    def get_cp(self, s, d_s, t_n, t_n1, state):
+        tau, s_p, alpha, z, kappa, omega = state
+        tau, D, s_p, alpha, z, kappa, omega = \
+            self.get_corr_pred(s, d_s, tau, t_n, t_n1,
+                               s_p, alpha, z, kappa, omega)
+        return tau, D, state
 
     def get_corr_pred(self, s, d_s, tau, t_n, t_n1,
                       s_p, alpha, z, kappa, omega):
@@ -301,9 +318,13 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
 
 class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
+    node_name = "multilinear bond law"
+
     def __init__(self, *args, **kw):
         super(MATSBondSlipMultiLinear, self).__init__(*args, **kw)
         self.bs_law.replot()
+
+    state_arr_shape = Tuple((0,))
 
     E_m = Float(28000.0, tooltip='Stiffness of the matrix [MPa]',
                 MAT=True,

@@ -11,17 +11,51 @@ from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
+from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
     List, Float, Int, Trait, on_trait_change
 from traitsui.api import \
     View, Item
-from view.plot2d import Vis2D
+from view.plot2d import Vis2D, Viz2D
 from view.window import BMCSModel, BMCSWindow, TLine
 
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     CrossSection, Geometry
+
+
+class Viz2DEnergyPlot(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = 'line plot'
+
+    def plot(self, ax, vot, *args, **kw):
+        t = self.vis2d.get_t()
+        U_bar_t = self.vis2d.get_U_bar_t()
+        W_t = self.vis2d.get_W_t()
+        ax.plot(t, U_bar_t, color='black')
+        ax.plot(t, W_t, color='black')
+        ax.fill_between(t, W_t, U_bar_t, facecolor='blue', alpha=0.2)
+
+
+class Viz2DEnergyRatesPlot(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = 'line plot'
+
+    def plot(self, ax, vot, *args, **kw):
+        t = self.vis2d.get_t()
+        U_bar_t = self.vis2d.get_U_bar_t()
+        W_t = self.vis2d.get_W_t()
+
+        G = W_t - U_bar_t
+        tck = ip.splrep(t, G, s=0, k=1)
+        dG = ip.splev(t, tck, der=1)
+
+        ax.plot(t, dG, color='black')
+        ax.fill_between(t, 0, dG, facecolor='blue', alpha=0.2)
 
 
 class PullOutModel(BMCSModel, Vis2D):
@@ -37,7 +71,8 @@ class PullOutModel(BMCSModel, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.bcond_mngr,
+            self.fixed_bc,
+            self.control_bc
         ]
 
     def _update_node_list(self):
@@ -46,7 +81,8 @@ class PullOutModel(BMCSModel, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.bcond_mngr,
+            self.fixed_bc,
+            self.control_bc
         ]
 
     def init(self):
@@ -79,9 +115,6 @@ class PullOutModel(BMCSModel, Vis2D):
     n_e_x = Int(20, MESH=True, auto_set=False, enter_set=True)
 
     w_max = Float(1, auto_set=False, enter_set=True)
-
-    def x_w_max_changed(self):
-        self.bcond_mngr.bcond_list[1].value = self.w_max
 
     controlled_dof = Property
 
@@ -118,25 +151,32 @@ class PullOutModel(BMCSModel, Vis2D):
                                    P_b=self.cross_section.P_b,
                                    A_f=self.cross_section.A_f)
 
-    bcond_mngr = Instance(BCondMngr)
+    bcond_mngr = Property(Instance(BCondMngr),
+                          depends_on='BC,MESH')
     '''Boundary condition manager
     '''
-
-    def _bcond_mngr_default(self):
-        bc_list = [BCDof(node_name='fixed left end', var='u',
-                         dof=0, value=0.0),
-                   BCDof(node_name='pull-out displacement', var='u',
-                         dof=self.controlled_dof, value=self.w_max,
-                         time_function=self.loading_scenario)]
+    @cached_property
+    def _get_bcond_mngr(self):
+        bc_list = [self.fixed_bc,
+                   self.control_bc]
         return BCondMngr(bcond_list=bc_list)
 
-    control_bc = Property(depends_on='BC')
+    fixed_bc = Property(depends_on='BC,MESH')
+    '''Foxed boundary condition'''
+    @cached_property
+    def _get_fixed_bc(self):
+        return BCDof(node_name='fixed left end', var='u',
+                     dof=0, value=0.0)
+
+    control_bc = Property(depends_on='BC,MESH')
     '''Control boundary condition - make it accessible directly
     for the visualization adapter as property
     '''
     @cached_property
     def _get_control_bc(self):
-        return self.bcond_mngr.bcond_list[1]
+        return BCDof(node_name='pull-out displacement', var='u',
+                     dof=self.controlled_dof, value=self.w_max,
+                     time_function=self.loading_scenario)
 
     tstepper = Property(Instance(TStepper),
                         depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
@@ -246,6 +286,40 @@ class PullOutModel(BMCSModel, Vis2D):
         sf = self.tloop.sf_Em_record[idx].flatten()
         return sf
 
+    def get_shear_integ(self):
+        #         d_ECid = self.get_d_ECid(vot)
+        #         s_Emd = np.einsum('Cim,ECid->Emd', self.tstepper.sN_Cim, d_ECid)
+        #         idx = self.tloop.get_time_idx(vot)
+        #         sf = self.tloop.sf_Em_record[idx]
+
+        sf_t_Em = np.array(self.tloop.sf_Em_record)
+        w_ip = self.fets_eval.ip_weights
+        J_det = self.tstepper.J_det
+        sN_Cim = self.tstepper.sN_Cim
+        P_b = self.cross_section.P_b
+        shear_integ = np.einsum('tEm,m,em->t', sf_t_Em, w_ip, J_det) * P_b
+        return shear_integ
+
+    def get_W_t(self):
+        P_t = self.get_P_t()
+        w_0, w_L = self.get_w_t()
+
+        W_t = []
+        for i, w in enumerate(w_L):
+            W_t.append(np.trapz(P_t[:i + 1], w_L[:i + 1]))
+        return W_t
+
+    def get_U_bar_t(self):
+        A = self.tstepper.A
+        sig_t = np.array(self.tloop.sig_record)
+        eps_t = np.array(self.tloop.eps_record)
+        w_ip = self.fets_eval.ip_weights
+        J_det = self.tstepper.J_det
+        U_bar_t = np.einsum('m,Em,s,tEms,tEms->t',
+                            w_ip, J_det, A, sig_t, eps_t)
+
+        return U_bar_t / 2.0
+
     def get_P_t(self):
         F_array = np.array(self.tloop.F_record, dtype=np.float_)
         return F_array[:, self.controlled_dof]
@@ -257,6 +331,10 @@ class PullOutModel(BMCSModel, Vis2D):
         w_0 = d_t_ECid[:, 0, 1, 0, 0]
         w_L = d_t_ECid[:, -1, 1, -1, -1]
         return w_0, w_L
+
+    def get_wL_t(self):
+        w_0, w_L = self.get_w_t()
+        return w_L
 
     def get_w(self, vot):
         '''Damage variables
@@ -350,6 +428,9 @@ class PullOutModel(BMCSModel, Vis2D):
     t = Property
 
     def _get_t(self):
+        return self.get_t()
+
+    def get_t(self):
         return np.array(self.tloop.t_record, dtype=np.float_)
 
     sig_tC = Property
@@ -366,6 +447,8 @@ class PullOutModel(BMCSModel, Vis2D):
     viz2d_classes = {'field': Viz2DPullOutField,
                      'F-w': Viz2DPullOutFW,
                      'load function': Viz2DLoadControlFunction,
+                     'dissipation': Viz2DEnergyPlot,
+                     'dissipation rate': Viz2DEnergyRatesPlot
                      }
 
 
@@ -388,7 +471,10 @@ def run_pullout_dp(*args, **kw):
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
     po.add_viz2d('field', 'sf', plot_fn='sf')
-#    po.add_viz2d('field', 'eps_f(s)', plot_fn='eps_f(s)')
+    po.add_viz2d('dissipation', 'dissipation',
+                 get_x='get_t', get_y='get_U_bar_t')
+    po.add_viz2d('dissipation rate', 'dissipation rate',
+                 get_x='get_t', get_y='get_W_t')
 
     w.offline = False
     w.finish_event = True

@@ -175,6 +175,7 @@ class TStepper(HasTraits):
         # Geometry approximation / Jacobi transformation
         J_Emde = np.einsum('mid,Eie->Emde', dN_mid_geo, self.X_Eid)
         J_inv_Emed = np.linalg.inv(J_Emde)
+
         # Quadratic forms
         dN_Eimd = np.einsum('mid,Eied->Eime', dN_mid, J_inv_Emed)
         sN_Cim = np.einsum('C,mi->Cim', SWITCH_C, N_mi)
