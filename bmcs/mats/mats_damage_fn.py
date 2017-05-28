@@ -232,3 +232,8 @@ class AbaqusDamageFn(DamageFn):
     )
 
     tree_view = traits_view
+
+
+if __name__ == '__main__':
+    ld = LiDamageFn()
+    ld.configure_traits()

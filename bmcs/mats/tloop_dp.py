@@ -97,7 +97,6 @@ class TLoop(HasStrictTraits):
 
         while (t_n1 - self.tline.max) <= self.step_tolerance and \
                 not (self.restart or self.paused):
-
             k = 0
             step_flag = 'predictor'
             d_U = np.zeros(n_dofs)

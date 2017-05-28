@@ -65,25 +65,21 @@ class DOTSListEval(TStepperEval):
         for dots_eval in self.dots_list:
             dots_eval.apply_constraints(K)
 
-    def get_corr_pred(self, sctx, U, d_U, tn, tn1, *args, **kw):
+    def get_corr_pred(self, U, d_U, tn, tn1, F_int,
+                      step_flag='predictor', update=False, *args, **kw):
 
         K = self.K
         K.reset()
 
-        F_int = self.F_int
-        F_int[:] = 0.0
-
         U = self.tstepper.U_k
         d_U = self.tstepper.d_U
-
         for dots_eval in self.dots_list:
-
-            K_mtx_arr = dots_eval.get_corr_pred(sctx, U, d_U, tn, tn1,
-                                                self.F_int, *args, **kw)
-
+            K_mtx_arr = dots_eval.get_corr_pred(U, d_U, tn, tn1,
+                                                F_int,
+                                                step_flag,
+                                                update, *args, **kw)
             K.sys_mtx_arrays.append(K_mtx_arr)
-
-        return self.F_int, self.K
+        return self.K
 
     rte_dict = Property(Dict, depends_on='dots_list')
 

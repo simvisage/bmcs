@@ -141,7 +141,7 @@ class VizSheet(HasStrictTraits):
 
     monitor_chunk_size = Int(1, label='Monitor each # steps')
 
-    skipped_steps = Int(0)
+    skipped_steps = Int(10)
 
     @on_trait_change('vot,n_cols')
     def replot(self):

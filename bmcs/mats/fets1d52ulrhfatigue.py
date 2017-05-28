@@ -152,3 +152,66 @@ class FETS1D52ULRHFatigue(FETSEval):
     @cached_property
     def _get_n_ip(self):
         return len(self.w_m)
+
+    A_C = Property(depends_on='A_m,A_f')
+
+    @cached_property
+    def _get_A_C(self):
+        return np.array((self.A_f, self.P_b, self.A_m), dtype=np.float_)
+
+    def get_B_EmisC(self, J_inv_Emdd):
+        fets_eval = self
+
+        n_dof_r = fets_eval.n_dof_r
+        n_nodal_dofs = fets_eval.n_nodal_dofs
+
+        n_m = fets_eval.n_gp
+        n_E = J_inv_Emdd.shape[0]
+        n_s = 3
+        #[ d, i]
+        r_ip = fets_eval.ip_coords[:, :-2].T
+        # [ d, n ]
+        geo_r = fets_eval.geo_r.T
+        # [ d, n, i ]
+        dNr_geo = geo_r[:, :, None] * np.array([1, 1]) * 0.5
+        # [ i, n, d ]
+        dNr_geo = np.einsum('dni->ind', dNr_geo)
+
+        # shape function for the unknowns
+        # [ d, n, i]
+        Nr = 0.5 * (1. + geo_r[:, :, None] * r_ip[None, :])
+        dNr = 0.5 * geo_r[:, :, None] * np.array([1, 1])
+
+        # [ i, n, d ]
+        Nr = np.einsum('dni->ind', Nr)
+        dNr = np.einsum('dni->ind', dNr)
+        Nx = Nr
+        # [ n_e, n_ip, n_dof_r, n_dim_dof ]
+        dNx = np.einsum('eidf,inf->eind', J_inv_Emdd, dNr)
+
+        B = np.zeros((n_E, n_m, n_dof_r, n_s, n_nodal_dofs), dtype='f')
+        B_N_n_rows, B_N_n_cols, N_idx = [1, 1], [0, 1], [0, 0]
+        B_dN_n_rows, B_dN_n_cols, dN_idx = [0, 2], [0, 1], [0, 0]
+        B_factors = np.array([-1, 1], dtype='float_')
+        B[:, :, :, B_N_n_rows, B_N_n_cols] = (B_factors[None, None, :] *
+                                              Nx[:, :, N_idx])
+        B[:, :, :, B_dN_n_rows, B_dN_n_cols] = dNx[:, :, :, dN_idx]
+
+        return B
+
+    def get_B_EimsC(self, dN_Eimd, sN_Cim):
+
+        n_E, n_i, n_m, n_d = dN_Eimd.shape
+        n_C, n_i, n_m = sN_Cim.shape
+        n_s = 3
+        B_EimsC = np.zeros(
+            (n_E, n_i, n_m, n_s, n_C), dtype='f')
+        print 'B_EimsC', B_EimsC[..., [1, 1], [0, 1]]
+        print 'N_Cim', sN_Cim[[0, 1], :, :]
+        B_EimsC[..., [1, 1], [0, 1]] = sN_Cim[[0, 1], :, :]
+        B_EimsC[..., [0, 2], [0, 1]] = dN_Eimd[:, [0, 1], :, :]
+
+        B_EmisC = np.zeros((n_E, n_i, n_m, n_s, n_C),
+                           dtype='f')
+
+        return B_EimsC

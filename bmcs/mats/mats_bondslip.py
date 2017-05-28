@@ -203,7 +203,10 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
     @on_trait_change('tau_bar,E_b')
     def _update_s0(self):
         if not self.uncoupled_dp:
-            self.s_0 = self.tau_bar / self.E_b
+            if self.E_b == 0:
+                self.s_0 = 0
+            else:
+                self.s_0 = self.tau_bar / self.E_b
             self.omega_fn.s_0 = self.s_0
 
     omega_fn_type = Trait('li',
@@ -227,7 +230,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
                           alpha_2=100.
                           )
 
-    state_arr_shape = Tuple((5,))
+    state_arr_shape = Tuple((8,))
 
     def omega(self, k):
         return self.omega_fn(k)
@@ -242,23 +245,41 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
                                s_p, alpha, z, kappa, omega)
         return tau, D, state
 
-    def get_corr_pred(self, s, d_s, tau, t_n, t_n1,
-                      s_p, alpha, z, kappa, omega):
+    def get_corr_pred2(self, s_n1, d_s, t_n, t_n1, sa_n):
 
-        n_e, n_ip, n_s = s.shape
+        tau_n, s_p_n, alpha_n, z_n, kappa_n, omega_n = \
+            sa_n[..., 0:3], sa_n[..., 3], sa_n[..., 4],\
+            sa_n[..., 5], sa_n[..., 6], sa_n[..., 7]
+
+        tau, D, s_p, alpha, z, kappa, omega = \
+            self.get_corr_pred(s_n1, d_s, tau_n, t_n, t_n1,
+                               s_p_n, alpha_n, z_n, kappa_n, omega_n)
+
+        sa_n1 = np.concatenate([tau,
+                                s_p[..., np.newaxis],
+                                alpha[..., np.newaxis],
+                                z[..., np.newaxis],
+                                kappa[..., np.newaxis],
+                                omega[..., np.newaxis]], axis=-1)
+        return tau, D, sa_n1
+
+    def get_corr_pred(self, s_n1, d_s, tau_n, t_n, t_n1,
+                      s_p_n, alpha_n, z_n, kappa_n, omega_n):
+
+        n_e, n_ip, n_s = s_n1.shape
         D = np.zeros((n_e, n_ip, 3, 3))
         D[:, :, 0, 0] = self.E_m
         D[:, :, 2, 2] = self.E_f
 
-        sig_pi_trial = self.E_b * (s[:, :, 1] - s_p)
+        sig_pi_trial = self.E_b * (s_n1[:, :, 1] - s_p_n)
 
-        Z = self.K * z
+        Z = self.K * z_n
 
         # for handeling the negative values of isotropic hardening
         h_1 = self.tau_bar + Z
         pos_iso = h_1 > 1e-6
 
-        X = self.gamma * alpha
+        X = self.gamma * alpha_n
 
         # for handeling the negative values of kinematic hardening (not yet)
         # h_2 = h * np.sign(sig_pi_trial - X) * \
@@ -270,29 +291,36 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         elas = f <= 1e-6
         plas = f > 1e-6
 
-        d_tau = np.einsum('...st,...t->...s', D, d_s)
-        tau += d_tau
+#         d_tau = np.einsum('...st,...t->...s', D, d_s)
+#         tau += d_tau
+
+        # @todo: change this to the calculation that does not need tau as input
+        # -- tau is a derived variable.
+#         print s.shape
+#         print s_p.shape
+        tau = np.einsum('...st,...t->...s', D, s_n1)
 
         # Return mapping
         delta_lamda = f / (self.E_b + self.gamma + np.fabs(self.K)) * plas
         # update all the state variables
 
-        s_p = s_p + delta_lamda * np.sign(sig_pi_trial - X)
-        z = z + delta_lamda
-        alpha = alpha + delta_lamda * np.sign(sig_pi_trial - X)
+        s_p_n1 = s_p_n + delta_lamda * np.sign(sig_pi_trial - X)
+        z_n1 = z_n + delta_lamda
+        alpha_n1 = alpha_n + delta_lamda * np.sign(sig_pi_trial - X)
 
-        kappa = np.max(np.array([kappa, np.fabs(s[:, :, 1])]), axis=0)
-        omega = self.omega(kappa)
-        tau[:, :, 1] = (1 - omega) * self.E_b * (s[:, :, 1] - s_p)
+        kappa_n1 = np.max(np.array([kappa_n, np.fabs(s_n1[:, :, 1])]), axis=0)
+        omega_n1 = self.omega(kappa_n1)
+        tau[:, :, 1] = (1 - omega_n1) * self.E_b * (s_n1[:, :, 1] - s_p_n1)
 
         # Consistent tangent operator
-        D_ed = -self.E_b / (self.E_b + self.K + self.gamma) * self.omega_derivative(kappa) * self.E_b * (s[:, :, 1] - s_p) \
-            + (1 - omega) * self.E_b * (self.K + self.gamma) / \
+        D_ed = -self.E_b / (self.E_b + self.K + self.gamma) \
+            * self.omega_derivative(kappa_n1) * self.E_b * (s_n1[:, :, 1] - s_p_n1) \
+            + (1 - omega_n1) * self.E_b * (self.K + self.gamma) / \
             (self.E_b + self.K + self.gamma)
 
-        D[:, :, 1, 1] = (1 - omega) * self.E_b * elas + D_ed * plas
+        D[:, :, 1, 1] = (1 - omega_n1) * self.E_b * elas + D_ed * plas
 
-        return tau, D, s_p, alpha, z, kappa, omega
+        return tau, D, s_p_n1, alpha_n1, z_n1, kappa_n1, omega_n1
 
     n_s = Constant(5)
 

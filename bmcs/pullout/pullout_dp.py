@@ -17,7 +17,7 @@ from traits.api import \
     Property, Instance, cached_property, \
     List, Float, Int, Trait, on_trait_change
 from traitsui.api import \
-    View, Item
+    View, Item, Group
 from view.plot2d import Vis2D, Viz2D
 from view.window import BMCSModel, BMCSWindow, TLine
 
@@ -35,9 +35,10 @@ class Viz2DEnergyPlot(Viz2D):
         t = self.vis2d.get_t()
         U_bar_t = self.vis2d.get_U_bar_t()
         W_t = self.vis2d.get_W_t()
-        ax.plot(t, U_bar_t, color='black')
-        ax.plot(t, W_t, color='black')
+        ax.plot(t, U_bar_t, color='black', label='U(t)')
+        ax.plot(t, W_t, color='black', label='W(t)')
         ax.fill_between(t, W_t, U_bar_t, facecolor='blue', alpha=0.2)
+        ax.legend()
 
 
 class Viz2DEnergyRatesPlot(Viz2D):
@@ -47,15 +48,12 @@ class Viz2DEnergyRatesPlot(Viz2D):
 
     def plot(self, ax, vot, *args, **kw):
         t = self.vis2d.get_t()
-        U_bar_t = self.vis2d.get_U_bar_t()
-        W_t = self.vis2d.get_W_t()
 
-        G = W_t - U_bar_t
-        tck = ip.splrep(t, G, s=0, k=1)
-        dG = ip.splev(t, tck, der=1)
+        dG = self.vis2d.get_dG_t()
 
-        ax.plot(t, dG, color='black')
+        ax.plot(t, dG, color='black', label='dG/dt')
         ax.fill_between(t, 0, dG, facecolor='blue', alpha=0.2)
+        ax.legend()
 
 
 class PullOutModel(BMCSModel, Vis2D):
@@ -68,36 +66,42 @@ class PullOutModel(BMCSModel, Vis2D):
 
         return [
             self.tline,
+            self.loading_scenario,
             self.mats_eval,
             self.cross_section,
-            self.geometry,
-            self.fixed_bc,
-            self.control_bc
+            self.geometry
         ]
 
     def _update_node_list(self):
         self.tree_node_list = [
             self.tline,
+            self.loading_scenario,
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.fixed_bc,
-            self.control_bc
         ]
 
-    def init(self):
-        self.tloop.init()
+    tree_view = View(
+        Group(
+            Item('w_max', resizable=True, full_size=True),
+            Group(
+                Item('loading_scenario@', show_label=False),
+            )
+        )
+    )
 
-    def eval(self):
-        return self.tloop.eval()
+    tline = Instance(TLine)
 
-    def pause(self):
-        self.tloop.paused = True
+    def _tline_default(self):
+        # assign the parameters for solver and loading_scenario
+        t_max = 1.0  # self.loading_scenario.t_max
+        d_t = 0.02  # self.loading_scenario.d_t
+        return TLine(min=0.0, step=d_t, max=t_max,
+                     time_change_notifier=self.time_changed,
+                     )
 
-    def stop(self):
-        self.tloop.restart = True
-
-    loading_scenario = Instance(LoadingScenario)
+    loading_scenario = Instance(LoadingScenario,
+                                BC=True)
 
     def _loading_scenario_default(self):
         return LoadingScenario()
@@ -114,7 +118,7 @@ class PullOutModel(BMCSModel, Vis2D):
 
     n_e_x = Int(20, MESH=True, auto_set=False, enter_set=True)
 
-    w_max = Float(1, auto_set=False, enter_set=True)
+    w_max = Float(1, BC=True, auto_set=False, enter_set=True)
 
     controlled_dof = Property
 
@@ -151,16 +155,6 @@ class PullOutModel(BMCSModel, Vis2D):
                                    P_b=self.cross_section.P_b,
                                    A_f=self.cross_section.A_f)
 
-    bcond_mngr = Property(Instance(BCondMngr),
-                          depends_on='BC,MESH')
-    '''Boundary condition manager
-    '''
-    @cached_property
-    def _get_bcond_mngr(self):
-        bc_list = [self.fixed_bc,
-                   self.control_bc]
-        return BCondMngr(bcond_list=bc_list)
-
     fixed_bc = Property(depends_on='BC,MESH')
     '''Foxed boundary condition'''
     @cached_property
@@ -178,6 +172,16 @@ class PullOutModel(BMCSModel, Vis2D):
                      dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
+    bcond_mngr = Property(Instance(BCondMngr),
+                          depends_on='BC,MESH')
+    '''Boundary condition manager
+    '''
+    @cached_property
+    def _get_bcond_mngr(self):
+        bc_list = [self.fixed_bc,
+                   self.control_bc]
+        return BCondMngr(bcond_list=bc_list)
+
     tstepper = Property(Instance(TStepper),
                         depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
     '''Objects representing the state of the model providing
@@ -194,16 +198,6 @@ class PullOutModel(BMCSModel, Vis2D):
                         bcond_mngr=self.bcond_mngr
                         )
 
-    tline = Instance(TLine)
-
-    def _tline_default(self):
-        # assign the parameters for solver and loading_scenario
-        t_max = 1.0  # self.loading_scenario.t_max
-        d_t = 0.02  # self.loading_scenario.d_t
-        return TLine(min=0.0, step=d_t, max=t_max,
-                     time_change_notifier=self.time_changed,
-                     )
-
     k_max = Int(200,
                 ALG=True)
     tolerance = Float(1e-4,
@@ -215,7 +209,6 @@ class PullOutModel(BMCSModel, Vis2D):
     '''
     @cached_property
     def _get_tloop(self):
-
         k_max = self.k_max
         tolerance = self.tolerance
         return TLoop(ts=self.tstepper, k_max=k_max,
@@ -232,6 +225,18 @@ class PullOutModel(BMCSModel, Vis2D):
 
     def set_tmax(self, time):
         self.time_range_changed(time)
+
+    def init(self):
+        self.tloop.init()
+
+    def eval(self):
+        return self.tloop.eval()
+
+    def pause(self):
+        self.tloop.paused = True
+
+    def stop(self):
+        self.tloop.restart = True
 
     def get_d_ECid(self, vot):
         '''Get the displacements as a four-dimensional array 
@@ -319,6 +324,15 @@ class PullOutModel(BMCSModel, Vis2D):
                             w_ip, J_det, A, sig_t, eps_t)
 
         return U_bar_t / 2.0
+
+    def get_dG_t(self):
+        t = self.get_t()
+        U_bar_t = self.get_U_bar_t()
+        W_t = self.get_W_t()
+
+        G = W_t - U_bar_t
+        tck = ip.splrep(t, G, s=0, k=1)
+        return ip.splev(t, tck, der=1)
 
     def get_P_t(self):
         F_array = np.array(self.tloop.F_record, dtype=np.float_)
@@ -454,7 +468,7 @@ class PullOutModel(BMCSModel, Vis2D):
 
 def run_pullout_dp(*args, **kw):
     po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
-    po.tline.step = 0.005
+    po.tline.step = 0.01
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
@@ -471,15 +485,26 @@ def run_pullout_dp(*args, **kw):
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
     po.add_viz2d('field', 'sf', plot_fn='sf')
-    po.add_viz2d('dissipation', 'dissipation',
-                 get_x='get_t', get_y='get_U_bar_t')
-    po.add_viz2d('dissipation rate', 'dissipation rate',
-                 get_x='get_t', get_y='get_W_t')
+    po.add_viz2d('dissipation', 'dissipation')
+    po.add_viz2d('dissipation rate', 'dissipation rate')
 
     w.offline = False
     w.finish_event = True
     w.configure_traits(*args, **kw)
 
 
+def test_B():
+    po = PullOutModel(n_e_x=1, k_max=500, w_max=1.5)
+    po.tline.step = 1.0
+    po.geometry.L_x = 1.0
+    po.loading_scenario.set(loading_type='monotonic')
+    po.cross_section.set(A_f=1.0, P_b=1.0, A_m=1.0)
+    po.mats_eval.set(E_m=1.0, E_f=1.0, E_b=0.0)
+    po.mats_eval.set(gamma=0.0, K=15.0, tau_bar=45.0)
+    po.mats_eval.omega_fn.set(alpha_2=1.0, plot_max=10.0)
+    po.run()
+
+
 if __name__ == '__main__':
     run_pullout_dp()
+    # test_B()

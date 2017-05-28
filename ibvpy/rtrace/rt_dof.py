@@ -191,7 +191,7 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
 
     viz2d_classes = {'time function': RTraceViz2D}
 
-    view = View(
+    trait_view = View(
         VSplit(
             VGroup(
                 HGroup(

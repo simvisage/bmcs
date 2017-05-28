@@ -15,6 +15,7 @@ from ibvpy.api import \
     BCDof, FEGrid, BCSlice, TStepper, TLoop, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.core.tline import TLine
+from ibvpy.rtrace.rt_dof import RTDofGraph
 from traits.api import \
     Property, Instance, cached_property, \
     Bool, List, Float, Trait, Int, on_trait_change
@@ -203,7 +204,22 @@ class PullOutModel(BMCSModel, Vis2D):
         print 'new tstepper'
         ts = TStepper(
             sdomain=self.fe_grid,
-            bcond_mngr=self.bcond_mngr
+            bcond_mngr=self.bcond_mngr,
+            rtrace_list=[
+                RTDofGraph(name='P-w',
+                           var_y='F_int', idx_y=self.controlled_dof,
+                           var_x='U_k', idx_x=self.controlled_dof),
+                #                         RTraceDomainField(name = 'Stress' ,
+                #                         var = 'sig_app', idx = 0,
+                #                         record_on = 'update'),
+                # RTraceDomainListField(name='Displacement',
+                #                      var='u', idx=0),
+                #                             RTraceDomainField(name = 'N0' ,
+                #                                          var = 'N_mtx', idx = 0,
+                # record_on = 'update')
+
+            ]
+
         )
         return ts
 
@@ -381,15 +397,55 @@ class PullOutModel(BMCSModel, Vis2D):
 
 
 def run_pullout():
-    po = PullOutModel(n_e_x=100, k_max=500)
+    po = PullOutModel(n_e_x=10, k_max=500)
     po.tline.step = 0.01
-    po.control_bc.value = 0.01
-    po.init()
-    print po.tstepper.sdomain.dots.dots_list[0].dots_integ.state_array.shape
+    po.w_max = 0.1
     po.mats_eval_type = 'damage-plasticity'
-    po.init()
-    print po.tstepper.sdomain.dots.dots_list[0].dots_integ.state_array.shape
+    po.tline.step = 0.01
+    po.geometry.L_x = 1000.0
+    po.loading_scenario.set(loading_type='monotonic')
+    po.material.set(K=0.2, gamma=0.0, tau_bar=13.137)
+    po.material.set(E_m=35000.0, E_f=170000.0, E_b=6700.0)
+    po.material.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=0.01)
+    po.run()
+    Fw = po.tstepper.rtrace_mngr['P-w']
+    Fw.redraw()
+    Fw.configure_traits()
+    return
+    w = BMCSWindow(model=po)
+    po.add_viz2d('load function')
+    po.add_viz2d('F-w')
+    po.add_viz2d('field', 'u_C', plot_fn='u_C')
+    po.add_viz2d('field', 'w', plot_fn='w')
+    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
+    po.add_viz2d('field', 's', plot_fn='s')
+    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+    po.add_viz2d('field', 'sf', plot_fn='sf')
+#     po.add_viz2d('dissipation', 'dissipation',
+#                  get_x='get_t', get_y='get_U_bar_t')
+#     po.add_viz2d('dissipation rate', 'dissipation rate',
+#                  get_x='get_t', get_y='get_W_t')
+
+    w.offline = False
+    w.finish_event = True
+    w.configure_traits()
+
+
+def run_with_new_state():
+    po = PullOutModel(n_e_x=100, k_max=1000, w_max=0.001)
+    po.mats_eval_type = 'damage-plasticity'
+    po.tline.step = 0.01
+    po.loading_scenario.set(loading_type='cyclic')
+    po.loading_scenario.set(number_of_cycles=1)
+    po.geometry.L_x = 45.0
+    po.cross_section.set(A_f=64.0, P_b=28.0, A_m=28000.0)
+    po.material.set(K=-0.2, gamma=0.0, tau_bar=13.137)
+    po.material.set(E_m=35000.0, E_f=170000.0, E_b=6700.0)
+    po.material.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=0.01)
+    po.run()
+    print 'U_n', po.tloop.U_n
 
 
 if __name__ == '__main__':
     run_pullout()
+    # run_with_new_state()
