@@ -25,7 +25,7 @@ eps_t = np.zeros((n_T,), dtype=np.float)
 
 plt.subplot(111)
 n_E_list = range(10, n_E, 5)
-for n_e in n_E_list:  # n: number of elements
+for n_e in [7.]:  # n_E_list:  # n: number of elements
     sig_t[0] = 0
     eps_t[0] = 0
     for i in range(1, n_T, 1):

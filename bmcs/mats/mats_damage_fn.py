@@ -48,11 +48,19 @@ class IDamageFn(Interface):
 
 
 class DamageFn(BMCSLeafNode, PlottableFn):
+    L_s = Float(1.0,
+                MAT=True,
+                input=True,
+                label="s_0",
+                desc="length of the strain softening zone",
+                enter_set=True,
+                auto_set=False)
+
     s_0 = Float(0.0004,
                 MAT=True,
                 input=True,
                 label="s_0",
-                desc="parameter controls the damage function",
+                desc="elastic strain limit",
                 enter_set=True,
                 auto_set=False)
 
