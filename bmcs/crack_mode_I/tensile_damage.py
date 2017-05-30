@@ -2,8 +2,6 @@
 Created on May 23, 2017
 '''
 
-from scipy.optimize import newton
-
 import numpy as np
 import pylab as p
 
