@@ -218,11 +218,13 @@ class AbaqusDamageFn(DamageFn):
         s_0 = self.s_0
         s_u = self.s_u
         alpha = self.alpha
-        return (- s_0 * np.exp(alpha * (kappa - s_0) /
-                               (s_u - s_0)) * ((s_u - s_0) *
-                                               np.exp(alpha * (kappa - s_0) /
-                                                      (s_u - s_0)) + np.exp(alpha) * (alpha * kappa - s_u + s_0))
-                / ((np.exp(alpha) - 1) * kappa**2 * (s_u - s_0)))
+        d_g_eps = (- s_0 * np.exp(alpha * (kappa - s_0) /
+                                  (s_u - s_0)) * ((s_u - s_0) *
+                                                  np.exp(alpha * (kappa - s_0) /
+                                                         (s_u - s_0)) + np.exp(alpha) * (alpha * kappa - s_u + s_0))
+                   / ((np.exp(alpha) - 1) * kappa**2 * (s_u - s_0)))
+        d_g_eps[np.where(kappa - s_0 < 0)] = 0.0
+        return d_g_eps
 
     traits_view = View(
         VGroup(
