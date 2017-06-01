@@ -11,7 +11,7 @@ import pylab as p
 f_t = 2.5  # [MPa]
 E = 34000.0  # [MPa]
 L = 300.0  # [mm]
-G_f = 0.014  # [N/mm]
+G_f = 0.14  # [N/mm]
 S = 10.0  # [mm^2]
 L_el_list = [100.0, 200.0, 300.0, 500.0, 1000.0]
 L_arr = np.array(L_el_list)
