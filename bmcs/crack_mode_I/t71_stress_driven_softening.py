@@ -35,8 +35,8 @@ for N in [1.0, 2.0, 3.0, 6.0]:
     eps_t = [0, f_t / E]
     L_e = (N - 1) / N * L
     L_s = 1.0 / N * L
-    for sig in np.linspace(f_t, f_t * 0.1, 3):
-        u_e = sig / E * L
+    for sig in np.linspace(f_t, 0.1, n_T):
+        u_e = sig / E * L_e
         u_s = phi_inv(sig, f_t, G_f)
         u = u_e + u_s
         eps_t.append(u / L)
