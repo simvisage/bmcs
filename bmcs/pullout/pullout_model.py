@@ -46,7 +46,8 @@ class PullOutModel(BMCSModel, Vis2D):
             self.cross_section,
             self.geometry,
             self.fixed_bc,
-            self.control_bc
+            self.control_bc,
+            self.rt_Pu
         ]
 
     def _update_node_list(self):
@@ -56,7 +57,8 @@ class PullOutModel(BMCSModel, Vis2D):
             self.cross_section,
             self.geometry,
             self.fixed_bc,
-            self.control_bc
+            self.control_bc,
+            self.rt_Pu
         ]
 
     #=========================================================================
@@ -97,7 +99,7 @@ class PullOutModel(BMCSModel, Vis2D):
     #=========================================================================
     n_e_x = Int(20, auto_set=False, enter_set=True)
 
-    w_max = Float(1, auto_set=False, enter_set=True)
+    w_max = Float(1, BC=True, auto_set=False, enter_set=True)
 
     free_end_dof = Property
 
@@ -127,6 +129,9 @@ class PullOutModel(BMCSModel, Vis2D):
     @on_trait_change('mats_eval_type')
     def _set_mats_eval(self):
         self.mats_eval = self.mats_eval_type_()
+
+    @on_trait_change('BC,MAT,MESH')
+    def reset_node_list(self):
         self._update_node_list()
 
     mats_eval = Instance(IMATSEval,
@@ -192,6 +197,16 @@ class PullOutModel(BMCSModel, Vis2D):
                       shape=(self.n_e_x,),
                       fets_eval=self.fets_eval)
 
+    rt_Pu = Property(depends_on='BC,MESH')
+    '''Control boundary condition - make it accessible directly
+    for the visualization adapter as property
+    '''
+    @cached_property
+    def _get_rt_Pu(self):
+        return RTDofGraph(name='P(u)',
+                          var_y='F_int', idx_y=self.controlled_dof,
+                          var_x='U_k', idx_x=self.controlled_dof)
+
     tstepper = Property(Instance(TStepper),
                         depends_on='MAT,GEO,MESH,CS,ALG,BC')
     '''Objects representing the state of the model providing
@@ -205,20 +220,17 @@ class PullOutModel(BMCSModel, Vis2D):
         ts = TStepper(
             sdomain=self.fe_grid,
             bcond_mngr=self.bcond_mngr,
-            rtrace_list=[
-                RTDofGraph(name='P-w',
-                           var_y='F_int', idx_y=self.controlled_dof,
-                           var_x='U_k', idx_x=self.controlled_dof),
-                #                         RTraceDomainField(name = 'Stress' ,
-                #                         var = 'sig_app', idx = 0,
-                #                         record_on = 'update'),
-                # RTraceDomainListField(name='Displacement',
-                #                      var='u', idx=0),
-                #                             RTraceDomainField(name = 'N0' ,
-                #                                          var = 'N_mtx', idx = 0,
-                # record_on = 'update')
+            rtrace_list=[self.rt_Pu,
+                         #                         RTraceDomainField(name = 'Stress' ,
+                         #                         var = 'sig_app', idx = 0,
+                         #                         record_on = 'update'),
+                         # RTraceDomainListField(name='Displacement',
+                         #                      var='u', idx=0),
+                         #                             RTraceDomainField(name = 'N0' ,
+                         #                                          var = 'N_mtx', idx = 0,
+                         # record_on = 'update')
 
-            ]
+                         ]
 
         )
         return ts
@@ -249,7 +261,7 @@ class PullOutModel(BMCSModel, Vis2D):
         tolerance = self.tolerance
         print 'new tloop', self.tstepper
         return TLoop(tstepper=self.tstepper, k_max=k_max,
-                     tolerance=tolerance,
+                     tolerance=tolerance, debug=False,
                      tline=self.tline)
 
     def get_d_ECid(self, vot):
@@ -387,8 +399,7 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.set_ylabel('damage')
         ax.set_xlabel('bond length')
 
-    trait_view = View(Item('fets_eval'),
-                      )
+    trait_view = View(Item('fets_eval'),)
 
     viz2d_classes = {'field': Viz2DPullOutField,
                      'F-w': Viz2DPullOutFW,
@@ -398,29 +409,32 @@ class PullOutModel(BMCSModel, Vis2D):
 
 def run_pullout():
     po = PullOutModel(n_e_x=10, k_max=500)
-    po.tline.step = 0.01
-    po.w_max = 0.1
+    po.w_max = 0.01
     po.mats_eval_type = 'damage-plasticity'
     po.tline.step = 0.01
-    po.geometry.L_x = 1000.0
+    po.geometry.L_x = 1.0
     po.loading_scenario.set(loading_type='monotonic')
-    po.material.set(K=0.2, gamma=0.0, tau_bar=13.137)
-    po.material.set(E_m=35000.0, E_f=170000.0, E_b=6700.0)
-    po.material.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=0.01)
-    po.run()
-    Fw = po.tstepper.rtrace_mngr['P-w']
-    Fw.redraw()
-    Fw.configure_traits()
-    return
+    po.material.set(K=100000.0, gamma=-0.0)
+    po.material.set(tau_bar=3.5, E_m=35000.0, E_f=170000.0, E_b=6700.0)
+    po.material.omega_fn.set(alpha_1=1.0, alpha_2=1000.0, plot_max=0.01)
+#    po.run()
+    Pu = po.rt_Pu
+#     Fw.configure_traits()
+#     return
+
     w = BMCSWindow(model=po)
-    po.add_viz2d('load function')
-    po.add_viz2d('F-w')
-    po.add_viz2d('field', 'u_C', plot_fn='u_C')
-    po.add_viz2d('field', 'w', plot_fn='w')
-    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
-    po.add_viz2d('field', 's', plot_fn='s')
-    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-    po.add_viz2d('field', 'sf', plot_fn='sf')
+#     po.add_viz2d('load function')
+
+    # add the rtraces to the viz2d dictionary
+
+    Pu.add_viz2d('diagram')
+#     po.add_viz2d('F-w')
+#     po.add_viz2d('field', 'u_C', plot_fn='u_C')
+#     po.add_viz2d('field', 'w', plot_fn='w')
+#     po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
+#     po.add_viz2d('field', 's', plot_fn='s')
+#     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+#     po.add_viz2d('field', 'sf', plot_fn='sf')
 #     po.add_viz2d('dissipation', 'dissipation',
 #                  get_x='get_t', get_y='get_U_bar_t')
 #     po.add_viz2d('dissipation rate', 'dissipation rate',

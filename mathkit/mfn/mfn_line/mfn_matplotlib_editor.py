@@ -13,11 +13,11 @@
 #-------------------------------------------------------------------------
 
 from matplotlib.figure import Figure
-from traits.api import Instance, Int
+from traits.api import Instance, Int, Str
 from traitsui.basic_editor_factory import BasicEditorFactory
+from util.traits.editors import MPLFigureEditor
 
 from mfn_plot_adapter import MFnPlotAdapter
-from util.traits.editors import MPLFigureEditor
 
 
 class _MFnMatplotlibEditor(MPLFigureEditor):
@@ -34,6 +34,7 @@ class _MFnMatplotlibEditor(MPLFigureEditor):
     border_size = Int(0)
     # @todo faezeh please make the mapping from the human readable color
     #
+    description = Str
 
     def init(self, parent):
 

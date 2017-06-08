@@ -4,8 +4,6 @@ import pickle
 
 from ibvpy.api import RTrace
 from mathkit.mfn import MFnLineArray
-from mathkit.mfn.mfn_line.mfn_matplotlib_editor import MFnMatplotlibEditor
-from mathkit.mfn.mfn_line.mfn_plot_adapter import MFnPlotAdapter
 from scipy import interpolate as ip
 from traits.api import \
     Array, List, Callable, \
@@ -38,7 +36,6 @@ class RTraceViz2D(Viz2D):
         xdata = self.vis2d.trace.xdata
         fn_t_x = ip.splrep(tdata, xdata,  s=0, k=3)
         x = ip.splev(vot, fn_t_x, der=0)
-        print 'x', x
         ax.plot([x, x], [y_min, y_max])
 
 
@@ -127,6 +124,7 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
         '''
         Invoke the evaluators in the current context for the specified control vector U_k.
         '''
+
         x = self.var_x_eval(sctx, U_k, *args, **kw)
         y = self.var_y_eval(sctx, U_k, *args, **kw)
 
@@ -177,7 +175,7 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
 
         self.trace.xdata = np.array(xarray)
         self.trace.ydata = np.array(yarray)
-        self.trace.data_changed = True
+        self.trace.replot()
 
     def timer_tick(self, e=None):
         # @todo: unify with redraw
@@ -189,9 +187,9 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
         self.trace.clear()
         self.redraw()
 
-    viz2d_classes = {'time function': RTraceViz2D}
+    viz2d_classes = {'diagram': RTraceViz2D}
 
-    trait_view = View(
+    traits_view = View(
         VSplit(
             VGroup(
                 HGroup(
@@ -208,10 +206,6 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
                        Item('print_button', show_label=False)),
             ),
             Item('trace@',
-                 editor=MFnMatplotlibEditor(
-                     adapter=MFnPlotAdapter(var_x='var_x',
-                                            var_y='var_y',
-                                            min_size=(100, 100))),
                  show_label=False, resizable=True),
         ),
         buttons=[OKButton, CancelButton],
@@ -234,17 +228,13 @@ class RTSumDofGraph(RTDofGraph):
     @on_trait_change('idx_x,idx_y')
     def redraw(self, e=None):
 
-        print 'redrawing'
         if (len(self.idx_x_arr) == 0 or
                 len(self.idx_y_arr) == 0 or
                 self._xdata == [] or
                 self._ydata == []):
             return
         #
-        print 'x: summation for', self.idx_x_arr
         xarray = np.array(self._xdata)[:, self.idx_x_arr].sum(1)
-
-        print 'y: summation for', self.idx_y_arr
         yarray = np.array(self._ydata)[:, self.idx_y_arr].sum(1)
 
         if self.transform_x:
@@ -295,9 +285,7 @@ class RTraceArraySnapshot(RTrace):
 
     view = View(HSplit(VGroup(VGroup('var'),
                               VGroup('record_on', 'clear_on')),
-                       Item('trace@', style='custom',
-                            editor=MFnMatplotlibEditor(
-                                adapter=MFnPlotAdapter(var_y='var')),
+                       Item('trace@',
                             show_label=False, resizable=True),
                        ),
                 buttons=[OKButton, CancelButton],
@@ -342,9 +330,9 @@ if __name__ == '__main__':
 #                       transform_x = lambda x: -x )
 
 #    print rm1.dir
-    rm1.add_pair(np.array([0.0, 0.0]), np.array([0.0, 0.0]))
-    rm1.add_pair(np.array([1.0, 1.0]), np.array([1.0, 1.5]))
-    rm1.add_pair(np.array([2.0, 1.5]), np.array([2.0, 2.0]))
+    rm1.add_pair(np.array([0.0, 0.0]), np.array([0.0, 0.0]), 0)
+    rm1.add_pair(np.array([1.0, 1.0]), np.array([1.0, 1.5]), 1)
+    rm1.add_pair(np.array([2.0, 1.5]), np.array([2.0, 2.0]), 2)
     rm1.redraw()
     rm1.configure_traits()
 

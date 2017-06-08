@@ -8,7 +8,7 @@ from ibvpy.api import MATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import implements, Int, Array, \
     Constant, Float, Tuple, List, on_trait_change, \
-    Instance, Trait, Bool
+    Instance, Trait, Bool, Str, Button
 from traitsui.api import View, VGroup, Item, UItem
 from view.ui import BMCSTreeNode
 
@@ -360,14 +360,33 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
     E_f = Float(170000.0, tooltip='Stiffness of the fiber [MPa]',
                 MAT=True,
-                auto_set=False, enter_set=False)
+                auto_set=False, enter_set=True)
+
+    s_data = Str('', tooltip='Comma-separated list of strain values',
+                 MAT=True,
+                 auto_set=True, enter_set=False)
+
+    tau_data = Str('', tooltip='Comma-separated list of stress values',
+                   MAT=True,
+                   auto_set=True, enter_set=False)
+
+    update_bs_law = Button(label='update bond-slip law')
+
+    def _update_bs_law_fired(self):
+        s_data = np.fromstring(self.s_data, dtype=np.float_, sep=',')
+        tau_data = np.fromstring(self.tau_data, dtype=np.float_, sep=',')
+        if len(s_data) != len(tau_data):
+            raise ValueError, 's array and tau array must have the same size'
+        self.bs_law.set(xdata=s_data,
+                        ydata=tau_data)
+        self.bs_law.replot()
 
     bs_law = Instance(MFnLineArray)
 
     def _bs_law_default(self):
         return MFnLineArray(
-            xdata=[0, 0],
-            ydata=[0, 1])
+            xdata=[0.0, 1.0],
+            ydata=[0.0, 1.0],)
 
     n_s = Constant(5)
 
@@ -396,6 +415,9 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
             VGroup(
                 Item('E_m', full_size=True, resizable=True),
                 Item('E_f'),
+                Item('s_data'),
+                Item('tau_data'),
+                UItem('update_bs_law')
             ),
             UItem('bs_law@')
         )
