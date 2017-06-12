@@ -90,6 +90,7 @@ class YieldConditionWillamWarnke(HasStrictTraits):
         J2 = np.einsum('...ij,...ij', s_ij, s_ij) / 2.0
         J3 = np.einsum('...ij,...jk,...ki', s_ij, s_ij, s_ij) / 3.0
         # the Lode angle
+
         theta = np.arccos(1.5 * np.sqrt(3.0) * J3 / J2 ** (1.5)) / 3.0
 
         rc = np.sqrt(1.2) * self.sig_b * self.sig_t / \
@@ -109,7 +110,8 @@ class YieldConditionWillamWarnke(HasStrictTraits):
         r = (u + v) / w
         z = self.sig_b * self.sig_t / self.sig_c / (self.sig_b - self.sig_t)
 
-        return 1. / (3. * z) * I1 / self.sig_c + np.sqrt(0.4) / r * np.sqrt(J2) / self.sig_c - 1.
+        return (1. / (3. * z) * I1 / self.sig_c + np.sqrt(0.4) /
+                r * np.sqrt(J2) / self.sig_c - 1.)
 
 
 def get_lut():
@@ -124,8 +126,8 @@ if __name__ == '__main__':
     sig = np.array([[2, 3, 4],
                     [1, 3, 2],
                     [3, 4, 5]], dtype=np.float_)
-    min_sig = -3.0
-    max_sig = 1.0
+    min_sig = -10.0
+    max_sig = 100.0
     n_sig = 100j
     sig_1, sig_2, sig_3 = np.mgrid[min_sig: max_sig: n_sig,
                                    min_sig: max_sig: n_sig,
@@ -134,13 +136,9 @@ if __name__ == '__main__':
     sig_abcj = np.einsum('jabc->abcj', np.array([sig_1, sig_2, sig_3]))
     sig_abcij = np.einsum('abcj,jl->abcjl', sig_abcj, DELTA)
 
-#     yc = YieldConditionDruckerPrager(f_t=3.0, f_c=30.0)
-#     f = yc.f(sig_abcij)
-
-#     yc = YieldConditionVonMises(k=100.)
-#     f = yc.f(sig_abcij)
-
-    yc = YieldConditionWillamWarnke()
+#    yc = YieldConditionDruckerPrager(f_t=3.0, f_c=30.0)
+#    yc = YieldConditionVonMises(k=10.)
+    yc = YieldConditionWillamWarnke(sig_c=10.0, sig_t=1.0, sig_b=17.0)
     f = yc.f(sig_abcij)
 
     f_pipe = m.contour3d(sig_1, sig_2, sig_3, f, contours=[0.0])
