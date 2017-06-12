@@ -114,6 +114,9 @@ class YieldConditionWillamWarnke(HasStrictTraits):
 
 class YieldConditionAbaqus(HasStrictTraits):
 
+    '''Lee et al (1988) - PLASTIC-DAMAGE MODEL FOR CYCLIC
+     LOADING OF CONCRETE STRUCTURES'''
+
     sig_c = Float(-1.0)  # the uniaxial compressive strength
     sig_t = Float(0.3)  # the uniaxial tensile strength
     sig_b = Float(-1.7)  # the equibiaxial compressive strength
@@ -125,11 +128,6 @@ class YieldConditionAbaqus(HasStrictTraits):
 
         alpha = (self.sig_b - self.sig_c) / (2. * self.sig_b - self.sig_c)
         beta = self.sig_c / self.sig_t * (alpha - 1.) - (1. + alpha)
-#         beta = 0.
-
-#         shape = sig_ij.shape
-#         sig_flatten = np.reshape(sig_ij, (shape[0], shape[1], shape[2], -1))
-#         sig_max = np.amax(sig_flatten, axis=-1)
 
         sig_i = np.einsum('...ii->...i', sig_ij)
         sig_max = np.amax(sig_i, axis=-1)
