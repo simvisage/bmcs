@@ -30,13 +30,13 @@ from traits.api import Float, \
 from traitsui.api import \
     VSplit, \
     View, UItem, Item, TableEditor, VGroup
-from traitsui.table_column \
-    import ObjectColumn
 from view.plot2d import Vis2D, Viz2DTimeFunction
 from view.ui import BMCSTreeNode
 
 from bc_dof import BCDof
 import numpy as np
+from traitsui.table_column \
+    import ObjectColumn
 
 
 # The definition of the demo TableEditor:
@@ -141,10 +141,12 @@ class BCSlice(BMCSTreeNode, Vis2D):
 
     def setup(self, sctx):
         '''
-        Locate the spatial context.
+        Locate the spatial context.f
         '''
         if self.link_slice == None:
-            for el, el_dofs, el_dofs_X in zip(self.slice.elems, self.slice.dofs, self.slice.dof_X):
+            for el, el_dofs, el_dofs_X in zip(self.slice.elems,
+                                              self.slice.dofs,
+                                              self.slice.dof_X):
                 # print 'el_dofs', el_dofs
                 for node_dofs, dof_X in zip(el_dofs, el_dofs_X):
                     # print 'node_dofs ', node_dofs
@@ -404,6 +406,7 @@ class BCSlice(BMCSTreeNode, Vis2D):
             ),
         )
     )
+
 
 if __name__ == '__main__':
 

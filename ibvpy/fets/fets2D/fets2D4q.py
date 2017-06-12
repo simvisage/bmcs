@@ -1,14 +1,16 @@
 
-from numpy import \
-    array, zeros, dot, hstack, \
-    identity
-from scipy.linalg import \
-    inv
 import sys
 
-from traits.api import \
-    Array, Float, Int
+from ibvpy.dots.dots_grid_eval import DOTSGridEval
 from ibvpy.fets.fets_eval import FETSEval
+from scipy.linalg import \
+    inv
+from traits.api import \
+    Array, Float, Int, Property, cached_property
+
+import numpy as np
+
+
 print sys.path
 
 
@@ -32,6 +34,8 @@ class FETS2D4Q(FETSEval):
 
     debug_on = True
 
+    #dots_class = DOTSGridEval
+
     # Dimensional mapping
     dim_slice = slice(0, 2)
 
@@ -40,13 +44,25 @@ class FETS2D4Q(FETSEval):
     dof_r = Array(value=[[-1, -1], [1, -1], [1, 1], [-1, 1]])
     geo_r = Array(value=[[-1, -1], [1, -1], [1, 1], [-1, 1]])
 
-    n_e_dofs = Int(8)
-    t = Float(1.0, label='thickness')
+    n_e_dofs = Int(8,
+                   FE=True,
+                   enter_set=False, auto_set=True,
+                   label='number of elemnet dofs'
+                   )
+    t = Float(1.0,
+              CS=True,
+              enter_set=False, auto_set=True,
+              label='thickness')
 
     # Integration parameters
     #
-    ngp_r = Int(2)
-    ngp_s = Int(2)
+    ngp_r = Int(2,
+                FE=True,
+                enter_set=False, auto_set=True,
+                )
+    ngp_s = Int(2, FE=True,
+                enter_set=False, auto_set=True,
+                )
 
     # Corner nodes are used for visualization
     vtk_r = Array(value=[[-1., -1.], [1., -1.], [1., 1.], [-1., 1.]])
@@ -56,6 +72,12 @@ class FETS2D4Q(FETSEval):
     #vtk_point_ip_map = [0,1,3,2]
     n_nodal_dofs = Int(2)
 
+    A_C = Property(depends_on='A_m,A_f')
+
+    @cached_property
+    def _get_A_C(self):
+        return np.array((1.0, 1.0, 1.0), dtype=np.float_)
+
     #---------------------------------------------------------------------
     # Method required to represent the element geometry
     #---------------------------------------------------------------------
@@ -63,9 +85,9 @@ class FETS2D4Q(FETSEval):
         '''
         Return the value of shape functions for the specified local coordinate r
         '''
-        cx = array(self.geo_r, dtype='float_')
-        Nr = array([[1 / 4. * (1 + r_pnt[0] * cx[i, 0]) * (1 + r_pnt[1] * cx[i, 1])
-                     for i in range(0, 4)]])
+        cx = np.array(self.geo_r, dtype='float_')
+        Nr = np.array([[1 / 4. * (1 + r_pnt[0] * cx[i, 0]) * (1 + r_pnt[1] * cx[i, 1])
+                        for i in range(0, 4)]])
         return Nr
 
     def get_dNr_geo_mtx(self, r_pnt):
@@ -78,9 +100,11 @@ class FETS2D4Q(FETSEval):
         operator.
         '''
         #cx = self._node_coord_map
-        cx = array(self.geo_r, dtype='float_')
-        dNr_geo = array([[1 / 4. * cx[i, 0] * (1 + r_pnt[1] * cx[i, 1]) for i in range(0, 4)],
-                         [1 / 4. * cx[i, 1] * (1 + r_pnt[0] * cx[i, 0]) for i in range(0, 4)]])
+        cx = np.array(self.geo_r, dtype='float_')
+        dNr_geo = np.array([[1 / 4. * cx[i, 0] * (1 + r_pnt[1] * cx[i, 1])
+                             for i in range(0, 4)],
+                            [1 / 4. * cx[i, 1] * (1 + r_pnt[0] * cx[i, 0])
+                             for i in range(0, 4)]])
         return dNr_geo
 
     #---------------------------------------------------------------------
@@ -93,9 +117,9 @@ class FETS2D4Q(FETSEval):
         dofs. The matrix is evaluated for the specified local coordinate r.
         '''
         Nr_geo = self.get_N_geo_mtx(r_pnt)
-        I_mtx = identity(self.n_nodal_dofs, float)
+        I_mtx = np.identity(self.n_nodal_dofs, float)
         N_mtx_list = [I_mtx * Nr_geo[0, i] for i in range(0, Nr_geo.shape[1])]
-        N_mtx = hstack(N_mtx_list)
+        N_mtx = np.hstack(N_mtx_list)
         return N_mtx
 
     def get_dNr_mtx(self, r_pnt):
@@ -107,8 +131,8 @@ class FETS2D4Q(FETSEval):
     def get_B_mtx(self, r_pnt, X_mtx):
         J_mtx = self.get_J_mtx(r_pnt, X_mtx)
         dNr_mtx = self.get_dNr_mtx(r_pnt)
-        dNx_mtx = dot(inv(J_mtx), dNr_mtx)
-        Bx_mtx = zeros((3, 8), dtype='float_')
+        dNx_mtx = np.dot(inv(J_mtx), dNr_mtx)
+        Bx_mtx = np.zeros((3, 8), dtype='float_')
         for i in range(0, 4):
             Bx_mtx[0, i * 2] = dNx_mtx[0, i]
             Bx_mtx[1, i * 2 + 1] = dNx_mtx[1, i]
@@ -123,7 +147,7 @@ def example_with_new_domain():
     from ibvpy.api import \
         TStepper as TS, RTDofGraph, RTraceDomainListField, \
         RTraceDomainListInteg, TLoop, \
-        TLine, BCDof, IBVPSolve as IS, DOTSEval
+        TLine, BCDof, DOTSEval
     from ibvpy.mats.mats2D.mats2D_elastic.mats2D_elastic import MATS2DElastic
     from ibvpy.mats.mats2D.mats2D_sdamage.mats2D_sdamage import MATS2DScalarDamage
 
@@ -152,7 +176,7 @@ def example_with_new_domain():
     print 'points', bcg._get_mvpoints()
 
     mf = MFnLineArray(  # xdata = arange(10),
-        ydata=array([0, 1, 2, 3]))
+        ydata=np.array([0, 1, 2, 3]))
 
     right_dof = 2
     tstepper = TS(sdomain=fe_grid,
@@ -165,9 +189,9 @@ def example_with_new_domain():
                                          get_dof_method=fe_grid.get_right_dofs)],
                   rtrace_list=[
                       RTDofGraph(name='Fi,right over u_right (iteration)',
-                                  var_y='F_int', idx_y=right_dof,
-                                  var_x='U_k', idx_x=right_dof,
-                                  record_on='update'),
+                                 var_y='F_int', idx_y=right_dof,
+                                 var_x='U_k', idx_x=right_dof,
+                                 record_on='update'),
                       RTraceDomainListField(name='Stress',
                                             var='sig_app', idx=0,
                                             position='int_pnts',
@@ -218,6 +242,7 @@ def example_with_new_domain():
     from ibvpy.plugins.ibvpy_app import IBVPyApp
     app = IBVPyApp(ibv_resource=tloop)
     app.main()
+
 
 if __name__ == '__main__':
     example_with_new_domain()

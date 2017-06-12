@@ -388,7 +388,25 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
             xdata=[0.0, 1.0],
             ydata=[0.0, 1.0],)
 
-    n_s = Constant(5)
+    n_s = Constant(0)
+
+    def get_corr_pred2(self, s_n1, d_s, t_n, t_n1, sa_n):
+
+        n_e, n_ip, n_s = s_n1.shape
+        D = np.zeros((n_e, n_ip, 3, 3))
+        D[:, :, 0, 0] = self.E_m
+        D[:, :, 2, 2] = self.E_f
+
+        tau = np.einsum('...st,...t->...s', D, s_n1)
+        s = s_n1[:, :, 1]
+        shape = s.shape
+        tau[:, :, 1] = self.bs_law(s.flatten()).reshape(*shape)
+
+        D_tau = self.bs_law.diff(s.flatten()).reshape(*shape)
+
+        D[:, :, 1, 1] = D_tau
+
+        return tau, D, sa_n
 
     def get_corr_pred(self, s, d_s, tau, t_n, t_n1,
                       s_p, alpha, z, kappa, omega):

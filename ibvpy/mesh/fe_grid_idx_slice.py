@@ -1,9 +1,9 @@
 
-from traits.api import HasTraits, WeakRef, Any, Property, cached_property, implements
+from traits.api import HasStrictTraits, WeakRef, Any, Property, cached_property, implements
 from i_fe_grid_slice import IFEGridSlice
 
 
-class FEGridIdxSlice(HasTraits):
+class FEGridIdxSlice(HasStrictTraits):
     '''General implementation of a slice within the FEGrid
     '''
 
@@ -66,6 +66,7 @@ class FEGridIdxSlice(HasTraits):
 
     def _get_geo_X(self):
         return self.geo_grid_slice.point_X_arr
+
 
 if __name__ == '__main__':
 

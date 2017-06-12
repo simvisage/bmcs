@@ -147,10 +147,10 @@ class FETS1D52ULRHFatigue(FETSEval):
                            for r in self.r_m], dtype=np.float_)
         return np.einsum('mdi->mid', dN_mdi)
 
-    n_ip = Property(depends_on='w_m')
+    n_m = Property(depends_on='w_m')
 
     @cached_property
-    def _get_n_ip(self):
+    def _get_n_m(self):
         return len(self.w_m)
 
     A_C = Property(depends_on='A_m,A_f')
@@ -206,12 +206,7 @@ class FETS1D52ULRHFatigue(FETSEval):
         n_s = 3
         B_EimsC = np.zeros(
             (n_E, n_i, n_m, n_s, n_C), dtype='f')
-        print 'B_EimsC', B_EimsC[..., [1, 1], [0, 1]]
-        print 'N_Cim', sN_Cim[[0, 1], :, :]
         B_EimsC[..., [1, 1], [0, 1]] = sN_Cim[[0, 1], :, :]
         B_EimsC[..., [0, 2], [0, 1]] = dN_Eimd[:, [0, 1], :, :]
-
-        B_EmisC = np.zeros((n_E, n_i, n_m, n_s, n_C),
-                           dtype='f')
 
         return B_EimsC
