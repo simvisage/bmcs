@@ -23,6 +23,7 @@ from warnings import warn
 
 from ibvpy.core.astrategy import AStrategyBase
 from ibvpy.core.ibv_resource import IBVResource
+from ibvpy.core.tline import TLine
 from ibvpy.core.tstepper import TStepper
 from traits.api import Array, Bool, Float, HasTraits, \
     Instance, Int, Trait, Str, Enum, \
@@ -37,7 +38,6 @@ from traitsui.api import \
 from traitsui.menu import OKButton, CancelButton, \
     Action
 
-from ibvpy.core.tline import TLine
 import numpy as np
 
 
@@ -293,11 +293,11 @@ class TLoop(IBVResource):
     def get_initial_state(self):
         self.setup()
         self.t_n1 = self.t_n
-        return self.tstepper.eval('predictor',
-                                  self.U_k,
+        return self.tstepper.eval(self.U_k,
                                   self.d_U,
                                   self.t_n,
-                                  self.t_n1)
+                                  self.t_n1,
+                                  'predictor')
 
     # Tolerance in the time variable to end the iteration.
     step_tolerance = Float(1e-8)
@@ -393,11 +393,12 @@ class TLoop(IBVResource):
                 #
                 self.crpr_timer.reset()
                 try:
-                    K, R, n_F_int = tstepper.eval(step_flag,
-                                                  self.U_k,
+                    K, R, n_F_int = tstepper.eval(self.U_k,
                                                   self.d_U,
                                                   self.t_n,
-                                                  self.t_n1)
+                                                  self.t_n1,
+                                                  step_flag,
+                                                  )
                 except np.linalg.LinAlgError, e:
                     # abort computation due to ultimate failure
                     # might be caused by material instability

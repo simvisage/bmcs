@@ -174,3 +174,43 @@ class BMCSRootNode(BMCSNodeBase,
     def __init__(self, *args, **kw):
         super(BMCSRootNode, self).__init__(*args, **kw)
         self.set_parents_recursively()
+
+    @on_trait_change('+TIME')
+    def _TIME_change(self):
+        print 'TIME change'
+        self.root.TIME = True
+
+    @on_trait_change('+ALG')
+    def _ALG_change(self):
+        print 'ALG change'
+        self.root.ALG = True
+
+    @on_trait_change('+GEO')
+    def _GEO_change(self):
+        print 'GEO change'
+        self.root.GEO = True
+
+    @on_trait_change('+MESH')
+    def _MESH_change(self):
+        print 'MESH change'
+        self.root.MESH = True
+
+    @on_trait_change('+MAT')
+    def _MAT_change(self):
+        print 'MAT change'
+        self.root.MAT = True
+
+    @on_trait_change('+FE')
+    def _FE_change(self):
+        print 'FE change'
+        self.root.FE = True
+
+    @on_trait_change('+CS')
+    def _CS_change(self):
+        print 'CS change'
+        self.root.CS = True
+
+    @on_trait_change('+BC')
+    def _BC_change(self):
+        print 'BC change'
+        self.root.BC = True

@@ -445,6 +445,33 @@ class FEGrid(FEGridActivationMap):
                        self.elem_X_map,
                        self.elem_x_map)]
 
+    dof_Eid = Property
+    '''Mapping of Element, Node, Dimension -> DOF 
+    '''
+
+    def _get_dof_Eid(self):
+        return self.dof_grid.dof_Eid
+
+    dofs = Property
+
+    def _get_dofs(self):
+        return self.dof_grid.dofs
+
+    I_Ei = Property
+    '''For a given element and its node number return the global index
+    of the node'''
+
+    def _get_I_Ei(self):
+        return self.geo_grid.cell_grid.cell_node_map
+
+    X_Id = Property()
+    '''Array of containing the coordinate d \in (0,1,3)
+    of a node I
+    '''
+
+    def _get_X_Id(self):
+        return self.geo_grid.point_x_arr
+
     def apply_on_ip_grid(self, fn, ip_mask):
         '''
         Apply the function fn over the first dimension of the array.

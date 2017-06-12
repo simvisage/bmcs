@@ -1,34 +1,33 @@
 
-from traits.api import \
-    HasTraits, List, Array, Property, cached_property, \
-    Instance, Trait, Button, on_trait_change, Tuple, \
-    Int, Float, DelegatesTo, implements, Interface, WeakRef, Bool
-
-from traitsui.api import \
-    View, Item, Group
-
 from ibvpy.core.i_sdomain import \
     ISDomain
-
 from ibvpy.core.sdomain import \
     SDomain
-
+from ibvpy.plugins.mayavi_util.pipelines import \
+    MVPolyData, MVPointLabels, MVStructuredGrid
 from numpy import \
     array, unique, min, max, mgrid, ogrid, c_, alltrue, repeat, ix_, \
     arange, ones, zeros, multiply, sort, index_exp, hstack, where, \
     intersect1d, copy, vstack
+from traits.api import \
+    HasTraits, List, Array, Property, cached_property, \
+    Instance, Trait, Button, on_trait_change, Tuple, \
+    Int, Float, DelegatesTo, implements, Interface, WeakRef, Bool
+from traitsui.api import \
+    TabularEditor
+from traitsui.api import \
+    View, Item, Group
+from traitsui.tabular_adapter import \
+    TabularAdapter
 
-from ibvpy.plugins.mayavi_util.pipelines import \
-    MVPolyData, MVPointLabels, MVStructuredGrid
-
-from cell_grid import CellGrid
 from cell_array import CellView, ICellView, CellArray, ICellArraySource
+from cell_grid import CellGrid
+from cell_grid_slice import CellGridSlice
+
 
 #--------------------------------------------------------------------------
 # DofGrid
 #--------------------------------------------------------------------------
-
-
 class DofCellGrid(SDomain):
 
     '''
@@ -87,7 +86,7 @@ class DofCellGrid(SDomain):
         #             [ 2, 3 ],
         #             [ 4, 5 ]] );
         #
-        node_dof_array[ index_exp[ unique_cell_nodes ] ] = \
+        node_dof_array[index_exp[unique_cell_nodes]] = \
             arange(
                 n_unique_nodes * n_nodal_dofs).reshape(n_unique_nodes, n_nodal_dofs)
 
@@ -118,6 +117,13 @@ class DofCellGrid(SDomain):
 
     def _get_cell_dof_map(self):
         return self.dofs[index_exp[self.cell_grid.cell_node_map]]
+
+    dof_Eid = Property
+    '''Mapping of Element, Node, Dimension -> DOF 
+    '''
+
+    def _get_dof_Eid(self):
+        return self.cell_dof_map
 
     cell_grid_dof_map = Property(depends_on='cell_grid.shape,n_nodal_dofs')
 
@@ -311,8 +317,6 @@ class DofCellGrid(SDomain):
                        height=0.5,
                        width=0.5)
 
-from cell_grid_slice import CellGridSlice
-
 
 class DofGridSlice(CellGridSlice):
 
@@ -339,10 +343,6 @@ class DofGridSlice(CellGridSlice):
 #-----------------------------------------------------------------------
 
 #-- Tabular Adapter Definition -------------------------------------------
-from traitsui.tabular_adapter import \
-    TabularAdapter
-from traitsui.api import \
-    TabularEditor
 
 
 class DofTabularAdapter (TabularAdapter):
@@ -377,6 +377,7 @@ class DofTabularAdapter (TabularAdapter):
         return str(self.row)
 
 #-- Tabular Editor Definition --------------------------------------------
+
 
 dof_tabular_editor = TabularEditor(
     adapter=DofTabularAdapter(),

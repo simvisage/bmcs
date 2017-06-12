@@ -3,12 +3,12 @@ Created on 12.01.2016
 
 @author: Yingxiong
 '''
+from ibvpy.core.tline import TLine
 from traits.api import Int, HasStrictTraits, Instance, \
     Float, Property, property_depends_on, Callable, \
     Array, List, Bool
 from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
-from ibvpy.core.tline import TLine
 
 import numpy as np
 from tstepper_dp import TStepper
@@ -32,6 +32,7 @@ class TLoop(HasStrictTraits):
     sf_Em_record = List
     t_record = List
     eps_record = List
+    sig_record = List
     sig_EmC_record = List
     D_record = List
 
@@ -54,6 +55,7 @@ class TLoop(HasStrictTraits):
         t_n = self.tline.val
         self.t_record = [t_n]
         self.eps_record = [np.zeros_like(eps)]
+        self.sig_record = [np.zeros_like(sig)]
         self.sig_EmC_record = [np.copy(sig_rec)]
         self.sf_Em_record = [np.copy(sf_rec)]
         D = np.zeros((n_e, n_ip, n_s, n_s))
@@ -95,7 +97,6 @@ class TLoop(HasStrictTraits):
 
         while (t_n1 - self.tline.max) <= self.step_tolerance and \
                 not (self.restart or self.paused):
-
             k = 0
             step_flag = 'predictor'
             d_U = np.zeros(n_dofs)
@@ -115,6 +116,7 @@ class TLoop(HasStrictTraits):
                     self.t_record.append(t_n1)
                     self.U_record = np.vstack((self.U_record, U_k))
                     self.eps_record.append(np.copy(eps))
+                    self.sig_record.append(np.copy(sig))
                     self.sig_EmC_record.append(sig[:, :, (0, 2)])
                     self.sf_Em_record.append(np.copy(sig[:, :, 1]))
                     self.omega_record.append(np.copy(omega))
@@ -150,34 +152,14 @@ class TLoop(HasStrictTraits):
 
 if __name__ == '__main__':
 
-    from matplotlib import pyplot as plt
     from ibvpy.api import BCDof
 
     ts = TStepper()
 
     n_dofs = ts.sdomain.n_dofs
-    # print'n_dofs', n_dofs
-
-#     tf = lambda t: 1 - np.abs(t - 1)
-#     ts.bc_list = [BCDof(var='u', dof=0, value=0.0),
-# BCDof(var='u', dof=n_dofs - 1, value=2.5, time_function=tf)]
-    #load = np.array([0,3,0,2])
-    #U = np.zeros(n_dofs)
-    #F = np.zeros(n_dofs)
-
-    # for i in range(0, len(load)):
     ts.bc_list = [BCDof(var='u', dof=0, value=0.0),
                   BCDof(var='f', dof=n_dofs - 1, value=5)]
 
     tl = TLoop(ts=ts)
 
-    (U_record, F_record, sf_Em_record, t_record,
-     eps_record, sig_EmC_record,  w_record, D_record) = tl.eval()
-    #U_record = np.vstack((U, U_record))
-    #F_record = np.vstack((F, F_record))
-
-    n_dof = 2 * ts.sdomain.n_active_elems + 1
-    plt.plot(U_record[:, n_dof] * 2, F_record[:, n_dof] / 1000., marker='.')
-    plt.xlabel('displacement')
-    plt.ylabel('force')
-    plt.show()
+    tl.eval()

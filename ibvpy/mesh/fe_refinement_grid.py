@@ -1,4 +1,9 @@
 
+from ibvpy.dots.subdots_eval import SubDOTSEval
+from ibvpy.fets.i_fets_eval import IFETSEval
+from ibvpy.mesh.cell_grid.cell_array import ICellArraySource
+from ibvpy.mesh.cell_grid.cell_spec import CellSpec
+from ibvpy.rtrace.rt_domain import RTraceDomain
 from numpy import array, copy, zeros, array_equal, repeat, arange, append, vstack, hstack
 from traits.api import \
     Instance, Array, Int, on_trait_change, Property, cached_property, \
@@ -9,11 +14,6 @@ from traitsui.api import View, Item, Include
 from fe_grid import FEGrid, MElem
 from fe_refinement_level import FERefinementLevel
 from i_fe_uniform_domain import IFEUniformDomain
-from ibvpy.dots.subdots_eval import SubDOTSEval
-from ibvpy.fets.i_fets_eval import IFETSEval
-from ibvpy.mesh.cell_grid.cell_array import ICellArraySource
-from ibvpy.mesh.cell_grid.cell_spec import CellSpec
-from ibvpy.rtrace.rt_domain import RTraceDomain
 
 
 class FERefinementGrid(FERefinementLevel):
@@ -218,6 +218,36 @@ class FERefinementGrid(FERefinementLevel):
         return vstack([fe_subgrid.elem_x_map_unmasked
                        for fe_subgrid in self.fe_subgrids])
 
+    dof_Eid = Property
+    '''Mapping of Element, Node, Dimension -> DOF 
+    '''
+
+    def _get_dof_Eid(self):
+        return vstack([fe_subgrid.dof_Eid
+                       for fe_subgrid in self.fe_subgrids])
+
+    dofs = Property
+    ''' 
+    '''
+
+    def _get_dofs(self):
+        return vstack([fe_subgrid.dofs
+                       for fe_subgrid in self.fe_subgrids])
+
+    I_Ei = Property(Array)
+    '''For a given element and its node number return the global index
+    of the node'''
+
+    def _get_I_Ei(self):
+        return vstack([fe_subgrid.I_Ei
+                       for fe_subgrid in self.fe_subgrids])
+
+    X_Id = Property(Array)
+
+    def _get_X_Id(self):
+        return vstack([fe_subgrid.X_Id
+                       for fe_subgrid in self.fe_subgrids])
+
     def deactivate(self, idx):
         '''Deactivate the specified element.
 
@@ -406,6 +436,7 @@ class FERefinementGrid(FERefinementLevel):
                        scrollable=True
                        )
 
+
 if __name__ == '__main__':
 
     from ibvpy.api import \
@@ -522,8 +553,8 @@ if __name__ == '__main__':
                                        get_dof_method=fe_domain1.get_bottom_dofs),
                             ],
                 rtrace_list=[RTDofGraph(name='Fi,right over u_right (iteration)',
-                                         var_y='F_int', idx_y=0,
-                                         var_x='U_k', idx_x=1),
+                                        var_y='F_int', idx_y=0,
+                                        var_x='U_k', idx_x=1),
                              #                            RTraceDomainListField(name = 'Stress' ,
                              #                                 var = 'sig_app', idx = 0, warp = True ),
                              #                             RTraceDomainField(name = 'Displacement' ,

@@ -19,7 +19,7 @@ from ibvpy.api import BCDof, FEGrid, BCSlice
 from ibvpy.core.bcond_mngr import BCondMngr
 from traits.api import \
     Property, Instance, cached_property, \
-    Bool, List, Float, Trait, Int
+    Bool, List, Float, Trait, Int, Str
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D

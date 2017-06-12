@@ -16,7 +16,7 @@ def get_pullout_model_carbon_concrete(w_max=5.0):
     configuration of the pullout model.
     '''
     po = PullOutModel(n_e_x=200, k_max=500, w_max=w_max)
-    po.tline.step = 0.01
+    po.tline.step = 0.005
     po.loading_scenario.set(loading_type='cyclic',
                             amplitude_type='constant',
                             loading_range='non-symmetric'
@@ -114,6 +114,6 @@ def e43_study_length_dependence():
 
 
 if __name__ == "__main__":
-    # e41_preconfigure_and_start_app()
+    e41_preconfigure_and_start_app()
     # e42_compare_two_simulations()
-    e43_study_length_dependence()
+    # e43_study_length_dependence()

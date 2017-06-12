@@ -259,11 +259,13 @@ class TStepper(BMCSTreeNode):
         '''
         return self.new_resp_var()
 
+    update_state_on = Bool(False)
     # missing - setup of the time-stepper itself. reacting to changes
     # in the sub time-steppers. bcond_list and rtrace_list must be reset once
     # a change has been performed either in a spatial domain or in
     # tse.
     #
+
     def setup(self):
 
         # Put the spatial domain into the spatial context
@@ -295,7 +297,7 @@ class TStepper(BMCSTreeNode):
         self.tse_integ.apply_constraints(self.K)
 
         # Prepare the global update flag
-        sctx.update_state_on = False
+        self.update_state_on = False
 
         if self.u_processor:
             if self.u_processor.sd == None:
@@ -314,7 +316,8 @@ class TStepper(BMCSTreeNode):
         n_dofs = self.sdomain.n_dofs
         return np.zeros(n_dofs, 'float_')
 
-    def eval(self, step_flag, U_k, d_U, t_n, t_n1):
+    def eval(self, U_k, d_U, t_n, t_n1,
+             step_flag='predictor'):
         '''Get the tangential operator (system matrix) and residuum
         associated with the current time step.
 
@@ -348,10 +351,13 @@ class TStepper(BMCSTreeNode):
         if self.u_processor:
             self.args, self.kw = self.u_processor(U_k)
 
+        print 'update', self.update_state_on
         # Let the time sub-stepper evaluate its contribution.
         #
-        K_mtx = self.tse_integ.get_corr_pred(sctx, U_k, d_U, t_n, t_n1,
+        K_mtx = self.tse_integ.get_corr_pred(U_k, d_U, t_n, t_n1,
                                              self.F_int,
+                                             step_flag,
+                                             self.update_state_on,
                                              *self.args, **self.kw)
 
         # Promote the system matrix to the SysMtxAssembly
@@ -373,7 +379,7 @@ class TStepper(BMCSTreeNode):
         norm_F_int = np.linalg.norm(self.F_int)
         # Switch off the global update flag
         #
-        sctx.update_state_on = False
+        self.update_state_on = False
 
         # Apply the boundary conditions
         #
@@ -418,7 +424,7 @@ class TStepper(BMCSTreeNode):
         @param U:
         '''
         #sctx = ( self.sdomain, )
-        self.sctx.update_state_on = True
+        self.update_state_on = True
         #self.tse_integ.update_state( sctx, U )
 
     def register_mv_pipelines(self, e):

@@ -175,6 +175,7 @@ class TStepper(HasTraits):
         # Geometry approximation / Jacobi transformation
         J_Emde = np.einsum('mid,Eie->Emde', dN_mid_geo, self.X_Eid)
         J_inv_Emed = np.linalg.inv(J_Emde)
+
         # Quadratic forms
         dN_Eimd = np.einsum('mid,Eied->Eime', dN_mid, J_inv_Emed)
         sN_Cim = np.einsum('C,mi->Cim', SWITCH_C, N_mi)
@@ -319,10 +320,11 @@ class TStepper(HasTraits):
         # material response state variables at integration point
         sig, D, xs_pi, alpha, z, kappa, omega = mats_eval.get_corr_pred(
             eps, d_eps, sig, t_n, t_n1, xs_pi, alpha, z, kappa, omega)
+
         # print'D=',D
         # system matrix
         self.K.reset_mtx()
-        Ke = np.einsum('i,s,einsd,eist,eimtf,ei->endmf',
+        Ke = np.einsum('m,s,emisd,emst,emjtf,em->eidjf',
                        w_ip, self.A, self.B, D, self.B, self.J_det)
 
         self.K.add_mtx_array(

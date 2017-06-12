@@ -1,39 +1,37 @@
 
+from math import sin
+
+from ibvpy.core.i_sdomain import \
+    ISDomain
+from ibvpy.core.sdomain import \
+    SDomain
+from ibvpy.plugins.mayavi_util.pipelines import \
+    MVPolyData, MVPointLabels, MVStructuredGrid
+from mathkit.level_set.level_set import ILevelSetFn, SinLSF, PlaneLSF, ElipseLSF
+from numpy import \
+    array, unique, min, max, mgrid, ogrid, c_, alltrue, repeat, ix_, \
+    arange, ones, zeros, multiply, sort, index_exp, frompyfunc, where, \
+    zeros_like, sign, sometrue, delete, ma
 from traits.api import \
     HasTraits, List, Array, Property, cached_property, \
     Instance, Trait, Button, on_trait_change, Tuple, \
     Int, Float, implements, WeakRef, Bool, Any, Interface, \
     DelegatesTo, Bool, Callable
-
+from traitsui.api import \
+    TabularEditor
 from traitsui.api import \
     View, Item, Group
+from traitsui.tabular_adapter import \
+    TabularAdapter
 
-from ibvpy.core.i_sdomain import \
-    ISDomain
-
-from ibvpy.core.sdomain import \
-    SDomain
-
-from numpy import \
-    array, unique, min, max, mgrid, ogrid, c_, alltrue, repeat, ix_, \
-    arange, ones, zeros, multiply, sort, index_exp, frompyfunc, where, \
-    zeros_like, sign, sometrue, delete, ma
-
-from math import sin
-
-from ibvpy.plugins.mayavi_util.pipelines import \
-    MVPolyData, MVPointLabels, MVStructuredGrid
-
-from cell_grid import CellGrid
 from cell_array import CellView, ICellView, CellArray, ICellArraySource
+from cell_grid import CellGrid
+from cell_grid_slice import CellGridSlice
 
-from mathkit.level_set.level_set import ILevelSetFn, SinLSF, PlaneLSF, ElipseLSF
 
 #--------------------------------------------------------------------------
 # GeoCellGrid
 #--------------------------------------------------------------------------
-
-
 class GeoCellGrid(SDomain):
 
     '''
@@ -75,6 +73,7 @@ class GeoCellGrid(SDomain):
     cell_node_map = DelegatesTo('cell_grid')
     point_X_grid = DelegatesTo('cell_grid')
     point_x_grid = DelegatesTo('cell_grid')
+    point_x_arr = DelegatesTo('cell_grid')
     n_dims = DelegatesTo('cell_grid')
 
     def get_cell_node_labels(self, cell_idx):
@@ -251,8 +250,6 @@ class GeoCellGrid(SDomain):
                        height=0.5,
                        width=0.5)
 
-from cell_grid_slice import CellGridSlice
-
 
 class GeoGridSlice(CellGridSlice):
 
@@ -281,10 +278,6 @@ class GeoGridSlice(CellGridSlice):
         return self.geo_grid.elem_x_map[ix_(self.elems, self.cell_grid.grid_cell[idx2])]
 
 #-- Tabular Adapter Definition -------------------------------------------
-from traitsui.tabular_adapter import \
-    TabularAdapter
-from traitsui.api import \
-    TabularEditor
 
 
 class CoordTabularAdapter (TabularAdapter):
@@ -313,6 +306,7 @@ class CoordTabularAdapter (TabularAdapter):
         return str(self.row)
 
 #-- Tabular Editor Definition --------------------------------------------
+
 
 coord_tabular_editor = TabularEditor(
     adapter=CoordTabularAdapter(),
@@ -397,9 +391,10 @@ if __name__ == '__main__':
                                                                   [0.0],
                                                                   [1.0]],
                                                      ),
-                             shape=(5,), coord_max = [1.])
+                             shape=(5,), coord_max=[1.])
         geo_grid = GeoCellGrid(cell_grid=cell_grid)
-        ls_function = lambda x: x - 0.5
+
+        def ls_function(x): return x - 0.5
 
         print 'vertex grid'
         print cell_grid.vertex_X_grid
@@ -421,14 +416,15 @@ if __name__ == '__main__':
                                                                   [1, 0],
                                                                   [1, 1]]
                                                      ),
-                             shape=(5, 2), coord_max = [1., 1.])
+                             shape=(5, 2), coord_max=[1., 1.])
         geo_grid = GeoCellGrid(cell_grid=cell_grid)
 
         print 'vertex_X_grid',
         print geo_grid.cell_grid.vertex_X_grid
 
-        ls_function = lambda x, y: x - 0.5
-        ls_mask_function = lambda x, y: y <= 0.75
+        def ls_function(x, y): return x - 0.5
+
+        def ls_mask_function(x, y): return y <= 0.75
 
         print 'cell_grid'
         print cell_grid.cell_idx_grid

@@ -26,7 +26,7 @@ class TestBondSlip(unittest.TestCase):
         bsm.material.omega_fn.set(alpha_1=1.0, alpha_2=2000)
         bsm.run()
         omega = bsm.get_sv_hist('omega')[-1, -1]
-        self.assertAlmostEqual(omega, 0.982013790038)
+        self.assertAlmostEqual(omega, 0.961757180906)
 
     def tearDown(self):
         '''

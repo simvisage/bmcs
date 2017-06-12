@@ -48,11 +48,19 @@ class IDamageFn(Interface):
 
 
 class DamageFn(BMCSLeafNode, PlottableFn):
+    L_s = Float(1.0,
+                MAT=True,
+                input=True,
+                label="s_0",
+                desc="length of the strain softening zone",
+                enter_set=True,
+                auto_set=False)
+
     s_0 = Float(0.0004,
                 MAT=True,
                 input=True,
                 label="s_0",
-                desc="parameter controls the damage function",
+                desc="elastic strain limit",
                 enter_set=True,
                 auto_set=False)
 
@@ -137,13 +145,17 @@ class LiDamageFn(DamageFn):
         omega = np.zeros_like(kappa, dtype=np.float_)
         d_idx = np.where(kappa >= s_0)[0]
         k = kappa[d_idx]
-        omega[d_idx] = 1. / (1. + np.exp(-1. * alpha_2 * k + 6.)) * alpha_1
+        omega[d_idx] = 1. / \
+            (1. + np.exp(-1. * alpha_2 * (k - s_0) + 6.)) * alpha_1
         return omega
 
     def diff(self, kappa):
-        return ((self.alpha_1 * self.alpha_2 *
-                 np.exp(-1. * self.alpha_2 * kappa + 6.)) /
-                (1 + np.exp(-1. * self.alpha_2 * kappa + 6.)) ** 2)
+        alpha_1 = self.alpha_1
+        alpha_2 = self.alpha_2
+        s_0 = self.s_0
+        return ((alpha_1 * alpha_2 *
+                 np.exp(-1. * alpha_2 * (kappa - s_0) + 6.)) /
+                (1 + np.exp(-1. * alpha_2 * (kappa - s_0) + 6.)) ** 2)
 
     traits_view = View(
         VGroup(
@@ -206,11 +218,13 @@ class AbaqusDamageFn(DamageFn):
         s_0 = self.s_0
         s_u = self.s_u
         alpha = self.alpha
-        return (- s_0 * np.exp(alpha * (kappa - s_0) /
-                               (s_u - s_0)) * ((s_u - s_0) *
-                                               np.exp(alpha * (kappa - s_0) /
-                                                      (s_u - s_0)) + np.exp(alpha) * (alpha * kappa - s_u + s_0))
-                / ((np.exp(alpha) - 1) * kappa**2 * (s_u - s_0)))
+        d_g_eps = (- s_0 * np.exp(alpha * (kappa - s_0) /
+                                  (s_u - s_0)) * ((s_u - s_0) *
+                                                  np.exp(alpha * (kappa - s_0) /
+                                                         (s_u - s_0)) + np.exp(alpha) * (alpha * kappa - s_u + s_0))
+                   / ((np.exp(alpha) - 1) * kappa**2 * (s_u - s_0)))
+        d_g_eps[np.where(kappa - s_0 < 0)] = 0.0
+        return d_g_eps
 
     traits_view = View(
         VGroup(
@@ -228,3 +242,8 @@ class AbaqusDamageFn(DamageFn):
     )
 
     tree_view = traits_view
+
+
+if __name__ == '__main__':
+    ld = LiDamageFn()
+    ld.configure_traits()
