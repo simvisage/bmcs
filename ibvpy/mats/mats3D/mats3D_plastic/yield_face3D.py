@@ -165,7 +165,7 @@ if __name__ == '__main__':
     sig_abcj = np.einsum('jabc->abcj', np.array([sig_1, sig_2, sig_3]))
     sig_abcij = np.einsum('abcj,jl->abcjl', sig_abcj, DELTA)
 
-    yc = YieldConditionDruckerPrager(alpha_F=3)  # f_t=3.0, f_c=-30.0)
+    yc = YieldConditionDruckerPrager(alpha_F=1)  # f_t=3.0, f_c=-30.0)
 #     yc = YieldConditionVonMises(k=10.)
 #    yc = YieldConditionWillamWarnke()
 #    yc = YieldConditionAbaqus()
