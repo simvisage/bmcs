@@ -1,6 +1,7 @@
 
 from traits.api import \
     Float, HasStrictTraits, Instance, Int
+from traitsui.api import View, Item, HSplit, Group
 
 import mayavi.mlab as m
 import numpy as np
@@ -41,8 +42,8 @@ class YieldConditionDruckerPrager(HasStrictTraits):
     '''
     '''
     n_D = Int(3)
-    alpha_F = Float(0.1)
-    tau2_y = Float(5)
+    alpha_F = Float(0.24)
+    tau2_y = Float(2.6)
 #     f_t = Float(3.0)
 #     f_c = Float(30.0)
 
@@ -65,6 +66,7 @@ class YieldConditionDruckerPrager(HasStrictTraits):
 
 
 class YieldConditionVonMises(HasStrictTraits):
+
     '''
     '''
     k = Float(10)
@@ -82,9 +84,9 @@ class YieldConditionWillamWarnke(HasStrictTraits):
     '''the three parameter Willam-Warnke yield function,
     https://en.wikipedia.org/wiki/Willam-Warnke_yield_criterion
     '''
-    sig_c = Float(1.0)  # the uniaxial compressive strength
-    sig_t = Float(0.3)  # the uniaxial tensile strength
-    sig_b = Float(1.7)  # the equibiaxial compressive strength
+    sig_c = Float(10.)  # the uniaxial compressive strength
+    sig_t = Float(3.)  # the uniaxial tensile strength
+    sig_b = Float(17.)  # the equibiaxial compressive strength
 
     def f(self, sig_ij):
         I1 = np.einsum('...ii,...ii', sig_ij, DELTA)
@@ -121,9 +123,9 @@ class YieldConditionAbaqus(HasStrictTraits):
     '''Lee et al (1988) - PLASTIC-DAMAGE MODEL FOR CYCLIC
      LOADING OF CONCRETE STRUCTURES'''
 
-    sig_c = Float(-1.0)  # the uniaxial compressive strength
-    sig_t = Float(0.3)  # the uniaxial tensile strength
-    sig_b = Float(-1.7)  # the equibiaxial compressive strength
+    sig_c = Float(-10.)  # the uniaxial compressive strength
+    sig_t = Float(3.)  # the uniaxial tensile strength
+    sig_b = Float(-17.)  # the equibiaxial compressive strength
 
     def f(self, sig_ij):
         I1 = np.einsum('...ii,...ii', sig_ij, DELTA)
@@ -142,6 +144,10 @@ class YieldConditionAbaqus(HasStrictTraits):
 
         return F - c
 
+    view = View(Item('sig_c'),
+                Item('sig_t'),
+                Item('sig_b'))
+
 
 def get_lut():
     opacity = 20.0
@@ -155,8 +161,8 @@ if __name__ == '__main__':
     sig = np.array([[2, 3, 4],
                     [1, 3, 2],
                     [3, 4, 5]], dtype=np.float_)
-    min_sig = -100.0
-    max_sig = 20.0
+    min_sig = -20.0
+    max_sig = 5.0
     n_sig = 100j
     sig_1, sig_2, sig_3 = np.mgrid[min_sig: max_sig: n_sig,
                                    min_sig: max_sig: n_sig,
@@ -165,14 +171,23 @@ if __name__ == '__main__':
     sig_abcj = np.einsum('jabc->abcj', np.array([sig_1, sig_2, sig_3]))
     sig_abcij = np.einsum('abcj,jl->abcjl', sig_abcj, DELTA)
 
-    yc = YieldConditionDruckerPrager(alpha_F=1)  # f_t=3.0, f_c=-30.0)
-#     yc = YieldConditionVonMises(k=10.)
-#    yc = YieldConditionWillamWarnke()
-#    yc = YieldConditionAbaqus()
-
+    yc = YieldConditionDruckerPrager(alpha_F=0.24, tau2_y=2.6)
     f = yc.f(sig_abcij)
+    f_pipe = m.contour3d(
+        sig_1, sig_2, sig_3, f, contours=[0.0], color=(1, 0, 0))
+    f_pipe.module_manager.scalar_lut_manager.lut.table = get_lut()
 
-    f_pipe = m.contour3d(sig_1, sig_2, sig_3, f, contours=[0.0])
+#     yc = YieldConditionVonMises(k=10.)
+    yc = YieldConditionWillamWarnke()
+    f = yc.f(sig_abcij)
+    f_pipe = m.contour3d(
+        sig_1, sig_2, sig_3, f, contours=[0.0], color=(0, 1, 0))
+    f_pipe.module_manager.scalar_lut_manager.lut.table = get_lut()
+
+    yc = YieldConditionAbaqus()
+    f = yc.f(sig_abcij)
+    f_pipe = m.contour3d(
+        sig_1, sig_2, sig_3, f, contours=[0.0], color=(0, 0, 1))
     f_pipe.module_manager.scalar_lut_manager.lut.table = get_lut()
 
     m.axes(f_pipe)
