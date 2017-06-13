@@ -1,15 +1,17 @@
-import numpy as np
-
-from traits.api import HasTraits, Instance, Button, \
-    on_trait_change, Float, Property, cached_property
-from traitsui.api import View, Item, HSplit, Group, InstanceEditor
-
 from mayavi import mlab
 from mayavi.core.ui.api import MlabSceneModel, SceneEditor
-from yield_face3D import YieldConditionAbaqus, YieldConditionWillamWarnke, YieldConditionDruckerPrager
+from traits.api import HasTraits, Instance, Button, \
+    on_trait_change, Float, Property, cached_property
+from traitsui.api import \
+    View, UItem, Item, HSplit, Group, \
+    VGroup, Spring
+
+import numpy as np
+from yield_face3D import YieldConditionAbaqus, YieldConditionWillamWarnke, \
+    YieldConditionDruckerPrager
 
 
-class MyDialog(HasTraits):
+class YieldFaceViewer(HasTraits):
 
     min_sig = Float(-20.0)
     max_sig = Float(5.0)
@@ -68,24 +70,38 @@ class MyDialog(HasTraits):
         mlab.axes(f_pipe)
 
     # The layout of the dialog created
-    view = View(HSplit(
-        Group(
-            Item('yc_abaqus', label='ABAQUS'),
-            Item('yc_DP', label='Drucker-Prager'),
-            Item('yc_WW', label='Willam-Warnke'),
-            Item('button1', label='Update'),
-            show_labels=True,
+    view = View(
+        HSplit(
+            Group(
+                VGroup(
+                    UItem('yc_abaqus@', resizable=True, width=300),
+                    label='Abaqus yield face'
+                ),
+                VGroup(
+                    UItem('yc_DP@', resizable=True),
+                    label='Drucker-Prager yield face'
+                ),
+                VGroup(
+                    UItem('yc_WW@', resizable=True),
+                    label='Willam-Warnke yield face',
+                ),
+                Spring(),
+                UItem('button1', resizable=True),
+                show_labels=True,
+            ),
+            Group(
+                Item('scene1',
+                     editor=SceneEditor(), height=250,
+                     width=300),
+                show_labels=False,
+            )
         ),
-        Group(
-            Item('scene1',
-                 editor=SceneEditor(), height=250,
-                 width=300),
-            show_labels=False,
-        )
-    ),
         resizable=True,
+        height=0.7,
+        width=0.8
     )
 
 
-m = MyDialog()
+m = YieldFaceViewer()
+m.redraw_scene1()
 m.configure_traits()
