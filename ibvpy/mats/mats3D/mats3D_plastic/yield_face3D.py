@@ -4,6 +4,7 @@ from traits.api import \
 
 import mayavi.mlab as m
 import numpy as np
+from traitsui.api import View, Item, HSplit, Group
 
 
 ONE = np.ones((1,), dtype=np.float_)
@@ -41,8 +42,8 @@ class YieldConditionDruckerPrager(HasStrictTraits):
     '''
     '''
     n_D = Int(3)
-    alpha_F = Float(0.1)
-    tau2_y = Float(5)
+    alpha_F = Float(0.24)
+    tau2_y = Float(2.6)
 #     f_t = Float(3.0)
 #     f_c = Float(30.0)
 
@@ -142,6 +143,10 @@ class YieldConditionAbaqus(HasStrictTraits):
         c = -self.sig_c  # cohesion
 
         return F - c
+
+    view = View(Item('sig_c'),
+                Item('sig_t'),
+                Item('sig_b'))
 
 
 def get_lut():
