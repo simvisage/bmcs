@@ -29,8 +29,34 @@ k = 2.
 f = J2 - k ** 2
 f_pipe = mlab.contour3d(
     sig_1, sig_2, sig_3, f, contours=[0.0], color=(0, 1, 0))
-# thr = mlab.pipeline.threshold(f_pipe, low=-0.1, up=0.1)
-cut_plane = mlab.pipeline.scalar_cut_plane(f_pipe, plane_orientation='z_axes')
-cut_plane.implicit_plane.normal = (1., 1., 1.)
-mlab.outline()
+
+# deviatoric_plane
+pi_plane = mlab.pipeline.scalar_cut_plane(f_pipe, plane_orientation='z_axes')
+pi_plane.implicit_plane.normal = (1., 1., 1.)
+pi_plane.implicit_plane.widget.draw_plane = True
+pi_plane.enable_contours = True
+pi_plane.contour.minimum_contour = 0.0
+pi_plane.contour.maximum_contour = 0.0
+pi_plane.contour.number_of_contours = 1
+
+# plane stress
+z_plane = mlab.pipeline.scalar_cut_plane(f_pipe, plane_orientation='z_axes')
+z_plane.implicit_plane.origin = (0., 0., 0.)
+z_plane.implicit_plane.widget.draw_plane = True
+z_plane.enable_contours = True
+z_plane.contour.minimum_contour = 0.0
+z_plane.contour.maximum_contour = 0.0
+z_plane.contour.number_of_contours = 1
+
+# hydrostatic section
+h_plane = mlab.pipeline.scalar_cut_plane(f_pipe, plane_orientation='z_axes')
+h_plane.implicit_plane.normal = (1., -1., 0.)
+h_plane.implicit_plane.widget.draw_plane = True
+h_plane.enable_contours = True
+h_plane.contour.minimum_contour = 0.0
+h_plane.contour.maximum_contour = 0.0
+h_plane.contour.number_of_contours = 1
+
+mlab.axes(f_pipe)
+# mlab.outline()
 mlab.show()
