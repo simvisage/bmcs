@@ -4,6 +4,7 @@ Created on 14.06.2017
 @author: Yingxiong
 '''
 import mayavi.mlab as m
+import mayavi.mlab as mlab
 import numpy as np
 # define the boundaries of a cube in stress space
 min_sig = -20.0  # maximum compression
@@ -26,8 +27,10 @@ J2 = np.einsum('...ii,...ii', s_ij, s_ij) / 2.0
 # threshold defining the radial distance from hydrostatic axis
 k = 2.
 f = J2 - k ** 2
-# visualization using Mayavi package
-f_pipe = m.contour3d(
+f_pipe = mlab.contour3d(
     sig_1, sig_2, sig_3, f, contours=[0.0], color=(0, 1, 0))
-m.axes(f_pipe)
-m.show()
+# thr = mlab.pipeline.threshold(f_pipe, low=-0.1, up=0.1)
+cut_plane = mlab.pipeline.scalar_cut_plane(f_pipe, plane_orientation='z_axes')
+cut_plane.implicit_plane.normal = (1., 1., 1.)
+mlab.outline()
+mlab.show()
