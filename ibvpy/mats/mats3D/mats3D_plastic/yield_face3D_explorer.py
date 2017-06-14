@@ -102,6 +102,11 @@ class YieldFaceViewer(HasTraits):
     )
 
 
-m = YieldFaceViewer()
-m.redraw_scene1()
-m.configure_traits()
+def run_explorer(*args, **kw):
+    m = YieldFaceViewer()
+    m.redraw_scene1()
+    m.configure_traits(*args, **kw)
+
+
+if __name__ == '__main__':
+    run_explorer()

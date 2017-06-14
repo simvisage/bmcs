@@ -18,7 +18,8 @@ from bmcs.pullout import \
     run_pullout_dp
 from traits.api import HasTraits, Button
 from traitsui.api import View, UItem, VGroup, Group
-
+from ibvpy.mats.mats3D.mats3D_plastic.yield_face3D_explorer \
+    import run_explorer
 
 # A bmcs mayavi instance so we can close it correctly.
 bmcs = None
@@ -57,6 +58,14 @@ class BMCSLauncher(HasTraits):
     def _pullout_model_dp_fired(self):
         run_pullout_dp(kind='live')
 
+    #=========================================================================
+    # Lecture #8
+    #=========================================================================
+    yield_face_explorer = Button(label='Yield conditions for concrete')
+
+    def _yield_face_explorer_fired(self):
+        run_explorer(kind='live')
+
     view = View(
         VGroup(
             Group(
@@ -74,6 +83,11 @@ class BMCSLauncher(HasTraits):
                 UItem('pullout_model_dp',
                       full_size=True, resizable=True),
                 label='Pull-out models, lecture #3'
+            ),
+            Group(
+                UItem('yield_face_explorer',
+                      full_size=True, resizable=True),
+                label='Yield conditions, lecture #8'
             )
         ),
         title='BMCS application launcher',
