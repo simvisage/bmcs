@@ -35,6 +35,7 @@ pi_plane.enable_contours = True
 pi_plane.contour.minimum_contour = 0.0
 pi_plane.contour.maximum_contour = 0.0
 pi_plane.contour.number_of_contours = 1
+pi_plane.actor.property.representation = 'points'
 
 # plane stress
 z_plane = mlab.pipeline.scalar_cut_plane(f_pipe, plane_orientation='z_axes')
@@ -44,6 +45,7 @@ z_plane.enable_contours = True
 z_plane.contour.minimum_contour = 0.0
 z_plane.contour.maximum_contour = 0.0
 z_plane.contour.number_of_contours = 1
+z_plane.actor.property.representation = 'points'
 
 # hydrostatic section
 h_plane = mlab.pipeline.scalar_cut_plane(f_pipe, plane_orientation='z_axes')
@@ -53,6 +55,7 @@ h_plane.enable_contours = True
 h_plane.contour.minimum_contour = 0.0
 h_plane.contour.maximum_contour = 0.0
 h_plane.contour.number_of_contours = 1
+h_plane.actor.property.representation = 'points'
 
 mlab.axes(f_pipe)
 # mlab.outline()
