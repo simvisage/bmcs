@@ -429,10 +429,10 @@ def run_pullout_dp():
 
 def run_pullout_multilinear():
     po = PullOutModel(n_e_x=10, k_max=500)
-    po.w_max = 0.1
+    po.w_max = 1.4
     po.mats_eval_type = 'multilinear'
     po.tline.step = 0.01
-    po.geometry.L_x = 1.0
+    po.geometry.L_x = 1000.0
     po.loading_scenario.set(loading_type='monotonic')
 
     # todo
