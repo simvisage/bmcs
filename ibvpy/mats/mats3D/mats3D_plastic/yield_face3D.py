@@ -167,6 +167,9 @@ class YieldConditionExtendedLeonModel(HasStrictTraits):
         r = np.sqrt(2.0 * J2)
         sin3theta = J3 / 2.0 * np.power(3.0 / J2, 1.5)
         theta = np.arcsin(sin3theta) / 3.0
+
+        # -- here to go on
+
         return z, r, theta
 
     view = View(Item('sig_c'),
