@@ -149,6 +149,31 @@ class YieldConditionAbaqus(HasStrictTraits):
                 Item('sig_b'))
 
 
+class YieldConditionExtendedLeonModel(HasStrictTraits):
+
+    '''
+    '''
+
+    sig_c = Float(-10.)  # the uniaxial compressive strength
+    sig_t = Float(3.)  # the uniaxial tensile strength
+    sig_b = Float(-17.)  # the equibiaxial compressive strength
+
+    def f(self, sig_ij):
+        I1 = np.einsum('...ii,...ii', sig_ij, DELTA)
+        s_ij = sig_ij - np.einsum('...,ij->...ij', I1 / 3.0, DELTA)
+        J2 = np.einsum('...ij,...ij', s_ij, s_ij) / 2.0
+        J3 = np.einsum('...ij,...jk,...ki', s_ij, s_ij, s_ij) / 3.0
+        z = I1 / np.sqrt(3.0)
+        r = np.sqrt(2.0 * J2)
+        sin3theta = J3 / 2.0 * np.power(3.0 / J2, 1.5)
+        theta = np.arcsin(sin3theta) / 3.0
+        return z, r, theta
+
+    view = View(Item('sig_c'),
+                Item('sig_t'),
+                Item('sig_b'))
+
+
 def get_lut():
     opacity = 20.0
     lut = np.zeros((256, 4), dtype=Int)
@@ -156,11 +181,18 @@ def get_lut():
     lut[:] = np.array([0, 0, 255, int(round(alpha))], dtype=Int)
 
 
-if __name__ == '__main__':
+def show_yield_faces():
     #     yc = YieldConditionJ2(sig_y=6.0)
     sig = np.array([[2, 3, 4],
                     [1, 3, 2],
                     [3, 4, 5]], dtype=np.float_)
+
+    yc = YieldConditionExtendedLeonModel()
+    f = yc.f(sig)
+    print 'f', f
+
+    return
+
     min_sig = -20.0
     max_sig = 5.0
     n_sig = 100j
@@ -192,3 +224,7 @@ if __name__ == '__main__':
 
     m.axes(f_pipe)
     m.show()
+
+
+if __name__ == '__main__':
+    show_yield_faces()
