@@ -351,7 +351,6 @@ class TStepper(BMCSTreeNode):
         if self.u_processor:
             self.args, self.kw = self.u_processor(U_k)
 
-        print 'update', self.update_state_on
         # Let the time sub-stepper evaluate its contribution.
         #
         K_mtx = self.tse_integ.get_corr_pred(U_k, d_U, t_n, t_n1,

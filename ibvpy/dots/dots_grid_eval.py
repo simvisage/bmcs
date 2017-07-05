@@ -215,7 +215,6 @@ class DOTSGridEval(TStepperEval):
                       *args, **kw):
 
         if update_state:
-            print 'updating'
             self.state_array_n[...] = self.state_array_n1[...]
 
         mats = self.mats_eval

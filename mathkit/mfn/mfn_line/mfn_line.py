@@ -124,10 +124,19 @@ class MFnLineArray(BMCSLeafNode):
         '''plot within matplotlib window'''
         axes.plot(self.xdata, self.ydata, *args, **kw)
 
+    def mpl_plot_diff(self, axes, *args, **kw):
+        '''plot within matplotlib window'''
+        ax_dx = axes.twinx()
+        x = np.linspace(self.xdata[0], self.xdata[-1],
+                        np.size(self.xdata) * 20.0)
+        y_dx = self.diff(x, k=1, der=1)
+        ax_dx.plot(x, y_dx, *args + ('-',), **kw)
+
     def replot(self):
+        self.figure.clf()
         ax = self.figure.add_subplot(111)
-        ax.clear()
         self.mpl_plot(ax)
+        self.mpl_plot_diff(ax, color='orange')
         self.data_changed = True
 
     tree_view = View(

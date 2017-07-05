@@ -15,7 +15,7 @@ from bmcs.bond_slip import \
     run_bond_slip_model_dp
 from bmcs.pullout import \
     run_pullout_const_shear, \
-    run_pullout_dp
+    run_pullout_dp, run_pullout_multilinear
 from traits.api import HasTraits, Button
 from traitsui.api import View, UItem, VGroup, Group
 from ibvpy.mats.mats3D.mats3D_plastic.yield_face3D_explorer \
@@ -53,6 +53,11 @@ class BMCSLauncher(HasTraits):
     def _pullout_model_const_shear_fired(self):
         run_pullout_const_shear(kind='live')
 
+    pullout_model_multilinear = Button(label='Multi-linear')
+
+    def _pullout_model_multilinear_fired(self):
+        run_pullout_multilinear(kind='live')
+
     pullout_model_dp = Button(label='Damage-plasticity')
 
     def _pullout_model_dp_fired(self):
@@ -79,6 +84,8 @@ class BMCSLauncher(HasTraits):
             ),
             Group(
                 UItem('pullout_model_const_shear',
+                      full_size=True, resizable=True),
+                UItem('pullout_model_multilinear',
                       full_size=True, resizable=True),
                 UItem('pullout_model_dp',
                       full_size=True, resizable=True),
