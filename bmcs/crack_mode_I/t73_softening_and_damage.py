@@ -80,6 +80,7 @@ class GfDamageFn(DamageFn):
         d_g_eps = (f_t * np.exp(L_s * (eps_0 - eps) * f_t / G_f)
                    / (E * G_f * eps**2) *
                    (G_f + L_s * eps * f_t))
+
         d_g_eps[np.where(eps - eps_0 < 0)] = 0.0
         return d_g_eps
 
@@ -110,7 +111,7 @@ L_ch = E * G_f / f_t**2
 
 print 'L_ch', L_ch
 
-L = 300.0
+L = 45.0
 u_max = 0.15
 eps_max = eps_ch
 eps = np.linspace(0, eps_max, 100)
@@ -120,10 +121,10 @@ omega_fn_gf = GfDamageFn(G_f=G_f, f_t=f_t, E=E)
 
 omega_fn = omega_fn_gf
 
-n_T = 1000
+n_T = 2000
 K_max = 200
 
-for N in [1.00001, 3, 4, 5, 9]:
+for N in [1.00001, 2, 3, 4, 5, 9]:
     sig_t = []
     eps_t = []
     L_el = (N - 1.0) / N * L
