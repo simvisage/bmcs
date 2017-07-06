@@ -253,6 +253,11 @@ class FETSEval(TStepperEval):
         x, y, z = self.gp_r_grid
         return c_[x.flatten(), y.flatten(), z.flatten()]
 
+    r_m = Property
+
+    def _get_r_m(self):
+        return self.ip_coords
+
     ip_coords_grid = Property(depends_on='ngp_r,ngp_s,ngp_t')
 
     def _get_ip_coords_grid(self):
@@ -261,6 +266,16 @@ class FETSEval(TStepperEval):
         return c_[self.gp_r_grid]
 
     ip_weights = Property(depends_on='ngp_r,ngp_s,ngp_t')
+
+    w_m = Property
+
+    def _get_w_m(self):
+        return self.ip_weights
+
+    n_m = Property
+
+    def _get_n_m(self):
+        return len(self.ip_weights)
 
     def _get_ip_weights(self):
         '''Generate the flat array of ip_coords used for integration.

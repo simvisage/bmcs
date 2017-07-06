@@ -217,7 +217,7 @@ class TLoop(IBVResource):
     def _get_rte_dict(self):
         return {'time': lambda sctx, U_k, *args, **kw: np.array([self.t_n1]),
                 'mem_counter': lambda sctx, U_k, *args, **kw: self.mem_counter,
-                'U_k': lambda sctx, U_k, *args, **kw: self.U_k,
+                'U_k': lambda sctx, U_k, *args, **kw: U_k,
                 }
 
     sync_resp_tracing = Bool(False)

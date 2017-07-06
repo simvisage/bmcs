@@ -1,21 +1,21 @@
 from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
+from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
+from ibvpy.mats.mats_eval import IMATSEval
 from numpy import array,  zeros,  dot, float_, copy
 from scipy.linalg import eig, inv
 from traits.api import \
     Array, Bool, Callable, Enum, Float, HasTraits, \
-    Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-    implements, Dict, Property, cached_property
+    Trait, Range, HasTraits, Event, \
+    implements, Dict, Property, cached_property, Constant, Tuple
 from traitsui.api import \
     Item, View, VSplit, Group, Spring
-
-from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
-from ibvpy.mats.mats_eval import IMATSEval
+from view.ui import BMCSLeafNode
 
 
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
-class MATS2DElastic(MATS2DEval):
+class MATS2DElastic(MATS2DEval, BMCSLeafNode):
 
     '''
     Elastic Model.
@@ -41,6 +41,10 @@ class MATS2DElastic(MATS2DEval):
                label='nu',
                desc="Poison's ratio",
                auto_set=False)
+
+    n_s = Constant(4)
+
+    state_arr_shape = Tuple((4,))
 
     D_el = Property(Array(float), depends_on='E, nu, stress_state')
 
@@ -173,6 +177,7 @@ class MATS2DElastic(MATS2DEval):
         c['tline'] = TLine(step=1.0, max=1.0)
         return c
 
+
 if __name__ == '__main__':
     #-------------------------------------------------------------------------
     # Example using the mats2d_explore
@@ -182,21 +187,21 @@ if __name__ == '__main__':
     mats2D_explore = \
         MATS2DExplore(mats2D_eval=MATS2DElastic(),
                       rtrace_list=[RTDofGraph(name='strain 0 - stress 0',
-                                               var_x='eps_app', idx_x=0,
-                                               var_y='sig_app', idx_y=0,
-                                               record_on='update'),
+                                              var_x='eps_app', idx_x=0,
+                                              var_y='sig_app', idx_y=0,
+                                              record_on='update'),
                                    RTDofGraph(name='strain 0 - strain 1',
-                                               var_x='eps_app', idx_x=0,
-                                               var_y='eps_app', idx_y=1,
-                                               record_on='update'),
+                                              var_x='eps_app', idx_x=0,
+                                              var_y='eps_app', idx_y=1,
+                                              record_on='update'),
                                    RTDofGraph(name='stress 0 - stress 1',
-                                               var_x='sig_app', idx_x=0,
-                                               var_y='sig_app', idx_y=1,
-                                               record_on='update'),
+                                              var_x='sig_app', idx_x=0,
+                                              var_y='sig_app', idx_y=1,
+                                              record_on='update'),
                                    RTDofGraph(name='time - sig_norm',
-                                               var_x='time', idx_x=0,
-                                               var_y='sig_norm', idx_y=0,
-                                               record_on='update')
+                                              var_x='time', idx_x=0,
+                                              var_y='sig_norm', idx_y=0,
+                                              record_on='update')
 
                                    ])
 

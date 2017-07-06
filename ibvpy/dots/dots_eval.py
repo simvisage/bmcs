@@ -1,4 +1,12 @@
 
+from ibvpy.core.i_tstepper_eval import \
+    ITStepperEval
+from ibvpy.core.rtrace_eval import RTraceEval
+from ibvpy.core.tstepper_eval import \
+    TStepperEval
+from ibvpy.fets.i_fets_eval import IFETSEval
+from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
+from mathkit.matrix_la.sys_mtx_array import SysMtxArray
 from numpy import \
     zeros, float_, ix_,  repeat, arange, array, dot
 from traits.api import \
@@ -9,14 +17,6 @@ from traitsui.api import \
     Item, View
 from traitsui.menu import \
     OKButton, CancelButton
-from ibvpy.core.i_tstepper_eval import \
-    ITStepperEval
-from ibvpy.core.rtrace_eval import RTraceEval
-from ibvpy.core.tstepper_eval import \
-    TStepperEval
-from ibvpy.fets.i_fets_eval import IFETSEval
-from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
-from mathkit.matrix_la.sys_mtx_array import SysMtxArray
 
 
 #-----------------------------------------------------------------------------
@@ -120,7 +120,7 @@ class DOTSEval(TStepperEval):
             self.fets_eval.setup(sctx)
         return state_array
 
-    def get_corr_pred(self, sctx, u, du, tn, tn1, F_int, *args, **kw):
+    def get_corr_pred(self, u, du, tn, tn1, F_int, *args, **kw):
 
         # in order to avoid allocation of the array in every time step
         # of the computation
@@ -152,6 +152,7 @@ class DOTSEval(TStepperEval):
         for e_id, elem in zip(self.sdomain.idx_active_elems, self.sdomain.elements):
 
             ix = elem.get_dof_map()
+
             sctx.elem = elem
             sctx.elem_state_array = state_array[
                 e_id * e_arr_size: (e_id + 1) * e_arr_size]

@@ -8,7 +8,7 @@ from ibvpy.api import MATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import implements, Int, Array, \
     Constant, Float, Tuple, List, on_trait_change, \
-    Instance, Trait, Bool
+    Instance, Trait, Bool, Str, Button
 from traitsui.api import View, VGroup, Item, UItem
 from view.ui import BMCSTreeNode
 
@@ -360,16 +360,53 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
     E_f = Float(170000.0, tooltip='Stiffness of the fiber [MPa]',
                 MAT=True,
-                auto_set=False, enter_set=False)
+                auto_set=False, enter_set=True)
+
+    s_data = Str('', tooltip='Comma-separated list of strain values',
+                 MAT=True,
+                 auto_set=True, enter_set=False)
+
+    tau_data = Str('', tooltip='Comma-separated list of stress values',
+                   MAT=True,
+                   auto_set=True, enter_set=False)
+
+    update_bs_law = Button(label='update bond-slip law')
+
+    def _update_bs_law_fired(self):
+        s_data = np.fromstring(self.s_data, dtype=np.float_, sep=',')
+        tau_data = np.fromstring(self.tau_data, dtype=np.float_, sep=',')
+        if len(s_data) != len(tau_data):
+            raise ValueError, 's array and tau array must have the same size'
+        self.bs_law.set(xdata=s_data,
+                        ydata=tau_data)
+        self.bs_law.replot()
 
     bs_law = Instance(MFnLineArray)
 
     def _bs_law_default(self):
         return MFnLineArray(
-            xdata=[0, 0],
-            ydata=[0, 1])
+            xdata=[0.0, 1.0],
+            ydata=[0.0, 1.0],)
 
     n_s = Constant(5)
+
+    def get_corr_pred2(self, s_n1, d_s, t_n, t_n1, sa_n):
+
+        n_e, n_ip, n_s = s_n1.shape
+        D = np.zeros((n_e, n_ip, 3, 3))
+        D[:, :, 0, 0] = self.E_m
+        D[:, :, 2, 2] = self.E_f
+
+        tau = np.einsum('...st,...t->...s', D, s_n1)
+        s = s_n1[:, :, 1]
+        shape = s.shape
+        tau[:, :, 1] = self.bs_law(s.flatten()).reshape(*shape)
+
+        D_tau = self.bs_law.diff(s.flatten()).reshape(*shape)
+
+        D[:, :, 1, 1] = D_tau
+
+        return tau, D, sa_n
 
     def get_corr_pred(self, s, d_s, tau, t_n, t_n1,
                       s_p, alpha, z, kappa, omega):
@@ -384,9 +421,7 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
         s = s[:, :, 1]
         shape = s.shape
         tau[:, :, 1] = self.bs_law(s.flatten()).reshape(*shape)
-
         D_tau = self.bs_law.diff(s.flatten()).reshape(*shape)
-
         D[:, :, 1, 1] = D_tau
 
         return tau, D, s_p, alpha, z, kappa, omega
@@ -396,6 +431,9 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
             VGroup(
                 Item('E_m', full_size=True, resizable=True),
                 Item('E_f'),
+                Item('s_data'),
+                Item('tau_data'),
+                UItem('update_bs_law')
             ),
             UItem('bs_law@')
         )

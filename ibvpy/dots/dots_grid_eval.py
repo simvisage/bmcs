@@ -53,10 +53,10 @@ class DOTSGridEval(TStepperEval):
 
         # The overall size is just a n_elem times the size of a single element
         #
-        n_elems = self.sdomain.n_elems
-        n_ip = self.fets_eval.n_ip
+        n_E = self.sdomain.n_elems
+        n_m = self.fets_eval.n_m
         state_arr_shape = self.mats_eval.state_arr_shape
-        return np.zeros((n_elems, n_ip) + state_arr_shape, dtype=np.float_)
+        return np.zeros((n_E, n_m) + state_arr_shape, dtype=np.float_)
 
     state_array_n1 = Array
     '''State variable with trial values
@@ -200,8 +200,6 @@ class DOTSGridEval(TStepperEval):
         dN_mid_geo = fet.dN_mid_geo
         N_mi = fet.N_mi
         dN_mid = fet.dN_mid
-        w_m = fet.w_m
-        A_C = fet.A_C
         # Geometry approximation / Jacobi transformation
         J_Emde = np.einsum('mid,Eie->Emde', dN_mid_geo, self.X_Eid)
         J_det_Em = np.linalg.det(J_Emde)
@@ -217,7 +215,6 @@ class DOTSGridEval(TStepperEval):
                       *args, **kw):
 
         if update_state:
-            print 'updating'
             self.state_array_n[...] = self.state_array_n1[...]
 
         mats = self.mats_eval
