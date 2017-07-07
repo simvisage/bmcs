@@ -1,9 +1,10 @@
 
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from scipy.optimize import newton
 from traits.api import \
     Instance, \
     Float, on_trait_change,\
-    HasStrictTraits, Interface, implements, Range
+    HasStrictTraits, Interface, implements, Range, Property
 from traitsui.api import \
     View, Item, UItem, VGroup
 from view.ui import BMCSLeafNode
@@ -96,7 +97,7 @@ class JirasekDamageFn(DamageFn):
     def diff(self, kappa):
         s_0 = self.s_0
         s_f = self.s_f
-        return ((s_0 / (kappa * s_f)) - (s_0 / kappa)) * np.exp(-(kappa - s_0) / (s_f))
+        return ((s_0 / (kappa * s_f)) - (s_0 / kappa**2)) * np.exp(-(kappa - s_0) / (s_f))
 
     traits_view = View(
         VGroup(
@@ -244,6 +245,94 @@ class AbaqusDamageFn(DamageFn):
     tree_view = traits_view
 
 
+class FRPDamageFn(DamageFn):
+
+    node_name = 'FRP damage function'
+
+    implements(IDamageFn)
+
+    b = Float(10.4,
+              MAT=True,
+              input=True,
+              label="b",
+              desc="parameter controls the damage function",
+              enter_set=True,
+              auto_set=False)
+
+    Gf = Float(1.19,
+               MAT=True,
+               input=True,
+               label="Gf",
+               desc="fracture energy",
+               enter_set=True,
+               auto_set=False)
+
+    plot_max = 0.5
+
+    E_b = Float
+
+    @on_trait_change('b, Gf')
+    def _update_Eb(self):
+        self.E_b = 1.734 * self.Gf * self.b ** 2.0
+
+    s_0 = Float
+
+    @on_trait_change('b, Gf')
+    def _update_s_0(self):
+        # calculation of s_0, implicit function solved using Newton method
+        f_s = lambda s_0: s_0 / \
+            (np.exp(- self.b * s_0) - np.exp(-2.0 * self.b * s_0)) - \
+            2.0 * self.b * self.Gf / self.E_b
+        self.s_0 = newton(f_s, 0.00000001, tol=1e-5, maxiter=20)
+
+    def __call__(self, kappa):
+        b = self.b
+        Gf = self.Gf
+        Eb = 1.734 * Gf * b**2
+
+        # calculation of s_0, implicit function solved using Newton method
+        f_s = lambda s_0: s_0 / \
+            (np.exp(-b * s_0) - np.exp(-2.0 * b * s_0)) - 2.0 * b * Gf / Eb
+        s_0 = newton(f_s, 0.00000001, tol=1e-5, maxiter=20)
+
+        omega = np.zeros_like(kappa, dtype=np.float_)
+        d_idx = np.where(kappa >= s_0)[0]
+        k = kappa[d_idx]
+
+        omega[d_idx] = 1 - \
+            (2.0 * b * Gf * (np.exp(-b * k) - np.exp(-2.0 * b * k))) / (k * Eb)
+
+        return omega
+
+    def diff(self, kappa):
+        b = self.b
+        Gf = self.Gf
+        Eb = 1.734 * Gf * b**2
+
+        return  (2.0 * b * Gf * (np.exp(-b * kappa) - np.exp(-2.0 * b * kappa))) /\
+                (Eb * kappa**2.0) - (2.0 * b * Gf * (-b * np.exp(-b * kappa) + 2.0 * b * np.exp(-2.0 * b * kappa))) /\
+                (Eb * kappa)
+
+    traits_view = View(
+        VGroup(
+            VGroup(
+                Item('s_0', style='readonly', full_size=True, resizable=True),
+                Item('E_b', style='readonly', full_size=True, resizable=True),
+                Item('b'),
+                Item('Gf'),
+                Item('plot_max'),
+            ),
+            VGroup(
+                UItem('fn@', height=300)
+            )
+        )
+    )
+
+    tree_view = traits_view
+
+
 if __name__ == '__main__':
-    ld = LiDamageFn()
+    #ld = LiDamageFn()
+    #ld = JirasekDamageFn()
+    ld = FRPDamageFn()
     ld.configure_traits()

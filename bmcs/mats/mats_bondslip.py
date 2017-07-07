@@ -14,7 +14,7 @@ from view.ui import BMCSTreeNode
 
 from mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
-    PlottableFn
+    FRPDamageFn, PlottableFn
 import numpy as np
 
 
@@ -212,7 +212,8 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
     omega_fn_type = Trait('li',
                           dict(li=LiDamageFn,
                                jirasek=JirasekDamageFn,
-                               abaqus=AbaqusDamageFn
+                               abaqus=AbaqusDamageFn,
+                               FRP=FRPDamageFn,
                                ),
                           MAT=True,
                           )
@@ -310,6 +311,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
 
         kappa_n1 = np.max(np.array([kappa_n, np.fabs(s_n1[:, :, 1])]), axis=0)
         omega_n1 = self.omega(kappa_n1)
+        print 'omega_n1', omega_n1
         tau[:, :, 1] = (1 - omega_n1) * self.E_b * (s_n1[:, :, 1] - s_p_n1)
 
         # Consistent tangent operator
@@ -441,5 +443,6 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
 
 if __name__ == '__main__':
-    m = MATSBondSlipMultiLinear()
+    #m = MATSBondSlipMultiLinear()
+    m = MATSBondSlipDP()
     m.configure_traits()

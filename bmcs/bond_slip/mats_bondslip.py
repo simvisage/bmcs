@@ -162,7 +162,7 @@ class MATSBondSlipDP(MATSBondSlipBase):
                  )
 
     E_b = Float(12900,
-                label="G",
+                label="E_b",
                 desc="Bond Stiffness",
                 enter_set=True,
                 auto_set=False)

@@ -11,6 +11,9 @@ Created on 12.12.2016
 '''
 
 
+from bmcs.mats.mats_damage_fn import \
+    IDamageFn, \
+    LiDamageFn, JirasekDamageFn, AbaqusDamageFn, FRPDamageFn
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
@@ -26,9 +29,7 @@ from traitsui.editors.enum_editor import EnumEditor
 from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSTreeNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, \
-    LiDamageFn, JirasekDamageFn, AbaqusDamageFn
+
 from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 
@@ -48,8 +49,8 @@ class Material(BMCSTreeNode):
 
     E_b = Float(12900.0,
                 MAT=True,
-                label="G",
-                desc="Shear Stiffness",
+                label="E_b",
+                desc="bond stiffness",
                 enter_set=True,
                 auto_set=False)
 
@@ -88,7 +89,8 @@ class Material(BMCSTreeNode):
     omega_fn_type = Trait('li',
                           dict(li=LiDamageFn,
                                jirasek=JirasekDamageFn,
-                               abaqus=AbaqusDamageFn),
+                               abaqus=AbaqusDamageFn,
+                               FRP=FRPDamageFn),
                           MAT=True,
                           )
 
@@ -422,4 +424,4 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_interactive_test_d()
     # run_predefined_load_test(
-    run_bond_slip_model_p()
+    run_bond_slip_model_d()
