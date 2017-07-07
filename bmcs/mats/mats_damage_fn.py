@@ -49,13 +49,13 @@ class IDamageFn(Interface):
 
 
 class DamageFn(BMCSLeafNode, PlottableFn):
-    L_s = Float(1.0,
-                MAT=True,
-                input=True,
-                label="s_0",
-                desc="length of the strain softening zone",
-                enter_set=True,
-                auto_set=False)
+    #     L_s = Float(1.0,
+    #                 MAT=True,
+    #                 input=True,
+    #                 label="s_0",
+    #                 desc="length of the strain softening zone",
+    #                 enter_set=True,
+    #                 auto_set=False)
 
     s_0 = Float(0.0004,
                 MAT=True,
@@ -269,29 +269,31 @@ class FRPDamageFn(DamageFn):
 
     plot_max = 0.5
 
+    def __init__(self, *args, **kw):
+        super(FRPDamageFn, self).__init__(*args, **kw)
+        self._update_dependent_params()
+
     E_b = Float
 
     @on_trait_change('b, Gf')
-    def _update_Eb(self):
+    def _update_dependent_params(self):
+
         self.E_b = 1.734 * self.Gf * self.b ** 2.0
-
-    s_0 = Float
-
-    @on_trait_change('b, Gf')
-    def _update_s_0(self):
         # calculation of s_0, implicit function solved using Newton method
-        f_s = lambda s_0: s_0 / \
+
+        def f_s(s_0): return s_0 / \
             (np.exp(- self.b * s_0) - np.exp(-2.0 * self.b * s_0)) - \
             2.0 * self.b * self.Gf / self.E_b
         self.s_0 = newton(f_s, 0.00000001, tol=1e-5, maxiter=20)
 
     def __call__(self, kappa):
+
         b = self.b
         Gf = self.Gf
         Eb = 1.734 * Gf * b**2
 
         # calculation of s_0, implicit function solved using Newton method
-        f_s = lambda s_0: s_0 / \
+        def f_s(s_0): return s_0 / \
             (np.exp(-b * s_0) - np.exp(-2.0 * b * s_0)) - 2.0 * b * Gf / Eb
         s_0 = newton(f_s, 0.00000001, tol=1e-5, maxiter=20)
 
@@ -305,13 +307,26 @@ class FRPDamageFn(DamageFn):
         return omega
 
     def diff(self, kappa):
+
+        nz_ix = np.where(kappa != 0.0)[0]
+
         b = self.b
         Gf = self.Gf
         Eb = 1.734 * Gf * b**2
 
-        return  (2.0 * b * Gf * (np.exp(-b * kappa) - np.exp(-2.0 * b * kappa))) /\
-                (Eb * kappa**2.0) - (2.0 * b * Gf * (-b * np.exp(-b * kappa) + 2.0 * b * np.exp(-2.0 * b * kappa))) /\
-                (Eb * kappa)
+        domega_dkappa = np.zeros_like(kappa)
+        kappa_nz = kappa[nz_ix]
+        domega_dkappa[nz_ix] = (
+            (2.0 * b * Gf *
+             (np.exp(-b * kappa_nz) -
+              np.exp(-2.0 * b * kappa_nz))
+             ) / (Eb * kappa_nz**2.0) -
+            (2.0 * b * Gf *
+             (-b * np.exp(-b * kappa_nz) +
+              2.0 * b * np.exp(-2.0 * b * kappa_nz))) /
+            (Eb * kappa_nz)
+        )
+        return domega_dkappa
 
     traits_view = View(
         VGroup(

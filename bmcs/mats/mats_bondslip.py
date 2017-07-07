@@ -314,9 +314,11 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         print 'omega_n1', omega_n1
         tau[:, :, 1] = (1 - omega_n1) * self.E_b * (s_n1[:, :, 1] - s_p_n1)
 
+        domega_ds = self.omega_derivative(kappa_n1)
+        print 'domega_ds', domega_ds
         # Consistent tangent operator
         D_ed = -self.E_b / (self.E_b + self.K + self.gamma) \
-            * self.omega_derivative(kappa_n1) * self.E_b * (s_n1[:, :, 1] - s_p_n1) \
+            * domega_ds * self.E_b * (s_n1[:, :, 1] - s_p_n1) \
             + (1 - omega_n1) * self.E_b * (self.K + self.gamma) / \
             (self.E_b + self.K + self.gamma)
 
