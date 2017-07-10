@@ -29,8 +29,8 @@ class MATSEvalFatigue(MATSEval, BMCSTreeNode):
                 auto_set=False, enter_set=False)
 
     E_b = Float(200,
-                label="G",
-                desc="Shear Stiffness",
+                label="E_b",
+                desc="Bond Stiffness",
                 MAT=True,
                 enter_set=True,
                 auto_set=False)
@@ -311,11 +311,11 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
 
         kappa_n1 = np.max(np.array([kappa_n, np.fabs(s_n1[:, :, 1])]), axis=0)
         omega_n1 = self.omega(kappa_n1)
-        print 'omega_n1', omega_n1
+
         tau[:, :, 1] = (1 - omega_n1) * self.E_b * (s_n1[:, :, 1] - s_p_n1)
 
         domega_ds = self.omega_derivative(kappa_n1)
-        print 'domega_ds', domega_ds
+
         # Consistent tangent operator
         D_ed = -self.E_b / (self.E_b + self.K + self.gamma) \
             * domega_ds * self.E_b * (s_n1[:, :, 1] - s_p_n1) \
@@ -440,6 +440,128 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
                 UItem('update_bs_law')
             ),
             UItem('bs_law@')
+        )
+    )
+
+
+class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode):
+
+    node_name = 'bond model: FRP damage model'
+
+    tree_node_list = List([])
+
+    def _tree_node_list_default(self):
+        return [self.omega_fn, ]
+
+    @on_trait_change('omega_fn_type')
+    def _update_node_list(self):
+        self.tree_node_list = [self.omega_fn]
+
+    E_m = Float(30000.0, tooltip='Stiffness of the matrix [MPa]',
+                MAT=True,
+                auto_set=True, enter_set=True)
+
+    E_f = Float(200000.0, tooltip='Stiffness of the fiber [MPa]',
+                MAT=True,
+                auto_set=False, enter_set=False)
+
+    omega_fn_type = Trait('FRP',
+                          dict(FRP=FRPDamageFn),
+                          MAT=True,)
+
+    @on_trait_change('omega_fn_type')
+    def _reset_omega_fn(self):
+        self.omega_fn = self.omega_fn_type_()
+
+    omega_fn = Instance(IDamageFn,
+                        MAT=True)
+
+    def _omega_fn_default(self):
+        # return JirasekDamageFn()
+        return FRPDamageFn(b=10.4,
+                           Gf=1.19
+                           )
+
+    state_arr_shape = Tuple((8,))
+
+    def omega(self, k):
+        return self.omega_fn(k)
+
+    def omega_derivative(self, k):
+        return self.omega_fn.diff(k)
+
+    def get_cp(self, s, d_s, t_n, t_n1, state):
+        tau, s_p, alpha, z, kappa, omega = state
+        tau, D, s_p, alpha, z, kappa, omega = \
+            self.get_corr_pred(s, d_s, tau, t_n, t_n1,
+                               s_p, alpha, z, kappa, omega)
+        return tau, D, state
+
+    def get_corr_pred2(self, s_n1, d_s, t_n, t_n1, sa_n):
+
+        tau_n, s_p_n, alpha_n, z_n, kappa_n, omega_n = \
+            sa_n[..., 0:3], sa_n[..., 3], sa_n[..., 4],\
+            sa_n[..., 5], sa_n[..., 6], sa_n[..., 7]
+
+        tau, D, s_p, alpha, z, kappa, omega = \
+            self.get_corr_pred(s_n1, d_s, tau_n, t_n, t_n1,
+                               s_p_n, alpha_n, z_n, kappa_n, omega_n)
+
+        sa_n1 = np.concatenate([tau,
+                                s_p[..., np.newaxis],
+                                alpha[..., np.newaxis],
+                                z[..., np.newaxis],
+                                kappa[..., np.newaxis],
+                                omega[..., np.newaxis]], axis=-1)
+        return tau, D, sa_n1
+
+    n_s = Constant(5)
+
+    def get_corr_pred(self, s_n1, d_s, tau_n, t_n, t_n1,
+                      s_p_n, alpha_n, z_n, kappa_n, omega_n):
+
+        n_e, n_ip, n_s = s_n1.shape
+        D = np.zeros((n_e, n_ip, 3, 3))
+        D[:, :, 0, 0] = self.E_m
+        D[:, :, 2, 2] = self.E_f
+
+        sig_pi_trial = self.omega_fn.E_b * (s_n1[:, :, 1])
+
+        tau = np.einsum('...st,...t->...s', D, s_n1)
+
+        # update all the state variables
+        s_p_n1 = s_p_n
+        z_n1 = z_n
+        alpha_n1 = alpha_n
+
+        kappa_n1 = np.max(np.array([kappa_n, np.fabs(s_n1[:, :, 1])]), axis=0)
+        omega_n1 = self.omega(kappa_n1)
+
+        tau[:, :, 1] = (1 - omega_n1) * \
+            self.omega_fn.E_b * (s_n1[:, :, 1])
+
+        domega_ds = self.omega_derivative(kappa_n1)
+
+        #s_0 = self.omega_fn.s_0
+
+        elas = omega_n1 <= 0.0
+        plas = omega_n1 > 0.0
+
+        # Consistent tangent operator
+        D_ed = ((1 - omega_n1) - domega_ds * s_n1[:, :, 1]) * self.omega_fn.E_b
+
+        # * elas + D_ed * plas
+        D[:, :, 1, 1] = (1 - omega_n1) * self.omega_fn.E_b
+
+        return tau, D, s_p_n1, alpha_n1, z_n1, kappa_n1, omega_n1
+
+    tree_view = View(
+        VGroup(
+            VGroup(
+                Item('E_m', full_size=True, resizable=True),
+                Item('E_f'),
+            ),
+            UItem('omega_fn@')
         )
     )
 

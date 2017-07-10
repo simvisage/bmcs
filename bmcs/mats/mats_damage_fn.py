@@ -95,9 +95,17 @@ class JirasekDamageFn(DamageFn):
         return omega
 
     def diff(self, kappa):
+
+        nz_ix = np.where(kappa != 0.0)[0]
         s_0 = self.s_0
         s_f = self.s_f
-        return ((s_0 / (kappa * s_f)) - (s_0 / kappa**2)) * np.exp(-(kappa - s_0) / (s_f))
+
+        domega_dkappa = np.zeros_like(kappa)
+        kappa_nz = kappa[nz_ix]
+        domega_dkappa[nz_ix] = ((s_0 / (kappa_nz * s_f)) -
+                                (s_0 / kappa_nz**2)) * np.exp(-(kappa_nz - s_0) / (s_f))
+
+        return domega_dkappa
 
     traits_view = View(
         VGroup(
