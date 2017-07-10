@@ -11,7 +11,7 @@ from traits.api import \
     Instance,  Event, Enum, \
     List,  Range, Int, Float, \
     Property, cached_property, \
-    on_trait_change, Bool
+    on_trait_change, Bool, Button
 from traitsui.api import \
     View, Item, UItem, VGroup, VSplit, \
     HSplit, HGroup, TabularEditor
@@ -19,6 +19,7 @@ from traitsui.tabular_adapter import TabularAdapter
 from util.traits.editors import \
     MPLFigureEditor
 from view.plot2d.viz2d import Viz2D
+import matplotlib.pyplot as plt
 
 
 class Viz2DAdapter(TabularAdapter):
@@ -162,6 +163,16 @@ class VizSheet(HasStrictTraits):
     def viz2d_list_items_changed(self):
         self.replot()
 
+    export_button = Button(label='Export selected diagram')
+
+    def _export_button_fired(self, vot=0):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        self.selected_viz2d.plot(ax, self.vot)
+        fig.show()
+
+    save_button = Button(label='Save selected diagram')
+
     selected_viz2d = Instance(Viz2D)
 
     figure = Instance(Figure)
@@ -199,6 +210,7 @@ class VizSheet(HasStrictTraits):
                 ),
                 VGroup(
                     Item('n_cols', width=100),
+                    HGroup(UItem('export_button', springy=True, resizable=True)),
                     VSplit(
                         UItem('viz2d_list@',
                               editor=tabular_editor,

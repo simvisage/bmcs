@@ -8,15 +8,19 @@ from traits.api import \
     HasStrictTraits, Dict, Property, Float, \
     WeakRef, DelegatesTo, cached_property, \
     Str, List, Button
-
 from traitsui.api import \
     View, Group, UItem, Include, EnumEditor, HGroup, \
     HSplit, Item, VGroup
+
+import matplotlib.pyplot as plt
 
 
 class Viz2D(HasStrictTraits):
     '''Base class of the visualization adaptors
     '''
+
+    viz_sheet = WeakRef
+
     name = Str('<unnamed>')
     label = Property(depends_on='label')
 
@@ -35,6 +39,7 @@ class Viz2D(HasStrictTraits):
         HSplit(
             VGroup(
                 UItem('label'),
+                UItem('render_button'),
                 label='Vizualization inteerface',
                 springy=True
             )),

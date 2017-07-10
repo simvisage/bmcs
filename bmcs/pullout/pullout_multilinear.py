@@ -24,6 +24,7 @@ from view.window import BMCSModel, BMCSWindow, TLine
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     CrossSection, Geometry
+from reporter import RInputRecord, RInputSubDomain, Reporter
 
 
 class Viz2DEnergyPlot(Viz2D):
@@ -56,7 +57,7 @@ class Viz2DEnergyRatesPlot(Viz2D):
         ax.legend()
 
 
-class PullOutModel(BMCSModel, Vis2D):
+class PullOutModel(BMCSModel, Vis2D, RInputSubDomain):
 
     node_name = 'pull out simulation'
 
@@ -90,7 +91,7 @@ class PullOutModel(BMCSModel, Vis2D):
         )
     )
 
-    tline = Instance(TLine)
+    tline = Instance(TLine, TIME=True)
 
     def _tline_default(self):
         # assign the parameters for solver and loading_scenario
@@ -106,12 +107,14 @@ class PullOutModel(BMCSModel, Vis2D):
     def _loading_scenario_default(self):
         return LoadingScenario()
 
-    cross_section = Instance(CrossSection)
+    cross_section = Instance(CrossSection,
+                             CS=True)
 
     def _cross_section_default(self):
         return CrossSection()
 
-    geometry = Instance(Geometry)
+    geometry = Instance(Geometry,
+                        GEO=True)
 
     def _geometry_default(self):
         return Geometry()
@@ -127,7 +130,8 @@ class PullOutModel(BMCSModel, Vis2D):
 
     mats_eval_type = Trait('multilinear',
                            {'damage-plasticity': MATSBondSlipDP,
-                            'multilinear': MATSBondSlipMultiLinear})
+                            'multilinear': MATSBondSlipMultiLinear},
+                           MAT=True)
 
     @on_trait_change('mats_eval_type')
     def _set_mats_eval(self):
@@ -472,13 +476,13 @@ class PullOutModel(BMCSModel, Vis2D):
 
 
 def run_pullout_multilinear(*args, **kw):
-    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
+    po = PullOutModel(n_e_x=100, k_max=1000, w_max=2.0)
     po.tline.step = 0.01
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(s_data='0, 1.0, 5.0, 10.0, 20.0',
-                     tau_data='0, 14.0, 16.5, 15.0, 7.0')
+    po.mats_eval.set(s_data='0, 0.1, 0.4, 20.0',
+                     tau_data='0, 800, 0, 0')
     po.mats_eval.update_bs_law = True
     po.run()
 
@@ -499,6 +503,20 @@ def run_pullout_multilinear(*args, **kw):
     w.configure_traits(*args, **kw)
 
 
+def test_reporter():
+    po = PullOutModel(n_e_x=100, k_max=1000, w_max=2.0)
+    po.tline.step = 0.01
+    po.geometry.L_x = 200.0
+    po.loading_scenario.set(loading_type='monotonic')
+    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
+    po.mats_eval.set(s_data='0, 0.1, 0.4, 20.0',
+                     tau_data='0, 800, 0, 0')
+    po.mats_eval.update_bs_law = True
+    r = Reporter(report_items=[po])
+    r.write()
+    r.show_tex()
+
+
 def test_B():
     po = PullOutModel(n_e_x=1, k_max=500, w_max=1.5)
     po.tline.step = 1.0
@@ -513,4 +531,5 @@ def test_B():
 
 if __name__ == '__main__':
     run_pullout_multilinear()
+    # test_reporter()
     # test_B()
