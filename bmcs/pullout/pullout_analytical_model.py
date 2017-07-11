@@ -7,28 +7,23 @@ Created on 12.01.2016
 @todo: introduce a switch for left and right supports
 '''
 
-from bmcs.bond_slip.mats_bondslip import MATSBondSlipDP
-from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from bmcs.mats.mats_bondslip import MATSEvalFatigue
-from bmcs.mats.tloop import TLoop
-from bmcs.mats.tstepper import TStepper
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
-from ibvpy.api import BCDof, FEGrid, BCSlice
-from ibvpy.core.bcond_mngr import BCondMngr
+from reporter import RInputSection
 from traits.api import \
     Property, Instance, cached_property, \
-    Bool, List, Float, Trait, Int, on_trait_change, Tuple, \
+    Bool, List, Float, Trait, Int, on_trait_change, \
     Dict, Str
 from traitsui.api import \
     View, Item, VGroup, Group
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow, TLine
+
 import numpy as np
 
 
-class MaterialParams(BMCSLeafNode):
+class MaterialParams(BMCSLeafNode, RInputSection):
     '''Record of material parameters of an interface layer
     '''
     node_name = Str('material parameters')
@@ -36,7 +31,8 @@ class MaterialParams(BMCSLeafNode):
     E_f = Float(240000,
                 MAT=True,
                 input=True,
-                label="E_f ",
+                symbol="$E_\mathrm{f}$",
+                unit='$\mathrm{MPa}$',
                 desc="Reinforcement stiffness",
                 enter_set=True,
                 auto_set=False)
@@ -44,8 +40,9 @@ class MaterialParams(BMCSLeafNode):
     tau_pi_bar = Float(4.5,
                        MAT=True,
                        input=True,
-                       label="Tau_pi_bar ",
-                       desc="Reversibility limit",
+                       symbol=r'$\bar{\tau}$',
+                       unit='$\mathrm{MPa}$',
+                       desc="Frictional bond strength",
                        enter_set=True,
                        auto_set=False)
 
@@ -57,7 +54,7 @@ class MaterialParams(BMCSLeafNode):
     tree_view = view
 
 
-class CrossSection(BMCSLeafNode):
+class CrossSection(BMCSLeafNode, RInputSection):
     '''Parameters of the pull-out cross section
     '''
     node_name = 'cross-section'
@@ -88,7 +85,7 @@ class CrossSection(BMCSLeafNode):
     tree_view = view
 
 
-class Geometry(BMCSLeafNode):
+class Geometry(BMCSLeafNode, RInputSection):
 
     node_name = 'geometry'
     L_x = Float(20,
@@ -299,7 +296,7 @@ class PullOutModel(BMCSModel, Vis2D):
     def get_sv_hist(self, sv_name):
         return np.vstack(self.sv_hist[sv_name])
 
-    material = Instance(MaterialParams)
+    material = Instance(MaterialParams, report=True)
 
     def _material_default(self):
         return MaterialParams()
@@ -309,12 +306,12 @@ class PullOutModel(BMCSModel, Vis2D):
     def _loading_scenario_default(self):
         return LoadingScenario()
 
-    cross_section = Instance(CrossSection)
+    cross_section = Instance(CrossSection, report=True)
 
     def _cross_section_default(self):
         return CrossSection()
 
-    geometry = Instance(Geometry)
+    geometry = Instance(Geometry, report=True)
 
     def _geometry_default(self):
         return Geometry()

@@ -1,5 +1,8 @@
 
+from os.path import join
+
 from mathkit.mfn import MFnLineArray
+from reporter.report_item import RInputRecord
 from traits.api import \
     Str, Enum, \
     Range, on_trait_change, Float, Int
@@ -10,7 +13,6 @@ from view.plot2d import Viz2D
 from view.ui import BMCSLeafNode
 
 import numpy as np
-from reporter.report_item import RInputRecord
 
 
 class LoadingScenario(MFnLineArray, BMCSLeafNode, RInputRecord):
@@ -113,6 +115,13 @@ class LoadingScenario(MFnLineArray, BMCSLeafNode, RInputRecord):
         self.xdata = t_arr
         self.ydata = d_arr
         self.replot()
+
+    def write_figure(self, f, rdir, fname):
+        self._update_xy_arrays()
+        f.write(r'''
+\multicolumn{3}{r}{\includegraphics[width=5cm]{%s}}\\
+''' % fname)
+        self.savefig(join(rdir, fname))
 
     traits_view = View(
         VGroup(

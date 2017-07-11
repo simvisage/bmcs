@@ -4,14 +4,15 @@
 '''
 
 
+from ibvpy.core.tline import TLine
+from reporter import RInputSection
 from traits.api import \
     Instance, on_trait_change
 from view.ui.bmcs_tree_node import \
     BMCSRootNode
-from ibvpy.core.tline import TLine
 
 
-class BMCSModel(BMCSRootNode):
+class BMCSModel(BMCSRootNode, RInputSection):
     '''Base class for models included in the iMCS Tool Suite.
     It implements the state dependencies within the model tree.
     It handles also the communication between the model and

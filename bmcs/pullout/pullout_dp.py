@@ -100,18 +100,17 @@ class PullOutModel(BMCSModel, Vis2D):
                      time_change_notifier=self.time_changed,
                      )
 
-    loading_scenario = Instance(LoadingScenario,
-                                BC=True)
+    loading_scenario = Instance(LoadingScenario, report=True)
 
     def _loading_scenario_default(self):
         return LoadingScenario()
 
-    cross_section = Instance(CrossSection)
+    cross_section = Instance(CrossSection, report=True)
 
     def _cross_section_default(self):
         return CrossSection()
 
-    geometry = Instance(Geometry)
+    geometry = Instance(Geometry, report=True)
 
     def _geometry_default(self):
         return Geometry()
@@ -127,14 +126,15 @@ class PullOutModel(BMCSModel, Vis2D):
 
     mats_eval_type = Trait('damage-plasticity',
                            {'damage-plasticity': MATSBondSlipDP,
-                            'multilinear': MATSBondSlipMultiLinear})
+                            'multilinear': MATSBondSlipMultiLinear},
+                           MAT=True)
 
     @on_trait_change('mats_eval_type')
     def _set_mats_eval(self):
         self.mats_eval = self.mats_eval_type_()
         self._update_node_list()
 
-    mats_eval = Instance(IMATSEval)
+    mats_eval = Instance(IMATSEval, report=True)
     '''Material model'''
 
     def _mats_eval_default(self):

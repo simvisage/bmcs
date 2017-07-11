@@ -6,6 +6,7 @@ Created on 05.12.2016
 
 from ibvpy.api import MATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from reporter.report_item import RInputSection, RInputRecord
 from traits.api import implements, Int, Array, \
     Constant, Float, Tuple, List, on_trait_change, \
     Instance, Trait, Bool, Str, Button
@@ -16,7 +17,6 @@ from mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     FRPDamageFn, PlottableFn
 import numpy as np
-from reporter.report_item import RInputSection, RInputRecord
 
 
 class MATSEvalFatigue(MATSEval, BMCSTreeNode):
@@ -163,28 +163,29 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode, RInputSection):
                 auto_set=False, enter_set=False)
 
     E_b = Float(12900.0,
-                label="E_b",
+                symbol="$E_\mathrm{b}$",
+                unit='MPa',
                 desc="Bond stiffness",
                 MAT=True,
                 enter_set=True,
                 auto_set=False)
 
     gamma = Float(100.0,
-                  label="Gamma",
+                  symbol="$\gamma$",
                   desc="Kinematic hardening modulus",
                   MAT=True,
                   enter_set=True,
                   auto_set=False)
 
     K = Float(1000.0,
-              label="K",
-              desc="Isotropic harening",
+              symbol="$K$",
+              desc="Isotropic hardening modulus",
               MAT=True,
               enter_set=True,
               auto_set=False)
 
     tau_bar = Float(5.0,
-                    label="Tau_pi_bar",
+                    symbol=r'$\bar{\tau}$',
                     desc="Reversibility limit",
                     MAT=True,
                     enter_set=True,
@@ -195,7 +196,8 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode, RInputSection):
                         label='Uncoupled d-p'
                         )
 
-    s_0 = Float
+    s_0 = Float(MAT=True,
+                desc='Elastic strain/displacement limit')
 
     def __init__(self, *args, **kw):
         super(MATSBondSlipDP, self).__init__(*args, **kw)
@@ -224,7 +226,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode, RInputSection):
         self.omega_fn = self.omega_fn_type_(s_0=self.s_0)
 
     omega_fn = Instance(IDamageFn,
-                        MAT=True)
+                        report=True)
 
     def _omega_fn_default(self):
         # return JirasekDamageFn()

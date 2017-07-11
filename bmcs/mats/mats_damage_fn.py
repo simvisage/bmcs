@@ -2,6 +2,7 @@
 from os.path import join
 
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from reporter import RInputRecord
 from scipy.optimize import newton
 from traits.api import \
     Instance, \
@@ -12,7 +13,6 @@ from traitsui.api import \
 from view.ui import BMCSLeafNode
 
 import numpy as np
-from reporter import RInputRecord
 
 
 class PlottableFn(RInputRecord):
@@ -41,7 +41,7 @@ class PlottableFn(RInputRecord):
 
     def write_figure(self, f, rdir, fname):
         f.write(r'''
-\multicolumn{6}{r}{\includegraphics[width=7cm]{%s}}\\
+\multicolumn{3}{r}{\includegraphics[width=5cm]{%s}}\\
 ''' % fname)
         self.fn.savefig(join(rdir, fname))
 
@@ -141,7 +141,7 @@ class LiDamageFn(DamageFn):
     alpha_1 = Range(value=1., low=0.0, high=1.0,
                     MAT=True,
                     input=True,
-                    symbol="$\alpha_1$",
+                    symbol=r'$\alpha_1$',
                     desc="parameter controls the damage function",
                     enter_set=True,
                     auto_set=False)
@@ -149,7 +149,7 @@ class LiDamageFn(DamageFn):
     alpha_2 = Float(2000.,
                     MAT=True,
                     input=True,
-                    symbol="$\alpha_2$",
+                    symbol=r'$\alpha_2$',
                     desc="parameter controls the damage function",
                     enter_set=True,
                     auto_set=False)

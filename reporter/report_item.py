@@ -62,9 +62,9 @@ class RInputRecord(RItem):
             symbol = trait.symbol
             label = trait.label
             desc = trait.desc
-            f.write('%s & %s & %s & %s & %s & %s \\\\\n' %
-                    (name.replace('_', '\_'), str(value),
-                     unit, symbol, label, desc))
+            f.write(r'''%s & %s = %s [%s] & {\footnotesize %s}  \\
+            ''' %
+                    (name.replace('_', '\_'), symbol, str(value), unit, desc))
 
     def write_record(self, f, rdir, **itags):
         tag_io = StringIO()
@@ -98,14 +98,14 @@ class RInputSection(RInputRecord):
             tag_string = tag_io.getvalue()
             if len(tag_string) > 0:
                 f.write(r'''\hline
-\multicolumn{6}{l}{%s : %s}\\ \hline
+\multicolumn{3}{l}{%s : %s}\\ \hline
 
 ''' % (name.replace('_', '\_'), clname))
                 f.write(tag_string)
 
     def write_report(self, f, rdir, **itags):
-        f.write(r'''\section*{Input}\begin{tabular}{lrrclL{4cm}}\hline
-Name & Value & Unit & Symbol & Label & Description \\\hline \hline
+        f.write(r'''\section*{Input}\begin{tabular}{lrp{4cm}}\hline
+Model parameter & Symbol = Value [Unit] & Description  \\\hline \hline
 ''')
         self.write_record(f, rdir, **itags)
         f.write(r'''\hline \end{tabular}
