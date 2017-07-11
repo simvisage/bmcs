@@ -109,4 +109,4 @@ class Reporter(HasStrictTraits):
         if sys.platform == 'linux2':
             subprocess.call(["xdg-open", self.rfile_pdf])
         else:
-            pass
+            os.startfile(self.rfile_pdf)
