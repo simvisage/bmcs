@@ -54,6 +54,25 @@ class RInputRecord(RItem):
             rinput_traits.update(self.trait_get(**{itag: True}))
         return rinput_traits
 
+    def xwrite_record_entries(self, f, **itags):
+        itraits = self._get_rinput_traits(**itags)
+        io = StringIO()
+        for name, trait in itraits.items():
+            value = getattr(self, name, Missing)
+            unit = trait.unit
+            symbol = trait.symbol
+            label = trait.label
+            desc = trait.desc
+            io.write(r'''\item[%s] %s = %s [%s] \\ {\footnotesize %s}
+            ''' %
+                     (name.replace('_', '\_'), symbol, str(value), unit, desc))
+        entries_str = io.getvalue()
+        if len(entries_str) > 0:
+            f.write(r'''\begin{description}
+\topsep=0pt \itemsep=0pt \parskip=0pt \parsep=0pt \partopsep=0pt
+%s \end{description}
+''' % entries_str)
+
     def write_record_entries(self, f, **itags):
         itraits = self._get_rinput_traits(**itags)
         for name, trait in itraits.items():
@@ -67,10 +86,17 @@ class RInputRecord(RItem):
                     (name.replace('_', '\_'), symbol, str(value), unit, desc))
 
     def write_record(self, f, rdir, **itags):
-        tag_io = StringIO()
-        self.write_record_entries(tag_io, **itags)
-        self.write_figure(tag_io, rdir, 'fig' + str(id(self)) + '.pdf')
-        f.write(tag_io.getvalue())
+        self.write_record_entries_with_figs(f, rdir, **itags)
+
+    def write_record_entries_with_figs(self, f, rdir, **itags):
+        entries_io = StringIO()
+        figures_io = StringIO()
+        self.write_record_entries(entries_io, **itags)
+        self.write_figure(figures_io, rdir, 'fig' + str(id(self)) + '.pdf')
+        entries_str = entries_io.getvalue()
+        figures_str = figures_io.getvalue()
+        f.write(entries_str)
+        f.write(figures_str)
 
     def write_figure(self, f, rdir, fname):
         pass
@@ -88,7 +114,7 @@ class RInputSection(RInputRecord):
 
     def write_record(self, f, rdir, **itags):
         tag_io = StringIO()
-        self.write_record_entries(tag_io, **itags)
+        self.write_record_entries_with_figs(tag_io, rdir, **itags)
         f.write(tag_io.getvalue())
         records = self.get_records()
         for name, record in records.items():
@@ -103,14 +129,42 @@ class RInputSection(RInputRecord):
 ''' % (name.replace('_', '\_'), clname))
                 f.write(tag_string)
 
+    def xwrite_record(self, f, rdir, **itags):
+        tag_io = StringIO()
+        self.write_record_entries_with_figs(tag_io, rdir, **itags)
+        f.write(tag_io.getvalue())
+        records = self.get_records()
+        records_io = StringIO()
+        for name, record in records.items():
+            tag_io = StringIO()
+            clname = record.__class__.__name__
+            record.write_record(tag_io, rdir, **itags)
+            tag_string = tag_io.getvalue()
+            if len(tag_string) > 0:
+                records_io.write(r'''\item[%s] %s\\
+''' % (name.replace('_', '\_'), clname))
+                records_io.write(tag_string)
+        records_str = records_io.getvalue()
+        if len(records_str) > 0:
+            f.write(r'''
+\begin{description}
+\topsep=0pt \itemsep=0pt \parskip=0pt \parsep=0pt \partopsep=0pt
+''')
+            f.write(records_str)
+            f.write(r'''\end{description}
+''')
+
     def write_report(self, f, rdir, **itags):
-        f.write(r'''\section*{Input}\begin{tabular}{lrp{4cm}}\hline
+        f.write(r'''\begin{tabular}{lrp{4cm}}\hline
 Model parameter & Symbol = Value [Unit] & Description  \\\hline \hline
 ''')
         self.write_record(f, rdir, **itags)
         f.write(r'''\hline \end{tabular}
 
 ''')
+
+    def xwrite_report(self, f, rdir, **itags):
+        self.write_record(f, rdir, **itags)
 
 
 class ROutputRecord(RItem):

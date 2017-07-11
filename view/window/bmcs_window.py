@@ -6,6 +6,7 @@
 from threading import Thread
 
 from ibvpy.core.tline import TLine
+from reporter import Reporter
 from traits.api import \
     HasStrictTraits, Instance, Button, Event, \
     DelegatesTo, Bool
@@ -26,7 +27,6 @@ from bmcs_tree_view_handler import \
     menu_open, menu_exit, \
     toolbar_actions, key_bindings
 from bmcs_viz_sheet import VizSheet
-from reporter import Reporter
 
 
 if ETSConfig.toolkit == 'wx':
@@ -187,12 +187,14 @@ class BMCSWindow(HasStrictTraits):
         self.data_changed = True
 
     def report_tex(self):
-        r = Reporter(report_items=[self.model, self.viz_sheet])
+        r = Reporter(report_name=self.model.name,
+                     report_items=[self.model, self.viz_sheet])
         r.write()
         r.show_tex()
 
     def report_pdf(self):
-        r = Reporter(report_items=[self.model, self.viz_sheet])
+        r = Reporter(report_name=self.model.name,
+                     report_items=[self.model, self.viz_sheet])
         r.write()
         r.show_tex()
         r.run_pdflatex()

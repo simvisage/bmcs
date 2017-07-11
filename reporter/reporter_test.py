@@ -7,12 +7,13 @@
    package dependency - window depends on reporter
    parametric studies?
 '''
+from reporter import Reporter
 from traits.api import \
     Float,\
     Instance, Int
+
 from report_item import \
     RInputRecord, RInputSection
-from reporter import Reporter
 
 
 class CrossSection(RInputRecord):

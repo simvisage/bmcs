@@ -13,7 +13,7 @@ from traits.api import \
     Button, Instance, WeakRef, Str
 from traitsui.api import \
     View, Item, HGroup, Handler, \
-    UIInfo, spring, VGroup
+    UIInfo, spring, VGroup, Label
 from traitsui.file_dialog import \
     open_file, save_file
 from traitsui.key_bindings import \
@@ -74,13 +74,12 @@ class BMCSTreeViewHandler(Handler):
     ok = Button('OK')
     cancel = Button('Cancel')
     delete = Button('OK')
-    exit_dialog = Str(label='Do you really wish to end '
-                      'the session? Any unsaved data '
-                      'will be lost.')
 
     exit_view = View(
         VGroup(
-            Item('exit_dialog'),
+            Label('Do you really wish to end '
+                  'the session? Any unsaved data '
+                  'will be lost.'),
             HGroup(Item('ok', show_label=False, springy=True),
                    Item('cancel', show_label=False, springy=True)
                    ),

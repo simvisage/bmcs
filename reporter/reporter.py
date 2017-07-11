@@ -4,6 +4,7 @@ Created on Jul 9, 2017
 @author: rch
 '''
 
+from StringIO import StringIO
 import os
 import subprocess
 import sys
@@ -30,6 +31,8 @@ class Reporter(HasStrictTraits):
 
     report_name = Str('unnamed')
 
+    bmcs_example_dir = Str('examples')
+
     ritems = Property
 
     def _get_ritems(self):
@@ -51,6 +54,12 @@ class Reporter(HasStrictTraits):
     @cached_property
     def _get_rfile_tex(self):
         return os.path.join(self.rdir, 'r_' + self.report_name + '.tex')
+
+    rsubfile_tex = Property(depends_on='report_name')
+
+    @cached_property
+    def _get_rsubfile_tex(self):
+        return os.path.join(self.rdir, 'rs_' + self.report_name + '.tex')
 
     rfile_pdf = Property(depends_on='report_name')
 
@@ -76,21 +85,38 @@ class Reporter(HasStrictTraits):
         postamble = r'''
 \end{document}
         '''
+        preamble_subfile = r'''\documentclass[main.tex]{subfiles}
+\begin{document}
+'''
 
-        f = open(self.rfile_tex, 'w')
-        f.write(preamble)
+        rfile_io = StringIO()
 
         for ritem in self.ritems:
-            ritem.write_report(f, self.rdir, **self.itags)
+            ritem.write_report(rfile_io, self.rdir, **self.itags)
 
-        f.write(postamble)
+        rfile_str = rfile_io.getvalue()
+        full_path = os.path.join('{examples', self.report_name, 'fig')
+        rsubfile_str = rfile_str.replace('{fig', full_path)
 
-        f.close()
+        with open(self.rfile_tex, "w") as f:
+            f.write(preamble)
+            f.write(rfile_str)
+            f.write(postamble)
+
+        with open(self.rsubfile_tex, "w") as f:
+            f.write(preamble_subfile)
+            f.write(rsubfile_str)
+            f.write(postamble)
 
     def show_tex(self):
         with open(self.rfile_tex, 'r') as f:
             texsource = f.read()
-            print 'texsource\n', texsource
+            print texsource
+
+    def show_stex(self):
+        with open(self.rfile_subs_tex, 'r') as f:
+            texsource = f.read()
+            print texsource
 
     def run_pdflatex(self):
         cmd = ['pdflatex', '-interaction', 'nonstopmode', self.rfile_tex]

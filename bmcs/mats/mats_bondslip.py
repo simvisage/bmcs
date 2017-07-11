@@ -399,6 +399,7 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode, RInputRecord):
 
     def get_corr_pred2(self, s_n1, d_s, t_n, t_n1, sa_n):
 
+        sign_s = np.sign(s_n1)
         n_e, n_ip, n_s = s_n1.shape
         D = np.zeros((n_e, n_ip, 3, 3))
         D[:, :, 0, 0] = self.E_m

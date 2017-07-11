@@ -6,6 +6,7 @@ Created on Dec 3, 2015
 
 from os.path import join
 
+from reporter import ROutputRecord
 from traits.api import \
     HasStrictTraits, Dict, Property, Float, \
     WeakRef, DelegatesTo, cached_property, \
@@ -15,7 +16,6 @@ from traitsui.api import \
     HSplit, Item, VGroup
 
 import matplotlib.pyplot as plt
-from reporter import ROutputRecord
 
 
 class Viz2D(ROutputRecord):
