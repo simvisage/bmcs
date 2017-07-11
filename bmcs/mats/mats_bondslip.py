@@ -16,6 +16,7 @@ from mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     FRPDamageFn, PlottableFn
 import numpy as np
+from reporter.report_item import RInputSection, RInputRecord
 
 
 class MATSEvalFatigue(MATSEval, BMCSTreeNode):
@@ -140,7 +141,7 @@ class MATSEvalFatigue(MATSEval, BMCSTreeNode):
         return sig, D, xs_pi, alpha, z, w
 
 
-class MATSBondSlipDP(MATSEval, BMCSTreeNode):
+class MATSBondSlipDP(MATSEval, BMCSTreeNode, RInputSection):
 
     node_name = 'bond model: damage-plasticity'
 
@@ -348,7 +349,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
     )
 
 
-class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
+class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode, RInputRecord):
 
     node_name = "multilinear bond law"
 
@@ -359,19 +360,19 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
     state_arr_shape = Tuple((0,))
 
     E_m = Float(28000.0, tooltip='Stiffness of the matrix [MPa]',
-                MAT=True,
+                MAT=True, unit='MPa', symbol='$E_\mathrm{m}$',
                 auto_set=True, enter_set=True)
 
     E_f = Float(170000.0, tooltip='Stiffness of the fiber [MPa]',
-                MAT=True,
+                MAT=True, unit='MPa', symbol='$E_\mathrm{f}$',
                 auto_set=False, enter_set=True)
 
     s_data = Str('', tooltip='Comma-separated list of strain values',
-                 MAT=True,
+                 MAT=True, unit='mm', symbol='$s$',
                  auto_set=True, enter_set=False)
 
     tau_data = Str('', tooltip='Comma-separated list of stress values',
-                   MAT=True,
+                   MAT=True, unit='MPa', symbol='$\\tau$',
                    auto_set=True, enter_set=False)
 
     update_bs_law = Button(label='update bond-slip law')
@@ -444,7 +445,7 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
     )
 
 
-class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode):
+class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode, RInputSection):
 
     node_name = 'bond model: FRP damage model'
 
@@ -474,7 +475,9 @@ class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode):
         self.omega_fn = self.omega_fn_type_()
 
     omega_fn = Instance(IDamageFn,
-                        MAT=True)
+                        # MAT=True, - not a parameter
+                        report=True
+                        )
 
     def _omega_fn_default(self):
         # return JirasekDamageFn()

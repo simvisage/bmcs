@@ -24,6 +24,7 @@ from view.window import BMCSModel, BMCSWindow, TLine
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     CrossSection, Geometry
+from reporter import Reporter, RInputSection
 
 
 class Viz2DEnergyPlot(Viz2D):
@@ -56,7 +57,7 @@ class Viz2DEnergyRatesPlot(Viz2D):
         ax.legend()
 
 
-class PullOutModel(BMCSModel, Vis2D):
+class PullOutModel(BMCSModel, Vis2D, RInputSection):
 
     node_name = 'pull out simulation'
 
@@ -90,7 +91,7 @@ class PullOutModel(BMCSModel, Vis2D):
         )
     )
 
-    tline = Instance(TLine)
+    tline = Instance(TLine, report=True)
 
     def _tline_default(self):
         # assign the parameters for solver and loading_scenario
@@ -101,17 +102,17 @@ class PullOutModel(BMCSModel, Vis2D):
                      )
 
     loading_scenario = Instance(LoadingScenario,
-                                BC=True)
+                                report=True)
 
     def _loading_scenario_default(self):
         return LoadingScenario()
 
-    cross_section = Instance(CrossSection)
+    cross_section = Instance(CrossSection, report=True)
 
     def _cross_section_default(self):
         return CrossSection()
 
-    geometry = Instance(Geometry)
+    geometry = Instance(Geometry, report=True)
 
     def _geometry_default(self):
         return Geometry()
@@ -135,7 +136,7 @@ class PullOutModel(BMCSModel, Vis2D):
         self.mats_eval = self.mats_eval_type_()
         self._update_node_list()
 
-    mats_eval = Instance(IMATSEval)
+    mats_eval = Instance(IMATSEval, report=True)
     '''Material model'''
 
     def _mats_eval_default(self):
@@ -494,18 +495,35 @@ def run_pullout_frp_damage(*args, **kw):
     w.configure_traits(*args, **kw)
 
 
-def test_B():
-    po = PullOutModel(n_e_x=1, k_max=500, w_max=1.5)
-    po.tline.step = 1.0
-    po.geometry.L_x = 1.0
+def test_reporter():
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.0)
+    po.tline.step = 0.01
+    po.geometry.L_x = 500.0
     po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=1.0, P_b=1.0, A_m=1.0)
-    po.mats_eval.set(E_m=1.0, E_f=1.0, E_b=0.0)
-    po.mats_eval.set(gamma=0.0, K=15.0, tau_bar=45.0)
-    po.mats_eval.omega_fn.set(alpha_2=1.0, plot_max=10.0)
+    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
+    # po.mats_eval.set()
+    po.mats_eval.omega_fn.set(plot_max=0.5)
     po.run()
+
+    w = BMCSWindow(model=po)
+    po.add_viz2d('load function')
+    po.add_viz2d('F-w')
+    po.add_viz2d('field', 'u_C', plot_fn='u_C')
+    po.add_viz2d('field', 'w', plot_fn='w')
+    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
+    po.add_viz2d('field', 's', plot_fn='s')
+    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+    po.add_viz2d('field', 'sf', plot_fn='sf')
+    po.add_viz2d('dissipation', 'dissipation')
+    po.add_viz2d('dissipation rate', 'dissipation rate')
+
+    r = Reporter(report_items=[po, w.viz_sheet])
+    r.write()
+    r.show_tex()
+    r.run_pdflatex()
+    r.show_pdf()
 
 
 if __name__ == '__main__':
-    run_pullout_frp_damage()
-    # test_B()
+    # run_pullout_frp_damage()
+    test_reporter()

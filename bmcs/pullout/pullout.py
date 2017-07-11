@@ -27,9 +27,10 @@ from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow, TLine
 
 import numpy as np
+from reporter import RInputRecord
 
 
-class CrossSection(BMCSLeafNode):
+class CrossSection(BMCSLeafNode, RInputRecord):
     '''Parameters of the pull-out cross section
     '''
     node_name = 'cross-section'
@@ -37,16 +38,22 @@ class CrossSection(BMCSLeafNode):
     A_m = Float(15240,
                 CS=True,
                 input=True,
+                unit='$\\mathrm{mm}^2$',
+                symbol='$A_\mathrm{m}$',
                 auto_set=False, enter_set=True,
                 desc='matrix area [mm2]')
     A_f = Float(153.9,
                 CS=True,
                 input=True,
+                unit='$\\mathrm{mm}^2$',
+                symbol='$A_\mathrm{f}$',
                 auto_set=False, enter_set=True,
                 desc='reinforcement area [mm2]')
     P_b = Float(44,
                 CS=True,
                 input=True,
+                unit='$\\mathrm{mm}$',
+                symbol='$P_\mathrm{b}$',
                 auto_set=False, enter_set=True,
                 desc='perimeter of the bond interface [mm]')
 
@@ -59,12 +66,14 @@ class CrossSection(BMCSLeafNode):
     tree_view = view
 
 
-class Geometry(BMCSLeafNode):
+class Geometry(BMCSLeafNode, RInputRecord):
 
     node_name = 'geometry'
     L_x = Float(45,
                 GEO=True,
                 input=True,
+                unit='$\mathrm{mm}$',
+                symbol='$L$',
                 auto_set=False, enter_set=True,
                 desc='embedded length')
 

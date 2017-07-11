@@ -10,9 +10,10 @@ from traitsui.api import \
 from view.ui import BMCSLeafNode
 
 import numpy as np
+from reporter import RInputRecord
 
 
-class PlottableFn(HasStrictTraits):
+class PlottableFn(RInputRecord):
 
     plot_min = Float(0.0, input=True,
                      enter_set=True, auto_set=False)
@@ -35,6 +36,12 @@ class PlottableFn(HasStrictTraits):
         ydata = self.__call__(xdata)
         self.fn.set(xdata=xdata, ydata=ydata)
         self.fn.replot()
+
+    def write_figure(self, f, fname):
+        f.write(r'''
+\multicolumn{6}{r}{\includegraphics[width=7cm]{%s}}\\
+''' % fname)
+        self.fn.savefig(fname)
 
     traits_view = View(UItem('fn'))
 
@@ -60,7 +67,7 @@ class DamageFn(BMCSLeafNode, PlottableFn):
     s_0 = Float(0.0004,
                 MAT=True,
                 input=True,
-                label="s_0",
+                symbol="$s_0$",
                 desc="elastic strain limit",
                 enter_set=True,
                 auto_set=False)
@@ -78,7 +85,7 @@ class JirasekDamageFn(DamageFn):
     s_f = Float(0.001,
                 MAT=True,
                 input=True,
-                label="s_f",
+                symbol="$s_f$",
                 desc="parameter controls the damage function",
                 enter_set=True,
                 auto_set=False)
@@ -132,7 +139,7 @@ class LiDamageFn(DamageFn):
     alpha_1 = Range(value=1., low=0.0, high=1.0,
                     MAT=True,
                     input=True,
-                    label="alpha_1",
+                    symbol="$\alpha_1$",
                     desc="parameter controls the damage function",
                     enter_set=True,
                     auto_set=False)
@@ -140,7 +147,7 @@ class LiDamageFn(DamageFn):
     alpha_2 = Float(2000.,
                     MAT=True,
                     input=True,
-                    label="alpha_2",
+                    symbol="$\alpha_2$",
                     desc="parameter controls the damage function",
                     enter_set=True,
                     auto_set=False)
@@ -192,7 +199,7 @@ class AbaqusDamageFn(DamageFn):
     s_u = Float(0.003,
                 MAT=True,
                 input=True,
-                label="s_u",
+                symbol="$s_u$",
                 desc="parameter controls the damage function",
                 enter_set=True,
                 auto_set=False)
@@ -200,7 +207,7 @@ class AbaqusDamageFn(DamageFn):
     alpha = Float(0.1,
                   MAT=True,
                   input=True,
-                  label="alpha",
+                  symbol="$\alpha$",
                   desc="parameter controlling the slop of damage",
                   enter_set=True,
                   auto_set=False)
@@ -262,7 +269,7 @@ class FRPDamageFn(DamageFn):
     b = Float(10.4,
               MAT=True,
               input=True,
-              label="b",
+              symbol="$b$",
               desc="parameter controls the damage function",
               enter_set=True,
               auto_set=False)
@@ -270,7 +277,7 @@ class FRPDamageFn(DamageFn):
     Gf = Float(1.19,
                MAT=True,
                input=True,
-               label="Gf",
+               symbol="$G_\mathrm{f}$",
                desc="fracture energy",
                enter_set=True,
                auto_set=False)
@@ -298,12 +305,13 @@ class FRPDamageFn(DamageFn):
 
         b = self.b
         Gf = self.Gf
-        Eb = 1.734 * Gf * b**2
-
+        Eb = self.E_b  # 1.734 * Gf * b**2
+        s_0 = self.s_0
         # calculation of s_0, implicit function solved using Newton method
-        def f_s(s_0): return s_0 / \
-            (np.exp(-b * s_0) - np.exp(-2.0 * b * s_0)) - 2.0 * b * Gf / Eb
-        s_0 = newton(f_s, 0.00000001, tol=1e-5, maxiter=20)
+
+#         def f_s(s_0): return s_0 / \
+#             (np.exp(-b * s_0) - np.exp(-2.0 * b * s_0)) - 2.0 * b * Gf / Eb
+#         s_0 = newton(f_s, 0.00000001, tol=1e-5, maxiter=20)
 
         omega = np.zeros_like(kappa, dtype=np.float_)
         d_idx = np.where(kappa >= s_0)[0]

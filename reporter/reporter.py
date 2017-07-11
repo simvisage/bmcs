@@ -18,16 +18,17 @@ from report_item import IRItem
 
 class Reporter(HasStrictTraits):
 
-    INPUTTAGS = List(['MAT', 'GEO', 'CS', 'ALG'])
+    INPUTTAGS = List(['MAT', 'GEO', 'CS', 'ALG', 'BC', 'MESH'])
 
-    TAGLABELS = Dict(dict(MAT='Material',
-                          GEO='Geometry',
-                          CS='Cross-section',
-                          ALG='Algorithm'))
+    itags = Property(depends_on='INPUTTAGS')
+
+    @cached_property
+    def _get_itags(self):
+        return {tag: True for tag in self.INPUTTAGS}
 
     report_items = List(IRItem)
 
-    report_name = Str('<unnamed>')
+    report_name = Str('unnamed')
 
     ritems = Property
 
@@ -60,6 +61,16 @@ class Reporter(HasStrictTraits):
     def write(self):
 
         preamble = r'''\documentclass{article}
+\oddsidemargin=0cm
+\topmargin=-1cm
+\textwidth=16cm
+\textheight=25cm
+\usepackage{graphicx}          % include graphics
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
 \begin{document}
         '''
         postamble = r'''
@@ -70,7 +81,7 @@ class Reporter(HasStrictTraits):
         f.write(preamble)
 
         for ritem in self.ritems:
-            ritem.write_report(f)
+            ritem.write_report(f, self.rdir, **self.itags)
 
         f.write(postamble)
 

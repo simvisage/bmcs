@@ -1,4 +1,4 @@
 
 from report_item import \
-    RInputRecord, RInputSubDomain
+    RInputRecord, RInputSection, ROutputRecord, ROutputSection
 from reporter import Reporter

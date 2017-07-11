@@ -24,7 +24,7 @@ from view.window import BMCSModel, BMCSWindow, TLine
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     CrossSection, Geometry
-from reporter import RInputRecord, RInputSubDomain, Reporter
+from reporter import RInputRecord, RInputSection, Reporter
 
 
 class Viz2DEnergyPlot(Viz2D):
@@ -57,7 +57,7 @@ class Viz2DEnergyRatesPlot(Viz2D):
         ax.legend()
 
 
-class PullOutModel(BMCSModel, Vis2D, RInputSubDomain):
+class PullOutModel(BMCSModel, Vis2D, RInputSection):
 
     node_name = 'pull out simulation'
 
@@ -79,8 +79,7 @@ class PullOutModel(BMCSModel, Vis2D, RInputSubDomain):
             self.loading_scenario,
             self.mats_eval,
             self.cross_section,
-            self.geometry,
-        ]
+            self.geometry, ]
 
     tree_view = View(
         Group(
@@ -91,7 +90,7 @@ class PullOutModel(BMCSModel, Vis2D, RInputSubDomain):
         )
     )
 
-    tline = Instance(TLine, TIME=True)
+    tline = Instance(TLine)
 
     def _tline_default(self):
         # assign the parameters for solver and loading_scenario
@@ -101,27 +100,30 @@ class PullOutModel(BMCSModel, Vis2D, RInputSubDomain):
                      time_change_notifier=self.time_changed,
                      )
 
-    loading_scenario = Instance(LoadingScenario,
-                                BC=True)
+    loading_scenario = Instance(LoadingScenario, report=True)
 
     def _loading_scenario_default(self):
         return LoadingScenario()
 
-    cross_section = Instance(CrossSection,
-                             CS=True)
+    cross_section = Instance(CrossSection, report=True)
 
     def _cross_section_default(self):
         return CrossSection()
 
-    geometry = Instance(Geometry,
-                        GEO=True)
+    geometry = Instance(Geometry, report=True)
 
     def _geometry_default(self):
         return Geometry()
 
-    n_e_x = Int(20, MESH=True, auto_set=False, enter_set=True)
+    n_e_x = Int(20,
+                unit='-', symbol='$n_{e}$',
+                desc='Number of elements in $x$-direction',
+                MESH=True, auto_set=False, enter_set=True)
 
-    w_max = Float(1, BC=True, auto_set=False, enter_set=True)
+    w_max = Float(1,
+                  unit='$\mathrm{mm}$', symbol='$u_\mathrm{f,0}$',
+                  desc='Control pull-out displacement',
+                  BC=True, auto_set=False, enter_set=True)
 
     controlled_dof = Property
 
@@ -138,7 +140,7 @@ class PullOutModel(BMCSModel, Vis2D, RInputSubDomain):
         self.mats_eval = self.mats_eval_type_()
         self._update_node_list()
 
-    mats_eval = Instance(IMATSEval)
+    mats_eval = Instance(IMATSEval, report=True)
     '''Material model'''
 
     def _mats_eval_default(self):
@@ -203,8 +205,15 @@ class PullOutModel(BMCSModel, Vis2D, RInputSubDomain):
                         )
 
     k_max = Int(400,
+                unit='$\mathrm{mm}$',
+                symbol='$k_{\max}$',
+                desc='Maximum number of iterations',
                 ALG=True)
+
     tolerance = Float(1e-4,
+                      unit='-',
+                      symbol='$\epsilon$',
+                      desc='Tolerance of residual',
                       ALG=True)
 
     tloop = Property(Instance(TLoop),
@@ -512,9 +521,25 @@ def test_reporter():
     po.mats_eval.set(s_data='0, 0.1, 0.4, 20.0',
                      tau_data='0, 800, 0, 0')
     po.mats_eval.update_bs_law = True
-    r = Reporter(report_items=[po])
+    po.run()
+
+    w = BMCSWindow(model=po)
+    po.add_viz2d('load function')
+    po.add_viz2d('F-w')
+    po.add_viz2d('field', 'u_C', plot_fn='u_C')
+#    po.add_viz2d('field', 'w', plot_fn='w')
+    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
+    po.add_viz2d('field', 's', plot_fn='s')
+    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+    po.add_viz2d('field', 'sf', plot_fn='sf')
+    po.add_viz2d('dissipation', 'dissipation')
+    po.add_viz2d('dissipation rate', 'dissipation rate')
+
+    r = Reporter(report_items=[po, w.viz_sheet])
     r.write()
     r.show_tex()
+    r.run_pdflatex()
+    r.show_pdf()
 
 
 def test_B():

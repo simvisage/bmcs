@@ -10,9 +10,10 @@ from view.plot2d import Viz2D
 from view.ui import BMCSLeafNode
 
 import numpy as np
+from reporter.report_item import RInputRecord
 
 
-class LoadingScenario(MFnLineArray, BMCSLeafNode):
+class LoadingScenario(MFnLineArray, BMCSLeafNode, RInputRecord):
 
     def reset(self):
         return

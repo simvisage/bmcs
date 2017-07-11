@@ -5,6 +5,7 @@
 
 from threading import Thread
 
+from ibvpy.core.tline import TLine
 from traits.api import \
     HasStrictTraits, Instance, Button, Event, \
     DelegatesTo, Bool
@@ -17,12 +18,16 @@ from traitsui.menu import \
     Menu, MenuBar, Separator
 from view.ui.bmcs_tree_node import \
     BMCSRootNode, BMCSTreeNode, BMCSLeafNode
+
 from bmcs_model import BMCSModel
 from bmcs_tree_view_handler import \
+    menu_tools_report_pdf, menu_tools_report_tex, \
     BMCSTreeViewHandler, plot_self, menu_save, \
-    menu_open, menu_exit, toolbar_actions, key_bindings
+    menu_open, menu_exit, \
+    toolbar_actions, key_bindings
 from bmcs_viz_sheet import VizSheet
-from ibvpy.core.tline import TLine
+from reporter import Reporter
+
 
 if ETSConfig.toolkit == 'wx':
     from traitsui.wx.tree_editor import \
@@ -181,6 +186,18 @@ class BMCSWindow(HasStrictTraits):
         self.figure.clear()
         self.data_changed = True
 
+    def report_tex(self):
+        r = Reporter(report_items=[self.model, self.viz_sheet])
+        r.write()
+        r.show_tex()
+
+    def report_pdf(self):
+        r = Reporter(report_items=[self.model, self.viz_sheet])
+        r.write()
+        r.show_tex()
+        r.run_pdflatex()
+        r.show_pdf()
+
     view = View(
         HSplit(
             VGroup(
@@ -225,7 +242,12 @@ class BMCSWindow(HasStrictTraits):
                         name='view_toolbar'),
         menubar=MenuBar(Menu(menu_exit, Separator(),
                              menu_save, menu_open,
-                             name='File'))
+                             name='File'),
+                        Menu(menu_tools_report_tex,
+                             menu_tools_report_pdf,
+                             name='Tools'),
+
+                        )
     )
 
 

@@ -20,6 +20,7 @@ from util.traits.editors import \
     MPLFigureEditor
 from view.plot2d.viz2d import Viz2D
 import matplotlib.pyplot as plt
+from reporter import ROutputSection
 
 
 class Viz2DAdapter(TabularAdapter):
@@ -42,7 +43,7 @@ tabular_editor = TabularEditor(
 )
 
 
-class VizSheet(HasStrictTraits):
+class VizSheet(ROutputSection):
     '''Trait definition.
     '''
 
@@ -162,6 +163,9 @@ class VizSheet(HasStrictTraits):
 
     def viz2d_list_items_changed(self):
         self.replot()
+
+    def get_records(self):
+        return self.viz2d_list
 
     export_button = Button(label='Export selected diagram')
 

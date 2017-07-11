@@ -40,6 +40,15 @@ menu_open = Action(name='Open', action='menu_open')
 menu_exit = Action(name='Exit', action='menu_exit')
 '''Menubar action for terminating the view
 '''
+menu_tools_report_tex = Action(name='Report as LaTeX source',
+                               action='menu_tools_report_tex')
+'''Menubar action for generation of report in LaTeX format 
+'''
+
+menu_tools_report_pdf = Action(name='Report as PDF document',
+                               action='menu_tools_report_pdf')
+'''Menubar action for generation of report in LaTeX format 
+'''
 
 key_bindings = KeyBindings(
     KeyBinding(binding1='Ctrl-r',
@@ -126,6 +135,12 @@ class BMCSTreeViewHandler(Handler):
         if info.initialized:
             self.info = info
             self._ui = self.edit_traits(view='exit_view')
+
+    def menu_tools_report_tex(self, info):
+        info.object.report_tex()
+
+    def menu_tools_report_pdf(self, info):
+        info.object.report_pdf()
 
     def _delete_fired(self):
         del self.node.db[self.node.key]

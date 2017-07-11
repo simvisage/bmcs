@@ -9,6 +9,8 @@ from traitsui.api import View, VGroup, UItem
 from util.traits.editors import \
     MPLFigureEditor
 from view.ui import BMCSLeafNode
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -138,6 +140,13 @@ class MFnLineArray(BMCSLeafNode):
         self.mpl_plot(ax)
         self.mpl_plot_diff(ax, color='orange')
         self.data_changed = True
+
+    def savefig(self, fname):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        self.mpl_plot(ax)
+        self.mpl_plot_diff(ax, color='orange')
+        fig.savefig(fname)
 
     tree_view = View(
         VGroup(

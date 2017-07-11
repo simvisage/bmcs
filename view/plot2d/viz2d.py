@@ -13,9 +13,10 @@ from traitsui.api import \
     HSplit, Item, VGroup
 
 import matplotlib.pyplot as plt
+from reporter import ROutputRecord
 
 
-class Viz2D(HasStrictTraits):
+class Viz2D(ROutputRecord):
     '''Base class of the visualization adaptors
     '''
 
@@ -32,6 +33,18 @@ class Viz2D(HasStrictTraits):
     def plot(self, ax, vot=0):
         self.vis2d.plot(ax, vot)
 
+    def write_figure(self, f, fname):
+        f.write(r'''
+\includegraphics[width=7.5cm]{%s}
+''' % fname)
+        self.savefig(fname)
+
+    def savefig(self, fname):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        self.plot(ax, 0.25)
+        fig.savefig(fname)
+
     def reset(self, ax):
         pass
 
@@ -39,7 +52,6 @@ class Viz2D(HasStrictTraits):
         HSplit(
             VGroup(
                 UItem('label'),
-                UItem('render_button'),
                 label='Vizualization inteerface',
                 springy=True
             )),
