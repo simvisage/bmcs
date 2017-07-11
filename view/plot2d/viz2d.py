@@ -4,6 +4,8 @@ Created on Dec 3, 2015
 @author: rch
 '''
 
+from os.path import join
+
 from traits.api import \
     HasStrictTraits, Dict, Property, Float, \
     WeakRef, DelegatesTo, cached_property, \
@@ -33,11 +35,11 @@ class Viz2D(ROutputRecord):
     def plot(self, ax, vot=0):
         self.vis2d.plot(ax, vot)
 
-    def write_figure(self, f, fname):
+    def write_figure(self, f, rdir, fname):
         f.write(r'''
 \includegraphics[width=7.5cm]{%s}
 ''' % fname)
-        self.savefig(fname)
+        self.savefig(join(rdir, fname))
 
     def savefig(self, fname):
         fig = plt.figure()

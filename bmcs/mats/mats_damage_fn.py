@@ -1,4 +1,6 @@
 
+from os.path import join
+
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from scipy.optimize import newton
 from traits.api import \
@@ -37,11 +39,11 @@ class PlottableFn(RInputRecord):
         self.fn.set(xdata=xdata, ydata=ydata)
         self.fn.replot()
 
-    def write_figure(self, f, fname):
+    def write_figure(self, f, rdir, fname):
         f.write(r'''
 \multicolumn{6}{r}{\includegraphics[width=7cm]{%s}}\\
 ''' % fname)
-        self.fn.savefig(fname)
+        self.fn.savefig(join(rdir, fname))
 
     traits_view = View(UItem('fn'))
 

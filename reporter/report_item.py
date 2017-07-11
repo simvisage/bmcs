@@ -69,10 +69,10 @@ class RInputRecord(RItem):
     def write_record(self, f, rdir, **itags):
         tag_io = StringIO()
         self.write_record_entries(tag_io, **itags)
-        self.write_figure(tag_io, join(rdir, 'fig' + str(id(self)) + '.pdf'))
+        self.write_figure(tag_io, rdir, 'fig' + str(id(self)) + '.pdf')
         f.write(tag_io.getvalue())
 
-    def write_figure(self, f, fname):
+    def write_figure(self, f, rdir, fname):
         pass
 
 
@@ -117,7 +117,7 @@ class ROutputRecord(RItem):
 
     def write_record(self, f, rdir, **itags):
         tag_io = StringIO()
-        self.write_figure(tag_io, join(rdir, 'fig' + str(id(self)) + '.pdf'))
+        self.write_figure(tag_io, rdir, 'fig' + str(id(self)) + '.pdf')
         f.write(tag_io.getvalue())
 
 

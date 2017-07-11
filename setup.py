@@ -1,6 +1,6 @@
 import os
 from setuptools import setup, find_packages
-
+from bmcs.scripts.bmcs_version import CURRENT_VERSION
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
 # README file and 2) it's easier to type in the README file than to put a raw
@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name="bmcs",
-    version="0.0.1a36",
+    version=CURRENT_VERSION,
     author="Rostislav Chudoba, Yionxiung Li, Abedulgader Baktheer, Alexander Scholzen",
     author_email="rostislav.chudoba@rwth-aachen.de",
     description=("Suite of educational packages for to the course "

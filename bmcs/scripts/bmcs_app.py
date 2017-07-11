@@ -16,10 +16,14 @@ from bmcs.bond_slip import \
 from bmcs.pullout import \
     run_pullout_const_shear, \
     run_pullout_dp, run_pullout_multilinear, run_pullout_frp_damage
-from traits.api import HasTraits, Button
-from traitsui.api import View, UItem, VGroup, Group
+from traits.api import HasTraits, Button, Str, Constant
+from traitsui.api import \
+    View, Item, UItem, VGroup, Group, Spring, HGroup
+
+from bmcs_version import CURRENT_VERSION
 from ibvpy.mats.mats3D.mats3D_plastic.yield_face3D_explorer \
     import run_explorer
+
 
 # A bmcs mayavi instance so we can close it correctly.
 bmcs = None
@@ -27,6 +31,7 @@ bmcs = None
 
 class BMCSLauncher(HasTraits):
 
+    version = Constant(CURRENT_VERSION)
     #=========================================================================
     # Lecture #2
     #=========================================================================
@@ -78,6 +83,11 @@ class BMCSLauncher(HasTraits):
 
     view = View(
         VGroup(
+            HGroup(
+                Spring(),
+                Item('version', style='readonly',
+                     full_size=True, resizable=True)
+            ),
             Group(
                 UItem('bond_slip_model_d',
                       full_size=True, resizable=True),
@@ -102,7 +112,7 @@ class BMCSLauncher(HasTraits):
                 UItem('yield_face_explorer',
                       full_size=True, resizable=True),
                 label='Yield conditions, lecture #8'
-            )
+            ),
         ),
         title='BMCS application launcher',
         width=500,
