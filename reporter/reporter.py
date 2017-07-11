@@ -103,8 +103,6 @@ class Reporter(HasStrictTraits):
             raise ValueError('Error {} executing command: {}'.format(
                 retcode, ' '.join(cmd)))
 
-        os.unlink(self.rfile_tex)
-
     def show_pdf(self):
         if sys.platform == 'linux2':
             subprocess.call(["xdg-open", self.rfile_pdf])
