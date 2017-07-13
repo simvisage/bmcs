@@ -67,6 +67,16 @@ class Reporter(HasStrictTraits):
     def _get_rfile_pdf(self):
         return os.path.join(self.rdir, 'r_' + self.report_name + '.pdf')
 
+    title = Property
+
+    def _get_title(self):
+        return self.ritems[0].title
+
+    desc = Property
+
+    def _get_desc(self):
+        return self.ritems[0].desc
+
     def write(self):
 
         preamble = r'''\documentclass{article}
@@ -80,6 +90,43 @@ class Reporter(HasStrictTraits):
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
+
+\usepackage[most]{tcolorbox}
+\newcounter{bmcsexample}
+\usepackage{xparse}
+\usepackage{lipsum}
+
+\def\exampletext{Example} % If English
+
+\NewDocumentEnvironment{bmcsexample}{ O{} }
+{
+\colorlet{colexam}{red!55!black} % Global example color
+\newtcolorbox[use counter=bmcsexample]{bmcsexamplebox}{%
+    % Example Frame Start
+    empty,% Empty previously set parameters
+    title={\exampletext: #1},% use \thetcbcounter to access the bmcsexample counter text
+    % Attaching a box requires an overlay
+    attach boxed title to top left,
+       % Ensures proper line breaking in longer titles
+       minipage boxed title,
+    % (boxed title style requires an overlay)
+    boxed title style={empty,size=minimal,toprule=0pt,top=4pt,left=3mm,overlay={}},
+    coltitle=colexam,fonttitle=\bfseries,
+    before=\par\medskip\noindent,parbox=false,boxsep=0pt,left=3mm,right=0mm,top=2pt,breakable,pad at break=0mm,
+       before upper=\csname @totalleftmargin\endcsname0pt, % Use instead of parbox=true. This ensures parskip is inherited by box.
+    % Handles box when it exists on one page only
+    overlay unbroken={\draw[colexam,line width=.5pt] ([xshift=-0pt]title.north west) -- ([xshift=-0pt]frame.south west); },
+    % Handles multipage box: first page
+    overlay first={\draw[colexam,line width=.5pt] ([xshift=-0pt]title.north west) -- ([xshift=-0pt]frame.south west); },
+    % Handles multipage box: middle page
+    overlay middle={\draw[colexam,line width=.5pt] ([xshift=-0pt]frame.north west) -- ([xshift=-0pt]frame.south west); },
+    % Handles multipage box: last page
+    overlay last={\draw[colexam,line width=.5pt] ([xshift=-0pt]frame.north west) -- ([xshift=-0pt]frame.south west); },%
+    }
+\begin{bmcsexamplebox}}
+{\end{bmcsexamplebox}\endlist}
+
+
 \begin{document}
         '''
         postamble = r'''
@@ -91,8 +138,19 @@ class Reporter(HasStrictTraits):
 
         rfile_io = StringIO()
 
-        for ritem in self.ritems:
-            ritem.write_report(rfile_io, self.rdir, **self.itags)
+        rfile_io.write(r'''
+\begin{bmcsexample}[%s]
+\noindent %s \\[3mm]
+\begin{center}
+''' % (self.title, self.desc))
+        self.ritems[0].write_report(rfile_io, self.rdir, **self.itags)
+        rfile_io.write(r'''
+\end{center}
+''')
+        self.ritems[1].write_report(rfile_io, self.rdir, **self.itags)
+        rfile_io.write(r'''
+\end{bmcsexample}
+''')
 
         rfile_str = rfile_io.getvalue()
         full_path = os.path.join('{examples', self.report_name, 'fig')

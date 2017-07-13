@@ -22,30 +22,44 @@ class LoadingScenario(MFnLineArray, BMCSLeafNode, RInputRecord):
     node_name = Str('loading scenario')
     loading_type = Enum("monotonic", "cyclic",
                         enter_set=True, auto_set=False,
+                        symbol='option',
+                        unit='-',
                         BC=True,
                         input=True)
     number_of_cycles = Int(1,
                            enter_set=True, auto_set=False,
+                           symbol='$n_\mathrm{cycles}$',
+                           unit='-',
                            BC=True,
                            input=True)
     maximum_loading = Float(1.0,
                             enter_set=True, auto_set=False,
                             BC=True,
+                            symbol='$\phi_{\max}$',
+                            unit='-',
                             input=True)
     unloading_ratio = Range(0., 1., value=0.5,
                             enter_set=True, auto_set=False,
                             BC=True,
+                            symbol='$\phi_{\mathrm{unload}}$',
+                            unit='-',
                             input=True)
     number_of_increments = Int(20,
                                enter_set=True, auto_set=False,
                                BC=True,
+                               symbol='$n_{\mathrm{incr}}$',
+                               unit='-',
                                input=True)
     amplitude_type = Enum("increasing", "constant",
                           enter_set=True, auto_set=False,
+                          symbol='option',
+                          unit='-',
                           BC=True,
                           input=True)
     loading_range = Enum("non-symmetric", "symmetric",
                          enter_set=True, auto_set=False,
+                         symbol='option',
+                         unit='-',
                          BC=True,
                          input=True)
 

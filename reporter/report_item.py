@@ -202,5 +202,4 @@ class ROutputSection(RInputSection):
 ''')
 
     def write_report(self, f, rdir, **itags):
-        f.write(r'''\section*{Output}''')
         self.write_record(f, rdir, **itags)

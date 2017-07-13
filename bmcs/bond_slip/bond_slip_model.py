@@ -19,6 +19,7 @@ from bmcs.time_functions import \
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from ibvpy.api import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from reporter import RInputSection
 from traits.api import \
     Property, Instance, cached_property, Str, \
     List, Float, Trait, on_trait_change, Bool, Dict,\
@@ -34,7 +35,7 @@ from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 
 
-class Material(BMCSTreeNode):
+class Material(BMCSTreeNode, RInputSection):
 
     tree_node_list = List([])
 
@@ -99,7 +100,7 @@ class Material(BMCSTreeNode):
         self.omega_fn = self.omega_fn_type_(s_0=self.s_0)
 
     omega_fn = Instance(IDamageFn,
-                        MAT=True)
+                        report=True)
 
     def _omega_fn_default(self):
         return LiDamageFn()
@@ -170,27 +171,21 @@ class BondSlipModel(BMCSModel, Vis2D):
 
     def _tree_node_list_default(self):
         return [self.tline,
-                self.material,
+                self.mats_eval,
                 self.loading_scenario]
 
     @on_trait_change('MAT,+BC')
     def _update_node_list(self):
         self.tree_node_list = [self.tline,
-                               self.material,
+                               self.mats_eval,
                                self.loading_scenario]
-
-    material = Instance(Material)
-    '''Record of material parameters that are accessed by the
-    individual models.
-    '''
-
-    def _material_default(self):
-        return Material()
 
     interaction_type = Trait('interactive',
                              {'interactive': TFunPWLInteractive,
                               'predefined': LoadingScenario},
                              BC=True,
+                             symbol='option',
+                             unit='-'
                              )
     '''Type of control - either interactive or predefined.
     '''
@@ -199,7 +194,7 @@ class BondSlipModel(BMCSModel, Vis2D):
         print 'assigning interaction type'
         self.loading_scenario = self.interaction_type_()
 
-    loading_scenario = Instance(MFnLineArray)
+    loading_scenario = Instance(MFnLineArray, report=True)
     '''Loading scenario in form of a function that maps the time variable
     to the control slip.
     '''
@@ -213,17 +208,28 @@ class BondSlipModel(BMCSModel, Vis2D):
                             'damage-plasticity': MATSBondSlipDP,
                             },
                            enter_set=True, auto_set=False,
-                           MAT=True
+                           MAT=True,
+                           symbol='option',
+                           unit='-'
                            )
     '''Available material models.
     '''
 
-    mats_eval = Property(Instance(IMATSEval), depends_on='MAT')
-    '''Instance of the material model.
-    '''
-    @cached_property
-    def _get_mats_eval(self):
-        return self.material_model_(material=self.material)
+    @on_trait_change('material_model')
+    def _set_mats_eval(self):
+        self.mats_eval = self.material_model_()
+        self._update_node_list()
+
+    mats_eval = Instance(IMATSEval, report=True)
+    '''Material model'''
+
+    def _mats_eval_default(self):
+        return self.material_model_()
+
+    material = Property
+
+    def _get_material(self):
+        return self.mats_eval
 
     sv_names = Property(List(Str), depends_on='material_model')
     '''Names of state variables of the current material model.
@@ -261,6 +267,8 @@ class BondSlipModel(BMCSModel, Vis2D):
     _restart = Bool(True)
 
     n_steps = Int(1000, ALG=True,
+                  symbol='$n_\mathrm{s}$',
+                  unit='-',
                   enter_set=True, auto_set=False)
 
     state_vars = Tuple
@@ -316,8 +324,9 @@ class BondSlipModel(BMCSModel, Vis2D):
 
 
 def run_bond_slip_model_d(*args, **kw):
-    bsm = BondSlipModel(interaction_type='predefined',
-                        material_model='damage',
+    bsm = BondSlipModel(name='t21_bond_slip_damage_based',
+                        interaction_type='predefined',
+                        material_model='damage'
                         )
     w = BMCSWindow(model=bsm, n_cols=2)
     bsm.add_viz2d('bond history', 's-t', x_sv_name='t', y_sv_name='s')
@@ -337,7 +346,8 @@ def run_bond_slip_model_d(*args, **kw):
 
 
 def run_bond_slip_model_p(*args, **kw):
-    bsm = BondSlipModel(interaction_type='predefined',
+    bsm = BondSlipModel(name='t22_bond_slip_plasticity_based',
+                        interaction_type='predefined',
                         material_model='plasticity',
                         n_steps=2000)
     w = BMCSWindow(model=bsm, n_cols=2)
@@ -345,7 +355,7 @@ def run_bond_slip_model_p(*args, **kw):
     bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
     bsm.add_viz2d('bond history', 's_p-s', x_sv_name='s', y_sv_name='s_p')
     bsm.add_viz2d('bond history', 'z-s', x_sv_name='s', y_sv_name='z')
-    bsm.add_viz2d('bond history', 'alpha-s', x_sv_name='s', y_sv_name='alpha')
+    #bsm.add_viz2d('bond history', 'alpha-s', x_sv_name='s', y_sv_name='alpha')
     bsm.loading_scenario.set(loading_type='cyclic',
                              amplitude_type='constant'
                              )
@@ -357,7 +367,8 @@ def run_bond_slip_model_p(*args, **kw):
 
 
 def run_bond_slip_model_dp(*args, **kw):
-    bsm = BondSlipModel(interaction_type='predefined',
+    bsm = BondSlipModel(name='t23_bond_slip_damage_plasticity_based',
+                        interaction_type='predefined',
                         material_model='damage-plasticity',
                         n_steps=100,)
     w = BMCSWindow(model=bsm, n_cols=2)
@@ -422,6 +433,6 @@ def run_predefined_load_test():
 
 
 if __name__ == '__main__':
-    # run_interactive_test_d()
+    # run_bond_slip_model_dp()
     # run_predefined_load_test(
     run_bond_slip_model_d()

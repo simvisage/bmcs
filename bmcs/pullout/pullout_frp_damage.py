@@ -460,5 +460,5 @@ def test_reporter():
 
 
 if __name__ == '__main__':
-    # run_pullout_frp_damage()
-    test_reporter()
+    run_pullout_frp_damage()
+    # test_reporter()

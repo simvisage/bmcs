@@ -4,24 +4,26 @@ Created on 05.12.2016
 @author: abaktheer
 '''
 
+from bmcs.mats.mats_damage_fn import \
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
+    FRPDamageFn
 from ibvpy.api import MATSEval, IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from reporter import RInputSection
 from traits.api import implements,  \
     Constant, Float, WeakRef, List, Str, Property, cached_property, \
-    HasStrictTraits, Instance, Callable
+    Trait, on_trait_change, Instance, Callable
+from traitsui.api import View, VGroup, Item, UItem, Group
+from view.ui import BMCSTreeNode
 
 import numpy as np
 
 
-class MATSBondSlipBase(MATSEval):
+class MATSBondSlipBase(MATSEval, BMCSTreeNode, RInputSection):
 
     implements(IMATSEval)
 
     ZERO_THRESHOLD = Constant(1e-8)
-
-    material = WeakRef
-    '''Link to a material record where the parameters are stored.
-    '''
 
     sv_names = List(Str)
     '''Names of the state variables
@@ -38,34 +40,40 @@ class MATSBondSlipEP(MATSBondSlipBase):
     '''Elastic plastic model of the bond
     '''
 
-    def _material_changed(self):
-        self.set(E_b=self.material.E_b,
-                 gamma=self.material.gamma,
-                 tau_bar=self.material.tau_bar,
-                 K=self.material.K
-                 )
-
+    node_name = 'bond model: plasticity'
     E_b = Float(12900,
                 label="E_b",
-                desc="Bond Stiffness",
+                desc="Bond stiffness",
+                MAT=True,
+                symbol=r'$E_\mathrm{b}$',
+                unit='MPa/mm',
                 enter_set=True,
                 auto_set=False)
 
     gamma = Float(0,
                   label="Gamma",
                   desc="Kinematic hardening modulus",
+                  MAT=True,
+                  symbol=r'$\gamma$',
+                  unit='MPa/mm',
                   enter_set=True,
                   auto_set=False)
 
     K = Float(0,
               label="K",
-              desc="Isotropic harening modulus",
+              desc="Isotropic hardening modulus",
+              MAT=True,
+              symbol='$K$',
+              unit='MPa/mm',
               enter_set=True,
               auto_set=False)
 
     tau_bar = Float(5,
                     label="Tau_0 ",
-                    desc="yield stress",
+                    desc="Yield stress",
+                    symbol=r'$\bar{\tau}$',
+                    unit='MPa',
+                    MAT=True,
                     enter_set=True,
                     auto_set=False)
 
@@ -107,11 +115,15 @@ class MATSBondSlipD(MATSBondSlipBase):
     '''Damage model of bond.
     '''
 
-    def _material_changed(self):
-        self.set(E_b=self.material.E_b,
-                 tau_bar=self.material.tau_bar,
-                 g_fn=self.material.omega_fn
-                 )
+    node_name = 'bond model: damage'
+    tree_node_list = List([])
+
+    def _tree_node_list_default(self):
+        return [self.omega_fn, ]
+
+    @on_trait_change('omega_fn_type')
+    def _update_node_list(self):
+        self.tree_node_list = [self.omega_fn]
 
     E_b = Float(12900,
                 label="E_b",
@@ -125,7 +137,29 @@ class MATSBondSlipD(MATSBondSlipBase):
                     enter_set=True,
                     auto_set=False)
 
-    g_fn = Callable
+    omega_fn_type = Trait('li',
+                          dict(li=LiDamageFn,
+                               jirasek=JirasekDamageFn,
+                               abaqus=AbaqusDamageFn,
+                               FRP=FRPDamageFn,
+                               ),
+                          symbol='option',
+                          unit='-',
+                          MAT=True,
+                          )
+
+    @on_trait_change('omega_fn_type')
+    def _reset_omega_fn(self):
+        self.omega_fn = self.omega_fn_type_()
+
+    omega_fn = Instance(IDamageFn,
+                        report=True)
+
+    def _omega_fn_default(self):
+        # return JirasekDamageFn()
+        return LiDamageFn(alpha_1=1.,
+                          alpha_2=100.
+                          )
 
     sv_names = ['tau',
                 'tau_e',
@@ -140,7 +174,7 @@ class MATSBondSlipD(MATSBondSlipBase):
         # get the maximum slip achieved so far
         kappa = np.max(np.array([kappa, np.fabs(s)]), axis=0)
 
-        omega = self.g_fn(np.fabs(kappa))
+        omega = self.omega_fn(np.fabs(kappa))
 
         tau_e = self.E_b * s
         tau = (1. - omega) * tau_e
@@ -149,42 +183,77 @@ class MATSBondSlipD(MATSBondSlipBase):
 
 class MATSBondSlipDP(MATSBondSlipBase):
 
+    node_name = 'bond model: damage-plasticity'
+
     '''Damage - plasticity model of bond.
     '''
 
-    def _material_changed(self):
-        print 'MATERIAL RESET TO', self.material.omega_fn.node_name
-        self.set(E_b=self.material.E_b,
-                 gamma=self.material.gamma,
-                 tau_bar=self.material.tau_bar,
-                 K=self.material.K,
-                 g_fn=self.material.omega_fn
-                 )
+    tree_node_list = List([])
+
+    def _tree_node_list_default(self):
+        return [self.omega_fn, ]
+
+    @on_trait_change('omega_fn_type')
+    def _update_node_list(self):
+        self.tree_node_list = [self.omega_fn]
 
     E_b = Float(12900,
                 label="E_b",
-                desc="Bond Stiffness",
+                desc="Bond stiffness",
+                MAT=True,
+                symbol=r'$E_\mathrm{b}$',
+                unit='MPa/mm',
                 enter_set=True,
                 auto_set=False)
 
     gamma = Float(1,
                   label="Gamma",
                   desc="Kinematic hardening modulus",
+                  MAT=True,
+                  symbol=r'$\gamma$',
+                  unit='MPa/mm',
                   enter_set=True,
                   auto_set=False)
 
     K = Float(1,
               label="K",
-              desc="Isotropic harening modulus",
+              desc="Isotropic hardening modulus",
+              MAT=True,
+              symbol='$K$',
+              unit='MPa/mm',
               enter_set=True,
               auto_set=False)
+
     tau_bar = Float(5,
                     label="Tau_0 ",
-                    desc="yield stress",
+                    desc="Yield stress",
+                    symbol=r'$\bar{\tau}$',
+                    unit='MPa',
+                    MAT=True,
                     enter_set=True,
                     auto_set=False)
 
-    g_fn = Callable
+    omega_fn_type = Trait('li',
+                          dict(li=LiDamageFn,
+                               jirasek=JirasekDamageFn,
+                               abaqus=AbaqusDamageFn,
+                               FRP=FRPDamageFn,
+                               ),
+                          MAT=True,
+                          )
+
+    @on_trait_change('omega_fn_type')
+    def _reset_omega_fn(self):
+        self.omega_fn = self.omega_fn_type_()
+
+    omega_fn = Instance(IDamageFn,
+                        report=True)
+
+    def _omega_fn_default(self):
+        # return JirasekDamageFn()
+        return LiDamageFn(alpha_1=1.,
+                          alpha_2=100.
+                          )
 
     sv_names = ['tau',
                 'tau_ep',
@@ -221,9 +290,28 @@ class MATSBondSlipDP(MATSBondSlipBase):
 
         # apply damage law to the effective stress
         kappa = np.max(np.array([kappa, np.fabs(s)]), axis=0)
-        omega = self.g_fn(kappa)
+        omega = self.omega_fn(kappa)
         tau = (1. - omega) * tau_ep
         return tau, tau_ep, z, alpha, kappa, omega, s_p
+
+    tree_view = View(
+        Group(
+            VGroup(
+                VGroup(
+                    Item('E_b', full_size=True, resizable=True),
+                    Item('gamma'),
+                    Item('K'),
+                    Item('tau_bar'),
+                ),
+                VGroup(
+                    Item('omega_fn_type'),
+                ),
+                UItem('omega_fn@')
+            )
+        ),
+        width=0.4,
+        height=0.5,
+    )
 
 #     def get_corr_pred(self, s, d_s, tau, t_n, t_n1, s_vars):
 #

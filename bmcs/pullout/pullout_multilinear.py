@@ -419,7 +419,7 @@ def run_pullout_multilinear(*args, **kw):
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(s_data='0, 0.1, 0.4, 20.0',
+    po.mats_eval.set(s_data='0, 0.1,y 0.4, 20.0',
                      tau_data='0, 800, 0, 0')
     po.mats_eval.update_bs_law = True
     po.run()

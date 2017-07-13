@@ -7,7 +7,7 @@
 from ibvpy.core.tline import TLine
 from reporter import RInputSection
 from traits.api import \
-    Instance, on_trait_change
+    Instance, on_trait_change, Str
 from view.ui.bmcs_tree_node import \
     BMCSRootNode
 
@@ -22,6 +22,10 @@ class BMCSModel(BMCSRootNode, RInputSection):
     bmcs_interaction_pattens
     '''
     tline = Instance(TLine)
+
+    title = Str
+
+    desc = Str
 
     def _tline_default(self):
         return TLine(min=0.0, step=0.1, max=0.0,

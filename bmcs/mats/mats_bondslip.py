@@ -4,6 +4,8 @@ Created on 05.12.2016
 @author: abaktheer
 '''
 
+from os.path import join
+
 from ibvpy.api import MATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from reporter.report_item import RInputSection, RInputRecord
@@ -15,7 +17,7 @@ from view.ui import BMCSTreeNode
 
 from mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
-    FRPDamageFn, PlottableFn
+    FRPDamageFn
 import numpy as np
 
 
@@ -433,6 +435,13 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode, RInputRecord):
         D[:, :, 1, 1] = D_tau
 
         return tau, D, s_p, alpha, z, kappa, omega
+
+    def write_figure(self, f, rdir, fname):
+        f.write(r'''
+\multicolumn{3}{r}{\includegraphics[width=5cm]{%s}}\\
+''' % fname)
+        self.bs_law.replot()
+        self.bs_law.savefig(join(rdir, fname))
 
     tree_view = View(
         VGroup(
