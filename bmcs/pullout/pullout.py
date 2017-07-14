@@ -7,7 +7,7 @@ Created on 12.01.2016
 @todo: introduce a switch for left and right supports
 '''
 
-from bmcs.bond_slip.bond_material_params import MaterialParams
+#from bmcs.bond_slip.bond_material_params import MaterialParams
 from bmcs.bond_slip.mats_bondslip import MATSBondSlipDP
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSEvalFatigue
@@ -267,7 +267,6 @@ class PullOutModel(BMCSModel, Vis2D):
 
         return [
             self.tline,
-            self.material,
             self.cross_section,
             self.geometry,
             self.bcond_mngr,
@@ -284,11 +283,6 @@ class PullOutModel(BMCSModel, Vis2D):
 
     def stop(self):
         self.tloop.restart = True
-
-    material = Instance(MaterialParams)
-
-    def _material_default(self):
-        return MaterialParams()
 
     loading_scenario = Instance(LoadingScenario)
 
