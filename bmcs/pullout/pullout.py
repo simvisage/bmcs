@@ -218,7 +218,7 @@ class PullOutModelBase(BMCSModel, Vis2D):
                      time_change_notifier=self.time_changed,
                      )
 
-    loading_scenario = Instance(LoadingScenario, report=True)
+    loading_scenario = Instance(LoadingScenario, report=False)
 
     def _loading_scenario_default(self):
         return LoadingScenario()

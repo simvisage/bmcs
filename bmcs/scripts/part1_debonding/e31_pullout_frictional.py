@@ -7,8 +7,8 @@ from bmcs.pullout.pullout_analytical_model import PullOutModel
 from view.window import BMCSWindow
 
 
-def run_pullout_const_shear(*args, **kw):
-    po = PullOutModel(name='t31_pullout_frictional', n_x=200, w_max=1.5)
+def construct_pullout_study():
+    po = PullOutModel(name='e31_pullout_frictional', n_x=200, w_max=1.5)
     po.title = 'Pullout with frictional bond'
     po.desc = '''Analytic solution of the bond with constant shear
     bond law is demonstrated showing the shear flow, slip and strain
@@ -29,6 +29,11 @@ def run_pullout_const_shear(*args, **kw):
     po.add_viz2d('field', 'strain', plot_fn='eps')
 #    po.add_viz2d('field', 'sig', plot_fn='sig')
 
+    return w
+
+
+def run_pullout_const_shear(*args, **kw):
+    w = construct_pullout_study()
     w.offline = False
     w.finish_event = True
     w.configure_traits(*args, **kw)

@@ -8,8 +8,8 @@ from bmcs.bond_slip import BondSlipModel
 from view.window import BMCSWindow
 
 
-def run_bond_slip_model_dp(*args, **kw):
-    bsm = BondSlipModel(name='t23_bond_slip_damage_plasticity',
+def construct_bond_slip_study(*args, **kw):
+    bsm = BondSlipModel(name='e23_bond_slip_damage_plasticity',
                         interaction_type='predefined',
                         material_model='damage-plasticity',
                         n_steps=100,)
@@ -40,6 +40,11 @@ material point exhibits kinematic hardening upon unloading and reloading.
     bsm.material.set(gamma=0, K=1000)
     bsm.material.omega_fn.set(alpha_1=1.0, alpha_2=2000)
     bsm.run()
+    return w
+
+
+def run_bond_slip_model_dp(*args, **kw):
+    w = construct_bond_slip_study()
     w.configure_traits(*args, **kw)
 
 

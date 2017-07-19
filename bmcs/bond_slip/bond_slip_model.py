@@ -19,7 +19,6 @@ from bmcs.time_functions import \
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from ibvpy.api import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from reporter import RInputSection
 from traits.api import \
     Property, Instance, cached_property, Str, \
     List, Float, Trait, on_trait_change, Bool, Dict,\
@@ -35,7 +34,7 @@ from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 
 
-class Material(BMCSTreeNode, RInputSection):
+class Material(BMCSTreeNode):
 
     tree_node_list = List([])
 

@@ -8,8 +8,8 @@ from bmcs.bond_slip import BondSlipModel
 from view.window import BMCSWindow
 
 
-def run_bond_slip_model_p(*args, **kw):
-    bsm = BondSlipModel(name='t22_bond_slip_plasticity_kinem',
+def construct_bond_slip_study(*args, **kw):
+    bsm = BondSlipModel(name='e22_bond_slip_plasticity_kinem',
                         interaction_type='predefined',
                         material_model='plasticity',
                         n_steps=2000)
@@ -31,6 +31,11 @@ with kinematic hardening with unloading and reloading.
                              maximum_loading=0.005)
     bsm.material.set(gamma=2000, K=-0)
     bsm.run()
+    return w
+
+
+def run_bond_slip_model_p(*args, **kw):
+    w = construct_bond_slip_study()
     w.configure_traits(*args, **kw)
 
 

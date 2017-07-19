@@ -2,19 +2,118 @@
 Created on Jul 9, 2017
 
 @author: rch
+
+Using the reporter
+==================
+Reporter uses the report items
+
+For single calculation
+----------------------
+put the inputs and outputs as separate report items
+
+For parametric studies
+----------------------
+put the input as the input report item
+how to mark the parameters that are varied?
+can it be done by setting the metadata dynamically with value range?
+then the reporter might specify the range of values included.
+
+The p-study driver might gather the parameter values from
+the traits and define a schedule of the study. 
+
+A cumulative viz_adapter might be used to gather the results
+of the simulation in the desired form.
+
+In other 
+An extra list of
+viz_adapters might be defined to plot the values from 
+the calculation additively.
 '''
 
 from StringIO import StringIO
 import os
+from shutil import copyfile
 import subprocess
 import sys
 import tempfile
 
 from traits.api import \
     HasStrictTraits, Str, List, Property, \
-    cached_property, Dict
+    cached_property, Instance, Constant
 
-from report_item import IRItem
+from report_item import RInputRecord, ROutputSection
+
+
+class ReportStudy(HasStrictTraits):
+
+    name = Str
+
+    input = Instance(RInputRecord)
+
+    output = Instance(ROutputSection)
+
+    title = Property
+
+    def _get_title(self):
+        return self.input.title
+
+    desc = Property
+
+    def _get_desc(self):
+        return self.input.desc
+
+    preamble_subfile = Constant(r'''\documentclass[main.tex]{subfiles}
+\begin{document}
+''')
+
+    postable_subfile = Constant(r'''\end{document}
+    ''')
+
+    def write_subfile_tex(self, main_file, examples_dir, itags):
+        study_name = self.name
+        rel_study_path = os.path.join('examples', study_name)
+        rdir = os.path.join(examples_dir, study_name)
+        os.mkdir(rdir)
+        subfile_tex_name = study_name + '.tex'
+        rfile_tex = os.path.join(rdir, subfile_tex_name)
+
+        with open(rfile_tex, 'w') as subfile:
+            subfile.write(self.preamble_subfile)
+            subfile.write(r'''\begin{bmcsexample}[%s]
+\noindent %s \\[3mm]
+\begin{center}
+            ''' % (self.title, self.desc))
+            self.write_tex_input(subfile, rdir,
+                                 rel_study_path, itags)
+            self.write_tex_output(subfile, rdir,
+                                  rel_study_path, itags)
+            subfile.write(r'''\end{center}
+\end{bmcsexample}
+''')
+            subfile.write(self.postable_subfile)
+
+        main_file.write(r'''\subfile{%s}
+        ''' % os.path.join(rdir, study_name))
+
+    name = Property
+
+    def _get_name(self):
+        return self.input.name
+
+    def write_tex_input(self, subfile, rdir,
+                        rel_study_path, itags):
+        self.input.write_tex_table(subfile, rdir,
+                                   rel_study_path, itags)
+
+    def write_tex_output(self, subfile, rdir,
+                         rel_study_path, itags):
+        if self.output:
+            self.output.write_records(subfile, rdir,
+                                      rel_study_path, itags)
+
+    def yield_rinput_traits(self):
+        model = self.input
+        return model.yield_rinput_section('', self.itags)
 
 
 class Reporter(HasStrictTraits):
@@ -27,168 +126,134 @@ class Reporter(HasStrictTraits):
     def _get_itags(self):
         return {tag: True for tag in self.INPUTTAGS}
 
-    report_items = List(IRItem)
+    studies = List(ReportStudy)
 
-    report_name = Str('unnamed')
+    preamble = Constant(r'''
+% !TeX document-id = {c563f3ab-d450-45cf-a935-b20492a6f8a6}
+% !TeX program = pdflatex
+% !BIB program = biber
+% !TeX encoding = UTF-8
+% !TeX spellcheck = en_GB
+% Requires:
+% texlive 2016: Ubuntu 14.04 and 16.04 PPA: ppa:jonathonf/texlive
+%  pdflatex --enable-write18, biber, makeglossary
+%  perl, ghostscript
+%
+\documentclass{lib/scidoc}
+%
+\input{lib/packages}
+\input{lib/example}
+%\input{shortcuts/defs}
+%\input{bib/bibliographies}
 
-    bmcs_example_dir = Str('examples')
+\title{Brittle-Matrix Composite Structures}
+\author{Rostislav Chudoba}
+%
+\begin{document}
+%
+%\maketitle
 
-    ritems = Property
+\pagenumbering{arabic}
+%
+% TABLE OF CONTENTS
+%\microtypesetup{protrusion=false}  % disable protrusion
+%\pdfbookmark[0]{Contents}{toc}
+%\tableofcontents % prints Table of Contents
+% LISTS AND GLOSSARIES
+%\listoffigures
+%  \clearpage
+%  \listoftables
+%  \clearpage
+%  \printglossary[title = Nomenclature,  %
+%           type = main,    %
+%          ]
+%  \glsresetall
+%  \clearpage
+\microtypesetup{protrusion=true}  % enables protrusion
+\clearpage
+% 
+% CONTENT
+%
+%
+''')
 
-    def _get_ritems(self):
-        for ritem in self.report_items:
-            ritem._r = self
-        return self.report_items
+    postamble = Constant(r'''
+\end{document}
+        ''')
 
-    rdir = Property(depends_on='report_name')
+    report_name = Str('example_report')
+
+    report_dir = Property()
 
     @cached_property
-    def _get_rdir(self):
-        tdir = tempfile.mkdtemp()
-        rdir = os.path.join(tdir, self.report_name)
-        os.mkdir(rdir)
-        return rdir
+    def _get_report_dir(self):
+        tmpdir = tempfile.mkdtemp()
+        report_dir = os.path.join(tmpdir, self.report_name)
+        os.mkdir(report_dir)
+        return report_dir
 
-    rfile_tex = Property(depends_on='report_name')
+    example_dirname = Str('examples')
 
-    @cached_property
-    def _get_rfile_tex(self):
-        return os.path.join(self.rdir, 'r_' + self.report_name + '.tex')
-
-    rsubfile_tex = Property(depends_on='report_name')
+    example_dir = Property
 
     @cached_property
-    def _get_rsubfile_tex(self):
-        return os.path.join(self.rdir, 'rs_' + self.report_name + '.tex')
+    def _get_example_dir(self):
+        exa_dir = os.path.join(self.report_dir, self.example_dirname)
+        os.mkdir(exa_dir)
+        return exa_dir
 
-    rfile_pdf = Property(depends_on='report_name')
+    tex_file = Property(depends_on='report_name')
 
     @cached_property
-    def _get_rfile_pdf(self):
-        return os.path.join(self.rdir, 'r_' + self.report_name + '.pdf')
+    def _get_tex_file(self):
+        return os.path.join(self.report_dir, self.report_name + '.tex')
 
-    title = Property
+    pdf_file = Property(depends_on='report_name')
 
-    def _get_title(self):
-        return self.ritems[0].title
+    @cached_property
+    def _get_pdf_file(self):
+        return os.path.join(self.report_dir, self.report_name + '.pdf')
 
-    desc = Property
-
-    def _get_desc(self):
-        return self.ritems[0].desc
+    def copy_lib_files(self):
+        this_dir, this_filename = os.path.split(__file__)
+        tex_source_lib = os.path.join(this_dir, 'texfiles')
+#        tex_source_lib = os.path.join(os.sep, 'home', 'rch', 'bmcs_preamble')
+        target_dir = os.path.join(self.report_dir, 'lib')
+        os.mkdir(target_dir)
+        files = ['packages.tex', 'example.tex', 'scidoc.cls']
+        for f in files:
+            copyfile(os.path.join(tex_source_lib, f),
+                     os.path.join(target_dir, f))
 
     def write(self):
-
-        preamble = r'''\documentclass{article}
-\oddsidemargin=0cm
-\topmargin=-1cm
-\textwidth=16cm
-\textheight=25cm
-\usepackage{graphicx}          % include graphics
-\usepackage{array}
-\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
-\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
-\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
-
-
-\usepackage[most]{tcolorbox}
-\newcounter{bmcsexample}
-\usepackage{xparse}
-\usepackage{lipsum}
-
-\def\exampletext{Example} % If English
-
-\NewDocumentEnvironment{bmcsexample}{ O{} }
-{
-\colorlet{colexam}{red!55!black} % Global example color
-\newtcolorbox[use counter=bmcsexample]{bmcsexamplebox}{%
-    % Example Frame Start
-    empty,% Empty previously set parameters
-    title={\exampletext: #1},% use \thetcbcounter to access the bmcsexample counter text
-    % Attaching a box requires an overlay
-    attach boxed title to top left,
-       % Ensures proper line breaking in longer titles
-       minipage boxed title,
-    % (boxed title style requires an overlay)
-    boxed title style={empty,size=minimal,toprule=0pt,top=4pt,left=3mm,overlay={}},
-    coltitle=colexam,fonttitle=\bfseries,
-    before=\par\medskip\noindent,parbox=false,boxsep=0pt,left=3mm,right=0mm,top=2pt,breakable,pad at break=0mm,
-       before upper=\csname @totalleftmargin\endcsname0pt, % Use instead of parbox=true. This ensures parskip is inherited by box.
-    % Handles box when it exists on one page only
-    overlay unbroken={\draw[colexam,line width=.5pt] ([xshift=-0pt]title.north west) -- ([xshift=-0pt]frame.south west); },
-    % Handles multipage box: first page
-    overlay first={\draw[colexam,line width=.5pt] ([xshift=-0pt]title.north west) -- ([xshift=-0pt]frame.south west); },
-    % Handles multipage box: middle page
-    overlay middle={\draw[colexam,line width=.5pt] ([xshift=-0pt]frame.north west) -- ([xshift=-0pt]frame.south west); },
-    % Handles multipage box: last page
-    overlay last={\draw[colexam,line width=.5pt] ([xshift=-0pt]frame.north west) -- ([xshift=-0pt]frame.south west); },%
-    }
-\begin{bmcsexamplebox}}
-{\end{bmcsexamplebox}\endlist}
-
-
-\begin{document}
-        '''
-        postamble = r'''
-\end{document}
-        '''
-        preamble_subfile = r'''\documentclass[main.tex]{subfiles}
-\begin{document}
-'''
-
+        self.copy_lib_files()
         rfile_io = StringIO()
+        for study in self.studies:
+            study.write_subfile_tex(rfile_io, self.example_dir, self.itags)
+            rfile_str = rfile_io.getvalue()
 
-        rfile_io.write(r'''
-\begin{bmcsexample}[%s]
-\noindent %s \\[3mm]
-\begin{center}
-''' % (self.title, self.desc))
-        self.ritems[0].write_report(rfile_io, self.rdir, **self.itags)
-        rfile_io.write(r'''
-\end{center}
-''')
-        self.ritems[1].write_report(rfile_io, self.rdir, **self.itags)
-        rfile_io.write(r'''
-\end{bmcsexample}
-''')
-
-        rfile_str = rfile_io.getvalue()
-        full_path = os.path.join('{examples', self.report_name, 'fig')
-        rsubfile_str = rfile_str.replace('{fig', full_path)
-
-        with open(self.rfile_tex, "w") as f:
-            f.write(preamble)
+        with open(self.tex_file, "w") as f:
+            f.write(self.preamble)
             f.write(rfile_str)
-            f.write(postamble)
-
-        with open(self.rsubfile_tex, "w") as f:
-            f.write(preamble_subfile)
-            f.write(rsubfile_str)
-            f.write(postamble)
+            f.write(self.postamble)
 
     def show_tex(self):
-        with open(self.rfile_tex, 'r') as f:
-            texsource = f.read()
-            print texsource
-
-    def show_stex(self):
-        with open(self.rfile_subs_tex, 'r') as f:
+        with open(self.tex_file, 'r') as f:
             texsource = f.read()
             print texsource
 
     def run_pdflatex(self):
-        cmd = ['pdflatex', '-interaction', 'nonstopmode', self.rfile_tex]
-        proc = subprocess.Popen(cmd, cwd=self.rdir)
+        cmd = ['pdflatex', '-interaction', 'nonstopmode', self.tex_file]
+        proc = subprocess.Popen(cmd, cwd=self.report_dir)
         proc.communicate()
 
         retcode = proc.returncode
         if not retcode == 0:
-            os.unlink(self.rfile_tex)
             raise ValueError('Error {} executing command: {}'.format(
                 retcode, ' '.join(cmd)))
 
     def show_pdf(self):
         if sys.platform == 'linux2':
-            subprocess.call(["xdg-open", self.rfile_pdf])
+            subprocess.call(["xdg-open", self.pdf_file])
         else:
-            os.startfile(self.rfile_pdf)
+            os.startfile(self.pdf_file)

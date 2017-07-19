@@ -7,9 +7,10 @@ from threading import Thread
 
 from ibvpy.core.tline import TLine
 from reporter import Reporter
+from reporter.reporter import ReportStudy
 from traits.api import \
     HasStrictTraits, Instance, Button, Event, \
-    DelegatesTo, Bool
+    DelegatesTo, Bool, Property
 from traits.etsconfig.api import ETSConfig
 from traitsui.api import \
     TreeEditor, TreeNode, View, Item, VGroup, \
@@ -94,7 +95,7 @@ class RunThread(Thread):
         self.ui.model.restart = True
 
 
-class BMCSWindow(HasStrictTraits):
+class BMCSWindow(ReportStudy):
 
     '''View object for a cross section state.
     '''
@@ -105,6 +106,16 @@ class BMCSWindow(HasStrictTraits):
     viz_sheet = Instance(VizSheet, ())
     '''Sheet for 2d visualization.
     '''
+
+    input = Property
+
+    def _get_input(self):
+        return self.model
+
+    output = Property
+
+    def _get_output(self):
+        return self.viz_sheet
 
     offline = DelegatesTo('viz_sheet')
     n_cols = DelegatesTo('viz_sheet')
@@ -188,13 +199,13 @@ class BMCSWindow(HasStrictTraits):
 
     def report_tex(self):
         r = Reporter(report_name=self.model.name,
-                     report_items=[self.model, self.viz_sheet])
+                     input=self.model,
+                     output=self.viz_sheet)
         r.write()
         r.show_tex()
 
     def report_pdf(self):
-        r = Reporter(report_name=self.model.name,
-                     report_items=[self.model, self.viz_sheet])
+        r = Reporter(studies=[self])
         r.write()
         r.show_tex()
         r.run_pdflatex()

@@ -7,8 +7,8 @@ from bmcs.pullout.pullout_multilinear import PullOutModel
 from view.window import BMCSWindow
 
 
-def run_pullout_multilinear(*args, **kw):
-    po = PullOutModel(name='t32_pullout_multilinear',
+def construct_pullout_study():
+    po = PullOutModel(name='e32_pullout_multilinear',
                       n_e_x=100, k_max=1000, w_max=1.84)
     po.title = 'Pullout with piecewise linear bond-slip law'
     po.desc = '''The pull-out response is calculated for specifying the values 
@@ -32,7 +32,11 @@ def run_pullout_multilinear(*args, **kw):
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
     po.add_viz2d('field', 'sf', plot_fn='sf')
+    return w
 
+
+def run_pullout_multilinear(*args, **kw):
+    w = construct_pullout_study()
     w.offline = False
     w.finish_event = True
     w.configure_traits(*args, **kw)

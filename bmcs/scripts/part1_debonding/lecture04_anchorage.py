@@ -2,10 +2,15 @@
 Example script of bond - pullout evaluation.
 '''
 
+from os.path import join
+
 from bmcs.pullout.pullout_dp import PullOutModel
+from reporter import ReportStudy, Reporter
+from traits.api import Instance, Array, Float, List, Str
 from view.window.bmcs_window import BMCSWindow
 
 import numpy as np
+import pylab as p
 
 
 def get_pullout_model_carbon_concrete(w_max=5.0):
@@ -83,25 +88,33 @@ def e43_study_length_dependence():
     po.loading_scenario.loading_type = 'monotonic'
     po.tline.step = 0.005
 
-    A_f = po.cross_section.A_f
-    sig_f_max = 1600.00
-    P_f_max = A_f * sig_f_max
-
-    L_array = np.array([100, 150, 200, 250, 300, 350], dtype=np.float_)
-    import pylab
-    pylab.subplot(1, 2, 1)
-
-    max_P_list = []
+    L_array = np.array([100],  # 150, 200, 250, 300, 350],
+                       dtype=np.float_)
+    L_trait = po.geometry.traits()
+    print L_trait
+    L_trait['L_x'].range = L_array
+    P_u_record = []
     for L in L_array:
         print 'calculating length', L
         po.geometry.L_x = L
         po.run()
         P = po.get_P_t()
-        max_P_list.append(np.max(P))
         w0, wL = po.get_w_t()
-        pylab.plot(wL, P, label='L=%d [mm]' % L)
+        P_u_record.append((L, P, wL))
+
+    import pylab
+    pylab.subplot(1, 2, 1)
+
+    A_f = po.cross_section.A_f
+    sig_f_max = 1600.00
+    P_f_max = A_f * sig_f_max
 
     pylab.plot([0.0, w_max], [P_f_max, P_f_max], '-', label='yarn failure')
+
+    max_P_list = []
+    for L, P, u in P_u_record:
+        pylab.plot(u, P, label='L=%d [mm]' % L)
+        max_P_list.append(np.max(P))
     pylab.legend(loc=2)
 
     # plot the pullout force / length dependence
@@ -109,11 +122,13 @@ def e43_study_length_dependence():
     pylab.plot([0.0, np.max(L_array)],
                [P_f_max, P_f_max], label='yarn failure')
     pylab.plot(L_array, max_P_list, 'o-')
+    pylab.xlim(xmin=0)
+    pylab.ylim(ymin=0)
     pylab.legend(loc=2)
     pylab.show()
 
 
 if __name__ == "__main__":
-    e41_preconfigure_and_start_app()
+    # e41_preconfigure_and_start_app()
     # e42_compare_two_simulations()
-    # e43_study_length_dependence()
+    e43_study_length_dependence()

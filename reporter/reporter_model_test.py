@@ -7,13 +7,13 @@
    package dependency - window depends on reporter
    parametric studies?
 '''
-from reporter import Reporter
+from reporter import Reporter, ReportStudy
 from traits.api import \
     Float,\
     Instance, Int
 
 from report_item import \
-    RInputRecord, RInputSection
+    RInputRecord, ROutputSection
 
 
 class CrossSection(RInputRecord):
@@ -37,8 +37,10 @@ class Geometry(RInputRecord):
     width = Float(0.4, GEO=True, unit='mm', symbol='b')
 
 
-class ModelPart(RInputSection):
+class ModelPart(RInputRecord):
     name = 'part1'
+    title = 'Model part 1'
+    desc = 'Some description'
     n_e = Int(20, GEO=True)
     cs = Instance(CrossSection, (), report=True)
     geo = Instance(Geometry, (), report=True)
@@ -47,10 +49,11 @@ class ModelPart(RInputSection):
 if __name__ == '__main__':
 
     r = Reporter()
-    r.report_items = [
-        ModelPart(name='Part 1'),
+    r.studies = [
+        ReportStudy(
+            input=ModelPart(name='part_1')
+        )
     ]
-
     r.write()
     r.show_tex()
     r.run_pdflatex()

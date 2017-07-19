@@ -8,7 +8,6 @@ from os.path import join
 
 from ibvpy.api import MATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from reporter.report_item import RInputSection, RInputRecord
 from traits.api import implements, Int, Array, \
     Constant, Float, Tuple, List, on_trait_change, \
     Instance, Trait, Bool, Str, Button
@@ -143,7 +142,7 @@ class MATSEvalFatigue(MATSEval, BMCSTreeNode):
         return sig, D, xs_pi, alpha, z, w
 
 
-class MATSBondSlipDP(MATSEval, BMCSTreeNode, RInputSection):
+class MATSBondSlipDP(MATSEval, BMCSTreeNode):
 
     node_name = 'bond model: damage-plasticity'
 
@@ -353,7 +352,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode, RInputSection):
     )
 
 
-class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode, RInputRecord):
+class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
     node_name = "multilinear bond law"
 
@@ -436,10 +435,11 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode, RInputRecord):
 
         return tau, D, s_p, alpha, z, kappa, omega
 
-    def write_figure(self, f, rdir, fname):
+    def write_figure(self, f, rdir, rel_path):
+        fname = 'fig_' + self.node_name.replace(' ', '_') + '.pdf'
         f.write(r'''
 \multicolumn{3}{r}{\includegraphics[width=5cm]{%s}}\\
-''' % fname)
+''' % join(rel_path, fname))
         self.bs_law.replot()
         self.bs_law.savefig(join(rdir, fname))
 
@@ -457,7 +457,7 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode, RInputRecord):
     )
 
 
-class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode, RInputSection):
+class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode):
 
     node_name = 'bond model: FRP damage model'
 

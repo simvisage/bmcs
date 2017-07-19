@@ -12,7 +12,7 @@ from bmcs.time_functions import \
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from reporter import Reporter, RInputSection
+from reporter import Reporter
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
@@ -59,6 +59,7 @@ class Viz2DEnergyRatesPlot(Viz2D):
 
 class PullOutModel(PullOutModelBase):
 
+    name = 'Pull-out model, FRP damage'
     mats_eval_type = Trait('FRP-damage',
                            {'damage-plasticity': MATSBondSlipDP,
                             'multilinear': MATSBondSlipMultiLinear,

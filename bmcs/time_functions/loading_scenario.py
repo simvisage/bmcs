@@ -130,11 +130,14 @@ class LoadingScenario(MFnLineArray, BMCSLeafNode, RInputRecord):
         self.ydata = d_arr
         self.replot()
 
-    def write_figure(self, f, rdir, fname):
+    def write_figure(self, f, rdir, rel_study_path):
+        print 'FNAME', self.node_name
+        fname = 'fig_' + self.node_name.replace(' ', '_') + '.pdf'
+        print 'FNAME', fname
         self._update_xy_arrays()
         f.write(r'''
 \multicolumn{3}{r}{\includegraphics[width=5cm]{%s}}\\
-''' % fname)
+''' % join(rel_study_path, fname))
         self.savefig(join(rdir, fname))
 
     traits_view = View(

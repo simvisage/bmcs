@@ -165,7 +165,7 @@ class VizSheet(ROutputSection):
     def viz2d_list_items_changed(self):
         self.replot()
 
-    def get_records(self):
+    def get_subrecords(self):
         return self.viz2d_list
 
     export_button = Button(label='Export selected diagram')

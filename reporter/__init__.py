@@ -1,4 +1,5 @@
 
+from reporter import Reporter, ReportStudy
+
 from report_item import \
-    RInputRecord, RInputSection, ROutputRecord, ROutputSection
-from reporter import Reporter
+    RInputRecord, ROutputSection, ROutputItem

@@ -4,6 +4,7 @@ Created on 14. 4. 2014
 @author: rch
 '''
 
+from reporter import RInputRecord
 from traits.api import \
     HasStrictTraits, Str, List, WeakRef, \
     Property, cached_property, on_trait_change, Event
@@ -134,18 +135,21 @@ class BMCSTreeNodeMixIn(HasStrictTraits):
 
 
 class BMCSLeafNode(BMCSNodeBase,
+                   RInputRecord,
                    BMCSLeafNodeMixIn,
                    BMCSListeningTreeNodeMixIn):
     pass
 
 
 class BMCSTreeNode(BMCSNodeBase,
+                   RInputRecord,
                    BMCSTreeNodeMixIn,
                    BMCSListeningTreeNodeMixIn):
     pass
 
 
 class BMCSRootNode(BMCSNodeBase,
+                   RInputRecord,
                    BMCSTreeNodeMixIn,
                    BMCSListeningTreeNodeMixIn):
     '''Root node for the model hierarchy.

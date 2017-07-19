@@ -7,8 +7,8 @@ from bmcs.pullout.pullout_frp_damage import PullOutModel
 from view.window import BMCSWindow
 
 
-def run_pullout_frp_damage(*args, **kw):
-    po = PullOutModel(name='t33_pullout_frp_damage',
+def construct_pullout_study(*args, **kw):
+    po = PullOutModel(name='e33_pullout_frp_damage',
                       n_e_x=100, k_max=500, w_max=1.0)
     po.title = 'Pullout with bond damage-softening'
     po.desc = '''This example demonstrates the local nature of debonding
@@ -35,6 +35,11 @@ def run_pullout_frp_damage(*args, **kw):
     po.add_viz2d('dissipation', 'dissipation')
     po.add_viz2d('dissipation rate', 'dissipation rate')
 
+    return w
+
+
+def run_pullout_frp_damage(*args, **kw):
+    w = construct_pullout_study()
     w.offline = False
     w.finish_event = True
     w.configure_traits(*args, **kw)
