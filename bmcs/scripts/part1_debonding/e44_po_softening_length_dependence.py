@@ -74,7 +74,7 @@ class PSLengthDependence(ReportStudy):
 
     def plot(self):
 
-        p.figure(figsize=(8, 4))
+        p.figure(figsize=(8, 3))
         p.subplot(1, 2, 1)
         po = self.po
         w_max = po.w_max

@@ -39,9 +39,9 @@ def get_pullout_model_carbon_concrete(w_max=5.0):
 
 class PSLengthDependence(ReportStudy):
 
-    name = Str('e44_po_hardening_length_dependence')
+    name = Str('e43_po_hardening_length_dependence')
 
-    title = Str(r'''Effect of embedded length on the pull-out response
+    title = Str(r'''Effect of embedded length on the pull-out response with hardening bond behavior
     ''')
     desc = Str(r'''This study shows the application of the bond-slip law
     with combined hardening and damage function for the simulation of
@@ -78,7 +78,7 @@ class PSLengthDependence(ReportStudy):
 
     def plot(self):
 
-        p.figure(figsize=(8, 4))
+        p.figure(figsize=(8, 3.5))
         p.subplot(1, 2, 1)
         po = self.po
         w_max = po.w_max
@@ -114,7 +114,7 @@ class PSLengthDependence(ReportStudy):
         p.tight_layout()
         fname = 'fig_length_dependency.pdf'
         subfile.write(r'''
-    \includegraphics[width=0.9\textwidth]{%s}
+    \includegraphics[width=0.95\textwidth]{%s}
     ''' % join(rel_study_path, fname))
         p.savefig(join(rdir, fname))
 
