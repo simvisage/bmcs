@@ -5,9 +5,9 @@ Created on May 10, 2017
 '''
 
 if __name__ == '__main__':
-    import bmcs.pullout.lecture04 as lec
+    from bmcs.course import lecture04 as lec
 
-    po = lec.PullOutModel(n_e_x=200, k_max=500, w_max=2.5)
+    po = lec.PullOutModel(n_e_x=200, k_max=500, u_f0_max=2.5)
     po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic',
                             amplitude_type='constant',

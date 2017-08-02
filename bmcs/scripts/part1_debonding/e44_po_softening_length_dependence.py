@@ -13,14 +13,14 @@ import numpy as np
 import pylab as p
 
 
-def get_pullout_model_carbon_concrete(w_max=5.0):
+def get_pullout_model_carbon_concrete(u_f0_max=5.0):
     '''Helper method to get the constructing the default
     configuration of the pullout model.
     '''
     '''Helper method to get the constructing the default
     configuration of the pullout model.
     '''
-    po = PullOutModel(n_e_x=100, k_max=1000, w_max=w_max)
+    po = PullOutModel(n_e_x=100, k_max=1000, u_f0_max=u_f0_max)
     po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic')
     po.loading_scenario.set(number_of_cycles=1)
@@ -32,7 +32,7 @@ def get_pullout_model_carbon_concrete(w_max=5.0):
     return po
 
 
-class PSLengthDependence(ReportStudy):
+class PSLengthDependenceStudy(ReportStudy):
 
     name = Str('e44_po_softening_length_dependence')
 
@@ -41,12 +41,12 @@ class PSLengthDependence(ReportStudy):
     desc = Str(r'''This study shows the application of the bond-slip law
     with softening bond behavior for the simulation of a pull-out test. 
     ''')
-    w_max = Float(3.0)
+    u_f0_max = Float(3.0)
     po = Instance(PullOutModel, report=True)
 
     def _po_default(self):
-        w_max = self.w_max
-        po = get_pullout_model_carbon_concrete(w_max)
+        u_f0_max = self.u_f0_max
+        po = get_pullout_model_carbon_concrete(u_f0_max)
         po.loading_scenario.loading_type = 'monotonic'
         po.tline.step = 0.005
         return po
@@ -77,13 +77,13 @@ class PSLengthDependence(ReportStudy):
         p.figure(figsize=(8, 3))
         p.subplot(1, 2, 1)
         po = self.po
-        w_max = po.w_max
+        u_f0_max = po.u_f0_max
 
         sig_f_max = 2400.00
         A_f = po.cross_section.A_f
         P_f_max = A_f * sig_f_max
 
-        p.plot([0.0, w_max], [P_f_max, P_f_max], '-', label='yarn failure')
+        p.plot([0.0, u_f0_max], [P_f_max, P_f_max], '-', label='yarn failure')
 
         max_P_list = []
         for L, P, u in self.P_u_record:
@@ -120,7 +120,7 @@ class PSLengthDependence(ReportStudy):
 
 if __name__ == "__main__":
 
-    e43 = PSLengthDependence()
+    e43 = PSLengthDependenceStudy()
     r = Reporter(studies=[e43])
     r.write()
     # r.show_tex()

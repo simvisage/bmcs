@@ -67,15 +67,16 @@ class GridReinforcement(HasTraits):
 
     traits_view = View(VGroup(
         Group(
-            Item('h', label='height'),
-            Item('w', label='width'),
+            Item('h', label='height', full_size=True, resizable=True),
+            Item('w', label='width', resizable=True),
             label='cross section dimensions',
             orientation='vertical'
         ),
         Group(
-            Item('a_f',   label='area of a single fiber'),
-            Item('n_f_h', label='# in height direction'),
-            Item('n_f_w', label='# in width direction'),
+            Item('a_f',   label='area of a single fiber',
+                 full_size=True, resizable=True),
+            Item('n_f_h', label='# in height direction', resizable=True),
+            Item('n_f_w', label='# in width direction', resizable=True),
             label='layout of the fiber grid',
             orientation='vertical'
         ),
@@ -89,6 +90,7 @@ class GridReinforcement(HasTraits):
         resizable=True,
         height=0.8, width=0.8
     )
+
 
 if __name__ == '__main__':
     cs = GridReinforcement()

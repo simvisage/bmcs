@@ -8,7 +8,7 @@ from matplotlib.figure import \
     Figure
 from reporter import ROutputSection
 from traits.api import \
-    HasStrictTraits, Str, \
+    Str, \
     Instance,  Event, Enum, \
     List,  Range, Int, Float, \
     Property, cached_property, \
@@ -33,7 +33,6 @@ class Viz2DAdapter(TabularAdapter):
 
 
 # The tabular editor works in conjunction with an adapter class, derived from
-# TabularAdapter.
 tabular_editor = TabularEditor(
     adapter=Viz2DAdapter(),
     operations=['delete', 'move', 'edit'],
@@ -45,7 +44,11 @@ tabular_editor = TabularEditor(
 
 
 class VizSheet(ROutputSection):
-    '''Trait definition.
+    '''Vieualization sheet
+    - controls the time displayed
+    - contains several vizualization adapters.
+    This class could be called BMCSTV - for watching the time
+    dependent response. It can have several channels - in 2D and 3D
     '''
 
     def __init__(self, *args, **kw):
@@ -161,6 +164,11 @@ class VizSheet(ROutputSection):
         self.skipped_steps = 0
 
     viz2d_list = List(Viz2D)
+
+    viz2d_dict = Property
+
+    def _get_viz2d_dict(self):
+        return {viz2d.name: viz2d for viz2d in self.viz2d_list}
 
     def viz2d_list_items_changed(self):
         self.replot()

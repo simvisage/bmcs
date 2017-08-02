@@ -32,7 +32,7 @@ class MaterialParams(BMCSLeafNode):
                 input=True,
                 symbol="$E_\mathrm{f}$",
                 unit='$\mathrm{MPa}$',
-                desc="Reinforcement stiffness",
+                desc="reinforcement stiffness",
                 enter_set=True,
                 auto_set=False)
 
@@ -41,7 +41,7 @@ class MaterialParams(BMCSLeafNode):
                        input=True,
                        symbol=r'$\bar{\tau}$',
                        unit='$\mathrm{MPa}$',
-                       desc="Frictional bond strength",
+                       desc="frictional bond strength",
                        enter_set=True,
                        auto_set=False)
 
@@ -58,20 +58,18 @@ class CrossSection(BMCSLeafNode):
     '''
     node_name = 'cross-section'
 
-    A_m = Float(15240,
-                CS=True,
-                input=True,
-                auto_set=False, enter_set=True,
-                desc='matrix area [mm2]')
     A_f = Float(153.9,
                 CS=True,
                 input=True,
                 auto_set=False, enter_set=True,
-                desc='reinforcement area [mm2]')
+                symbol='$A_\mathrm{f}$', unit='$\mathrm{mm}^2$',
+                desc='reinforcement area')
     P_b = Float(44,
                 input=True,
+                CS=True,
                 auto_set=False, enter_set=True,
-                desc='perimeter of the bond interface [mm]')
+                symbol='$P_\mathrm{b}$', unit='$\mathrm{mm}$',
+                desc='perimeter of the bond interface')
 
     view = View(
         VGroup(
@@ -90,6 +88,7 @@ class Geometry(BMCSLeafNode):
     L_x = Float(20,
                 GEO=True,
                 input=True,
+                symbol='$L$', unit='mm',
                 auto_set=False, enter_set=True,
                 desc='embedded length')
 
@@ -106,7 +105,6 @@ class Viz2DPullOutFW(Viz2D):
     label = 'F-W'
 
     def plot(self, ax, vot, *args, **kw):
-        idx = self.vis2d.get_time_idx(vot)
         P_t = self.vis2d.get_P_t()
         ymin, ymax = np.min(P_t), np.max(P_t)
         L_y = ymax - ymin
@@ -123,9 +121,18 @@ class Viz2DPullOutFW(Viz2D):
         ax.set_xlim(xmin=xmin, xmax=xmax)
         ax.set_ylabel('pull-out force P [N]')
         ax.set_xlabel('pull-out slip w [mm]')
+        self.plot_marker(ax, vot)
+        ax.legend(loc=4)
+
+    def plot_marker(self, ax, vot):
+        idx = self.vis2d.get_time_idx(vot)
+        P_t = self.vis2d.get_P_t()
+        w_L = self.vis2d.get_w_t()
         P, w = P_t[idx], w_L[idx]
         ax.plot([w], [P], 'o', color='black', markersize=10)
-        ax.legend(loc=4)
+
+    def plot_tex(self, ax, vot):
+        self.plot(ax, vot)
 
 
 class Viz2DPullOutField(Viz2D):
@@ -158,6 +165,9 @@ class Viz2DPullOutField(Viz2D):
         self.y_max = max(ymax, self.y_max)
         self.y_min = min(ymin, self.y_min)
         ax.set_ylim(ymin=self.y_min, ymax=self.y_max)
+
+    def plot_tex(self, ax, vot, *args, **kw):
+        self.plot(ax, vot, *args, **kw)
 
     y_max = Float(1.0, label='Y-max value',
                   auto_set=False, enter_set=True)
@@ -225,6 +235,8 @@ class PullOutModel(BMCSModel, Vis2D):
     _restart = Bool(True)
 
     n_steps = Int(100, ALG=True,
+                  symbol='$n_\mathrm{E}$', unit='-',
+                  desc='number of time steps',
                   enter_set=True, auto_set=False)
 
     def init(self):
@@ -278,7 +290,7 @@ class PullOutModel(BMCSModel, Vis2D):
         for idx, t in enumerate(tarray):
             if self._restart or self._paused:
                 break
-            w = self.w_max * self.loading_scenario(t)
+            w = self.u_f0_max * self.loading_scenario(t)
             state_vars = \
                 self.analytical_po_model(w)
             t_ = np.array([t], dtype=np.float_)
@@ -317,9 +329,12 @@ class PullOutModel(BMCSModel, Vis2D):
 
     n_x = Int(100, auto_set=False, enter_set=True)
 
-    w_max = Float(1,
-                  BC=True,
-                  auto_set=False, enter_set=True)
+    u_f0_max = Float(1,
+                     BC=True,
+                     symbol='$u_{\mathrm{f},0}$',
+                     unit='mm',
+                     desc='control displacement',
+                     auto_set=False, enter_set=True)
 
     tline = Instance(TLine)
 
@@ -350,55 +365,63 @@ class PullOutModel(BMCSModel, Vis2D):
     def get_w_t(self):
         return self.get_sv_hist('u_x')[:, 0]
 
-    def plot_u(self, ax, vot):
+    def plot_u(self, ax, vot,
+               color='orange', label='reinf',
+               facecolor='orange', alpha=0.2):
         L = self.geometry.L_x
         x = -self.x
 
         idx = self.get_time_idx(vot)
 
         u_x = self.get_sv_hist('u_x')[idx]
-        ax.plot(x, u_x, linewidth=2, color='orange', label='reinf')
-        ax.fill_between(x, 0, u_x, facecolor='orange', alpha=0.2)
+        ax.plot(x, u_x, linewidth=2, color=color, label=label)
+        ax.fill_between(x, 0, u_x, facecolor=facecolor, alpha=alpha)
         ax.plot([0, -L], [0, 0], color='black')
         ax.set_ylabel('displacement: u [mm]')
         ax.set_xlabel('bond length: x [mm]')
         ax.legend(loc=2)
         return np.min(u_x), np.max(u_x)
 
-    def plot_eps(self, ax, vot):
+    def plot_eps(self, ax, vot,
+                 color='orange', label='reinf',
+                 facecolor='orange', alpha=0.2):
         L = self.geometry.L_x
         x = -self.x
         idx = self.get_time_idx(vot)
         eps_x = -self.get_sv_hist('eps_x')[idx]
-        ax.plot(x, eps_x, linewidth=2, color='orange', label='reinf')
-        ax.fill_between(x, 0, eps_x, facecolor='orange', alpha=0.2)
+        ax.plot(x, eps_x, linewidth=2, color=color, label=label)
+        ax.fill_between(x, 0, eps_x, facecolor=facecolor, alpha=alpha)
         ax.plot([0, -L], [0, 0], color='black')
         ax.legend(loc=2)
         ax.set_ylabel('strain: eps [-]')
         ax.set_xlabel('bond length: x [mm]')
         return np.min(eps_x), np.max(eps_x)
 
-    def plot_sig(self, ax, vot):
+    def plot_sig(self, ax, vot,
+                 color='orange', label='bond',
+                 facecolor='orange', alpha=0.2):
         L = self.geometry.L_x
         x = -self.x
         idx = self.get_time_idx(vot)
         eps_x = -self.get_sv_hist('eps_x')
         sig_x = self.material.E_f * eps_x
-        ax.plot(x, sig_x, linewidth=2, color='orange', label='reinf')
-        ax.fill_between(x, 0, sig_x, facecolor='orange', alpha=0.2)
+        ax.plot(x, sig_x, linewidth=2, color=color, label='reinf')
+        ax.fill_between(x, 0, sig_x, facecolor=color, alpha=0.2)
         ax.plot([0, -L], [0, 0], color='black')
         ax.legend(loc=2)
         ax.set_ylabel('stress: sig [MPa]')
         ax.set_xlabel('bond length: x [mm]')
         return np.min(sig_x), np.max(sig_x)
 
-    def plot_sf(self, ax, vot):
+    def plot_sf(self, ax, vot,
+                color='blue', label='bond',
+                facecolor='blue', alpha=0.2):
         L = self.geometry.L_x
         x = -self.x
         idx = self.get_time_idx(vot)
         sf_x = self.get_sv_hist('sf_x')[idx]
-        ax.plot(x, sf_x, linewidth=2, color='blue', label='bond')
-        ax.fill_between(x, 0, sf_x, facecolor='blue', alpha=0.2)
+        ax.plot(x, sf_x, linewidth=2, color=color, label=label)
+        ax.fill_between(x, 0, sf_x, facecolor=facecolor, alpha=alpha)
         ax.plot([0, -L], [0, 0], color='black')
         ax.legend(loc=2)
         ax.set_ylabel('shear flow: p * tau [N/mm]')
@@ -408,7 +431,7 @@ class PullOutModel(BMCSModel, Vis2D):
     tree_view = View(
         VGroup(
             Group(
-                Item('w_max', full_size=True, resizable=True),
+                Item('u_f0_max', full_size=True, resizable=True),
             ),
         )
     )
@@ -419,7 +442,7 @@ class PullOutModel(BMCSModel, Vis2D):
 
 
 def run_pullout_const_shear(*args, **kw):
-    po = PullOutModel(name='t32_analytical_pullout', n_x=200, w_max=1.5)
+    po = PullOutModel(name='t32_analytical_pullout', n_x=200, u_f0_max=1.5)
     po.geometry.set(L_x=800)
 #     po.cross_section.set(A_f=4.5, P_b=1.0)
 #     po.material.set(E_f=9 * 180000.0, tau_pi_bar=2.77 * 9)
@@ -428,7 +451,7 @@ def run_pullout_const_shear(*args, **kw):
     po.run()
     w = BMCSWindow(model=po)
     # po.add_viz2d('load function')
-    po.add_viz2d('F-w')
+    po.add_viz2d('F-w', 'load-displacement')
     po.add_viz2d('field', 'shear flow', plot_fn='sf')
     po.add_viz2d('field', 'displacement', plot_fn='u')
     po.add_viz2d('field', 'strain', plot_fn='eps')

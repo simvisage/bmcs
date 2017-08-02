@@ -189,6 +189,19 @@ class Viz2DLoadControlFunction(Viz2D):
         ax.plot(t_arr, f_arr, color='black')
         ax.set_ylabel('load factor')
         ax.set_xlabel('time')
+        self.plot_marker(ax, vot)
+
+    def plot_marker(self, ax, vot):
+        bc = self.vis2d.control_bc
+        val = bc.value
+        tloop = self.vis2d.tloop
+        t_arr = np.array(tloop.t_record, np.float_)
+        if len(t_arr) == 0:
+            return
+        f_arr = val * bc.time_function(t_arr)
         vot_idx = tloop.get_time_idx(vot)
         ax.plot([t_arr[vot_idx]], [f_arr[vot_idx]], 'o',
                 color='black', markersize=10)
+
+    def plot_tex(self, ax, vot):
+        self.plot(ax, vot)

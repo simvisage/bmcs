@@ -35,6 +35,9 @@ class Viz2D(ROutputItem):
     def plot(self, ax, vot=0):
         self.vis2d.plot(ax, vot)
 
+    def plot_tex(self, ax, vot, *args, **kw):
+        self.plot(ax, vot, *args, **kw)
+
     def write_figure(self, f, rdir, rel_study_path):
         fname = 'fig_' + self.name.replace(' ', '_') + '.pdf'
         f.write(r'''
@@ -45,7 +48,7 @@ class Viz2D(ROutputItem):
     def savefig(self, fname):
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        self.plot(ax, 0.25)
+        self.plot_tex(ax, 0.25)
         fig.savefig(fname)
 
     def reset(self, ax):

@@ -4,7 +4,6 @@ Created on May 23, 2017
 
 '''
 
-from scipy.optimize import newton
 import matplotlib.pyplot as plt
 import numpy as np
 

@@ -98,7 +98,7 @@ class SCMModelView (ModelView):
     traits_view = View(
         HSplit(
             VGroup(
-                Item('model@', show_label=False, resizable=True),
+                Item('model@', show_label=False, springy=True, width=400),
                 label='Material parameters',
                 id='scm.viewmodel.model',
                 dock='tab',
@@ -106,7 +106,7 @@ class SCMModelView (ModelView):
             VSplit(
                 VGroup(
                     Item('figure',
-                         editor=MPLFigureEditor(),
+                         editor=MPLFigureEditor(), springy=True,
                          resizable=True, show_label=False),
                     label='Strain hardening response',
                     id='scm.viewmodel.plot_window',
@@ -115,7 +115,7 @@ class SCMModelView (ModelView):
                 HGroup(
                     VGroup(Item('stresses',
                                 label='stress refered to cross-sectional area of',
-                                resizable=False), scrollable=False),
+                                resizable=False, height=30), scrollable=False),
                     VGroup(Item('csf', label='show csf'),
                            scrollable=False),
                     VGroup(Item('model.Pf', label='probability for csf'),

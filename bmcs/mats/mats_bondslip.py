@@ -364,18 +364,22 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
     E_m = Float(28000.0, tooltip='Stiffness of the matrix [MPa]',
                 MAT=True, unit='MPa', symbol='$E_\mathrm{m}$',
+                desc='E-modulus of the matrix',
                 auto_set=True, enter_set=True)
 
     E_f = Float(170000.0, tooltip='Stiffness of the fiber [MPa]',
                 MAT=True, unit='MPa', symbol='$E_\mathrm{f}$',
+                desc='E-modulus of the reinforcement',
                 auto_set=False, enter_set=True)
 
     s_data = Str('', tooltip='Comma-separated list of strain values',
                  MAT=True, unit='mm', symbol='$s$',
+                 desc='slip values',
                  auto_set=True, enter_set=False)
 
     tau_data = Str('', tooltip='Comma-separated list of stress values',
                    MAT=True, unit='MPa', symbol='$\\tau$',
+                   desc='shear stress values',
                    auto_set=True, enter_set=False)
 
     update_bs_law = Button(label='update bond-slip law')
@@ -419,6 +423,8 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
     def get_corr_pred(self, s, d_s, tau, t_n, t_n1,
                       s_p, alpha, z, kappa, omega):
+
+        print 'get_corr_pred', s
 
         n_e, n_ip, n_s = s.shape
         D = np.zeros((n_e, n_ip, 3, 3))

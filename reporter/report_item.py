@@ -154,9 +154,9 @@ class ROutputSection(RItem):
         for r1, r2 in record_arr:
             f.write(r'''
 \noindent
-\begin{tabular}{L{7.5cm}L{7.5cm}}''')
+\begin{longtable}{L{7.5cm}L{7.5cm}}''')
             f.write(r'%s & %s \\' % (r1, r2))
-            f.write(r'''\end{tabular}
+            f.write(r'''\end{longtable}
 ''')
 
     def write_report(self, f, rdir, itags):

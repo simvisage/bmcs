@@ -39,10 +39,10 @@ def get_pullout_model_carbon_concrete(w_max=5.0):
 
 def show(po):
     w = BMCSWindow(model=po)
-    po.add_viz2d('load function')
-    po.add_viz2d('F-w')
+    po.add_viz2d('load function', 'load-time')
+    po.add_viz2d('F-w', 'load-displacement')
     po.add_viz2d('field', 'u_C', plot_fn='u_C')
-    po.add_viz2d('field', 'w', plot_fn='w')
+    po.add_viz2d('field', 'omega', plot_fn='omega')
     po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')

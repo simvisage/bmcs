@@ -4,7 +4,7 @@ Created on May 11, 2017
 @author: rch
 '''
 
-import bmcs.pullout.lecture04 as l04
+from bmcs.course import lecture04 as l04
 import numpy as np
 
 
@@ -50,7 +50,7 @@ def multilinear_bond_slip_law_epoxy_tvlach():
     '''This is the verification of the calculation by Li. 
     '''
 
-    po = l04.PullOutModel(n_e_x=200, k_max=500, w_max=0.15)
+    po = l04.PullOutModel(n_e_x=200, k_max=500, u_f0_max=0.15)
     po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic',
                             amplitude_type='constant',

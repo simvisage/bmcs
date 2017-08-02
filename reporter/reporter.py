@@ -52,16 +52,6 @@ class ReportStudy(HasStrictTraits):
 
     output = Instance(ROutputSection)
 
-    title = Property
-
-    def _get_title(self):
-        return self.input.title
-
-    desc = Property
-
-    def _get_desc(self):
-        return self.input.desc
-
     preamble_subfile = Constant(r'''\documentclass[main.tex]{subfiles}
 \begin{document}
 ''')
@@ -79,16 +69,17 @@ class ReportStudy(HasStrictTraits):
 
         with open(rfile_tex, 'w') as subfile:
             subfile.write(self.preamble_subfile)
-            subfile.write(r'''\begin{bmcsexample}[%s]
-\noindent %s \\[3mm]
+            subfile.write(r'''\begin{bmcsex}{%s}{%s}
+\noindent %s \\
 \begin{center}
-            ''' % (self.title, self.desc))
+            ''' % (self.title, study_name, self.desc))
             self.write_tex_input(subfile, rdir,
                                  rel_study_path, itags)
             self.write_tex_output(subfile, rdir,
                                   rel_study_path, itags)
             subfile.write(r'''\end{center}
-\end{bmcsexample}
+            ''')
+            subfile.write(r'''\end{bmcsex}
 ''')
             subfile.write(self.postable_subfile)
 
@@ -143,6 +134,7 @@ class Reporter(HasStrictTraits):
 %
 \input{lib/packages}
 \input{lib/example}
+\input{lib/bmcsex}
 %\input{shortcuts/defs}
 %\input{bib/bibliographies}
 
@@ -220,7 +212,7 @@ class Reporter(HasStrictTraits):
 #        tex_source_lib = os.path.join(os.sep, 'home', 'rch', 'bmcs_preamble')
         target_dir = os.path.join(self.report_dir, 'lib')
         os.mkdir(target_dir)
-        files = ['packages.tex', 'example.tex', 'scidoc.cls']
+        files = ['packages.tex', 'bmcsex.tex', 'example.tex', 'scidoc.cls']
         for f in files:
             copyfile(os.path.join(tex_source_lib, f),
                      os.path.join(target_dir, f))

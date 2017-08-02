@@ -13,10 +13,8 @@
 # Created on Sep 21, 2009 by: rch
 
 from math import exp
-
-from traits.api import HasTraits, Float, Property, cached_property, Instance
-from traitsui.api import View, Item, VGroup, HGroup
-from util.traits.either_type import EitherType
+from traits.api import Float, Property, cached_property
+from traitsui.api import View, Item, VGroup
 from view.plot2d import Viz2D, Vis2D
 from view.window import BMCSModel
 
@@ -26,7 +24,7 @@ import numpy as np
 class Viz2DSCMSigEps(Viz2D):
 
     def plot(self, ax, vot, *args, **kw):
-        sig, eps = self.vis2d.get_sig_eps()
+        sig, eps = self.vis2d.sig_eps
         ax.plot(sig, eps, *args, **kw)
 
 
@@ -47,11 +45,11 @@ class SCM(BMCSModel, Vis2D):
                 desc='Frictional stress')
 
     r = Float(0.5, auto_set=False, enter_set=True,  # [mm]
-              MAT=True,
+              CS=True,
               desc='Radius')
 
     rho = Float(0.03, auto_set=False, enter_set=True,  # [-]
-                MAT=True,
+                CS=True,
                 desc='Reinforcement ratio')
 
 #    reinf_cs = EitherType(klasses=[SimplyRatio, GridReinforcement])
@@ -75,25 +73,25 @@ class SCM(BMCSModel, Vis2D):
     def _get_V_f(self):
         return self.rho
 
-    V_m = Property(Float, depends_on='MAT')
+    V_m = Property(Float, depends_on='rho')
 
     @cached_property
     def _get_V_m(self):
         return 1 - self.rho
 
-    alpha = Property(Float, depends_on='MAT')
+    alpha = Property(Float, depends_on='+MAT')
 
     @cached_property
     def _get_alpha(self):
         return (self.E_m * self.V_m) / (self.E_f * self.V_f)
 
-    E_c1 = Property(Float, depends_on='MAT')
+    E_c1 = Property(Float, depends_on='+MAT')
 
     @cached_property
     def _get_E_c1(self):
         return self.E_f * self.V_f + self.E_m * self.V_m
 
-    delta_final = Property(Float, depends_on='MAT')
+    delta_final = Property(Float, depends_on='+MAT')
 
     @cached_property
     def _get_delta_final(self):
@@ -132,7 +130,10 @@ class SCM(BMCSModel, Vis2D):
     def eval(self):
         self.tline.val = self.tline.max
 
-    def get_sig_eps(self):
+    sig_eps = Property(depends_on='+MAT,+CS')
+
+    @cached_property
+    def _get_sig_eps(self):
         n_points = 100
         sigma_max = self.sigma_fu * self.rho
 
@@ -173,5 +174,5 @@ if __name__ == '__main__':
     from view.window import BMCSWindow
     scm = SCM()
     w = BMCSWindow(model=scm)
-    scm.add_viz2d('sig-eps')
+    scm.add_viz2d('sig-eps', 's-e')
     w.configure_traits()

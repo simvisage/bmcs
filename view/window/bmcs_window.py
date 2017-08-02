@@ -95,10 +95,10 @@ class RunThread(Thread):
         self.ui.model.restart = True
 
 
-class BMCSWindow(ReportStudy):
-
-    '''View object for a cross section state.
+class BMCSStudy(ReportStudy):
+    '''Combine the model with specification of outputs
     '''
+
     model = Instance(BMCSModel)
     '''Model of the studied phoenomenon.
     '''
@@ -172,6 +172,26 @@ class BMCSWindow(ReportStudy):
         self.model.stop()
         self.enable_stop = False
 
+    def report_tex(self):
+        r = Reporter(report_name=self.model.name,
+                     input=self.model,
+                     output=self.viz_sheet)
+        r.write()
+        r.show_tex()
+
+    def report_pdf(self):
+        r = Reporter(studies=[self])
+        r.write()
+        r.show_tex()
+        r.run_pdflatex()
+        r.show_pdf()
+
+    def add_viz2d(self, clname, name, **kw):
+        self.model.add_viz2d(clname, name, **kw)
+
+
+class BMCSWindow(BMCSStudy):
+
     selected_node = Instance(HasStrictTraits)
 
     def _selected_node_changed(self):
@@ -196,20 +216,6 @@ class BMCSWindow(ReportStudy):
     def _clear_fired(self):
         self.figure.clear()
         self.data_changed = True
-
-    def report_tex(self):
-        r = Reporter(report_name=self.model.name,
-                     input=self.model,
-                     output=self.viz_sheet)
-        r.write()
-        r.show_tex()
-
-    def report_pdf(self):
-        r = Reporter(studies=[self])
-        r.write()
-        r.show_tex()
-        r.run_pdflatex()
-        r.show_pdf()
 
     view = View(
         HSplit(

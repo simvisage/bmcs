@@ -222,24 +222,24 @@ class SCM(HasTraits):
             Tabbed(
                 VGroup(
                     Group(
-                        Item('E_f',      resizable=False,
+                        Item('E_f',      resizable=True, full_size=True,
                              label='E-modulus',
                              tooltip="Young's modulus of the fiber"),
-                        Item('sigma_fu', resizable=False,
+                        Item('sigma_fu', resizable=True,
                              label='strength',
                              help="Strength of the fibers"
                              ),
                         label='fibers',
                     ),
                     Group(
-                        Item('E_m',      resizable=False,
+                        Item('E_m',      resizable=True, full_size=True,
                              label='E-modulus',
                              help="Young's modulus of the matrix"),
-                        Item('sigma_mu', resizable=False,
+                        Item('sigma_mu', resizable=True,
                              label='strength',
                              help="Scale parameter of the matrix strength"
                              'roughly corresponding to the mean strength'),
-                        Item('m',        resizable=False,
+                        Item('m',        resizable=True,
                              label='Weibull-modulus',
                              help="Weibull modulus of the matrix strength distribution"
                              'defining the scatter of the strength'),
@@ -251,7 +251,7 @@ class SCM(HasTraits):
                     id='scm.model.component_params',
                 ),
                 VGroup(
-                    Item('tau', resizable=False, springy=True),
+                    Item('tau', resizable=True, full_size=True, springy=False),
                     Item('r', resizable=False, springy=False),
                     springy=True,
                     label='Bond',
@@ -300,6 +300,7 @@ def run():
     # ....
     s = SCM()
     s.configure_traits()
+
 
 if __name__ == '__main__':
     run()
