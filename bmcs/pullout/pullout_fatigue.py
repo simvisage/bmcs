@@ -4,7 +4,7 @@ Created on 12.01.2016
 '''
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from bmcs.mats.mats_bondslip import MATSBondSlipDP, MATSBondSlipMultiLinear, MATSBondSlipFRPDamage
+from bmcs.mats.mats_bondslip import MATSBondSlipFatigue, MATSBondSlipDP, MATSBondSlipMultiLinear, MATSBondSlipFRPDamage
 from bmcs.mats.tloop_dp import TLoop
 from bmcs.mats.tstepper_dp import TStepper
 from bmcs.time_functions import \
@@ -12,6 +12,7 @@ from bmcs.time_functions import \
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from reporter import Reporter, RInputSection
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
@@ -24,7 +25,6 @@ from view.window import BMCSModel, BMCSWindow, TLine
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     CrossSection, Geometry
-from reporter import Reporter, RInputSection
 
 
 class Viz2DEnergyPlot(Viz2D):
@@ -126,10 +126,11 @@ class PullOutModel(BMCSModel, Vis2D, RInputSection):
     def _get_controlled_dof(self):
         return 2 + 2 * self.n_e_x - 1
 
-    mats_eval_type = Trait('FRP-damage',
+    mats_eval_type = Trait('Fatigue',
                            {'damage-plasticity': MATSBondSlipDP,
                             'multilinear': MATSBondSlipMultiLinear,
-                            'FRP-damage': MATSBondSlipFRPDamage})
+                            'FRP-damage': MATSBondSlipFRPDamage,
+                            'Fatigue': MATSBondSlipFatigue})
 
     @on_trait_change('mats_eval_type')
     def _set_mats_eval(self):
@@ -170,7 +171,7 @@ class PullOutModel(BMCSModel, Vis2D, RInputSection):
     '''
     @cached_property
     def _get_control_bc(self):
-        return BCDof(node_name='pull-out displacement', var='u',
+        return BCDof(node_name='pull-out force', var='f',
                      dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
@@ -468,14 +469,17 @@ class PullOutModel(BMCSModel, Vis2D, RInputSection):
                      }
 
 
-def run_pullout_frp_damage(*args, **kw):
-    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
-    po.tline.step = 0.01
-    po.geometry.L_x = 200.0
-    po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    # po.mats_eval.set()
-    po.mats_eval.omega_fn.set(plot_max=0.5)
+def run_pullout_fatigue(*args, **kw):
+    po = PullOutModel(n_e_x=20, k_max=500, w_max=1.0)
+    po.tline.step = 0.001
+    po.geometry.L_x = 42.0
+    po.loading_scenario.set(loading_type='cyclic')
+    po.loading_scenario.set(number_of_cycles=20)
+    po.loading_scenario.set(maximum_loading=19200)
+    po.loading_scenario.set(unloading_ratio=0.1)
+    po.loading_scenario.set(amplitude_type="constant")
+    po.loading_scenario.set(loading_range="non-symmetric")
+    po.cross_section.set(A_f=153.9, P_b=44, A_m=15400.0)
     po.run()
 
     w = BMCSWindow(model=po)
@@ -501,8 +505,6 @@ def test_reporter():
     po.geometry.L_x = 500.0
     po.loading_scenario.set(loading_type='monotonic')
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    # po.mats_eval.set()
-    po.mats_eval.omega_fn.set(plot_max=0.5)
     po.run()
 
     w = BMCSWindow(model=po)
@@ -525,5 +527,5 @@ def test_reporter():
 
 
 if __name__ == '__main__':
-    run_pullout_frp_damage()
+    run_pullout_fatigue()
     # test_reporter()
