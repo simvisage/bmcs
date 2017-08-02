@@ -8,10 +8,11 @@ from os.path import join
 
 from ibvpy.api import MATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from traits.api import implements, Int, Array, \
+from reporter.report_item import RInputRecord
+from traits.api import  \
     Constant, Float, Tuple, List, on_trait_change, \
     Instance, Trait, Bool, Str, Button
-from traitsui.api import View, VGroup, Item, UItem
+from traitsui.api import View, VGroup, Item, UItem, Group
 from view.ui import BMCSTreeNode
 
 from mats_damage_fn import \
@@ -20,7 +21,9 @@ from mats_damage_fn import \
 import numpy as np
 
 
-class MATSEvalFatigue(MATSEval, BMCSTreeNode):
+class MATSBondSlipFatigue(MATSEval, BMCSTreeNode, RInputRecord):
+
+    node_name = 'bond model: bond fatigue'
 
     E_m = Float(30000, tooltip='Stiffness of the matrix [MPa]',
                 MAT=True,
@@ -30,56 +33,56 @@ class MATSEvalFatigue(MATSEval, BMCSTreeNode):
                 MAT=True,
                 auto_set=False, enter_set=False)
 
-    E_b = Float(200,
+    E_b = Float(12900,
                 label="E_b",
                 desc="Bond Stiffness",
                 MAT=True,
                 enter_set=True,
                 auto_set=False)
 
-    gamma = Float(0,
+    gamma = Float(55.0,
                   label="Gamma",
                   desc="Kinematic hardening modulus",
                   MAT=True,
                   enter_set=True,
                   auto_set=False)
 
-    K = Float(0,
+    K = Float(11.0,
               label="K",
               desc="Isotropic harening",
               MAT=True,
               enter_set=True,
               auto_set=False)
 
-    S = Float(1,
+    S = Float(0.00048,
               label="S",
               desc="Damage cumulation parameter",
               enter_set=True,
               MAT=True,
               auto_set=False)
 
-    r = Float(1,
+    r = Float(0.5,
               label="r",
               desc="Damage cumulation parameter",
               MAT=True,
               enter_set=True,
               auto_set=False)
 
-    c = Float(1,
+    c = Float(2.8,
               label="c",
               desc="Damage cumulation parameter",
               MAT=True,
               enter_set=True,
               auto_set=False)
 
-    tau_pi_bar = Float(5,
+    tau_pi_bar = Float(4.2,
                        label="Tau_pi_bar",
                        desc="Reversibility limit",
                        MAT=True,
                        enter_set=True,
                        auto_set=False)
 
-    pressure = Float(-5,
+    pressure = Float(0,
                      label="Pressure",
                      desc="Lateral pressure",
                      MAT=True,
@@ -93,11 +96,34 @@ class MATSEvalFatigue(MATSEval, BMCSTreeNode):
               enter_set=True,
               auto_set=False)
 
-    n_s = Constant(4)
-
     state_arr_shape = Tuple((4,))
+    n_s = Constant(5)
 
-    def get_corr_pred(self, eps, d_eps, sig, t_n, t_n1, xs_pi, alpha, z, w):
+    def get_cp(self, s, d_s, t_n, t_n1, state):
+        tau, s_p, alpha, z, kappa, omega = state
+        tau, D, s_p, alpha, z, kappa,  omega = \
+            self.get_corr_pred(s, d_s, tau, t_n, t_n1,
+                               s_p, alpha, z, kappa, omega)
+        return tau, D, state
+
+    def get_corr_pred2(self, s_n1, d_s, t_n, t_n1, sa_n):
+
+        tau_n, s_p_n, alpha_n, z_n, omega_n = \
+            sa_n[..., 0:3], sa_n[..., 3], sa_n[..., 4],\
+            sa_n[..., 5], sa_n[..., 6]
+
+        tau, D, s_p, alpha, z, omega = \
+            self.get_corr_pred(s_n1, d_s, tau_n, t_n, t_n1,
+                               s_p_n, alpha_n, z_n,  omega_n)
+
+        sa_n1 = np.concatenate([tau,
+                                s_p[..., np.newaxis],
+                                alpha[..., np.newaxis],
+                                z[..., np.newaxis],
+                                omega[..., np.newaxis]], axis=-1)
+        return tau, D, sa_n1
+
+    def get_corr_pred(self, eps, d_eps, sig, t_n, t_n1, xs_pi, alpha, z, kappa, w):
 
         n_e, n_ip, n_s = eps.shape
         D = np.zeros((n_e, n_ip, 3, 3))
@@ -139,7 +165,31 @@ class MATSEvalFatigue(MATSEval, BMCSTreeNode):
 
         D[:, :, 1, 1] = (1 - w) * self.E_b * elas + D_ed * plas
 
-        return sig, D, xs_pi, alpha, z, w
+        return sig, D, xs_pi, alpha, z, kappa, w
+
+#     tree_view = View(
+#         VGroup(
+#             Item('E_m', full_size=True, resizable=True),
+#             Item('E_f'),
+#             Item('E_b'),
+#             Item('gamma'),
+#             Item('K'),
+#             Item('S'),
+#             Item('r'),
+#             Item('c'),
+#             Item('tau_pi_bar'),
+#             Item('pressure'),
+#             Item('a'))
+#     )
+
+    tree_view = View(VGroup(Group(Item('E_b'),
+                                  Item('tau_pi_bar'), show_border=True, label='Bond Stiffness and reversibility limit'),
+                            Group(Item('gamma'),
+                                  Item('K'), show_border=True, label='Hardening parameters'),
+                            Group(Item('S'),
+                                  Item('r'), Item('c'), show_border=True, label='Damage cumulation parameters'),
+                            Group(Item('pressure'),
+                                  Item('a'), show_border=True, label='Lateral Pressure')))
 
 
 class MATSBondSlipDP(MATSEval, BMCSTreeNode):
@@ -423,8 +473,6 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
     def get_corr_pred(self, s, d_s, tau, t_n, t_n1,
                       s_p, alpha, z, kappa, omega):
-
-        print 'get_corr_pred', s
 
         n_e, n_ip, n_s = s.shape
         D = np.zeros((n_e, n_ip, 3, 3))

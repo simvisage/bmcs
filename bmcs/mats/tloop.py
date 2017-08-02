@@ -3,12 +3,12 @@ Created on 12.01.2016
 
 @author: Yingxiong
 '''
+from ibvpy.core.tline import TLine
 from traits.api import Int, HasStrictTraits, Instance, \
     Float, on_trait_change, Callable, \
     Array, List, Bool, Property, cached_property, Str, Dict
 from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
-from ibvpy.core.tline import TLine
 
 import numpy as np
 from tstepper import TStepper

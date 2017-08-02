@@ -4,13 +4,15 @@ Created on 12.01.2016
 '''
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from bmcs.mats.mats_bondslip import MATSBondSlipDP, MATSBondSlipMultiLinear
+from bmcs.mats.mats_bondslip import MATSBondSlipFatigue, MATSBondSlipDP, MATSBondSlipMultiLinear, MATSBondSlipFRPDamage
 from bmcs.mats.tloop_dp import TLoop
 from bmcs.mats.tstepper_dp import TStepper
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
+from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from reporter import Reporter, RInputRecord
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
@@ -23,16 +25,83 @@ from view.window import BMCSModel, BMCSWindow, TLine
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     Viz2DEnergyPlot, Viz2DEnergyRatesPlot, \
-    PullOutModelBase
+    CrossSection, Geometry, PullOutModelBase
 
 
 class PullOutModel(PullOutModelBase):
 
-    mats_eval_type = Trait('multilinear',
+    node_name = 'pull out simulation'
+
+    tree_node_list = List([])
+
+    def _tree_node_list_default(self):
+
+        return [
+            self.tline,
+            self.loading_scenario,
+            self.mats_eval,
+            self.cross_section,
+            self.geometry
+        ]
+
+    def _update_node_list(self):
+        self.tree_node_list = [
+            self.tline,
+            self.loading_scenario,
+            self.mats_eval,
+            self.cross_section,
+            self.geometry,
+        ]
+
+    tree_view = View(
+        Group(
+            Item('w_max', resizable=True, full_size=True),
+            Group(
+                Item('loading_scenario@', show_label=False),
+            )
+        )
+    )
+
+    tline = Instance(TLine, report=True)
+
+    def _tline_default(self):
+        # assign the parameters for solver and loading_scenario
+        t_max = 1.0  # self.loading_scenario.t_max
+        d_t = 0.02  # self.loading_scenario.d_t
+        return TLine(min=0.0, step=d_t, max=t_max,
+                     time_change_notifier=self.time_changed,
+                     )
+
+    loading_scenario = Instance(LoadingScenario,
+                                report=True)
+
+    def _loading_scenario_default(self):
+        return LoadingScenario()
+
+    cross_section = Instance(CrossSection, report=True)
+
+    def _cross_section_default(self):
+        return CrossSection()
+
+    geometry = Instance(Geometry, report=True)
+
+    def _geometry_default(self):
+        return Geometry()
+
+    n_e_x = Int(20, MESH=True, auto_set=False, enter_set=True)
+
+    w_max = Float(1, BC=True, auto_set=False, enter_set=True)
+
+    controlled_dof = Property
+
+    def _get_controlled_dof(self):
+        return 2 + 2 * self.n_e_x - 1
+
+    mats_eval_type = Trait('Fatigue',
                            {'damage-plasticity': MATSBondSlipDP,
-                            'multilinear': MATSBondSlipMultiLinear},
-                           MAT=True,
-                           desc='material model type')
+                            'multilinear': MATSBondSlipMultiLinear,
+                            'FRP-damage': MATSBondSlipFRPDamage,
+                            'Fatigue': MATSBondSlipFatigue})
 
     @on_trait_change('mats_eval_type')
     def _set_mats_eval(self):
@@ -65,7 +134,7 @@ class PullOutModel(PullOutModelBase):
     @cached_property
     def _get_fixed_bc(self):
         return BCDof(node_name='fixed left end', var='u',
-                     dof=self.fixed_dof, value=0.0)
+                     dof=0, value=0.0)
 
     control_bc = Property(depends_on='BC,MESH')
     '''Control boundary condition - make it accessible directly
@@ -73,8 +142,8 @@ class PullOutModel(PullOutModelBase):
     '''
     @cached_property
     def _get_control_bc(self):
-        return BCDof(node_name='pull-out displacement', var='u',
-                     dof=self.controlled_dof, value=self.u_f0_max,
+        return BCDof(node_name='pull-out force', var='f',
+                     dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
     bcond_mngr = Property(Instance(BCondMngr),
@@ -102,6 +171,11 @@ class PullOutModel(PullOutModelBase):
                         L_x=self.geometry.L_x,
                         bcond_mngr=self.bcond_mngr
                         )
+
+    k_max = Int(200,
+                ALG=True)
+    tolerance = Float(1e-4,
+                      ALG=True)
 
     tloop = Property(Instance(TLoop),
                      depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
@@ -250,6 +324,13 @@ class PullOutModel(PullOutModelBase):
         w_0, w_L = self.get_w_t()
         return w_L
 
+    def get_omega(self, vot):
+        '''Damage variables
+        '''
+        idx = self.tloop.get_time_idx(vot)
+        w_Emd = self.tloop.omega_record[idx]
+        return w_Emd.flatten()
+
     t = Property
 
     def _get_t(self):
@@ -258,15 +339,10 @@ class PullOutModel(PullOutModelBase):
     def get_t(self):
         return np.array(self.tloop.t_record, dtype=np.float_)
 
-    n_t = Property
-
-    def _get_n_t(self):
-        return len(self.tloop.t_record)
-
     sig_tC = Property
 
     def _get_sig_tC(self):
-        n_t = self.n_t
+        n_t = len(self.tloop.t_record)
         sig_tEmC = np.array(self.tloop.sig_EmC_record, dtype=np.float_)
         sig_tC = sig_tEmC.reshape(n_t, -1, 2)
         return sig_tC
@@ -282,63 +358,63 @@ class PullOutModel(PullOutModelBase):
                      }
 
 
-def run_pullout_multilinear(*args, **kw):
-    po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=100, k_max=1000, u_f0_max=1.75)
+def run_pullout_fatigue(*args, **kw):
+    po = PullOutModel(n_e_x=20, k_max=500, w_max=1.0)
+    po.tline.step = 0.001
+    po.geometry.L_x = 42.0
+    po.loading_scenario.set(loading_type='cyclic')
+    po.loading_scenario.set(number_of_cycles=20)
+    po.loading_scenario.set(maximum_loading=19200)
+    po.loading_scenario.set(unloading_ratio=0.1)
+    po.loading_scenario.set(amplitude_type="constant")
+    po.loading_scenario.set(loading_range="non-symmetric")
+    po.cross_section.set(A_f=153.9, P_b=44, A_m=15400.0)
+    po.run()
+
+    w = BMCSWindow(model=po)
+    po.add_viz2d('load function', 'Load-time')
+    po.add_viz2d('F-w', 'Load-displacement')
+    po.add_viz2d('field', 'u_C', plot_fn='u_C')
+    po.add_viz2d('field', 'omega', plot_fn='omega')
+    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
+    po.add_viz2d('field', 's', plot_fn='s')
+    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+    po.add_viz2d('field', 'sf', plot_fn='sf')
+    po.add_viz2d('dissipation', 'dissipation')
+    po.add_viz2d('dissipation rate', 'dissipation rate')
+
+    w.offline = False
+    w.finish_event = True
+    w.configure_traits(*args, **kw)
+
+
+def test_reporter():
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.0)
     po.tline.step = 0.01
-    po.geometry.L_x = 200.0
+    po.geometry.L_x = 500.0
     po.loading_scenario.set(loading_type='monotonic')
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(s_data='0, 0.1, 0.4, 20.0',
-                     tau_data='0, 800, 0, 0')
-    po.mats_eval.update_bs_law = True
     po.run()
 
     w = BMCSWindow(model=po)
-    po.add_viz2d('load function', 'load-time')
-    po.add_viz2d('F-w', 'load-displacement')
+    po.add_viz2d('load function', 'Load-time')
+    po.add_viz2d('F-w', 'Load-displacement')
     po.add_viz2d('field', 'u_C', plot_fn='u_C')
-    po.add_viz2d('dissipation', 'dissipation')
+    po.add_viz2d('field', 'omega', plot_fn='omega')
     po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
     po.add_viz2d('field', 'sf', plot_fn='sf')
-    po.add_viz2d('dissipation rate', 'dissipation rate')
-
-    w.offline = False
-    w.finish_event = True
-    w.configure_traits(*args, **kw)
-
-
-def run_pullout_multi(*args, **kw):
-    po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=2, k_max=1000, u_f0_max=0.1)
-    po.tline.step = 0.1
-    po.geometry.L_x = 200.0
-    po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(s_data='0, 0.1, 0.4, 20.0',
-                     tau_data='0, 800, 0, 0')
-    po.mats_eval.update_bs_law = True
-    po.run()
-
-    w = BMCSWindow(model=po)
-    po.add_viz2d('load function', 'load-time')
-    po.add_viz2d('F-w', 'load-displacement')
-    po.add_viz2d('field', 'u_C', plot_fn='u_C')
     po.add_viz2d('dissipation', 'dissipation')
-    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
-    po.add_viz2d('field', 's', plot_fn='s')
-    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-    po.add_viz2d('field', 'sf', plot_fn='sf')
     po.add_viz2d('dissipation rate', 'dissipation rate')
 
-    w.offline = False
-    w.finish_event = True
-    w.configure_traits(*args, **kw)
+    r = Reporter(report_items=[po, w.viz_sheet])
+    r.write()
+    r.show_tex()
+    r.run_pdflatex()
+    r.show_pdf()
 
 
 if __name__ == '__main__':
-    # run_pullout_multilinear()
-    run_pullout_multi()
-    # test_B()
+    run_pullout_fatigue()
+    # test_reporter()

@@ -8,7 +8,7 @@ Created on 12.01.2016
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import \
-    MATSBondSlipDP, MATSBondSlipMultiLinear, MATSEvalFatigue
+    MATSBondSlipDP, MATSBondSlipMultiLinear
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
@@ -26,40 +26,15 @@ from view.window import BMCSModel, BMCSWindow
 
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
-    CrossSection, Geometry
+    CrossSection, Geometry, PullOutModelBase
 
 
-class PullOutModel(BMCSModel, Vis2D):
+class PullOutModel(PullOutModelBase):
 
     #=========================================================================
     # Tree node attributes
     #=========================================================================
     node_name = 'pull out simulation'
-
-    tree_node_list = List([])
-
-    def _tree_node_list_default(self):
-
-        return [
-            self.tline,
-            self.mats_eval,
-            self.cross_section,
-            self.geometry,
-            self.fixed_bc,
-            self.control_bc,
-            self.rt_Pu
-        ]
-
-    def _update_node_list(self):
-        self.tree_node_list = [
-            self.tline,
-            self.mats_eval,
-            self.cross_section,
-            self.geometry,
-            self.fixed_bc,
-            self.control_bc,
-            self.rt_Pu
-        ]
 
     #=========================================================================
     # Interactive control of the time loop
@@ -120,23 +95,18 @@ class PullOutModel(BMCSModel, Vis2D):
     #=========================================================================
     # Material model
     #=========================================================================
-    mats_eval_type = Trait('fatigue',
-                           {'fatigue': MATSEvalFatigue,
-                            'damage-plasticity': MATSBondSlipDP,
+    mats_eval_type = Trait('multilinear',
+                           {'damage-plasticity': MATSBondSlipDP,
                             'multilinear': MATSBondSlipMultiLinear},
-                           MAT=True
-                           )
+                           MAT=True,
+                           desc='material model type')
 
     @on_trait_change('mats_eval_type')
     def _set_mats_eval(self):
         self.mats_eval = self.mats_eval_type_()
-
-    @on_trait_change('BC,MAT,MESH')
-    def reset_node_list(self):
         self._update_node_list()
 
-    mats_eval = Instance(IMATSEval,
-                         MAT=True)
+    mats_eval = Instance(IMATSEval, report=True)
     '''Material model'''
 
     def _mats_eval_default(self):
@@ -473,6 +443,33 @@ def run_with_new_state():
     print 'U_n', po.tloop.U_n
 
 
+def run_pullout_multi(*args, **kw):
+    po = PullOutModel(name='t33_pullout_multilinear',
+                      n_e_x=2, k_max=1000, u_f0_max=0.1)
+    po.mats_eval_type = 'multilinear'
+    po.tline.step = 0.1
+    po.geometry.L_x = 200.0
+    po.loading_scenario.set(loading_type='monotonic')
+    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
+    po.mats_eval.set(s_data='0, 0.1, 0.4, 20.0',
+                     tau_data='0, 800, 0, 0')
+    po.mats_eval.update_bs_law = True
+    po.run()
+
+    w = BMCSWindow(model=po)
+    po.add_viz2d('load function', 'load-time')
+    po.add_viz2d('F-w', 'load-displacement')
+    po.add_viz2d('field', 'u_C', plot_fn='u_C')
+    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
+    po.add_viz2d('field', 's', plot_fn='s')
+    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+    po.add_viz2d('field', 'sf', plot_fn='sf')
+
+    w.offline = False
+    w.finish_event = True
+    w.configure_traits(*args, **kw)
+
+
 if __name__ == '__main__':
-    run_pullout_multilinear()
+    run_pullout_multi()
     # run_with_new_state()

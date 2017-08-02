@@ -10,7 +10,7 @@ from traits.api import HasTraits, Instance, \
     Property, cached_property, List
 
 from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from mats_bondslip import MATSEvalFatigue
+from mats_bondslip import MATSBondSlipFatigue
 import numpy as np
 
 n_C = 2
@@ -32,7 +32,7 @@ class TStepper(HasTraits):
     '''
 
     def _mats_eval_default(self):
-        return MATSEvalFatigue()
+        return MATSBondSlipFatigue()
 
     fets_eval = Instance(IFETSEval)
     '''Finite element formulation object.
@@ -275,7 +275,7 @@ class TStepper(HasTraits):
             bc.apply(step_flag, None, K_mtx, F_ext, t_n, t_n1)
 
     def get_corr_pred(self, step_flag, U, d_U, eps, sig,
-                      t_n, t_n1, xs_pi, alpha, z, w):
+                      t_n, t_n1, xs_pi, alpha, z, kappa, w):
         '''Function calculationg the residuum and tangent operator.
         '''
         mats_eval = self.mats_eval
@@ -301,7 +301,7 @@ class TStepper(HasTraits):
 
         # material response state variables at integration point
         sig, D, xs_pi, alpha, z, w = mats_eval.get_corr_pred(
-            eps, d_eps, sig, t_n, t_n1, xs_pi, alpha, z, w)
+            eps, d_eps, sig, t_n, t_n1, xs_pi, alpha, z, kappa, w)
         # print'D=',D
         # system matrix
         self.K.reset_mtx()
