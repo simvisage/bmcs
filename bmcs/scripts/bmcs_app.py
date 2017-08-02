@@ -2,7 +2,7 @@
 '''
 Created on Dec 17, 2016
 
-Toplevel script to start oricreate 
+Toplevel script to start BMCS 
 
 @author: rch
 '''

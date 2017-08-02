@@ -1,0 +1,326 @@
+% !TeX root = ../main.tex
+% !TeX encoding = UTF-8
+%
+% SUBFILES
+\usepackage{subfiles}
+%
+% FONTS, ENCODING AND LANGUAGE
+\usepackage{xcolor}            % colour
+  \definecolor{rwth}{RGB}{0,84,159}
+  \definecolor{rwth_petrol}{RGB}{0,97,101}
+  \definecolor{rwth_tuerkis}{RGB}{0,152,161}
+  \definecolor{rwth_gruen}{RGB}{87,171,39}
+  \definecolor{rwth_maigruen}{RGB}{189,205,0}
+  \definecolor{rwth_orange}{RGB}{246,168,0}
+  \definecolor{rwth_rot}{RGB}{204,7,30}
+  \definecolor{rwth_bordeaux}{RGB}{161,16,53}
+  \definecolor{rwth_violett}{RGB}{97,33,88}
+  \definecolor{rwth_lila}{RGB}{122,111,172}
+  \colorlet{foldlab}{rwth_petrol!25}
+  \colorlet{foldlabmodule}{rwth_petrol!50}
+  \colorlet{foldlabmethod}{black!25}
+  \colorlet{foldlabextmethod}{white}
+  \colorlet{projinput}{black!50}
+  \colorlet{projoutput}{black}
+  \colorlet{ganttgroup}{rwth}
+  \colorlet{ganttbar}{rwth!50}
+  \colorlet{ganttlink}{black!50}
+  \colorlet{areaA}{rwth!10!white}
+  \colorlet{areaB}{rwth!90!white}
+  \colorlet{areaC}{rwth!30!white}
+  \colorlet{areaD}{rwth!70!white}
+  \colorlet{areaE}{rwth!50!white}
+  \colorlet{vision}{rwth_petrol}
+  \colorlet{goals}{rwth_petrol!75!white}
+  \colorlet{aims}{rwth_petrol!25!white}
+\usepackage[utf8]{inputenc}        % input encoding (pdflatex)
+\usepackage[T1]{fontenc}        % output font encoding (pdflatex)
+\usepackage[ngerman,UKenglish]{babel}  % languages (pdflatex)
+  \selectlanguage{UKenglish}      %  set current language
+\usepackage{lmodern}          % latin modern vector font
+\usepackage{microtype}          % advanced typography
+\usepackage{hyphenat}
+\usepackage{textcomp}          % additional symbols (euro, copyright,...)
+\usepackage{xstring}
+\usepackage{xspace}           % place optional space after command
+\usepackage{xparse}           % Latex 3 command parsing
+\usepackage{xstring}
+%
+% LAYOUT AND FORMATING
+\usepackage{geometry}    % modify paper layout
+\usepackage{scrpage2}    % page format (KOMA)
+\usepackage{ifthen}
+\usepackage{framed} 
+\usepackage[disable]{todonotes}
+  \setlength{\marginparwidth}{2cm}
+  \presetkeys{todonotes}{color=green!40}{}
+%
+% MATH AND MATH SYMBOLS
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{listings}
+
+\lstloadlanguages{Python}
+\lstset{numbers=right,
+    numberstyle=\footnotesize, %\footnotesize,
+    numbersep=-5pt,
+    basicstyle=\footnotesize\sffamily,
+    basewidth=0.47em,
+    tabsize=4,
+    escapeinside={(*}{*)},
+    lineskip=-1pt,
+    language=python,
+    commentstyle=\footnotesize\ttfamily,
+    showstringspaces=false}
+
+\newcommand{\lstin}[1]{{\ttfamily #1}}
+\newcommand{\http}[1]{{\sffamily http://#1}}
+\newcommand{\textsave}[1]{}
+\newcommand{\kinem}{(u)}
+
+\usepackage{enumitem}
+\usepackage{environ}
+
+\newlength\widest
+\makeatletter
+\NewEnviron{ldescription}{%
+  \vbox{%
+    \global\setlength\widest{0pt}%
+    \def\item[##1]{%
+      \settowidth\@tempdima{\textbf{##1}}%
+      \ifdim\@tempdima>\widest\global\setlength\widest{\@tempdima}\fi%
+    }%
+    \setbox0=\hbox{\BODY}%
+  }
+  \begin{description}[
+    leftmargin=\dimexpr\widest+0.5em\relax,
+    labelindent=0pt,
+    labelwidth=\widest]
+  \BODY
+  \end{description}%
+}
+\makeatother
+
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+%\usepackage{mathtools}        % additional commands for amsmath
+%\usepackage[thinlines]{easybmat}  % blank matrices with lines
+%\usepackage{siunitx}        % consistent units
+%  \sisetup{mode = math,
+%           output-exponent-marker = \text{{\footnotesize E}}}
+%  \DeclareSIUnit{\volpercent}{Vol.-\%}
+%
+%
+% GRAPHICS, PICTURES AND FIGURES
+\usepackage{graphicx}          % include graphics
+  \graphicspath{{fig}{../fig/}}
+%\usepackage{pdfpages}          % include full pdf pages and documents
+%\usepackage{epstopdf}          % include eps graphics (convert to pdf)
+%\usepackage{pstricks}          % PS tricks
+% %\usepackage{pst-plot,pst-node}    % PS tricks sub packages (old)
+% %\usepackage[crop=off]{auto-pst-pdf}  % PS conversion to pdf (DONT USE WITH EPSTOPDF, old)
+
+\usepackage{tikz}            % TikZ graphics
+  \usetikzlibrary{arrows,
+                  positioning,
+                  fit,
+                  calc,
+                  matrix,
+                  backgrounds,
+                  trees,
+                  chains,
+                  shapes.symbols,
+                  mindmap,
+                  fadings,
+                  decorations.markings,
+                  decorations.pathreplacing,
+                  external}
+  %\tikzexternalize[prefix=fig/tikz/tmp/]
+  \pgfdeclarelayer{background}
+  \pgfdeclarelayer{foreground}
+  \pgfsetlayers{background,main,foreground}
+  \tikzset{
+    line/.style={draw=none},
+    project/.style={draw, text centered, text width=6em},
+    projinput/.style={thick, color=projinput, shorten >=0.25cm, shorten <=0.25cm, arrows={stealth-}},
+    projoutput/.style={thick, color=projoutput, shorten >=0.25cm, shorten <=0.25cm, arrows={-stealth}},
+    phase/.style={shape=signal, signal from=west, signal to=east, signal pointer angle=170, fill=foldlab},
+    title/.style={font=\sffamily, color=white, text centered, text width=3.5cm},
+    subtitle/.style={},
+    feature/.style={},
+    module/.style={fill=foldlabmodule, rounded corners, text width=2cm},
+    submodule/.style={module, anchor=west},
+    method/.style={submodule, fill=foldlabmethod},
+    extmethod/.style={submodule, fill=foldlabextmethod},
+    workflowstep/.style={
+      shape=signal,
+      signal from=north,
+      signal to=south,
+      signal pointer angle=170,
+      fill=foldlabmodule,
+      font=\sffamily,
+      text centered,
+      text width=5em,
+      inner sep=1.4ex,
+  %    minimum height=6ex
+    },
+    mytree/.style={
+      grow via three points={
+        one child at (0.5,-0.7) and
+        two children at (0.5,-0.7) and (0.5,-1.4)
+      },
+      edge from parent path={
+          ($(\tikzparentnode\tikzparentanchor)+(.4cm,0pt)$) |- (\tikzchildnode\tikzchildanchor)
+      },
+      growth parent anchor=west,
+      parent anchor=south west,
+    },
+    mychain/.style={
+      start chain=going {below=of \tikzchainprevious.south west},
+      every on chain/.style={anchor=north west}
+    },
+    myconcept/.style={concept,
+                      minimum size=1cm,
+                      text width=1cm,
+                     },
+  }
+\usepackage{pgfgantt}
+%
+% TABLES AND LISTS
+\usepackage{tabu}      % advanced tables
+  \tabulinesep = 0.5ex
+%  \newcolumntype N{S}
+%  \tabucolumn N
+\usepackage{booktabs}    % professionally looking tables
+\usepackage{longtable}    % tables spanning multiple pages
+%\usepackage{setspace}          % more spacing
+%\usepackage{multirow}    % merge multiple rows in tables
+%\usepackage{paralist}    % advanced list formatting
+%\usepackage{mdwlist}    % list vertical spacing
+\usepackage{datatool}
+  \dtlexpandnewvalue    % expand values (databases cannot contain macros)
+  \IfFileExists{pi.db}{ %
+    \DTLloaddb{PIs}{pi.db}
+  }{ %
+    \DTLnewdb{PIs} %
+  } %
+  \IfFileExists{inst.db}{ %
+    \DTLloaddb{Institutes}{inst.db}
+  }{ %
+    \DTLnewdb{Institutes} %
+  } %
+  \IfFileExists{proj.db}{ %
+    \DTLloaddb{Proj}{proj.db}
+  }{ %
+    \DTLnewdb{Proj} %
+  } %
+%
+% CODE LISTINGS
+%
+% FLOAT FORMAT
+\usepackage[
+  format = hang,    %
+  margin = 10pt,    %
+  font = small,    %
+  labelfont = bf]    %
+       {caption}      % advanced captions
+%  \setlength{\belowcaptionskip}{-10pt}
+\usepackage{subcaption}      % multiple floats with caption
+\usepackage{placeins}      % control float placement with \FloatBarrier
+%\usepackage{rotating}      % rotate float objects
+%\usepackage{wrapfig}      % wrap text around figures
+%
+% TABLE OF CONTENT, LIST OF [...]
+\usepackage{tocstyle}  % advanced KOMA table of contents
+  \setcounter{tocdepth}{1}
+%\usepackage{nomencl}  % list of abbreviations
+%
+% BIBLIOGRAPHY
+\usepackage[autostyle=true,              %
+      english=british]            %
+      {csquotes}                % quotations in different languages
+  \renewcommand*{\mkcitation}[1]{~#1}
+\usepackage[style = nature,
+            %defernumbers, %
+            %refsegment = chapter, %
+            %backref = true, %
+            mincitenames=1,
+            maxcitenames=1,
+            abbreviate=true,
+            %citestyle=authoryear,
+%            sortcites,
+%            useeditor=false,
+%            sorting = none, % sort by cited order (leave out to sort in global bib by name))
+%            sorting = nyt,
+            backend = biber]%
+            {biblatex}                % biblatex
+  \renewcommand*{\bibfont}{\footnotesize}
+  \newcommand{\refownpeername}{Peer-reviewed publications by principal investigators}
+  \newcommand{\refownothername}{Other publications by principal investigators}
+  \newcommand{\refownpatentname}{Patents by principal investigators}
+  \newcommand{\refexternalname}{Other references}
+  \defbibheading{subbibliography}[\refexternalname]{\paragraph*{#1}}
+  \defbibheading{own-peer}[\refownpeername]{\paragraph*{#1}}
+  \defbibheading{own-other}[\refownothername]{\paragraph*{#1}}
+  \defbibheading{own-patent}[\refownpatentname]{\paragraph*{#1}}
+  %\renewcommand{\mkbibnamelast}[1]{\textsc{#1}}  % last names as capitals
+  \DeclareBibliographyCategory{cited}
+  \AtEveryCitekey{\addtocategory{cited}{\thefield{entrykey}}}
+  \defbibenvironment{cvbib}
+    {\list
+       {}
+       {\setlength{\leftmargin}{\bibhang}%
+        \setlength{\itemindent}{-\leftmargin}%
+        \setlength{\itemsep}{\bibitemsep}%
+        \setlength{\parsep}{\bibparsep}}}
+    {\endlist}
+    {\item}
+%
+
+\usepackage{commath}
+\usepackage[onelanguage]{algorithm2e}
+\usepackage[export]{adjustbox}
+
+% FLOAT PACKAGE
+\usepackage{float}
+  \setcounter{totalnumber}{5}    % max floating objects per page
+%
+% REFERENCE PACKAGES
+% \usepackage{varioref}      % distant references get page numbers
+\usepackage{hyperref}
+  \hypersetup{% pdfpagelayout = {TwoColumnLeft},           %
+              pdfpagelayout = {SinglePage},            %
+              pdftitle = {Title},                 %
+              pdfsubject = {Subject},             %
+              pdfcreator = {Creator},             %
+              pdfauthor = {Author},               %
+              plainpages = false,                 %
+              bookmarksopenlevel = section,             %
+              bookmarksnumbered = true,               %
+              linkcolor = blue,                   %
+              citecolor = purple,                 %
+              filecolor = green,                   %
+              urlcolor = blue,                   %
+              pdfborder = {0 0 0},                 %
+              colorlinks = true}                  %
+\usepackage[capitalise, 
+            nameinlink]{cleveref}    % merges neighbouring references
+%
+% GLOSSARIES, NOMENCLATURE, ACRONYMS
+%\usepackage[acronym,      %
+%            toc,        %
+%      %      description,    %
+%            shortcuts,      %
+%            sanitize = none]  %  allow latex commands in glossary entries
+%            {glossaries}    % all kinds of glossaries
+%  \newglossary[slg]{sym}{syi}{syg}{List of Symbols}
+%  \makeglossaries
+
+% TMP AND DUMMY
+%\glsaddall
+%\usepackage{blindtext}
+%\listfiles

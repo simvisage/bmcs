@@ -2,10 +2,9 @@
 from traits.api import Float, Callable
 from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
-from reporter import RInputSection
 
 
-class TLine(BMCSLeafNode, RInputSection):
+class TLine(BMCSLeafNode):
 
     '''
     Time line for the control parameter.

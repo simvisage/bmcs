@@ -6,6 +6,7 @@ Created on Mar 2, 2017
 
 from matplotlib.figure import \
     Figure
+from reporter import ROutputSection
 from traits.api import \
     HasStrictTraits, Str, \
     Instance,  Event, Enum, \
@@ -19,8 +20,8 @@ from traitsui.tabular_adapter import TabularAdapter
 from util.traits.editors import \
     MPLFigureEditor
 from view.plot2d.viz2d import Viz2D
+
 import matplotlib.pyplot as plt
-from reporter import ROutputSection
 
 
 class Viz2DAdapter(TabularAdapter):
@@ -141,7 +142,7 @@ class VizSheet(ROutputSection):
         self.replot()
         self.offline = True
 
-    monitor_chunk_size = Int(1, label='Monitor each # steps')
+    monitor_chunk_size = Int(10, label='Monitor each # steps')
 
     skipped_steps = Int(10)
 
@@ -164,7 +165,7 @@ class VizSheet(ROutputSection):
     def viz2d_list_items_changed(self):
         self.replot()
 
-    def get_records(self):
+    def get_subrecords(self):
         return self.viz2d_list
 
     export_button = Button(label='Export selected diagram')

@@ -9,7 +9,6 @@ Created on 12.01.2016
 
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
-from reporter import RInputSection
 from traits.api import \
     Property, Instance, cached_property, \
     Bool, List, Float, Trait, Int, on_trait_change, \
@@ -23,7 +22,7 @@ from view.window import BMCSModel, BMCSWindow, TLine
 import numpy as np
 
 
-class MaterialParams(BMCSLeafNode, RInputSection):
+class MaterialParams(BMCSLeafNode):
     '''Record of material parameters of an interface layer
     '''
     node_name = Str('material parameters')
@@ -54,7 +53,7 @@ class MaterialParams(BMCSLeafNode, RInputSection):
     tree_view = view
 
 
-class CrossSection(BMCSLeafNode, RInputSection):
+class CrossSection(BMCSLeafNode):
     '''Parameters of the pull-out cross section
     '''
     node_name = 'cross-section'
@@ -85,7 +84,7 @@ class CrossSection(BMCSLeafNode, RInputSection):
     tree_view = view
 
 
-class Geometry(BMCSLeafNode, RInputSection):
+class Geometry(BMCSLeafNode):
 
     node_name = 'geometry'
     L_x = Float(20,
@@ -420,7 +419,7 @@ class PullOutModel(BMCSModel, Vis2D):
 
 
 def run_pullout_const_shear(*args, **kw):
-    po = PullOutModel(n_x=200, w_max=1.5)
+    po = PullOutModel(name='t32_analytical_pullout', n_x=200, w_max=1.5)
     po.geometry.set(L_x=800)
 #     po.cross_section.set(A_f=4.5, P_b=1.0)
 #     po.material.set(E_f=9 * 180000.0, tau_pi_bar=2.77 * 9)

@@ -11,7 +11,6 @@ from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
@@ -23,8 +22,7 @@ from view.window import BMCSModel, BMCSWindow, TLine
 
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
-    CrossSection, Geometry
-from reporter import RInputRecord, RInputSection, Reporter
+    CrossSection, Geometry, PullOutModelBase
 
 
 class Viz2DEnergyPlot(Viz2D):
@@ -57,78 +55,7 @@ class Viz2DEnergyRatesPlot(Viz2D):
         ax.legend()
 
 
-class PullOutModel(BMCSModel, Vis2D, RInputSection):
-
-    node_name = 'pull out simulation'
-
-    tree_node_list = List([])
-
-    def _tree_node_list_default(self):
-
-        return [
-            self.tline,
-            self.loading_scenario,
-            self.mats_eval,
-            self.cross_section,
-            self.geometry
-        ]
-
-    def _update_node_list(self):
-        self.tree_node_list = [
-            self.tline,
-            self.loading_scenario,
-            self.mats_eval,
-            self.cross_section,
-            self.geometry, ]
-
-    tree_view = View(
-        Group(
-            Item('w_max', resizable=True, full_size=True),
-            Group(
-                Item('loading_scenario@', show_label=False),
-            )
-        )
-    )
-
-    tline = Instance(TLine)
-
-    def _tline_default(self):
-        # assign the parameters for solver and loading_scenario
-        t_max = 1.0  # self.loading_scenario.t_max
-        d_t = 0.02  # self.loading_scenario.d_t
-        return TLine(min=0.0, step=d_t, max=t_max,
-                     time_change_notifier=self.time_changed,
-                     )
-
-    loading_scenario = Instance(LoadingScenario, report=True)
-
-    def _loading_scenario_default(self):
-        return LoadingScenario()
-
-    cross_section = Instance(CrossSection, report=True)
-
-    def _cross_section_default(self):
-        return CrossSection()
-
-    geometry = Instance(Geometry, report=True)
-
-    def _geometry_default(self):
-        return Geometry()
-
-    n_e_x = Int(20,
-                unit='-', symbol='$n_{e}$',
-                desc='Number of elements in $x$-direction',
-                MESH=True, auto_set=False, enter_set=True)
-
-    w_max = Float(1,
-                  unit='$\mathrm{mm}$', symbol='$u_\mathrm{f,0}$',
-                  desc='Control pull-out displacement',
-                  BC=True, auto_set=False, enter_set=True)
-
-    controlled_dof = Property
-
-    def _get_controlled_dof(self):
-        return 2 + 2 * self.n_e_x - 1
+class PullOutModel(PullOutModelBase):
 
     mats_eval_type = Trait('multilinear',
                            {'damage-plasticity': MATSBondSlipDP,
@@ -166,7 +93,7 @@ class PullOutModel(BMCSModel, Vis2D, RInputSection):
     @cached_property
     def _get_fixed_bc(self):
         return BCDof(node_name='fixed left end', var='u',
-                     dof=0, value=0.0)
+                     dof=self.fixed_dof, value=0.0)
 
     control_bc = Property(depends_on='BC,MESH')
     '''Control boundary condition - make it accessible directly
@@ -485,7 +412,8 @@ class PullOutModel(BMCSModel, Vis2D, RInputSection):
 
 
 def run_pullout_multilinear(*args, **kw):
-    po = PullOutModel(n_e_x=100, k_max=1000, w_max=2.0)
+    po = PullOutModel(name='t33_pullout_multilinear',
+                      n_e_x=100, k_max=1000, w_max=2.0)
     po.tline.step = 0.01
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
@@ -510,36 +438,6 @@ def run_pullout_multilinear(*args, **kw):
     w.offline = False
     w.finish_event = True
     w.configure_traits(*args, **kw)
-
-
-def test_reporter():
-    po = PullOutModel(n_e_x=100, k_max=1000, w_max=2.0)
-    po.tline.step = 0.01
-    po.geometry.L_x = 200.0
-    po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(s_data='0, 0.1, 0.4, 20.0',
-                     tau_data='0, 800, 0, 0')
-    po.mats_eval.update_bs_law = True
-    po.run()
-
-    w = BMCSWindow(model=po)
-    po.add_viz2d('load function')
-    po.add_viz2d('F-w')
-    po.add_viz2d('field', 'u_C', plot_fn='u_C')
-#    po.add_viz2d('field', 'w', plot_fn='w')
-    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
-    po.add_viz2d('field', 's', plot_fn='s')
-    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-    po.add_viz2d('field', 'sf', plot_fn='sf')
-    po.add_viz2d('dissipation', 'dissipation')
-    po.add_viz2d('dissipation rate', 'dissipation rate')
-
-    r = Reporter(report_items=[po, w.viz_sheet])
-    r.write()
-    r.show_tex()
-    r.run_pdflatex()
-    r.show_pdf()
 
 
 def test_B():

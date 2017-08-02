@@ -39,10 +39,11 @@ class PlottableFn(RInputRecord):
         self.fn.set(xdata=xdata, ydata=ydata)
         self.fn.replot()
 
-    def write_figure(self, f, rdir, fname):
+    def write_figure(self, f, rdir, rel_study_path):
+        fname = 'fig_' + self.node_name.replace(' ', '_') + '.pdf'
         f.write(r'''
 \multicolumn{3}{r}{\includegraphics[width=5cm]{%s}}\\
-''' % fname)
+''' % join(rel_study_path, fname))
         self.fn.savefig(join(rdir, fname))
 
     traits_view = View(UItem('fn'))

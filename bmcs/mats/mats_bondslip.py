@@ -4,6 +4,8 @@ Created on 05.12.2016
 @author: abaktheer
 '''
 
+from os.path import join
+
 from ibvpy.api import MATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import implements, Int, Array, \
@@ -14,7 +16,7 @@ from view.ui import BMCSTreeNode
 
 from mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
-    FRPDamageFn, PlottableFn
+    FRPDamageFn
 import numpy as np
 from reporter.report_item import RInputSection, RInputRecord
 
@@ -190,7 +192,7 @@ class MATSBondSlipFatigue(MATSEval, BMCSTreeNode, RInputSection):
                                   Item('a'), show_border=True, label='Lateral Pressure')))
 
 
-class MATSBondSlipDP(MATSEval, BMCSTreeNode, RInputSection):
+class MATSBondSlipDP(MATSEval, BMCSTreeNode):
 
     node_name = 'bond model: damage-plasticity'
 
@@ -400,7 +402,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode, RInputSection):
     )
 
 
-class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode, RInputRecord):
+class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
 
     node_name = "multilinear bond law"
 
@@ -448,6 +450,7 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode, RInputRecord):
 
     def get_corr_pred2(self, s_n1, d_s, t_n, t_n1, sa_n):
 
+        sign_s = np.sign(s_n1)
         n_e, n_ip, n_s = s_n1.shape
         D = np.zeros((n_e, n_ip, 3, 3))
         D[:, :, 0, 0] = self.E_m
@@ -482,6 +485,14 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode, RInputRecord):
 
         return tau, D, s_p, alpha, z, kappa, omega
 
+    def write_figure(self, f, rdir, rel_path):
+        fname = 'fig_' + self.node_name.replace(' ', '_') + '.pdf'
+        f.write(r'''
+\multicolumn{3}{r}{\includegraphics[width=5cm]{%s}}\\
+''' % join(rel_path, fname))
+        self.bs_law.replot()
+        self.bs_law.savefig(join(rdir, fname))
+
     tree_view = View(
         VGroup(
             VGroup(
@@ -496,7 +507,7 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode, RInputRecord):
     )
 
 
-class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode, RInputSection):
+class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode):
 
     node_name = 'bond model: FRP damage model'
 

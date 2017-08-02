@@ -6,6 +6,7 @@ Created on Dec 3, 2015
 
 from os.path import join
 
+from reporter import ROutputItem
 from traits.api import \
     HasStrictTraits, Dict, Property, Float, \
     WeakRef, DelegatesTo, cached_property, \
@@ -15,10 +16,9 @@ from traitsui.api import \
     HSplit, Item, VGroup
 
 import matplotlib.pyplot as plt
-from reporter import ROutputRecord
 
 
-class Viz2D(ROutputRecord):
+class Viz2D(ROutputItem):
     '''Base class of the visualization adaptors
     '''
 
@@ -35,10 +35,11 @@ class Viz2D(ROutputRecord):
     def plot(self, ax, vot=0):
         self.vis2d.plot(ax, vot)
 
-    def write_figure(self, f, rdir, fname):
+    def write_figure(self, f, rdir, rel_study_path):
+        fname = 'fig_' + self.name.replace(' ', '_') + '.pdf'
         f.write(r'''
 \includegraphics[width=7.5cm]{%s}
-''' % fname)
+''' % join(rel_study_path, fname))
         self.savefig(join(rdir, fname))
 
     def savefig(self, fname):

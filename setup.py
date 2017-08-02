@@ -1,12 +1,13 @@
 import os
-from setuptools import setup, find_packages
+
 from bmcs.scripts.bmcs_version import CURRENT_VERSION
+from setuptools import setup, find_packages
+
+
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
 # README file and 2) it's easier to type in the README file than to put a raw
 # string in below ...
-
-
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -22,10 +23,15 @@ setup(
     keywords="brittle matrix composite structures",
     url="http://packages.python.org/bmcs",
     packages=find_packages(),
+    # If any package contains *.txt or *.rst files, include them:
     package_data={
-        # If any package contains *.txt or *.rst files, include them:
         '': ['*.txt', '*.md', '*.rst', '*.png'],
+        'reporter': ['texfiles/example.tex',
+                     'texfiles/packages.tex',
+                     'texfiles/scidoc.cls',
+                     ]
     },
+    include_package_data=True,
     long_description='',
     entry_points={
         'gui_scripts': [

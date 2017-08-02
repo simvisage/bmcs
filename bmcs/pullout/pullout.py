@@ -7,8 +7,13 @@ Created on 12.01.2016
 @todo: introduce a switch for left and right supports
 '''
 
+<<<<<<< HEAD
 from bmcs.bond_slip.bond_material_params import MaterialParams
 #from bmcs.bond_slip.mats_bondslip import MATSBondSlipDP
+=======
+#from bmcs.bond_slip.bond_material_params import MaterialParams
+from bmcs.bond_slip.mats_bondslip import MATSBondSlipDP
+>>>>>>> master
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSBondSlipFatigue
 from bmcs.mats.tloop import TLoop
@@ -17,17 +22,17 @@ from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof, FEGrid, BCSlice
 from ibvpy.core.bcond_mngr import BCondMngr
+from reporter import RInputRecord
 from traits.api import \
     Property, Instance, cached_property, \
-    Bool, List, Float, Trait, Int, Str
+    Bool, List, Float, Trait, Int, Str, Enum
 from traitsui.api import \
-    View, Item
+    View, Item, Group
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow, TLine
-
+import matplotlib.pyplot as plt
 import numpy as np
-from reporter import RInputRecord
 
 
 class CrossSection(BMCSLeafNode, RInputRecord):
@@ -151,6 +156,13 @@ class Viz2DPullOutField(Viz2D):
         self.y_min = min(ymin, self.y_min)
         ax.set_ylim(ymin=self.y_min, ymax=self.y_max)
 
+    def savefig(self, fname):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        for vot in [0.25, 0.5, 0.75, 1.0]:
+            self.plot(ax, vot)
+        fig.savefig(fname)
+
     y_max = Float(1.0, label='Y-max value',
                   auto_set=False, enter_set=True)
     y_min = Float(0.0, label='Y-min value',
@@ -166,10 +178,149 @@ class Viz2DPullOutField(Viz2D):
     )
 
 
+<<<<<<< HEAD
 class Viz2DEnergyPlot(Viz2D):
     '''Plot adaptor for the pull-out simulator.
     '''
     label = 'line plot'
+=======
+class PullOutModelBase(BMCSModel, Vis2D):
+
+    node_name = 'pull out simulation'
+
+    tree_node_list = List([])
+
+    def _tree_node_list_default(self):
+
+        return [
+            self.tline,
+            self.loading_scenario,
+            self.mats_eval,
+            self.cross_section,
+            self.geometry
+        ]
+
+    def _update_node_list(self):
+        self.tree_node_list = [
+            self.tline,
+            self.loading_scenario,
+            self.mats_eval,
+            self.cross_section,
+            self.geometry,
+        ]
+
+    tree_view = View(
+        Group(
+            Item('w_max', resizable=True, full_size=True),
+            Item('fixed_boundary'),
+            Group(
+                Item('loading_scenario@', show_label=False),
+            )
+        )
+    )
+
+    tline = Instance(TLine)
+
+    def _tline_default(self):
+        # assign the parameters for solver and loading_scenario
+        t_max = 1.0  # self.loading_scenario.t_max
+        d_t = 0.02  # self.loading_scenario.d_t
+        return TLine(min=0.0, step=d_t, max=t_max,
+                     time_change_notifier=self.time_changed,
+                     )
+
+    loading_scenario = Instance(LoadingScenario, report=False)
+
+    def _loading_scenario_default(self):
+        return LoadingScenario()
+
+    cross_section = Instance(CrossSection, report=True)
+
+    def _cross_section_default(self):
+        return CrossSection()
+
+    geometry = Instance(Geometry, report=True)
+
+    def _geometry_default(self):
+        return Geometry()
+
+    w_max = Float(1, BC=True, auto_set=False, enter_set=True)
+
+    n_e_x = Int(20, MESH=True, auto_set=False, enter_set=True)
+
+    fixed_boundary = Enum('non-loaded end (matrix)',
+                          'loaded end (matrix)',
+                          'non-loaded end (reinf)', BC=True)
+
+    fixed_dof = Property
+
+    def _get_fixed_dof(self):
+        if self.fixed_boundary == 'non-loaded end (matrix)':
+            return 0
+        elif self.fixed_boundary == 'non-loaded end (reinf)':
+            return 1
+        elif self.fixed_boundary == 'loaded end (matrix)':
+            return self.controlled_dof - 1
+
+    controlled_dof = Property
+
+    def _get_controlled_dof(self):
+        return 2 + 2 * self.n_e_x - 1
+
+
+class PullOutModel(BMCSModel, Vis2D):
+
+    node_name = 'pull out simulation'
+
+    tree_node_list = List([])
+
+    def _tree_node_list_default(self):
+
+        return [
+            self.tline,
+            self.cross_section,
+            self.geometry,
+            self.bcond_mngr,
+        ]
+
+    def init(self):
+        self.tloop.init()
+
+    def eval(self):
+        return self.tloop.eval()
+
+    def pause(self):
+        self.tloop.paused = True
+
+    def stop(self):
+        self.tloop.restart = True
+
+    loading_scenario = Instance(LoadingScenario)
+
+    def _loading_scenario_default(self):
+        return LoadingScenario()
+
+    cross_section = Instance(CrossSection)
+
+    def _cross_section_default(self):
+        return CrossSection()
+
+    geometry = Instance(Geometry)
+
+    def _geometry_default(self):
+        return Geometry()
+
+    n_e_x = Int(20, auto_set=False, enter_set=True)
+
+    w_max = Float(1, auto_set=False, enter_set=True)
+
+    free_end_dof = Property
+
+    def _get_free_end_dof(self):
+        return self.n_e_x + 1
+
+    controlled_dof = Property
+>>>>>>> master
 
     def plot(self, ax, vot, *args, **kw):
         t = self.vis2d.get_t()
