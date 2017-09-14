@@ -448,7 +448,8 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
     def _bs_law_default(self):
         return MFnLineArray(
             xdata=[0.0, 1.0],
-            ydata=[0.0, 1.0],)
+            ydata=[0.0, 1.0],
+            plot_diff=False)
 
     n_s = Constant(5)
 

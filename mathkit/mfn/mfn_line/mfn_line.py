@@ -4,7 +4,7 @@ from matplotlib.figure import \
 from scipy import interpolate as ip
 from traits.api import Array, Float, Event, HasStrictTraits, \
     ToolbarButton, on_trait_change, \
-    Property, cached_property, Enum, Instance
+    Property, cached_property, Enum, Instance, Bool
 from traitsui.api import View, VGroup, UItem
 from util.traits.editors import \
     MPLFigureEditor
@@ -134,11 +134,14 @@ class MFnLineArray(BMCSLeafNode):
         y_dx = self.diff(x, k=1, der=1)
         ax_dx.plot(x, y_dx, *args + ('-',), **kw)
 
+    plot_diff = Bool(True)
+
     def replot(self):
         self.figure.clf()
         ax = self.figure.add_subplot(111)
         self.mpl_plot(ax)
-        self.mpl_plot_diff(ax, color='orange')
+        if self.plot_diff:
+            self.mpl_plot_diff(ax, color='orange')
         self.data_changed = True
 
     def savefig(self, fname):

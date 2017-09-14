@@ -183,7 +183,7 @@ class VizSheet(ROutputSection):
     export_button = Button(label='Export selected diagram')
 
     def _export_button_fired(self, vot=0):
-        fig = plt.figure((self.fig_width, self.fig_height))
+        fig = plt.figure(figsize=(self.fig_width, self.fig_height))
         ax = fig.add_subplot(111)
         self.selected_viz2d.plot(ax, self.vot)
         fig.show()
@@ -195,7 +195,7 @@ class VizSheet(ROutputSection):
         for i, vot in enumerate(np.linspace(self.animate_from,
                                             self.animate_to,
                                             self.animate_steps)):
-            fname = os.path.join(tmpdir, 'step%3d.jpg' % i)
+            fname = os.path.join(tmpdir, 'step%03d.jpg' % i)
             self.selected_viz2d.savefig_animate(vot, fname,
                                                 (self.fig_width,
                                                  self.fig_height))
@@ -254,6 +254,10 @@ class VizSheet(ROutputSection):
                               width=100),
                     ),
                     HGroup(UItem('export_button', springy=True, resizable=True)),
+                    HGroup(UItem('fig_width', resizable=True),
+                           UItem('fig_height', resizable=True),
+                           label='Animation range'
+                           ),
                     HGroup(UItem('animate_button', springy=True, resizable=True)),
                     HGroup(UItem('animate_from', resizable=True),
                            UItem('animate_to', resizable=True),
