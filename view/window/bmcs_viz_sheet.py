@@ -253,17 +253,21 @@ class VizSheet(ROutputSection):
                         UItem('selected_viz2d@',
                               width=100),
                     ),
-                    HGroup(UItem('export_button', springy=True, resizable=True)),
-                    HGroup(UItem('fig_width', resizable=True),
-                           UItem('fig_height', resizable=True),
-                           label='Figure size'
-                           ),
-                    HGroup(UItem('animate_button', springy=True, resizable=True)),
-                    HGroup(UItem('animate_from', resizable=True),
-                           UItem('animate_to', resizable=True),
-                           UItem('animate_steps', resizable=True),
-                           label='Animation range'
-                           ),
+                    VGroup(
+                        HGroup(UItem('export_button',
+                                     springy=True, resizable=True)),
+                        HGroup(UItem('fig_width', resizable=True),
+                               UItem('fig_height', resizable=True),
+                               label='Figure size'
+                               ),
+                        HGroup(UItem('animate_button',
+                                     springy=True, resizable=True)),
+                        HGroup(UItem('animate_from', resizable=True),
+                               UItem('animate_to', resizable=True),
+                               UItem('animate_steps', resizable=True),
+                               label='Animation range'
+                               ),
+                    ),
                     label='Plot configure',
                     scrollable=True
                 ),
