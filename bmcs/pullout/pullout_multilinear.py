@@ -323,7 +323,7 @@ def run_pullout_multi(*args, **kw):
     po.mats_eval.update_bs_law = True
     po.run()
 
-    w = BMCSWindow(model=po, title='Multi-linear bond slip law')
+    w = BMCSWindow(model=po)
     po.add_viz2d('load function', 'load-time')
     po.add_viz2d('F-w', 'load-displacement')
     po.add_viz2d('field', 'u_C', plot_fn='u_C')
