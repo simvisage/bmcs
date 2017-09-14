@@ -242,6 +242,7 @@ class PullOutModelBase(BMCSModel, Vis2D):
     tree_view = View(
         Group(
             Item('u_f0_max', resizable=True, full_size=True),
+            Item('n_e_x', resizable=True, full_size=True),
             Item('fixed_boundary'),
             Group(
                 Item('loading_scenario@', show_label=False),

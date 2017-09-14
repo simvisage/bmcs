@@ -45,6 +45,13 @@ class Viz2D(ROutputItem):
 ''' % join(rel_study_path, fname))
         self.savefig(join(rdir, fname))
 
+    def savefig_animate(self, vot, fname, *args, **kw):
+        fig = plt.figure(figsize=(7, 4))
+        ax = fig.add_subplot(111)
+        self.plot_tex(ax, vot)
+        fig.tight_layout()
+        fig.savefig(fname, *args, **kw)
+
     def savefig(self, fname):
         fig = plt.figure()
         ax = fig.add_subplot(111)
