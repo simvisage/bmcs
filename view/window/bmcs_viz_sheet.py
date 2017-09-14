@@ -256,8 +256,8 @@ class VizSheet(ROutputSection):
                     VGroup(
                         HGroup(UItem('export_button',
                                      springy=True, resizable=True)),
-                        HGroup(UItem('fig_width', resizable=True),
-                               UItem('fig_height', resizable=True),
+                        HGroup(UItem('fig_width'),
+                               UItem('fig_height'),
                                label='Figure size'
                                ),
                         HGroup(UItem('animate_button',
