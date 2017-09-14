@@ -256,15 +256,13 @@ class VizSheet(ROutputSection):
                     VGroup(
                         HGroup(UItem('export_button',
                                      springy=True, resizable=True)),
-                        HGroup(UItem('fig_width'),
-                               UItem('fig_height'),
-                               label='Figure size'
-                               ),
                         HGroup(UItem('animate_button',
                                      springy=True, resizable=True)),
-                        HGroup(UItem('animate_from', resizable=True),
+                        VGroup(UItem('animate_from', resizable=True),
                                UItem('animate_to', resizable=True),
                                UItem('animate_steps', resizable=True),
+                               UItem('fig_width'),
+                               UItem('fig_height'),
                                label='Animation range'
                                ),
                     ),
