@@ -284,13 +284,14 @@ class PullOutModel(PullOutModelBase):
 
 def run_pullout_multilinear(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=100, k_max=1000, u_f0_max=1.75)
+                      title='Multi-linear bond slip law',
+                      n_e_x=2, k_max=1000, u_f0_max=1.75)
     po.tline.step = 0.01
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
     po.mats_eval.set(s_data='0, 0.1, 0.4, 20.0',
-                     tau_data='0, 800, 0, 0')
+                     tau_data='0, 70, 0, 0')
     po.mats_eval.update_bs_law = True
     po.run()
 
@@ -312,17 +313,17 @@ def run_pullout_multilinear(*args, **kw):
 
 def run_pullout_multi(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=2, k_max=1000, u_f0_max=0.1)
-    po.tline.step = 0.1
+                      n_e_x=100, k_max=1000, u_f0_max=2.0)
+    po.tline.step = 0.02
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(s_data='0, 0.1, 0.4, 20.0',
-                     tau_data='0, 800, 0, 0')
+    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
+    po.mats_eval.set(s_data='0, 0.1, 0.4, 4.0',
+                     tau_data='0, 70.0, 0, 0')
     po.mats_eval.update_bs_law = True
     po.run()
 
-    w = BMCSWindow(model=po)
+    w = BMCSWindow(model=po, title='Multi-linear bond slip law')
     po.add_viz2d('load function', 'load-time')
     po.add_viz2d('F-w', 'load-displacement')
     po.add_viz2d('field', 'u_C', plot_fn='u_C')

@@ -48,6 +48,9 @@ class ReportStudy(HasStrictTraits):
 
     name = Str
 
+    title = Str('<no title>')
+    desc = Str('''<no description>''')
+
     input = Instance(RInputRecord)
 
     output = Instance(ROutputSection)
