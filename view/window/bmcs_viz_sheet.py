@@ -15,7 +15,7 @@ from traits.api import \
     Instance,  Event, Enum, \
     List,  Range, Int, Float, \
     Property, cached_property, \
-    on_trait_change, Bool, Button
+    on_trait_change, Bool, Button, Directory
 from traitsui.api import \
     View, Item, UItem, VGroup, VSplit, \
     HSplit, HGroup, TabularEditor
@@ -188,18 +188,33 @@ class VizSheet(ROutputSection):
         self.selected_viz2d.plot(ax, self.vot)
         fig.show()
 
+    export_path = Directory
+    status_message = Str('')
+
     animate_button = Button(label='Animate selected diagram')
 
     def _animate_button_fired(self):
-        tmpdir = tempfile.mkdtemp()
+
+        if self.export_path == '':
+            dir_ = tempfile.mkdtemp()
+        else:
+            dir_ = self.export_path
+        name = self.selected_viz2d.name
+        path = os.path.join(dir_, name)
+
+        if os.path.exists(path):
+            self.status_message = 'overwriting animation %s' % name
+        else:
+            os.makedirs(path)
+
         for i, vot in enumerate(np.linspace(self.animate_from,
                                             self.animate_to,
                                             self.animate_steps)):
-            fname = os.path.join(tmpdir, 'step%03d.jpg' % i)
+            fname = os.path.join(path, 'step%03d.jpg' % i)
             self.selected_viz2d.savefig_animate(vot, fname,
                                                 (self.fig_width,
                                                  self.fig_height))
-        print 'animation stored in %s' % tmpdir
+        self.status_message = 'animation stored in %s' % path
 
     animate_from = Float(0.0, auto_set=False, enter_set=True)
     animate_to = Float(1.0, auto_set=False, enter_set=True)
@@ -272,6 +287,10 @@ class VizSheet(ROutputSection):
                                     UItem('animate_steps', springy=True),
                                 ),
                                 label='Animation range'
+                            ),
+                            Item('export_path'),
+                            HGroup(
+                                UItem('status_message', style='readonly')
                             ),
                         ),
                     ),
