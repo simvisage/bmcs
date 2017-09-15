@@ -252,19 +252,28 @@ class VizSheet(ROutputSection):
                               width=100),
                         UItem('selected_viz2d@',
                               width=100),
-                    ),
-                    VGroup(
-                        HGroup(UItem('export_button',
-                                     springy=True, resizable=True)),
-                        HGroup(UItem('animate_button',
-                                     springy=True, resizable=True)),
-                        VGroup(UItem('animate_from', resizable=True),
-                               UItem('animate_to', resizable=True),
-                               UItem('animate_steps', resizable=True),
-                               Item('fig_width'),
-                               Item('fig_height'),
-                               label='Animation range'
-                               ),
+                        VGroup(
+                            UItem('export_button',
+                                  springy=False, resizable=True),
+                            VGroup(
+                                HGroup(
+                                    UItem('fig_width', springy=True,
+                                          resizable=False),
+                                    UItem('fig_height', springy=True),
+                                ),
+                                label='Figure size'
+                            ),
+                            UItem('animate_button',
+                                  springy=False, resizable=True),
+                            VGroup(
+                                HGroup(
+                                    UItem('animate_from', springy=True),
+                                    UItem('animate_to', springy=True),
+                                    UItem('animate_steps', springy=True),
+                                ),
+                                label='Animation range'
+                            ),
+                        ),
                     ),
                     label='Plot configure',
                     scrollable=True
