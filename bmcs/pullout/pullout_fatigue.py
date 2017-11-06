@@ -359,7 +359,7 @@ class PullOutModel(PullOutModelBase):
 
 
 def run_pullout_fatigue(*args, **kw):
-    po = PullOutModel(n_e_x=20, k_max=500, w_max=1.0)
+    po = PullOutModel(n_e_x=200, k_max=500, w_max=1.0)
     po.tline.step = 0.001
     po.geometry.L_x = 42.0
     po.loading_scenario.set(loading_type='cyclic')

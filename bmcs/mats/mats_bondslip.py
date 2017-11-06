@@ -182,8 +182,10 @@ class MATSBondSlipFatigue(MATSEval, BMCSTreeNode, RInputRecord):
 #             Item('a'))
 #     )
 
-    tree_view = View(VGroup(Group(Item('E_b'),
-                                  Item('tau_pi_bar'), show_border=True, label='Bond Stiffness and reversibility limit'),
+    tree_view = View(VGroup(Group(Item('E_m'),
+                                  Item('E_f'),
+                                  Item('E_b'),
+                                  Item('tau_pi_bar'), show_border=True, label='Stiffnesses and reversibility limit'),
                             Group(Item('gamma'),
                                   Item('K'), show_border=True, label='Hardening parameters'),
                             Group(Item('S'),
