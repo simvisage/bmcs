@@ -87,6 +87,8 @@ class Viz2DPullOutFW(Viz2D):
     '''
     label = 'F-W'
 
+    show_legend = Bool(True, auto_set=False, enter_set=True)
+
     def plot(self, ax, vot, *args, **kw):
         P_t = self.vis2d.get_P_t()
         ymin, ymax = np.min(P_t), np.max(P_t)
@@ -106,7 +108,8 @@ class Viz2DPullOutFW(Viz2D):
         ax.set_xlim(xmin=xmin, xmax=xmax)
         ax.set_ylabel('pull-out force P [N]')
         ax.set_xlabel('pull-out slip w [mm]')
-        ax.legend(loc=4)
+        if self.show_legend:
+            ax.legend(loc=4)
         self.plot_marker(ax, vot)
 
     def plot_marker(self, ax, vot):
@@ -120,6 +123,11 @@ class Viz2DPullOutFW(Viz2D):
 
     def plot_tex(self, ax, vot, *args, **kw):
         self.plot(ax, vot, *args, **kw)
+
+    traits_view = View(
+        Item('name', style='readonly'),
+        Item('show_legend'),
+    )
 
 
 class Viz2DPullOutField(Viz2D):
@@ -242,6 +250,7 @@ class PullOutModelBase(BMCSModel, Vis2D):
     tree_view = View(
         Group(
             Item('u_f0_max', resizable=True, full_size=True),
+            Item('n_e_x', resizable=True, full_size=True),
             Item('fixed_boundary'),
             Group(
                 Item('loading_scenario@', show_label=False),
