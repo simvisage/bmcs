@@ -1,5 +1,5 @@
 '''
-Created on 29.03.2017
+Created on 20.11.2017
 
 @author: abaktheer
 
@@ -7,28 +7,26 @@ Microplane Fatigue model
 
 (compression plasticiy (CP) + Tensile Damage (TD) + Cumulative Damage Sliding (CSD))
  
-Using the ODFs [Wu, 2009] homogenization approach
+Using the ODFs homogenization approach  [Wu, 2009]
 '''
 
 from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from ibvpy.mats.mats_eval import \
     IMATSEval
 from numpy import \
-    array, zeros, dot, trace, einsum, zeros_like,\
+    array, zeros, trace, einsum, zeros_like,\
     identity, sign, linspace, hstack
-from numpy.linalg import norm
 from traits.api import Constant, implements,\
     Float, HasTraits, Property, cached_property
 from traitsui.api import View, Include
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 class MATSEvalMicroplaneFatigue(HasTraits):
-    #--------------------------
+    #--------------------------------
     # Elasticity material parameters
-    #--------------------------
+    #--------------------------------
     E = Float(34000.0,
               label="E",
               desc="Young modulus",
@@ -41,9 +39,9 @@ class MATSEvalMicroplaneFatigue(HasTraits):
                enter_set=True,
                auto_set=False)
 
-    #---------------------------------------
+    #----------------------------------------
     # Tangential constitutive law parameters
-    #---------------------------------------
+    #----------------------------------------
     gamma_T = Float(5000.0,
                     label="Gamma_T",
                     desc="Kinematic hardening modulus",
@@ -86,9 +84,9 @@ class MATSEvalMicroplaneFatigue(HasTraits):
               enter_set=True,
               auto_set=False)
 
-    #-------------------------------------------
+    #--------------------------------------------
     # Normal_Tension constitutive law parameters
-    #-------------------------------------------
+    #--------------------------------------------
     Ad = Float(10000.0,
                label="a",
                desc="Brittlness parameter",
@@ -101,9 +99,9 @@ class MATSEvalMicroplaneFatigue(HasTraits):
                   enter_set=True,
                   auto_set=False)
 
-    #-----------------------------------------------
+    #------------------------------------------------
     # Normal_Compression constitutive law parameters
-    #-----------------------------------------------
+    #------------------------------------------------
     K_N = Float(10000.,
                 label="K_N",
                 desc="Normal isotropic harening",
@@ -122,9 +120,9 @@ class MATSEvalMicroplaneFatigue(HasTraits):
                     enter_set=True,
                     auto_set=False)
 
-    #-----------------------------------------------
+    #------------------------------------
     # anisotropy control parameter - [Wu]
-    #-----------------------------------------------
+    #------------------------------------
 
     zeta_G = Float(1.0,
                    label="zeta_G",
@@ -132,96 +130,116 @@ class MATSEvalMicroplaneFatigue(HasTraits):
                    enter_set=True,
                    auto_set=False)
 
-    #--------------------------------------------------------------
-    # Heviside function for the unilateral effect (CP - TD)
-    #--------------------------------------------------------------
-    def get_heviside(self, eps):
-
-        if eps > 0:
-            return 1.0
-        else:
-            return 0.0
-
-    #--------------------------------------------------------------
+    #------------------------------------------------------
     # microplane constitutive law (normal behavior CP + TD)
-    #--------------------------------------------------------------
-    def get_normal_Law(self, eps, sctx):
+    #------------------------------------------------------
+    def get_normal_law(self, eps, sctx):
 
-        alpha_N = sctx[2]
-        r_N = sctx[3]
-        eps_N_p = sctx[4]
+        E_N = self.E / (1.0 - 2.0 * self.nu)
 
-        w_N = sctx[0]
-        z_N = sctx[1]
+        w_N = sctx[:, 0]
+        z_N = sctx[:, 1]
+        alpha_N = sctx[:, 2]
+        r_N = sctx[:, 3]
+        eps_N_p = sctx[:, 4]
 
-        H = self.get_heviside(eps)
+        pos = eps > 1e-6
+        H = 1.0 * pos
 
-        sigma_n_trial = (1 - H * w_N) * self.E * (eps - eps_N_p)
-
+        sigma_n_trial = (1 - H * w_N) * E_N * (eps - eps_N_p)
         Z = self.K_N * r_N
         X = self.gamma_N * alpha_N
-        h = max(0., (self.sigma_0 + Z))
-        f_trial = abs(sigma_n_trial - X) - h
 
-        if f_trial > 1e-6:
-            delta_lamda = f_trial / (self.E + abs(self.K_N) + self.gamma_N)
-            eps_N_p = eps_N_p + delta_lamda * sign(sigma_n_trial - X)
-            r_N = r_N + delta_lamda
-            alpha_N = alpha_N + delta_lamda * sign(sigma_n_trial - X)
+        h = self.sigma_0 + Z
+        pos_iso = h > 1e-6
+        f_trial = abs(sigma_n_trial - X) - h * pos_iso
+
+        thres_1 = f_trial > 1e-6
+
+        delta_lamda = f_trial / \
+            (E_N + abs(self.K_N) + self.gamma_N) * thres_1
+        eps_N_p = eps_N_p + delta_lamda * sign(sigma_n_trial - X)
+        r_N = r_N + delta_lamda
+        alpha_N = alpha_N + delta_lamda * sign(sigma_n_trial - X)
 
         Z_N = lambda z_N: 1. / self.Ad * (-z_N) / (1 + z_N)
-        Y_N = 0.5 * H * self.E * eps ** 2
-        Y_0 = 0.5 * self.E * self.eps_0 ** 2
+        Y_N = 0.5 * H * E_N * eps ** 2
+        Y_0 = 0.5 * E_N * self.eps_0 ** 2
         f = Y_N - (Y_0 + Z_N(z_N))
 
-        if f > 1e-6:
-            f_w = lambda Y: 1 - 1. / (1 + self.Ad * (Y - Y_0))
+        thres_2 = f > 1e-6
 
-            w_N = f_w(Y_N)
-            z_N = - w_N
+        f_w = lambda Y: 1 - 1. / (1 + self.Ad * (Y - Y_0))
+        w_N = f_w(Y_N) * thres_2
+        z_N = - w_N * thres_2
 
-        new_sctx = zeros(5)
+        new_sctx = zeros((28, 5))
 
-        new_sctx[0] = w_N
-        new_sctx[1] = z_N
-        new_sctx[2] = alpha_N
-        new_sctx[3] = r_N
-        new_sctx[4] = eps_N_p
+        new_sctx[:, 0] = w_N
+        new_sctx[:, 1] = z_N
+        new_sctx[:, 2] = alpha_N
+        new_sctx[:, 3] = r_N
+        new_sctx[:, 4] = eps_N_p
         return new_sctx
 
     #-------------------------------------------------------------------------
     # microplane constitutive law (Tangential CSD)-(Pressure sensitive cumulative damage)
     #-------------------------------------------------------------------------
-    def get_tangential_Law(self, e_T, sctx, sigma_kk):
-        G = self.E / (1 + 2.0 * self.nu)
-        w_T = sctx[5]
-        z_T = sctx[6]
-        alpha_T = sctx[7:10]
-        eps_T_pi = sctx[10:13]
+    def get_tangential_law(self, e_T, sctx, sigma_kk):
 
-        sig_pi_trial = G * (e_T - eps_T_pi)
+        E_T = self.E / (1. + self.nu)
+
+        w_T = sctx[:, 5]
+        z_T = sctx[:, 6]
+        alpha_T = sctx[:, 7:10]
+        eps_T_pi = sctx[:, 10:13]
+
+        sig_pi_trial = E_T * (e_T - eps_T_pi)
         Z = self.K_T * z_T
         X = self.gamma_T * alpha_T
-        f = norm(sig_pi_trial - X) - self.tau_pi_bar - \
-            Z + self.a * sigma_kk / 3
+        norm_1 = np.sqrt(
+            einsum('nj,nj -> n', (sig_pi_trial - X), (sig_pi_trial - X)))
 
-        if f > 1e-6:
-            delta_lamda = f / \
-                (G / (1 - w_T) + self.gamma_T + self.K_T)
-            eps_T_pi = eps_T_pi + delta_lamda * \
-                ((sig_pi_trial - X) / (1 - w_T)) / norm(sig_pi_trial - X)
-            Y = 0.5 * G * dot((e_T - eps_T_pi), (e_T - eps_T_pi))
-            w_T += ((1 - w_T) ** self.c) * \
-                (delta_lamda * (Y / self.S) ** self.r)
+        f = norm_1 - self.tau_pi_bar - \
+            Z + self.a * sigma_kk / 3.0
 
-            alpha_T = alpha_T + delta_lamda * \
-                (sig_pi_trial - X) / norm(sig_pi_trial - X)
-            z_T = z_T + delta_lamda
+        plas_1 = f > 1e-6
+        elas_1 = f < 1e-6
 
-        new_sctx = zeros(8)
-        new_sctx[0:2] = w_T, z_T
-        new_sctx[2:5] = alpha_T
-        new_sctx[5:8] = eps_T_pi
+        delta_lamda =   f   / \
+            (E_T / (1.0 - w_T) + self.gamma_T + self.K_T) * plas_1
+
+        norm_2 = 1.0 * elas_1 + np.sqrt(
+            einsum('nj,nj -> n', (sig_pi_trial - X), (sig_pi_trial - X))) * plas_1
+
+        eps_T_pi[:, 0] = eps_T_pi[:, 0] + plas_1 *  delta_lamda * \
+            ((sig_pi_trial[:, 0] - X[:, 0]) / (1.0 - w_T)) / norm_2
+        eps_T_pi[:, 1] = eps_T_pi[:, 1] +  plas_1 * delta_lamda * \
+            ((sig_pi_trial[:, 1] - X[:, 1]) / (1.0 - w_T)) / norm_2
+        eps_T_pi[:, 2] = eps_T_pi[:, 2] +  plas_1 * delta_lamda * \
+            ((sig_pi_trial[:, 2] - X[:, 2]) / (1.0 - w_T)) / norm_2
+
+        Y = 0.5 * E_T * \
+            einsum('nj,nj -> n', (e_T - eps_T_pi), (e_T - eps_T_pi))
+
+        w_T += ((1 - w_T) ** self.c) * \
+            (delta_lamda * (Y / self.S) ** self.r) * \
+            (self.tau_pi_bar / (self.tau_pi_bar - self.a * sigma_kk / 3.0))
+
+        alpha_T[:, 0] = alpha_T[:, 0]   + plas_1 * delta_lamda *\
+            (sig_pi_trial[:, 0] - X[:, 0]) / norm_2
+        alpha_T[:, 1] = alpha_T[:, 1]   + plas_1 * delta_lamda *\
+            (sig_pi_trial[:, 1] - X[:, 1]) / norm_2
+        alpha_T[:, 2] = alpha_T[:, 2]   + plas_1 * delta_lamda *\
+            (sig_pi_trial[:, 2] - X[:, 2]) / norm_2
+
+        z_T = z_T + delta_lamda
+
+        new_sctx = zeros((28, 8))
+        new_sctx[:, 0] = w_T
+        new_sctx[:, 1] = z_T
+        new_sctx[:, 2:5] = alpha_T
+        new_sctx[:, 5:8] = eps_T_pi
         return new_sctx
 
 
@@ -269,9 +287,9 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
         eN_vct_ni = einsum('n,ni->ni', eN_n, self._MPN)
         return e_vct_arr - eN_vct_ni
 
-    #-------------------------------------------------
+    #---------------------------------------------------
     # Alternative methods for the kinematic constraints
-    #-------------------------------------------------
+    #---------------------------------------------------
     def _get_e_N_arr_2(self, eps_eng):
         return einsum('nij,ij->n', self._MPNN, eps_eng)
 
@@ -283,23 +301,52 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
         return self._e_N_arr_2 * self._MPN + self._e_t_vct_arr_2
 
     #--------------------------------------------------------
-    # return the state variables (Damage , inelastic strains)
+    # return the state variables (damage , inelastic strains)
     #--------------------------------------------------------
     def _get_state_variables(self, sctx, eps_app_eng, sigma_kk):
 
         e_N_arr = self._get_e_N_arr_2(eps_app_eng)
         e_T_vct_arr = self._get_e_T_vct_arr_2(eps_app_eng)
+
         sctx_arr = zeros_like(sctx)
 
-        for i in range(0, self.n_mp):
-            sctx_N = self.get_normal_Law(e_N_arr[i], sctx[i, :])
-            sctx_tangential = self.get_tangential_Law(
-                e_T_vct_arr[i, :], sctx[i, :], sigma_kk)
+        sctx_N = self.get_normal_law(e_N_arr, sctx)
+        sctx_arr[:, 0:5] = sctx_N
 
-            sctx_arr[i, 0:5] = sctx_N
-            sctx_arr[i, 5:13] = sctx_tangential
+        sctx_tangential = self.get_tangential_law(e_T_vct_arr, sctx, sigma_kk)
+        sctx_arr[:, 5:13] = sctx_tangential
 
         return sctx_arr
+
+    #-------------------------------------------------------------
+    # Returns a list of the integrity factors for all microplanes.
+    #-------------------------------------------------------------
+    def _get_phi_arr(self, sctx, eps_app_eng, sigma_kk):
+
+        w_n = self._get_state_variables(sctx, eps_app_eng, sigma_kk)[:, 0]
+        w_T = self._get_state_variables(sctx, eps_app_eng, sigma_kk)[:, 5]
+
+        w = np.zeros(self.n_mp)
+
+        for i in range(0, self.n_mp):
+            w[i] = np.maximum(w_n[i], w_T[i])
+
+        phi_arr = 1.0 - w
+
+        return phi_arr
+
+    #-------------------------------------------------------------
+    # Returns the 2nd order integrity tensor 'phi_mtx'
+    #-------------------------------------------------------------
+    def _get_phi_mtx(self, sctx, eps_app_eng, sigma_kk):
+
+        # scalar integrity factor for each microplane
+        phi_arr = self._get_phi_arr(sctx, eps_app_eng, sigma_kk)
+
+        # integration terms for each microplanes
+        phi_ij = einsum('n,n,nij->ij', phi_arr, self._MPW, self._MPNN)
+
+        return phi_ij
 
     #-----------------------------------------------------------------
     # Returns a list of the plastic normal strain  for all microplanes.
@@ -318,6 +365,29 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
             sctx, eps_app_eng, sigma_kk)[:, 10:13]
 
         return eps_T_pi_vct_arr
+
+    #-------------------------------------------------------------------------
+    # Integration of the (inelastic) strains for each microplane and return the plastic strain tensor
+    #-------------------------------------------------------------------------
+    def _get_eps_p_mtx(self, sctx, eps_app_eng, sigma_kk):
+
+        # plastic normal strains
+        eps_N_P_n = self._get_eps_N_p_arr(sctx, eps_app_eng, sigma_kk)
+
+        # sliding tangential strains
+        eps_T_pi_ni = self._get_eps_T_pi_arr(sctx, eps_app_eng, sigma_kk)
+        delta = identity(3)
+
+        # 2-nd order plastic (inelastic) tensor
+        eps_p_ij = einsum('n,n,ni,nj -> ij', self._MPW, eps_N_P_n, self._MPN, self._MPN) + \
+            0.5 * (einsum('n,nr,ni,rj->ij', self._MPW, eps_T_pi_ni, self._MPN, delta) +
+                   einsum('n,nr,nj,ri->ij', self._MPW, eps_T_pi_ni, self._MPN, delta))
+
+        return eps_p_ij
+
+    '''----------------------------------------------------------------------------------------
+    Construct the irreducible secant stiffness tensor (cf. [Wu.2009]) with different equations
+    ----------------------------------------------------------------------------------------'''
 
     #----------------------------------------------------------------
     #  the fourth order volumetric-identity tensor
@@ -383,43 +453,9 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
 
         return PP_dev_nijkl
 
-    #-------------------------------------------------------------
-    # Returns a list of the integrity factors for all microplanes.
-    #-------------------------------------------------------------
-    def _get_phi_arr(self, sctx, eps_app_eng, sigma_kk):
-
-        w_n = self._get_state_variables(sctx, eps_app_eng, sigma_kk)[:, 0]
-        w_T = self._get_state_variables(sctx, eps_app_eng, sigma_kk)[:, 5]
-
-        w = np.zeros(self.n_mp)
-
-        for i in range(0, self.n_mp):
-            w[i] = np.maximum(w_n[i], w_T[i])
-
-        phi_arr = 1. - w
-
-        return phi_arr
-
-    #-------------------------------------------------------------
-    # Returns the 2nd order damage tensor 'phi_mtx'
-    #-------------------------------------------------------------
-    def _get_phi_mtx(self, sctx, eps_app_eng, sigma_kk):
-
-        # scalar integrity factor for each microplane
-        phi_arr = self._get_phi_arr(sctx, eps_app_eng, sigma_kk)
-
-        # integration terms for each microplanes
-        phi_ij = einsum('n,n,nij->ij', phi_arr, self._MPW, self._MPNN)
-
-        return phi_ij
-
-    '''
-    #Construct the irreducible secant stiffness tensor (cf. [Wu.2009]) with three approaches
-    '''
-
-    #----------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Returns the fourth order secant stiffness tensor (cf. [Wu.2009], Eq.(29))
-    #----------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     def _get_S_1_tns(self, sctx, eps_app_eng, sigma_kk):
 
         K0 = self.E / (1. - 2. * self.nu)
@@ -437,9 +473,9 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
 
         return S_1_ijkl
 
-    #==========================================
+    #------------------------------------------
     # scalar damage factor for each microplane
-    #==========================================
+    #------------------------------------------
     def _get_d_scalar(self, sctx, eps_app_eng, sigma_kk):
 
         d_n = 1.0 - self._get_phi_arr(sctx, eps_app_eng, sigma_kk)
@@ -448,9 +484,9 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
 
         return d
 
-    #==========================================
+    #------------------------------------------
     # The 4th order volumetric damage tensor
-    #==========================================
+    #------------------------------------------
     def _get_M_vol_tns(self, sctx, eps_app_eng, sigma_kk):
 
         d = self._get_d_scalar(sctx, eps_app_eng, sigma_kk)
@@ -463,9 +499,9 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
 
         return (1 - d) * I_4th_ijkl
 
-    #==========================================
+    #------------------------------------------
     # The 4th order deviatoric damage tensor
-    #==========================================
+    #------------------------------------------
     def _get_M_dev_tns(self, phi_mtx):
 
         delta = identity(3)
@@ -481,9 +517,9 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
 
         return M_dev_ijkl
 
-    #----------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Returns the fourth order secant stiffness tensor (cf. [Wu.2009], Eq.(31))
-    #----------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     def _get_S_2_tns(self, sctx, eps_app_eng, sigma_kk):
 
         K0 = self.E / (1. - 2. * self.nu)
@@ -500,9 +536,9 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
 
         return S_2_ijkl
 
-    #----------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Returns the fourth order secant stiffness tensor (cf. [Wu.2009], Eq.(34))
-    #----------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     def _get_S_3_tns(self, sctx, eps_app_eng, sigma_kk):
 
         K0 = self.E / (1. - 2. * self.nu)
@@ -532,9 +568,9 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
 
         return S_ijkl
 
-    #----------------------------------------------------------------------
-    # Returns the fourth order secant stiffness tensor (double orthotropic)
-    #----------------------------------------------------------------------
+    #-------------------------------------------------------------------------
+    # Returns the fourth order secant stiffness tensor using (double orthotropic) assumption
+    #-------------------------------------------------------------------------
     def _get_S_4_tns(self, sctx, eps_app_eng, sigma_kk):
 
         K0 = self.E / (1. - 2. * self.nu)
@@ -556,9 +592,9 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
 
         return S_4_ijkl
 
-    #----------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Returns the fourth order secant stiffness tensor (double orthotropic N-T split)
-    #----------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     def _get_S_5_tns(self, sctx, eps_app_eng, sigma_kk):
 
         E_N = self.E / (3.0 - 2.0 * (1.0 + self.nu))
@@ -579,25 +615,6 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
              0.5 * (einsum('il,jk -> ijkl', D_bar_ij, delta) + einsum('ik,jl -> ijkl', delta, D_bar_ij)))
 
         return S_5_ijkl
-
-    #-----------------------------------------------------------
-    # Integration of the (inelastic) strains for each microplane
-    #-----------------------------------------------------------
-    def _get_eps_p_mtx(self, sctx, eps_app_eng, sigma_kk):
-
-        # plastic normal strains
-        eps_N_P_n = self._get_eps_N_p_arr(sctx, eps_app_eng, sigma_kk)
-
-        # sliding tangential strains
-        eps_T_pi_ni = self._get_eps_T_pi_arr(sctx, eps_app_eng, sigma_kk)
-        delta = identity(3)
-
-        # 2-nd order plastic (inelastic) tensor
-        eps_p_ij = einsum('n,n,ni,nj -> ij', self._MPW, eps_N_P_n, self._MPN, self._MPN) + \
-            0.5 * (einsum('n,nr,ni,rj->ij', self._MPW, eps_T_pi_ni, self._MPN, delta) +
-                   einsum('n,nr,nj,ri->ij', self._MPW, eps_T_pi_ni, self._MPN, delta))
-
-        return eps_p_ij
 
     #-------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
@@ -717,58 +734,35 @@ class MATS3DMicroplaneDamageWu(MATSXDMicroplaneDamageFatigueWu, MATS3DEval):
 
         return D_ijkl
 
-    #-------------------------------------------------------------------------
-    # Dock-based view with its own id
-    #-------------------------------------------------------------------------
-
-    traits_view = View(Include('polar_fn_group'),
-                       dock='tab',
-                       id='ibvpy.mats.mats3D.mats_3D_cmdm.MATS3D_cmdm',
-                       kind='modal',
-                       resizable=True,
-                       scrollable=True,
-                       width=0.6, height=0.8,
-                       buttons=['OK', 'Cancel']
-                       )
-
 
 if __name__ == '__main__':
-    #==========================
-    # Check the model behavior
-    #==========================
+    #==========================================================================
+    # Check the model behavior at the single material point
+    #==========================================================================
 
+    model = MATS3DMicroplaneDamageWu()
+
+    p = 1.0  # ratio of strain eps_11 (for bi-axial loading)
+    m = 0.0  # ratio of strain eps_22 (for bi-axial loading)
+
+    #------------------------------------
     # monotonic loading
+    #------------------------------------
     n = 100  # number of increments
     s_levels = linspace(0, -0.02, 2)
     s_levels[0] = 0
     s_levels.reshape(-1, 2)[:, 0] *= -1
     s_history_1 = s_levels.flatten()
-
-    # cyclic loading
-    s_history_2 = [-0, -0.001, -0.0002, -
-                   0.0015, -0.00045, -0.0020, -0.0008,  -0.0027, -0.0012, -0.004, -0.002, -0.0055]
-
-    #s_history_2 = [0, 0.02]
-
     s_arr_1 = hstack([linspace(s_history_1[i], s_history_1[i + 1], n)
                       for i in range(len(s_levels) - 1)])
-    s_arr_2 = hstack([linspace(s_history_2[i], s_history_2[i + 1], 50)
-                      for i in range(len(s_history_2) - 1)])
-
-    p = 1.0  # ratio of strain eps_11 (for bi-axial loading)
-    m = 0.0  # ratio of strain eps_22 (for bi-axial loading)
 
     eps_1 = array([array([[p * s_arr_1[i], 0, 0],
                           [0, m * s_arr_1[i], 0],
                           [0, 0, 0]]) for i in range(0, len(s_arr_1))])
 
-    eps_2 = array([array([[p * s_arr_2[i], 0, 0],
-                          [0,  m * s_arr_2[i], 0],
-                          [0, 0, 0]]) for i in range(0, len(s_arr_2))])
-
-    m2 = MATS3DMicroplaneDamageWu()
-
+    #--------------------------------------
     # construct the arrays
+    #--------------------------------------
     sigma_1 = zeros_like(eps_1)
     sigma_kk_1 = zeros(len(s_arr_1) + 1)
     w_1_N = zeros((len(eps_1[:, 0, 0]), 28))
@@ -777,6 +771,39 @@ if __name__ == '__main__':
     eps_Pi_T_1 = zeros((len(eps_1[:, 0, 0]), 28, 3))
     sctx_1 = zeros((len(eps_1[:, 0, 0]) + 1, 28, 13))
 
+    for i in range(0, len(eps_1[:, 0, 0])):
+        sigma_1[i, :] = model.get_corr_pred(
+            sctx_1[i, :], eps_1[i, :], sigma_kk_1[i])[0]
+        sigma_kk_1[i + 1] = trace(sigma_1[i, :])
+        sctx_1[
+            i + 1] = model._get_state_variables(sctx_1[i, :], eps_1[i, :], sigma_kk_1[i])
+
+        w_1_N[i, :] = sctx_1[i, :, 0]
+        w_1_T[i, :] = sctx_1[i, :, 5]
+        eps_P_N_1[i, :] = sctx_1[i, :, 4]
+        eps_Pi_T_1[i, :, :] = sctx_1[i, :, 10:13]
+
+    #-------------------------------------
+    # cyclic loading
+    #-------------------------------------
+    s_history_2 = [-0, -0.001, -0.00034, -
+                   0.0015, -0.00065, -0.0020, -0.00097,
+                   -0.0027, -0.00145, -0.004, -0.0022, -0.0055,
+                   -0.0031, -0.007, -0.004, -0.008, -0.0045, -.009,
+                   -0.0052, -0.01, -0.0058, -0.012, -0.0068, -0.015]
+
+    #s_history_2 = [0, 0.02]
+
+    s_arr_2 = hstack([linspace(s_history_2[i], s_history_2[i + 1], 100)
+                      for i in range(len(s_history_2) - 1)])
+
+    eps_2 = array([array([[p * s_arr_2[i], 0, 0],
+                          [0,  m * s_arr_2[i], 0],
+                          [0, 0, 0]]) for i in range(0, len(s_arr_2))])
+
+    #--------------------------------------
+    # construct the arrays
+    #--------------------------------------
     sigma_2 = zeros_like(eps_2)
     sigma_kk_2 = zeros(len(s_arr_2) + 1)
     w_2_N = zeros((len(eps_2[:, 0, 0]), 28))
@@ -785,37 +812,26 @@ if __name__ == '__main__':
     eps_Pi_T_2 = zeros((len(eps_2[:, 0, 0]), 28, 3))
     sctx_2 = zeros((len(eps_2[:, 0, 0]) + 1, 28, 13))
 
-    # monotonic loading
-    for i in range(0, len(eps_1[:, 0, 0])):
-        sigma_1[i, :] = m2.get_corr_pred(
-            sctx_1[i, :], eps_1[i, :], sigma_kk_1[i])[0]
-        sigma_kk_1[i + 1] = trace(sigma_1[i, :])
-        sctx_1[
-            i + 1] = m2._get_state_variables(sctx_1[i, :], eps_1[i, :], sigma_kk_1[i])
-
-        w_1_N[i, :] = sctx_1[i, :, 0]
-        w_1_T[i, :] = sctx_1[i, :, 5]
-        eps_P_N_1[i, :] = sctx_1[i, :, 4]
-        eps_Pi_T_1[i, :, :] = sctx_1[i, :, 10:13]
-
-    # cyclic loading
     for i in range(0, len(eps_2[:, 0, 0])):
 
-        sigma_2[i, :] = m2.get_corr_pred(
+        sigma_2[i, :] = model.get_corr_pred(
             sctx_2[i, :], eps_2[i, :], sigma_kk_2[i])[0]
         sigma_kk_2[i + 1] = trace(sigma_2[i, :])
         sctx_2[
-            i + 1] = m2._get_state_variables(sctx_2[i, :], eps_2[i, :], sigma_kk_2[i])
+            i + 1] = model._get_state_variables(sctx_2[i, :], eps_2[i, :], sigma_kk_2[i])
 
         w_2_N[i, :] = sctx_2[i, :, 0]
         w_2_T[i, :] = sctx_2[i, :, 5]
         eps_P_N_2[i, :] = sctx_2[i, :, 4]
         eps_Pi_T_2[i, :, :] = sctx_2[i, :, 10:13]
 
-    #======================
-    # plotting
-    #======================
+    '''====================================================
+    plotting
+    ===================================================='''
+
+    #------------------------------------------------------
     # stress -strain
+    #------------------------------------------------------
     plt.subplot(221)
     plt.plot(eps_1[:, 0, 0], sigma_1[:, 0, 0], color='k',
              linewidth=1, label='sigma_11_(monotonic)')
@@ -832,7 +848,9 @@ if __name__ == '__main__':
     plt.axvline(x=0, color='k', linewidth=1, alpha=0.5)
     plt.legend()
 
+    #------------------------------------------------------
     # normal damage at the microplanes (TD)
+    #------------------------------------------------------
     plt.subplot(222)
     for i in range(0, 28):
         plt.plot(
@@ -844,7 +862,9 @@ if __name__ == '__main__':
         plt.ylabel('Damage')
         plt.title(' normal damage for all microplanes')
 
+    #---------------------------------------------------------
     # tangential damage at the microplanes (CSD)
+    #---------------------------------------------------------
     plt.subplot(223)
     for i in range(0, 28):
         plt.plot(
@@ -852,19 +872,20 @@ if __name__ == '__main__':
         plt.plot(
             eps_2[:, 0, 0], w_2_T[:, i], linewidth=1.0, label='monotonic', alpha=1)
 
-        plt.xlabel('Strain')
-        plt.ylabel('Damage')
+        plt.xlabel('strain')
+        plt.ylabel('damage')
         plt.title(' tangential damage for all microplanes')
 
-    # tangential sliding strains at the microplanes (CSD)
+    #-----------------------------------------------------------
+    # damage with sliding strains at the microplanes (CSD)
+    #-----------------------------------------------------------
     plt.subplot(224)
     for i in range(0, 28):
-        plt.plot(
-            eps_1[:, 0, 0], eps_Pi_T_1[:, i, 1], linewidth=1, label='sliding strain')
-        plt.plot(
-            eps_2[:, 0, 0], eps_Pi_T_2[:, i, 1], linewidth=1, label='sliding strain')
 
-        plt.xlabel('Strain')
-        plt.ylabel('sliding_strain')
+        plt.plot(eps_Pi_T_1[:, i, 1], w_1_T[:, i])
+        plt.plot(eps_Pi_T_2[:, i, 1], w_2_T[:, i])
+
+        plt.xlabel('sliding strain')
+        plt.ylabel('damage')
 
     plt.show()

@@ -14,11 +14,10 @@ from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from ibvpy.mats.mats_eval import \
     IMATSEval
 from numpy import \
-    array, zeros, dot, trace, \
+    array, zeros, trace, \
     einsum, zeros_like,\
     identity, sign, linspace, hstack, maximum,\
     sqrt
-from numpy.linalg import norm
 from scipy.linalg import \
     eigh
 from traits.api import \
@@ -50,17 +49,17 @@ class MATSEvalMicroplaneFatigue(HasTraits):
     #---------------------------------------
     # Tangential constitutive law parameters
     #---------------------------------------
-    gamma = Float(5000.,
-                  label="Gamma",
-                  desc=" Tangential Kinematic hardening modulus",
-                  enter_set=True,
-                  auto_set=False)
+    gamma_T = Float(5000.,
+                    label="Gamma",
+                    desc=" Tangential Kinematic hardening modulus",
+                    enter_set=True,
+                    auto_set=False)
 
-    K = Float(10.0,
-              label="K",
-              desc="Tangential Isotropic harening",
-              enter_set=True,
-              auto_set=False)
+    K_T = Float(10.0,
+                label="K",
+                desc="Tangential Isotropic harening",
+                enter_set=True,
+                auto_set=False)
 
     S = Float(0.00001,
               label="S",
@@ -129,98 +128,115 @@ class MATSEvalMicroplaneFatigue(HasTraits):
                     auto_set=False)
 
     #--------------------------------------------------------------
-    # Heviside function for the unilateral effect (CP - TD)
-    #--------------------------------------------------------------
-    def get_heviside(self, eps):
-        if eps > 0:
-            return 1.0
-        else:
-            return 0.0
-
-    #--------------------------------------------------------------
     # microplane constitutive law (normal behavior CP + TD)
     #--------------------------------------------------------------
-    def get_normal_Law(self, eps, sctx):
-        '''
-        microplane constitutive law (Normal)-(Tension-damage (TD) + compression-plasticity(CP))
-        '''
-        alpha_N = sctx[2]
-        r_N = sctx[3]
-        eps_N_p = sctx[4]
-        w_N = sctx[0]
-        z_N = sctx[1]
+    def get_normal_law(self, eps, sctx):
 
-        H = self.get_heviside(eps)
+        E_N = self.E / (1.0 - 2.0 * self.nu)
 
-        sigma_n_trial = (1 - H * w_N) * self.E * (eps - eps_N_p)
+        w_N = sctx[:, 0]
+        z_N = sctx[:, 1]
+        alpha_N = sctx[:, 2]
+        r_N = sctx[:, 3]
+        eps_N_p = sctx[:, 4]
 
-        Z = self.K * r_N
+        pos = eps > 1e-6
+        H = 1.0 * pos
+
+        sigma_n_trial = (1 - H * w_N) * E_N * (eps - eps_N_p)
+        Z = self.K_N * r_N
         X = self.gamma_N * alpha_N
-        h = max(0., (self.sigma_0 + Z))
-        f_trial = abs(sigma_n_trial - X) - h
 
-        if f_trial > 1e-6:
-            delta_lamda = f_trial / (self.E + abs(self.K) + self.gamma_N)
-            eps_N_p = eps_N_p + delta_lamda * sign(sigma_n_trial - X)
-            r_N = r_N + delta_lamda
-            alpha_N = alpha_N + delta_lamda * sign(sigma_n_trial - X)
+        h = self.sigma_0 + Z
+        pos_iso = h > 1e-6
+        f_trial = abs(sigma_n_trial - X) - h * pos_iso
+
+        thres_1 = f_trial > 1e-6
+
+        delta_lamda = f_trial / \
+            (E_N + abs(self.K_N) + self.gamma_N) * thres_1
+        eps_N_p = eps_N_p + delta_lamda * sign(sigma_n_trial - X)
+        r_N = r_N + delta_lamda
+        alpha_N = alpha_N + delta_lamda * sign(sigma_n_trial - X)
 
         Z_N = lambda z_N: 1. / self.Ad * (-z_N) / (1 + z_N)
-        Y_N = 0.5 * H * self.E * eps ** 2
-        Y_0 = 0.5 * self.E * self.eps_0 ** 2
+        Y_N = 0.5 * H * E_N * eps ** 2
+        Y_0 = 0.5 * E_N * self.eps_0 ** 2
         f = Y_N - (Y_0 + Z_N(z_N))
 
-        if f > 1e-6:
-            f_w = lambda Y: 1 - 1. / (1 + self.Ad * (Y - Y_0))
-            w_N = f_w(Y_N)
-            z_N = - w_N
+        thres_2 = f > 1e-6
 
-        new_sctx = zeros(5)
+        f_w = lambda Y: 1 - 1. / (1 + self.Ad * (Y - Y_0))
+        w_N = f_w(Y_N) * thres_2
+        z_N = - w_N * thres_2
 
-        new_sctx[0] = w_N
-        new_sctx[1] = z_N
-        new_sctx[2] = alpha_N
-        new_sctx[3] = r_N
-        new_sctx[4] = eps_N_p
+        new_sctx = zeros((28, 5))
+
+        new_sctx[:, 0] = w_N
+        new_sctx[:, 1] = z_N
+        new_sctx[:, 2] = alpha_N
+        new_sctx[:, 3] = r_N
+        new_sctx[:, 4] = eps_N_p
         return new_sctx
 
     #-------------------------------------------------------------------------
     # microplane constitutive law (Tangential CSD)-(Pressure sensitive cumulative damage)
     #-------------------------------------------------------------------------
-    def get_tangential_Law(self, e_T, sctx, sigma_kk):
-        '''
-        microplane constitutive law (Tangential)-(Pressure sensitive cumulative damage (CSD))
-        '''
-        G = self.E / (1 + 2.0 * self.nu)
-        w_T = sctx[5]
-        z_T = sctx[6]
-        alpha_T = sctx[7:10]
-        eps_T_pi = sctx[10:13]
+    def get_tangential_law(self, e_T, sctx, sigma_kk):
 
-        sig_pi_trial = G * (e_T - eps_T_pi)
-        Z = self.K * z_T
-        X = self.gamma * alpha_T
-        f = norm(sig_pi_trial - X) - self.tau_pi_bar - \
-            Z + self.a * sigma_kk / 3
+        E_T = self.E / (1. + self.nu)
 
-        if f > 1e-6:
-            delta_lamda = f / \
-                (G / (1 - w_T) + self.gamma + self.K)
-            eps_T_pi = eps_T_pi + delta_lamda * \
-                ((sig_pi_trial - X) / (1 - w_T)) / norm(sig_pi_trial - X)
-            Y = 0.5 * G * dot((e_T - eps_T_pi), (e_T - eps_T_pi))
-            w_T += ((1 - w_T) ** self.c) * \
-                (delta_lamda * (Y / self.S) ** self.r)
-            X = X + self.gamma * delta_lamda * \
-                (sig_pi_trial - X) / norm(sig_pi_trial - X)
-            alpha_T = alpha_T + delta_lamda * \
-                (sig_pi_trial - X) / norm(sig_pi_trial - X)
-            z_T = z_T + delta_lamda
+        w_T = sctx[:, 5]
+        z_T = sctx[:, 6]
+        alpha_T = sctx[:, 7:10]
+        eps_T_pi = sctx[:, 10:13]
 
-        new_sctx = zeros(8)
-        new_sctx[0:2] = w_T, z_T
-        new_sctx[2:5] = alpha_T
-        new_sctx[5:8] = eps_T_pi
+        sig_pi_trial = E_T * (e_T - eps_T_pi)
+        Z = self.K_T * z_T
+        X = self.gamma_T * alpha_T
+        norm_1 = sqrt(
+            einsum('nj,nj -> n', (sig_pi_trial - X), (sig_pi_trial - X)))
+
+        f = norm_1 - self.tau_pi_bar - \
+            Z + self.a * sigma_kk / 3.0
+
+        plas_1 = f > 1e-6
+        elas_1 = f < 1e-6
+
+        delta_lamda =   f   / \
+            (E_T / (1.0 - w_T) + self.gamma_T + self.K_T) * plas_1
+
+        norm_2 = 1.0 * elas_1 + sqrt(
+            einsum('nj,nj -> n', (sig_pi_trial - X), (sig_pi_trial - X))) * plas_1
+
+        eps_T_pi[:, 0] = eps_T_pi[:, 0] + plas_1 *  delta_lamda * \
+            ((sig_pi_trial[:, 0] - X[:, 0]) / (1.0 - w_T)) / norm_2
+        eps_T_pi[:, 1] = eps_T_pi[:, 1] +  plas_1 * delta_lamda * \
+            ((sig_pi_trial[:, 1] - X[:, 1]) / (1.0 - w_T)) / norm_2
+        eps_T_pi[:, 2] = eps_T_pi[:, 2] +  plas_1 * delta_lamda * \
+            ((sig_pi_trial[:, 2] - X[:, 2]) / (1.0 - w_T)) / norm_2
+
+        Y = 0.5 * E_T * \
+            einsum('nj,nj -> n', (e_T - eps_T_pi), (e_T - eps_T_pi))
+
+        w_T += ((1 - w_T) ** self.c) * \
+            (delta_lamda * (Y / self.S) ** self.r) * \
+            (self.tau_pi_bar / (self.tau_pi_bar - self.a * sigma_kk / 3.0))
+
+        alpha_T[:, 0] = alpha_T[:, 0]   + plas_1 * delta_lamda *\
+            (sig_pi_trial[:, 0] - X[:, 0]) / norm_2
+        alpha_T[:, 1] = alpha_T[:, 1]   + plas_1 * delta_lamda *\
+            (sig_pi_trial[:, 1] - X[:, 1]) / norm_2
+        alpha_T[:, 2] = alpha_T[:, 2]   + plas_1 * delta_lamda *\
+            (sig_pi_trial[:, 2] - X[:, 2]) / norm_2
+
+        z_T = z_T + delta_lamda
+
+        new_sctx = zeros((28, 8))
+        new_sctx[:, 0] = w_T
+        new_sctx[:, 1] = z_T
+        new_sctx[:, 2:5] = alpha_T
+        new_sctx[:, 5:8] = eps_T_pi
         return new_sctx
 
 
@@ -302,17 +318,13 @@ class MATSXDMicroplaneDamageFatigueJir(MATSEvalMicroplaneFatigue):
         e_N_arr = self._get_e_N_arr_2(eps_app_eng)
         e_T_vct_arr = self._get_e_T_vct_arr_2(eps_app_eng)
 
-        sctx_arr = zeros((28, 13))
+        sctx_arr = zeros_like(sctx)
 
-        for i in range(0, self.n_mp):
+        sctx_N = self.get_normal_law(e_N_arr, sctx)
+        sctx_arr[:, 0:5] = sctx_N
 
-            sctx_N = self.get_normal_Law(e_N_arr[i], sctx[i, :])
-
-            sctx_tangential = self.get_tangential_Law(
-                e_T_vct_arr[i, :], sctx[i, :], sigma_kk)
-
-            sctx_arr[i, 0:5] = sctx_N
-            sctx_arr[i, 5:13] = sctx_tangential
+        sctx_tangential = self.get_tangential_law(e_T_vct_arr, sctx, sigma_kk)
+        sctx_arr[:, 5:13] = sctx_tangential
 
         return sctx_arr
 
@@ -625,22 +637,26 @@ if __name__ == '__main__':
     #=========================
     # model behavior
     #=========================
-    n = 100
+    n = 500
     s_levels = linspace(0, -0.02, 2)
     s_levels[0] = 0
     s_levels.reshape(-1, 2)[:, 0] *= -1
     s_history_1 = s_levels.flatten()
 
     # cyclic loading
-    s_history_2 = [-0, -0.001, -0.0002, -
-                   0.0015, -0.00045, -0.0020, -0.0008,  -0.0027, -0.0012, -0.004, -0.002, -0.0055]
 
-    #s_history_2 = [0, -0.01]
+    s_history_2 = [-0, -0.001, -0.00032, -
+                   0.0015, -0.00065, -0.0020, -0.00095,
+                   -0.0027, -0.0014, -0.004, -0.0022, -0.0055,
+                   -0.0031, -0.007, -0.004, -0.008, -0.0045, -.009,
+                   -0.0052, -0.01, -0.0058, -0.012, -0.0068, -0.015]
+
+    #s_history_2 = [0, 0.02]
 
     s_arr_1 = hstack([linspace(s_history_1[i], s_history_1[i + 1], n)
                       for i in range(len(s_levels) - 1)])
 
-    s_arr_2 = hstack([linspace(s_history_2[i], s_history_2[i + 1], 50)
+    s_arr_2 = hstack([linspace(s_history_2[i], s_history_2[i + 1], 100)
                       for i in range(len(s_history_2) - 1)])
 
     p = 1.0  # ratio of strain eps_11 (for bi-axial loading)
