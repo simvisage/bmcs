@@ -8,10 +8,16 @@ Example (2D discretization)
 @author: rch, abaktheer
 '''
 
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
+from mathkit.matrix_la import \
+    SysMtxArray, SysMtxAssembly
+from mayavi.scripts import mayavi2
+from tvtk.api import \
+    tvtk
+
 import numpy as np
 import pylab as p
 import sympy as sp
+from tvtk.tvtk_classes import tvtk_helper
 
 
 #========================================
@@ -59,10 +65,14 @@ xi_m = np.array([[-1.0 / np.sqrt(3.0), -1.0 / np.sqrt(3.0)],
                  [1.0 / np.sqrt(3.0), -1.0 / np.sqrt(3.0)],
                  [1.0 / np.sqrt(3.0), 1.0 / np.sqrt(3.0)],
                  [-1.0 / np.sqrt(3.0), 1.0 / np.sqrt(3.0)]
-                 ]
+                 ], dtype=np.float_
                 )
 
-w_m = np.array([1, 1, 1, 1])
+w_m = np.array([1, 1, 1, 1], dtype=np.float_)
+
+xi_n = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]], dtype=np.float_)
+vtk_cells = [[0, 1, 2, 3]]
+vtk_cell_types = 'Quad'
 
 print 'xi_m', xi_m
 print 'xi_m.shape', xi_m.shape
@@ -75,7 +85,10 @@ N_mi = np.array([N_xi_i.subs(zip([xi_1, xi_2], xi))
 N_im = np.einsum('mi->im', N_mi)
 dN_mir = np.array([dN_xi_ir.subs(zip([xi_1, xi_2], xi))
                    for xi in xi_m], dtype=np.float_).reshape(4, 4, 2)
+dN_nir = np.array([dN_xi_ir.subs(zip([xi_1, xi_2], xi))
+                   for xi in xi_n], dtype=np.float_).reshape(4, 4, 2)
 dN_imr = np.einsum('mir->imr', dN_mir)
+dN_inr = np.einsum('nir->inr', dN_nir)
 
 
 print 'N_im', N_im
@@ -84,49 +97,50 @@ print 'dN_ima', dN_imr
 print 'dN_ima.shape', dN_imr.shape
 print '*************************'
 
-L_x, L_y = 1, 1
+L_x, L_y = 20, 10
 
 x_Ia = np.array([[0, 0],
-                 [L_x, 0],
+                 [L_x / 2., 0],
                  [0, L_y],
+                 [L_x / 2., L_y],
+                 [L_x, 0],
                  [L_x, L_y]], dtype=np.float_)
 print 'x_Ia', x_Ia
 
-I_Ei = np.array([[0, 1, 3, 2]], dtype=np.int_)
+n_I, n_a = x_Ia.shape
+dof_Ia = np.arange(n_I * n_a, dtype=np.int_).reshape(n_I, -1)
+print 'dof_Ia', dof_Ia
+
+I_Ei = np.array([[0, 1, 3, 2],
+                 [1, 4, 5, 3]], dtype=np.int_)
 print 'I_Ei', I_Ei
 
 x_Eia = x_Ia[I_Ei, :]
 print 'x_Eia', x_Eia
 
-x_Ema = np.einsum('im,Eia->Ema', N_im, x_Eia)
+dof_Eia = dof_Ia[I_Ei]
+print 'dof_Eia', dof_Eia
 
+x_Ema = np.einsum('im,Eia->Ema', N_im, x_Eia)
 print 'x_Ema', x_Ema
 
 J_Emar = np.einsum('imr,Eia->Emar', dN_imr, x_Eia)
+J_Enar = np.einsum('inr,Eia->Enar', dN_inr, x_Eia)
 
 det_J_Em = np.linalg.det(J_Emar)
 print 'det(J_Em)', det_J_Em
 
 inv_J_Emar = np.linalg.inv(J_Emar)
-print 'inv(J_Emar)', inv_J_Emar
+inv_J_Enar = np.linalg.inv(J_Enar)
+# print 'inv(J_Emar)', inv_J_Emar
 
 B_Eimabc = np.einsum('abcd,imr,Eidr->Eimabc', I_sym_abcd, dN_imr, inv_J_Emar)
-print 'B_Eiabc', B_Eimabc
+# print 'eps_Emab', eps_Emab
+B_Einabc = np.einsum('abcd,inr,Eidr->Einabc', I_sym_abcd, dN_inr, inv_J_Enar)
 
-eps_x1_d_Ia = np.array([[0, 0],
-                        [0.1 * L_x, 0],
-                        [0, 0],
-                        [0.1 * L_x, 0]], dtype=np.float_)
-eps_x2_d_Ia = np.array([[0, 0],
-                        [0, 0],
-                        [0, 0.1 * L_y],
-                        [0, 0.1 * L_y]], dtype=np.float_)
-d_Eia = eps_x2_d_Ia[I_Ei, :]
-eps_Emab = np.einsum('Eimabc,Eic->Emab', B_Eimabc, d_Eia)
-print 'eps_Emab', eps_Emab
-
-BB_Emicjdabef = np.einsum('Eimabc,Ejmefd->Emicjdabef', B_Eimabc, B_Eimabc)
-print 'BB_Emicjdabef', BB_Emicjdabef
+BB_Emicjdabef = np.einsum('Eimabc,Ejmefd, Em, m->Emicjdabef',
+                          B_Eimabc, B_Eimabc, det_J_Em, w_m)
+# print 'BB_Emicjdabef', BB_Emicjdabef
 
 # -----------------------------------------------------------------------------------------------------
 # Construct the fourth order elasticity tensor for the plane stress case (shape: (2,2,2,2))
@@ -178,22 +192,87 @@ for i in range(0, 2):
             for l in range(0, 2):
                 D_abef[i, j, k, l] = D_ab[map2d_ijkl2mn(i, j, k, l)]
 
-print 'D_stress', D_abef
+# print 'D_stress', D_abef
 print 'D_stress', D_abef.shape
 
 
-K_Eicjd = np.einsum('Emicjdabef,abef,Em,m->Eicjd',
-                    BB_Emicjdabef, D_abef, det_J_Em, w_m)
+K_Eicjd = np.einsum('Emicjdabef,abef->Eicjd',
+                    BB_Emicjdabef, D_abef)
 print 'K_Eicjd', K_Eicjd.shape
-print 'K_Eicjd', K_Eicjd.reshape(1, 8, 8)
+n_E, n_i, n_c, n_j, n_d = K_Eicjd.shape
+K_E = K_Eicjd.reshape(n_E, n_i * n_c, n_j * n_d)
+# print 'K_Eicjd', K_E
+dof_E = dof_Eia.reshape(n_E, n_i * n_c)
+K_subdomain = SysMtxArray(mtx_arr=K_E, dof_map_arr=dof_E)
+K = SysMtxAssembly()
+K.sys_mtx_arrays.append(K_subdomain)
+print 'K', K
+K.register_constraint(0, 0)
+K.register_constraint(1, 0)
+K.register_constraint(4, 0)
+F = np.zeros((dof_Ia.size))
+K.apply_constraints(F)
+print F.shape
+F[9] = 1000.0
+F[11] = 1000.0
+U = K.solve(F)
+print 'U', U
+
+d_Ia = U.reshape(-1, n_c)
+d_Eia = d_Ia[I_Ei]
+eps_Enab = np.einsum('Einabc,Eic->Enab', B_Einabc, d_Eia)
+print 'eps_Emab', eps_Enab
+
+sig_Enab = np.einsum('abef,Emef->Emab', D_abef, eps_Enab)
+print 'sig_Emab', sig_Enab
+
+delta23_ab = np.array([[1, 0, 0],
+                       [0, 1, 0]], dtype=np.float_)
+
+cell_class = tvtk.Quad().cell_type
+print 'cell_class', cell_class
+n_E, n_i, n_a = x_Eia.shape
+n_Ei = n_E * n_i
+print x_Eia.shape
+points = np.einsum('Ia,ab->Ib', x_Eia.reshape(-1, n_c), delta23_ab)
+ug = tvtk.UnstructuredGrid(points=points)
+ug.set_cells(cell_class, np.arange(n_Ei).reshape(n_E, n_i))
+
+vectors = np.einsum('Ia,ab->Ib', d_Eia.reshape(-1, n_c), delta23_ab)
+ug.point_data.vectors = vectors
+ug.point_data.vectors.name = 'displacement'
+# Now view the data.
+warp_arr = tvtk.DoubleArray(name='displacement')
+warp_arr.from_array(vectors)
+ug.point_data.add_array(warp_arr)
+
+eps_Encd = tensors = np.einsum('...ab,ac,bd->...cd',
+                               eps_Enab, delta23_ab, delta23_ab)
+tensors = eps_Encd[:, :, [0, 1, 2, 0, 1, 2], [0, 1, 2, 1, 2, 0]].reshape(-1, 6)
+tensors = eps_Encd.reshape(-1, 9)
+print tensors.shape
+ug.point_data.tensors = tensors
+
+ug.point_data.tensors.name = 'strain'
 
 
-K_inv_Eicjd = np.linalg.inv(K_Eicjd.reshape(1, 8, 8))
-print 'K_inv_Eicjd', K_inv_Eicjd
+@mayavi2.standalone
+def view():
+    from mayavi.sources.vtk_data_source import VTKDataSource
+    from mayavi.modules.outline import Outline
+    from mayavi.modules.surface import Surface
+    from mayavi.modules.vectors import Vectors
+    from mayavi.filters.api import WarpVector
+
+    mayavi.new_scene()
+    # The single type one
+    src = VTKDataSource(data=ug)
+    mayavi.add_source(src)
+    mayavi.add_module(Outline())
+    mayavi.add_module(Surface())
+    mayavi.add_module(Vectors())
+    mayavi.add_filter(WarpVector())
 
 
-f_Eic = np.zeros([1, 4, 2])
-f_Eic[0, 0, 0] = 1.0
-
-u = np.einsum('Eicjd,Eic->jd', K_inv_Eicjd.reshape(1, 4, 2, 4, 2), f_Eic)
-print u
+if __name__ == '__main__':
+    view()
