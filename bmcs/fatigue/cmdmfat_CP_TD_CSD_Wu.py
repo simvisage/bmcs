@@ -134,9 +134,9 @@ class MATSEvalMicroplaneFatigue(HasTraits):
     # microplane constitutive law (normal behavior CP + TD)
     #------------------------------------------------------
     def get_normal_law(self, eps, sctx):
-
+        # normal stiffness
         E_N = self.E / (1.0 - 2.0 * self.nu)
-
+        # state variables
         w_N = sctx[:, 0]
         z_N = sctx[:, 1]
         alpha_N = sctx[:, 2]
@@ -152,6 +152,7 @@ class MATSEvalMicroplaneFatigue(HasTraits):
 
         h = self.sigma_0 + Z
         pos_iso = h > 1e-6
+        # plasticity yield function
         f_trial = abs(sigma_n_trial - X) - h * pos_iso
 
         thres_1 = f_trial > 1e-6
@@ -168,7 +169,7 @@ class MATSEvalMicroplaneFatigue(HasTraits):
         f = Y_N - (Y_0 + Z_N(z_N))
 
         thres_2 = f > 1e-6
-
+        # damage threshold function
         f_w = lambda Y: 1 - 1. / (1 + self.Ad * (Y - Y_0))
         w_N = f_w(Y_N) * thres_2
         z_N = - w_N * thres_2
@@ -789,7 +790,7 @@ if __name__ == '__main__':
     s_history_2 = [-0, -0.001, -0.00034, -
                    0.0015, -0.00065, -0.0020, -0.00097,
                    -0.0027, -0.00145, -0.004, -0.0022, -0.0055,
-                   -0.0031, -0.007, -0.004, -0.008, -0.0045, -.009,
+                   -0.0031, -0.007, -0.004, -0.008, -0.0046, -.009,
                    -0.0052, -0.01, -0.0058, -0.012, -0.0068, -0.015]
 
     #s_history_2 = [0, 0.02]
@@ -842,8 +843,8 @@ if __name__ == '__main__':
              linewidth=1, label='sigma_11_(cyclic)')
 
     plt.title('$\sigma - \epsilon$')
-    plt.xlabel('Strain')
-    plt.ylabel('Stress(MPa)')
+    plt.xlabel('strain')
+    plt.ylabel('stress(MPa)')
     plt.axhline(y=0, color='k', linewidth=1, alpha=0.5)
     plt.axvline(x=0, color='k', linewidth=1, alpha=0.5)
     plt.legend()
@@ -858,8 +859,8 @@ if __name__ == '__main__':
         plt.plot(
             eps_2[:, 0, 0], w_2_N[:, i], linewidth=1.0, label='monotonic', alpha=1)
 
-        plt.xlabel('Strain')
-        plt.ylabel('Damage')
+        plt.xlabel('strain')
+        plt.ylabel('damage')
         plt.title(' normal damage for all microplanes')
 
     #---------------------------------------------------------
