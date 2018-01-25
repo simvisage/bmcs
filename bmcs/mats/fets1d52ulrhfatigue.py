@@ -199,7 +199,7 @@ class FETS1D52ULRHFatigue(FETSEval):
 
         return B
 
-    def get_B_EimsC(self, dN_Eimd, sN_Cim):
+    def _get_B_EimsC(self, dN_Eimd, sN_Cim):
 
         n_E, n_i, n_m, n_d = dN_Eimd.shape
         n_C, n_i, n_m = sN_Cim.shape

@@ -6,9 +6,14 @@ from ibvpy.fets.fets_eval import FETSEval
 from scipy.linalg import \
     inv
 from traits.api import \
-    Array, Float, Int, Property, cached_property
+    Array, Float, Int, Property, cached_property, \
+    List
 
 import numpy as np
+import sympy as sp
+
+
+r_, s_ = sp.symbols('r, s')
 
 
 print sys.path
@@ -72,12 +77,6 @@ class FETS2D4Q(FETSEval):
     #vtk_point_ip_map = [0,1,3,2]
     n_nodal_dofs = Int(2)
 
-    A_C = Property(depends_on='A_m,A_f')
-
-    @cached_property
-    def _get_A_C(self):
-        return np.array((1.0, 1.0, 1.0), dtype=np.float_)
-
     #---------------------------------------------------------------------
     # Method required to represent the element geometry
     #---------------------------------------------------------------------
@@ -139,6 +138,112 @@ class FETS2D4Q(FETSEval):
             Bx_mtx[2, i * 2] = dNx_mtx[1, i]
             Bx_mtx[2, i * 2 + 1] = dNx_mtx[0, i]
         return Bx_mtx
+
+    r_m = Array(value=[[-1], [1]], dtype=np.float_)
+    w_m = Array(value=[1, 1], dtype=np.float_)
+
+    dNr_i_geo = List([- 1.0 / 2.0,
+                      1.0 / 2.0, ])
+
+    Nr_i = Nr_i_geo
+    dNr_i = dNr_i_geo
+
+    N_mi_geo = Property()
+
+    @cached_property
+    def _get_N_mi_geo(self):
+        self.get_N_mi(sp.Matrix(self.Nr_i_geo, dtype=np.float_))
+
+    dN_mid_geo = Property()
+
+    @cached_property
+    def _get_dN_mid_geo(self):
+        return self.get_dN_mid(sp.Matrix(self.dNr_i_geo, dtype=np.float_))
+
+    N_mi = Property()
+
+    @cached_property
+    def _get_N_mi(self):
+        return self.get_N_mi(sp.Matrix(self.Nr_i, dtype=np.float_))
+
+    dN_mid = Property()
+
+    @cached_property
+    def _get_dN_mid(self):
+        return self.get_dN_mid(sp.Matrix(self.dNr_i, dtype=np.float_))
+
+    def get_N_mi(self, Nr_i):
+        return np.array([Nr_i.subs(r_, r)
+                         for r in self.r_m], dtype=np.float_)
+
+    def get_dN_mid(self, dNr_i):
+        dN_mdi = np.array([[dNr_i.subs(r_, r)]
+                           for r in self.r_m], dtype=np.float_)
+        return np.einsum('mdi->mid', dN_mdi)
+
+    n_m = Property(depends_on='w_m')
+
+    @cached_property
+    def _get_n_m(self):
+        return len(self.w_m)
+
+    A_C = Property(depends_on='A_m,A_f')
+
+    @cached_property
+    def _get_A_C(self):
+        return np.array((self.A_f, self.P_b, self.A_m), dtype=np.float_)
+
+    def get_B_EmisC(self, J_inv_Emdd):
+        fets_eval = self
+
+        n_dof_r = fets_eval.n_dof_r
+        n_nodal_dofs = fets_eval.n_nodal_dofs
+
+        n_m = fets_eval.n_gp
+        n_E = J_inv_Emdd.shape[0]
+        n_s = 3
+        #[ d, i]
+        r_ip = fets_eval.ip_coords[:, :-2].T
+        # [ d, n ]
+        geo_r = fets_eval.geo_r.T
+        # [ d, n, i ]
+        dNr_geo = geo_r[:, :, None] * np.array([1, 1]) * 0.5
+        # [ i, n, d ]
+        dNr_geo = np.einsum('dni->ind', dNr_geo)
+
+        # shape function for the unknowns
+        # [ d, n, i]
+        Nr = 0.5 * (1. + geo_r[:, :, None] * r_ip[None, :])
+        dNr = 0.5 * geo_r[:, :, None] * np.array([1, 1])
+
+        # [ i, n, d ]
+        Nr = np.einsum('dni->ind', Nr)
+        dNr = np.einsum('dni->ind', dNr)
+        Nx = Nr
+        # [ n_e, n_ip, n_dof_r, n_dim_dof ]
+        dNx = np.einsum('eidf,inf->eind', J_inv_Emdd, dNr)
+
+        B = np.zeros((n_E, n_m, n_dof_r, n_s, n_nodal_dofs), dtype='f')
+        B_N_n_rows, B_N_n_cols, N_idx = [1, 1], [0, 1], [0, 0]
+        B_dN_n_rows, B_dN_n_cols, dN_idx = [0, 2], [0, 1], [0, 0]
+        B_factors = np.array([-1, 1], dtype='float_')
+        B[:, :, :, B_N_n_rows, B_N_n_cols] = (B_factors[None, None, :] *
+                                              Nx[:, :, N_idx])
+        B[:, :, :, B_dN_n_rows, B_dN_n_cols] = dNx[:, :, :, dN_idx]
+
+        return B
+
+    def get_B_EimsC(self, dN_Eimd, sN_Cim):
+
+        n_E, n_i, n_m, n_d = dN_Eimd.shape
+        n_C, n_i, n_m = sN_Cim.shape
+        n_s = 3
+        B_EimsC = np.zeros(
+            (n_E, n_i, n_m, n_s, n_C), dtype='f')
+        B_EimsC[..., [1, 1], [0, 1]] = sN_Cim[[0, 1], :, :]
+        B_EimsC[..., [0, 2], [0, 1]] = dN_Eimd[:, [0, 1], :, :]
+
+        return B_EimsC
 
 
 #----------------------- example --------------------

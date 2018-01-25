@@ -442,7 +442,7 @@ def run_bending3pt_elastic():
     po.loading_scenario.set(loading_type='monotonic')
     Pu = po.rt_Pu
     w = BMCSWindow(model=po)
-    Pu.add_viz2d('diagram')
+    Pu.add_viz2d('diagram', 'Pu')
 
     print po.control_bc.slice
     print po.control_bc.slice.fe_grid

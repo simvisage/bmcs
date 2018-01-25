@@ -429,18 +429,19 @@ def run_pullout_multilinear():
 
 
 def run_with_new_state():
-    po = PullOutModel(n_e_x=100, k_max=1000, w_max=0.001)
+    po = PullOutModel(n_e_x=100, k_max=1000, w_max=0.05)
     po.mats_eval_type = 'damage-plasticity'
-    po.tline.step = 0.01
+    po.tline.step = 0.001
     po.loading_scenario.set(loading_type='cyclic')
-    po.loading_scenario.set(number_of_cycles=1)
+    po.loading_scenario.set(number_of_cycles=5)
     po.geometry.L_x = 45.0
     po.cross_section.set(A_f=64.0, P_b=28.0, A_m=28000.0)
-    po.material.set(K=-0.2, gamma=0.0, tau_bar=13.137)
+    po.material.set(K=-0.0, gamma=-500, tau_bar=13.137)
     po.material.set(E_m=35000.0, E_f=170000.0, E_b=6700.0)
-    po.material.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=0.01)
+    po.material.omega_fn.set(alpha_1=1.0, alpha_2=100.0, plot_max=0.01)
+#    po.material.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=0.01)
     po.run()
-    print 'U_n', po.tloop.U_n
+    po.rt_Pu.trace.configure_traits()
 
 
 def run_pullout_multi(*args, **kw):
@@ -471,5 +472,5 @@ def run_pullout_multi(*args, **kw):
 
 
 if __name__ == '__main__':
-    run_pullout_multi()
-    # run_with_new_state()
+    # run_pullout_multi()
+    run_with_new_state()

@@ -14,7 +14,7 @@ import pylab as p
 class PullOutMultilinearBondStudy(BMCSWindow):
 
     title = 'Pullout with piecewise linear bond-slip law'
-    desc = '''The pull-out response is calculated for specifying the values 
+    desc = '''The pull-out response is calculated for 
     explicitly specified bond-slip law.
 '''
 

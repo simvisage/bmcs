@@ -134,7 +134,7 @@ class MFnLineArray(BMCSLeafNode):
         y_dx = self.diff(x, k=1, der=1)
         ax_dx.plot(x, y_dx, *args + ('-',), **kw)
 
-    plot_diff = Bool(True)
+    plot_diff = Bool(False)
 
     def replot(self):
         self.figure.clf()
