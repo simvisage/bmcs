@@ -8,8 +8,11 @@ Example (2D discretization)
 @author: rch, abaktheer
 '''
 
+from ibvpy.api import FEGrid, FETSEval
+from ibvpy.fets import fets2D
 from mathkit.matrix_la import \
     SysMtxArray, SysMtxAssembly
+from mayavi.modules.surface import Surface
 from mayavi.scripts import mayavi2
 from tvtk.api import \
     tvtk
@@ -17,6 +20,7 @@ from tvtk.api import \
 import numpy as np
 import pylab as p
 import sympy as sp
+import traits.api as tr
 from tvtk.tvtk_classes import tvtk_helper
 
 
@@ -97,38 +101,44 @@ print 'dN_ima', dN_imr
 print 'dN_ima.shape', dN_imr.shape
 print '*************************'
 
-L_x, L_y = 20, 10
 
-x_Ia = np.array([[0, 0],
-                 [L_x / 2., 0],
-                 [0, L_y],
-                 [L_x / 2., L_y],
-                 [L_x, 0],
-                 [L_x, L_y]], dtype=np.float_)
-print 'x_Ia', x_Ia
+class FETS2D4u4x(FETSEval):
+    dof_r = tr.Array(value=[[-1, -1], [1, -1], [1, 1], [-1, 1]])
+    geo_r = tr.Array(value=[[-1, -1], [1, -1], [1, 1], [-1, 1]])
+    vtk_r = [[-1, -1], [1, -1], [1, 1], [-1, 1]]
+    n_nodal_dofs = 2
+
+
+# Discretization
+L_x, L_y = 200, 100
+mesh = FEGrid(coord_max=(L_x, L_y),
+              shape=(100, 30),
+              fets_eval=FETS2D4u4x())
+
+x_Ia = mesh.X_Id
+# print 'x_Ia', x_Ia
 
 n_I, n_a = x_Ia.shape
 dof_Ia = np.arange(n_I * n_a, dtype=np.int_).reshape(n_I, -1)
-print 'dof_Ia', dof_Ia
+# print 'dof_Ia', dof_Ia
 
-I_Ei = np.array([[0, 1, 3, 2],
-                 [1, 4, 5, 3]], dtype=np.int_)
-print 'I_Ei', I_Ei
+I_Ei = mesh.I_Ei
+# print 'I_Ei', I_Ei
 
 x_Eia = x_Ia[I_Ei, :]
-print 'x_Eia', x_Eia
+# print 'x_Eia', x_Eia
 
 dof_Eia = dof_Ia[I_Ei]
-print 'dof_Eia', dof_Eia
+# print 'dof_Eia', dof_Eia
 
 x_Ema = np.einsum('im,Eia->Ema', N_im, x_Eia)
-print 'x_Ema', x_Ema
+# print 'x_Ema', x_Ema
 
 J_Emar = np.einsum('imr,Eia->Emar', dN_imr, x_Eia)
 J_Enar = np.einsum('inr,Eia->Enar', dN_inr, x_Eia)
 
 det_J_Em = np.linalg.det(J_Emar)
-print 'det(J_Em)', det_J_Em
+# print 'det(J_Em)', det_J_Em
 
 inv_J_Emar = np.linalg.inv(J_Emar)
 inv_J_Enar = np.linalg.inv(J_Enar)
@@ -160,45 +170,30 @@ D_ab[1, 0] = E / (1.0 - nu * nu) * nu
 D_ab[1, 1] = E / (1.0 - nu * nu)
 D_ab[2, 2] = E / (1.0 - nu * nu) * (1.0 / 2.0 - nu / 2.0)
 
+map2d_ijkl2a = np.array([[[[0, 0],
+                           [0, 0]],
+                          [[2, 2],
+                           [2, 2]]],
+                         [[[2, 2],
+                           [2, 2]],
+                          [[1, 1],
+                             [1, 1]]]])
+map2d_ijkl2b = np.array([[[[0, 2],
+                           [2, 1]],
+                          [[0, 2],
+                           [2, 1]]],
+                         [[[0, 2],
+                           [2, 1]],
+                          [[0, 2],
+                             [2, 1]]]])
 
-def map2d_ijkl2mn(i, j, k, l):
-    '''
-    Map the four-rank indexes to the two-rank matrix using the major
-    and minor symmetry.
-    '''
-    # first two indices (ij)
-    if i == 0 and j == 0:
-        m = 0
-    elif i == 1 and j == 1:
-        m = 1
-    elif (i == 0 and j == 1) or (i == 1 and j == 0):
-        m = 2
-
-    # second two indices (kl)
-    if k == 0 and l == 0:
-        n = 0
-    elif k == 1 and l == 1:
-        n = 1
-    elif (k == 0 and l == 1) or (k == 1 and l == 0):
-        n = 2
-
-    return m, n
-
-
-D_abef = np.zeros([2, 2, 2, 2])
-for i in range(0, 2):
-    for j in range(0, 2):
-        for k in range(0, 2):
-            for l in range(0, 2):
-                D_abef[i, j, k, l] = D_ab[map2d_ijkl2mn(i, j, k, l)]
-
+D_abef = D_ab[map2d_ijkl2a, map2d_ijkl2b]
 # print 'D_stress', D_abef
-print 'D_stress', D_abef.shape
-
+# print 'D_stress', D_abef.shape
 
 K_Eicjd = np.einsum('Emicjdabef,abef->Eicjd',
                     BB_Emicjdabef, D_abef)
-print 'K_Eicjd', K_Eicjd.shape
+# print 'K_Eicjd', K_Eicjd.shape
 n_E, n_i, n_c, n_j, n_d = K_Eicjd.shape
 K_E = K_Eicjd.reshape(n_E, n_i * n_c, n_j * n_d)
 # print 'K_Eicjd', K_E
@@ -206,34 +201,34 @@ dof_E = dof_Eia.reshape(n_E, n_i * n_c)
 K_subdomain = SysMtxArray(mtx_arr=K_E, dof_map_arr=dof_E)
 K = SysMtxAssembly()
 K.sys_mtx_arrays.append(K_subdomain)
-print 'K', K
-K.register_constraint(0, 0)
-K.register_constraint(1, 0)
-K.register_constraint(4, 0)
+# print 'K', K
+print '-----------------------------------------'
+fixed_dofs = mesh[0, :, 0, :].dofs.flatten()
+for dof in fixed_dofs:
+    K.register_constraint(dof, 0)
 F = np.zeros((dof_Ia.size))
 K.apply_constraints(F)
-print F.shape
-F[9] = 1000.0
-F[11] = 1000.0
+# print F.shape
+loaded_dofs = mesh[-1, :, -1, :].dofs.flatten()
+for dof in loaded_dofs:
+    F[dof] = 1000.0
 U = K.solve(F)
-print 'U', U
+# print 'U', U
 
 d_Ia = U.reshape(-1, n_c)
 d_Eia = d_Ia[I_Ei]
 eps_Enab = np.einsum('Einabc,Eic->Enab', B_Einabc, d_Eia)
-print 'eps_Emab', eps_Enab
+# print 'eps_Emab', eps_Enab
 
 sig_Enab = np.einsum('abef,Emef->Emab', D_abef, eps_Enab)
-print 'sig_Emab', sig_Enab
+# print 'sig_Emab', sig_Enab
 
 delta23_ab = np.array([[1, 0, 0],
                        [0, 1, 0]], dtype=np.float_)
 
 cell_class = tvtk.Quad().cell_type
-print 'cell_class', cell_class
 n_E, n_i, n_a = x_Eia.shape
 n_Ei = n_E * n_i
-print x_Eia.shape
 points = np.einsum('Ia,ab->Ib', x_Eia.reshape(-1, n_c), delta23_ab)
 ug = tvtk.UnstructuredGrid(points=points)
 ug.set_cells(cell_class, np.arange(n_Ei).reshape(n_E, n_i))
@@ -250,9 +245,7 @@ eps_Encd = tensors = np.einsum('...ab,ac,bd->...cd',
                                eps_Enab, delta23_ab, delta23_ab)
 tensors = eps_Encd[:, :, [0, 1, 2, 0, 1, 2], [0, 1, 2, 1, 2, 0]].reshape(-1, 6)
 tensors = eps_Encd.reshape(-1, 9)
-print tensors.shape
 ug.point_data.tensors = tensors
-
 ug.point_data.tensors.name = 'strain'
 
 
@@ -262,16 +255,29 @@ def view():
     from mayavi.modules.outline import Outline
     from mayavi.modules.surface import Surface
     from mayavi.modules.vectors import Vectors
-    from mayavi.filters.api import WarpVector
+    from mayavi.filters.api import WarpVector, ExtractTensorComponents
 
     mayavi.new_scene()
     # The single type one
     src = VTKDataSource(data=ug)
     mayavi.add_source(src)
-    mayavi.add_module(Outline())
-    mayavi.add_module(Surface())
-    mayavi.add_module(Vectors())
-    mayavi.add_filter(WarpVector())
+    warp_vector = WarpVector()
+    mayavi.add_filter(warp_vector, src)
+    surface = Surface()
+    mayavi.add_filter(surface, warp_vector)
+
+    etc = ExtractTensorComponents()
+    mayavi.add_filter(etc, warp_vector)
+    surface2 = Surface()
+    mayavi.add_filter(surface2, etc)
+    etc.filter.scalar_mode = 'component'
+
+    lut = etc.children[0]
+    lut.scalar_lut_manager.show_scalar_bar = True
+    lut.scalar_lut_manager.show_legend = True
+    lut.scalar_lut_manager.scalar_bar.height = 0.8
+    lut.scalar_lut_manager.scalar_bar.width = 0.17
+    lut.scalar_lut_manager.scalar_bar.position = np.array([0.82,  0.1])
 
 
 if __name__ == '__main__':
