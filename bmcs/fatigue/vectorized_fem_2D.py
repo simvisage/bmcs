@@ -9,16 +9,13 @@ Example (2D discretization)
 '''
 
 from ibvpy.api import FEGrid, FETSEval
-from ibvpy.fets import fets2D
 from mathkit.matrix_la import \
     SysMtxArray, SysMtxAssembly
-from mayavi.modules.surface import Surface
 from mayavi.scripts import mayavi2
 from tvtk.api import \
     tvtk
 
 import numpy as np
-import pylab as p
 import sympy as sp
 import traits.api as tr
 from tvtk.tvtk_classes import tvtk_helper
@@ -46,6 +43,10 @@ print 'I_sym_abcd.shape', I_sym_abcd.shape
 xi_1 = sp.symbols('xi_1')
 xi_2 = sp.symbols('xi_2')
 
+#=========================================================================
+# Finite element specification
+#=========================================================================
+
 N_xi_i = sp.Matrix([(1.0 - xi_1) * (1.0 - xi_2) / 4.0,
                     (1.0 + xi_1) * (1.0 - xi_2) / 4.0,
                     (1.0 + xi_1) * (1.0 + xi_2) / 4.0,
@@ -60,176 +61,318 @@ dN_xi_ir = sp.Matrix(((-(1.0 / 4.0) * (1.0 - xi_2), -(1.0 / 4.0) * (1.0 - xi_1))
 
 #dN_xi_ia = N_xi_i.diff('xi_1')
 
-
 print 'N_xi_i', N_xi_i
 print 'dN_xi_ir', dN_xi_ir
 print 'dN_xi_ia.shape', dN_xi_ir.shape
-# numerical integration points (IP) and weights
-xi_m = np.array([[-1.0 / np.sqrt(3.0), -1.0 / np.sqrt(3.0)],
-                 [1.0 / np.sqrt(3.0), -1.0 / np.sqrt(3.0)],
-                 [1.0 / np.sqrt(3.0), 1.0 / np.sqrt(3.0)],
-                 [-1.0 / np.sqrt(3.0), 1.0 / np.sqrt(3.0)]
-                 ], dtype=np.float_
-                )
-
-w_m = np.array([1, 1, 1, 1], dtype=np.float_)
-
-xi_n = np.array([[-1, -1], [1, -1], [1, 1], [-1, 1]], dtype=np.float_)
-vtk_cells = [[0, 1, 2, 3]]
-vtk_cell_types = 'Quad'
-
-print 'xi_m', xi_m
-print 'xi_m.shape', xi_m.shape
-print 'w_m', w_m
-print '*************************'
-
-# the values of the shape functions and their derivatives at the IPs
-N_mi = np.array([N_xi_i.subs(zip([xi_1, xi_2], xi))
-                 for xi in xi_m], dtype=np.float_)
-N_im = np.einsum('mi->im', N_mi)
-dN_mir = np.array([dN_xi_ir.subs(zip([xi_1, xi_2], xi))
-                   for xi in xi_m], dtype=np.float_).reshape(4, 4, 2)
-dN_nir = np.array([dN_xi_ir.subs(zip([xi_1, xi_2], xi))
-                   for xi in xi_n], dtype=np.float_).reshape(4, 4, 2)
-dN_imr = np.einsum('mir->imr', dN_mir)
-dN_inr = np.einsum('nir->inr', dN_nir)
-
-
-print 'N_im', N_im
-print 'N_im.shape', N_im.shape
-print 'dN_ima', dN_imr
-print 'dN_ima.shape', dN_imr.shape
-print '*************************'
 
 
 class FETS2D4u4x(FETSEval):
-    dof_r = tr.Array(value=[[-1, -1], [1, -1], [1, 1], [-1, 1]])
-    geo_r = tr.Array(value=[[-1, -1], [1, -1], [1, 1], [-1, 1]])
-    vtk_r = [[-1, -1], [1, -1], [1, 1], [-1, 1]]
+    dof_r = tr.Array(np.float_,
+                     value=[[-1, -1], [1, -1], [1, 1], [-1, 1]])
+    geo_r = tr.Array(np.float_,
+                     value=[[-1, -1], [1, -1], [1, 1], [-1, 1]])
+    vtk_r = tr.Array(np.float_,
+                     value=[[-1, -1], [1, -1], [1, 1], [-1, 1]])
     n_nodal_dofs = 2
+    vtk_r = tr.Array(np.float_, value=[[-1, -1], [1, -1], [1, 1],
+                                       [-1, 1]])
+    vtk_cells = [[0, 1, 2, 3]]
+    vtk_cell_types = 'Quad'
+
+    # numerical integration points (IP) and weights
+    xi_m = tr.Array(np.float_,
+                    value=[[-1.0 / np.sqrt(3.0), -1.0 / np.sqrt(3.0)],
+                           [1.0 / np.sqrt(3.0), -1.0 / np.sqrt(3.0)],
+                           [1.0 / np.sqrt(3.0), 1.0 / np.sqrt(3.0)],
+                           [-1.0 / np.sqrt(3.0), 1.0 / np.sqrt(3.0)]
+                           ])
+
+    w_m = tr.Array(value=[1, 1, 1, 1], dtype=np.float_)
+
+    shape_function_values = tr.Property(tr.Tuple)
+    '''The values of the shape functions and their derivatives at the IPs
+    '''
+    @tr.cached_property
+    def _get_shape_function_values(self):
+        N_mi = np.array([N_xi_i.subs(zip([xi_1, xi_2], xi))
+                         for xi in self.xi_m], dtype=np.float_)
+        N_im = np.einsum('mi->im', N_mi)
+        dN_mir = np.array([dN_xi_ir.subs(zip([xi_1, xi_2], xi))
+                           for xi in self.xi_m], dtype=np.float_).reshape(4, 4, 2)
+        dN_nir = np.array([dN_xi_ir.subs(zip([xi_1, xi_2], xi))
+                           for xi in self.vtk_r], dtype=np.float_).reshape(4, 4, 2)
+        dN_imr = np.einsum('mir->imr', dN_mir)
+        dN_inr = np.einsum('nir->inr', dN_nir)
+        return (N_im, dN_imr, dN_inr)
+
+    N_im = tr.Property()
+    '''Shape function values in integration poindots.
+    '''
+
+    def _get_N_im(self):
+        return self.shape_function_values[0]
+
+    dN_imr = tr.Property()
+    '''Shape function derivatives in integration poindots.
+    '''
+
+    def _get_dN_imr(self):
+        return self.shape_function_values[1]
+
+    dN_inr = tr.Property()
+    '''Shape function derivatives in visualization poindots.
+    '''
+
+    def _get_dN_inr(self):
+        return self.shape_function_values[2]
 
 
-# Discretization
-L_x, L_y = 200, 100
-mesh = FEGrid(coord_max=(L_x, L_y),
-              shape=(100, 30),
-              fets_eval=FETS2D4u4x())
+class MATSElastic2D(tr.HasStrictTraits):
+    # -----------------------------------------------------------------------------------------------------
+    # Construct the fourth order elasticity tensor for the plane stress case (shape: (2,2,2,2))
+    # -----------------------------------------------------------------------------------------------------
+    E = tr.Float(28000.0, input=True)
+    nu = tr.Float(0.2, input=True)
+    # first Lame paramter
 
-x_Ia = mesh.X_Id
-# print 'x_Ia', x_Ia
+    def _get_lame_params(self):
+        la = self.E * self.nu / ((1 + self.nu) * (1 - 2 * self.nu))
+        # second Lame parameter (shear modulus)
+        mu = self.E / (2 + 2 * self.nu)
+        return la, mu
 
-n_I, n_a = x_Ia.shape
-dof_Ia = np.arange(n_I * n_a, dtype=np.int_).reshape(n_I, -1)
-# print 'dof_Ia', dof_Ia
+    # elasticity matrix (shape: (3,3))
+    D_ab = tr.Property(tr.Array, depends_on='+input')
 
-I_Ei = mesh.I_Ei
-# print 'I_Ei', I_Ei
+    @tr.cached_property
+    def _get_D_ab(self):
+        D_ab = np.zeros([3, 3])
+        E = self.E
+        nu = self.nu
+        D_ab[0, 0] = E / (1.0 - nu * nu)
+        D_ab[0, 1] = E / (1.0 - nu * nu) * nu
+        D_ab[1, 0] = E / (1.0 - nu * nu) * nu
+        D_ab[1, 1] = E / (1.0 - nu * nu)
+        D_ab[2, 2] = E / (1.0 - nu * nu) * (1.0 / 2.0 - nu / 2.0)
+        return D_ab
 
-x_Eia = x_Ia[I_Ei, :]
-# print 'x_Eia', x_Eia
+    map2d_ijkl2a = tr.Array(np.int_, value=[[[[0, 0],
+                                              [0, 0]],
+                                             [[2, 2],
+                                              [2, 2]]],
+                                            [[[2, 2],
+                                              [2, 2]],
+                                             [[1, 1],
+                                                [1, 1]]]])
+    map2d_ijkl2b = tr.Array(np.int_, value=[[[[0, 2],
+                                              [2, 1]],
+                                             [[0, 2],
+                                              [2, 1]]],
+                                            [[[0, 2],
+                                              [2, 1]],
+                                             [[0, 2],
+                                                [2, 1]]]])
 
-dof_Eia = dof_Ia[I_Ei]
-# print 'dof_Eia', dof_Eia
+    D_abef = tr.Property(tr.Array, depends_on='+input')
 
-x_Ema = np.einsum('im,Eia->Ema', N_im, x_Eia)
-# print 'x_Ema', x_Ema
+    @tr.cached_property
+    def _get_D_abef(self):
+        return self.D_ab[self.map2d_ijkl2a, self.map2d_ijkl2b]
 
-J_Emar = np.einsum('imr,Eia->Emar', dN_imr, x_Eia)
-J_Enar = np.einsum('inr,Eia->Enar', dN_inr, x_Eia)
+    def get_corr_pred(self, eps_Emab, deps_Emab, t):
+        D_Emabef = self.D_abef[None, None, :, :, :, :]
+        sig_Emab = np.einsum('...abef,...ef->...ab',
+                             D_Emabef, eps_Emab)
 
-det_J_Em = np.linalg.det(J_Emar)
-# print 'det(J_Em)', det_J_Em
+        return D_Emabef, sig_Emab
 
-inv_J_Emar = np.linalg.inv(J_Emar)
-inv_J_Enar = np.linalg.inv(J_Enar)
-# print 'inv(J_Emar)', inv_J_Emar
 
-B_Eimabc = np.einsum('abcd,imr,Eidr->Eimabc', I_sym_abcd, dN_imr, inv_J_Emar)
-# print 'eps_Emab', eps_Emab
-B_Einabc = np.einsum('abcd,inr,Eidr->Einabc', I_sym_abcd, dN_inr, inv_J_Enar)
+class DOTSGrid(tr.HasStrictTraits):
+    L_x = tr.Float(200, input=True)
+    L_y = tr.Float(100, input=True)
+    n_x = tr.Int(100, input=True)
+    n_y = tr.Int(30, input=True)
+    fets = tr.Instance(FETSEval, input=True)
+    mats = tr.Instance(MATSElastic2D, input=True)
+    mesh = tr.Property(tr.Instance(FEGrid), depends_on='+input')
 
-BB_Emicjdabef = np.einsum('Eimabc,Ejmefd, Em, m->Emicjdabef',
-                          B_Eimabc, B_Eimabc, det_J_Em, w_m)
-# print 'BB_Emicjdabef', BB_Emicjdabef
+    @tr.cached_property
+    def _get_mesh(self):
+        return FEGrid(coord_max=(self.L_x, self.L_y),
+                      shape=(self.n_x, self.n_y),
+                      fets_eval=self.fets)
 
-# -----------------------------------------------------------------------------------------------------
-# Construct the fourth order elasticity tensor for the plane stress case (shape: (2,2,2,2))
-# -----------------------------------------------------------------------------------------------------
-E = 28000.0
-nu = 0.2
-# first Lame paramter
-la = E * nu / ((1 + nu) * (1 - 2 * nu))
-# second Lame parameter (shear modulus)
-mu = E / (2 + 2 * nu)
+    cached_grid_values = tr.Property(tr.Tuple,
+                                     depends_on='+input')
 
-# elasticity matrix (shape: (3,3))
-D_ab = np.zeros([3, 3])
-D_ab[0, 0] = E / (1.0 - nu * nu)
-D_ab[0, 1] = E / (1.0 - nu * nu) * nu
-D_ab[1, 0] = E / (1.0 - nu * nu) * nu
-D_ab[1, 1] = E / (1.0 - nu * nu)
-D_ab[2, 2] = E / (1.0 - nu * nu) * (1.0 / 2.0 - nu / 2.0)
+    @tr.cached_property
+    def _get_cached_grid_values(self):
+        x_Ia = self.mesh.X_Id
+        # print 'x_Ia', x_Ia
 
-map2d_ijkl2a = np.array([[[[0, 0],
-                           [0, 0]],
-                          [[2, 2],
-                           [2, 2]]],
-                         [[[2, 2],
-                           [2, 2]],
-                          [[1, 1],
-                             [1, 1]]]])
-map2d_ijkl2b = np.array([[[[0, 2],
-                           [2, 1]],
-                          [[0, 2],
-                           [2, 1]]],
-                         [[[0, 2],
-                           [2, 1]],
-                          [[0, 2],
-                             [2, 1]]]])
+        n_I, n_a = x_Ia.shape
+        dof_Ia = np.arange(n_I * n_a, dtype=np.int_).reshape(n_I, -1)
+        # print 'dof_Ia', dof_Ia
 
-D_abef = D_ab[map2d_ijkl2a, map2d_ijkl2b]
-# print 'D_stress', D_abef
-# print 'D_stress', D_abef.shape
+        I_Ei = self.mesh.I_Ei
+        # print 'I_Ei', I_Ei
 
-K_Eicjd = np.einsum('Emicjdabef,abef->Eicjd',
-                    BB_Emicjdabef, D_abef)
-# print 'K_Eicjd', K_Eicjd.shape
-n_E, n_i, n_c, n_j, n_d = K_Eicjd.shape
-K_E = K_Eicjd.reshape(n_E, n_i * n_c, n_j * n_d)
-# print 'K_Eicjd', K_E
-dof_E = dof_Eia.reshape(n_E, n_i * n_c)
-K_subdomain = SysMtxArray(mtx_arr=K_E, dof_map_arr=dof_E)
+        x_Eia = x_Ia[I_Ei, :]
+        # print 'x_Eia', x_Eia
+
+        dof_Eia = dof_Ia[I_Ei]
+        # print 'dof_Eia', dof_Eia
+
+        x_Ema = np.einsum('im,Eia->Ema', self.fets.N_im, x_Eia)
+        # print 'x_Ema', x_Ema
+
+        J_Emar = np.einsum('imr,Eia->Emar', self.fets.dN_imr, x_Eia)
+        J_Enar = np.einsum('inr,Eia->Enar', self.fets.dN_inr, x_Eia)
+
+        det_J_Em = np.linalg.det(J_Emar)
+        # print 'det(J_Em)', det_J_Em
+
+        inv_J_Emar = np.linalg.inv(J_Emar)
+        inv_J_Enar = np.linalg.inv(J_Enar)
+        # print 'inv(J_Emar)', inv_J_Emar
+
+        B_Eimabc = np.einsum('abcd,imr,Eidr->Eimabc',
+                             I_sym_abcd, self.fets.dN_imr, inv_J_Emar)
+        # print 'eps_Emab', eps_Emab
+        B_Einabc = np.einsum('abcd,inr,Eidr->Einabc',
+                             I_sym_abcd, self.fets.dN_inr, inv_J_Enar)
+
+        BB_Emicjdabef = np.einsum('Eimabc,Ejmefd, Em, m->Emicjdabef',
+                                  B_Eimabc, B_Eimabc, det_J_Em,
+                                  self.fets.w_m)
+
+        return (BB_Emicjdabef, B_Eimabc,
+                dof_Eia, x_Eia, dof_Ia, I_Ei,
+                B_Einabc, det_J_Em)
+
+    BB_Emicjdabef = tr.Property()
+    '''
+    '''
+
+    def _get_BB_Emicjdabef(self):
+        return self.cached_grid_values[0]
+
+    B_Eimabc = tr.Property()
+    '''.
+    '''
+
+    def _get_B_Eimabc(self):
+        return self.cached_grid_values[1]
+
+    dof_Eia = tr.Property()
+    '''.
+    '''
+
+    def _get_dof_Eia(self):
+        return self.cached_grid_values[2]
+
+    x_Eia = tr.Property()
+    '''.
+    '''
+
+    def _get_x_Eia(self):
+        return self.cached_grid_values[3]
+
+    dof_Ia = tr.Property()
+    '''.
+    '''
+
+    def _get_dof_Ia(self):
+        return self.cached_grid_values[4]
+
+    I_Ei = tr.Property()
+    '''.
+    '''
+
+    def _get_I_Ei(self):
+        return self.cached_grid_values[5]
+
+    B_Einabc = tr.Property()
+    '''.
+    '''
+
+    def _get_B_Einabc(self):
+        return self.cached_grid_values[6]
+
+    det_J_Em = tr.Property()
+    '''.
+    '''
+
+    def _get_det_J_Em(self):
+        return self.cached_grid_values[7]
+
+    def get_corr_pred(self, U, dU, t):
+
+        n_c = self.fets.n_nodal_dofs
+        U_Ia = U.reshape(-1, n_c)
+        U_Eia = U_Ia[self.I_Ei]
+        eps_Emab = np.einsum('Eimabc,Eic->Emab', self.B_Eimabc, U_Eia)
+        dU_Ia = U.reshape(-1, n_c)
+        dU_Eia = dU_Ia[self.I_Ei]
+        deps_Emab = np.einsum('Eimabc,Eic->Emab', self.B_Eimabc, dU_Eia)
+        D_Emabef, sig_Emab = self.mats.get_corr_pred(eps_Emab, deps_Emab, t)
+        K_Eicjd = np.einsum('Emicjdabef,Emabef->Eicjd',
+                            self.BB_Emicjdabef, D_Emabef)
+        n_E, n_i, n_c, n_j, n_d = K_Eicjd.shape
+        K_E = K_Eicjd.reshape(n_E, n_i * n_c, n_j * n_d)
+        dof_E = dots.dof_Eia.reshape(n_E, n_i * n_c)
+        K_subdomain = SysMtxArray(mtx_arr=K_E, dof_map_arr=dof_E)
+
+        f_Eic = np.einsum('m,Eimabc,Emab,Em->Eic',
+                          self.fets.w_m, self.B_Eimabc, sig_Emab,
+                          self.det_J_Em)
+        f_Ei = f_Eic.reshape(-1, n_i * n_c)
+        F_dof = np.bincount(dof_E.flatten(), weights=f_Ei.flatten())
+        F_int = F_dof
+
+        return K_subdomain, F_int
+
+
+mats2d_elastic = MATSElastic2D()
+fets2d_4u_4q = FETS2D4u4x()
+dots = DOTSGrid(fets=fets2d_4u_4q,
+                mats=mats2d_elastic)
+
 K = SysMtxAssembly()
+U = np.zeros((dots.mesh.n_dofs,), dtype=np.float_)
+dU = np.copy(U)
+K_subdomain, F_int = dots.get_corr_pred(U, dU, 0)
 K.sys_mtx_arrays.append(K_subdomain)
 # print 'K', K
 print '-----------------------------------------'
-fixed_dofs = mesh[0, :, 0, :].dofs.flatten()
+fixed_dofs = dots.mesh[0, :, 0, :].dofs.flatten()
 for dof in fixed_dofs:
     K.register_constraint(dof, 0)
-F = np.zeros((dof_Ia.size))
+F = np.zeros((dots.dof_Ia.size))
 K.apply_constraints(F)
 # print F.shape
-loaded_dofs = mesh[-1, :, -1, :].dofs.flatten()
+loaded_dofs = dots.mesh[-1, :, -1, :].dofs.flatten()
 for dof in loaded_dofs:
     F[dof] = 1000.0
 U = K.solve(F)
 # print 'U', U
 
+n_c = fets2d_4u_4q.n_nodal_dofs
 d_Ia = U.reshape(-1, n_c)
-d_Eia = d_Ia[I_Ei]
-eps_Enab = np.einsum('Einabc,Eic->Enab', B_Einabc, d_Eia)
+d_Eia = d_Ia[dots.I_Ei]
+eps_Enab = np.einsum('Einabc,Eic->Enab', dots.B_Einabc, d_Eia)
 # print 'eps_Emab', eps_Enab
 
-sig_Enab = np.einsum('abef,Emef->Emab', D_abef, eps_Enab)
+sig_Enab = np.einsum('abef,Emef->Emab', mats2d_elastic.D_abef, eps_Enab)
 # print 'sig_Emab', sig_Enab
 
 delta23_ab = np.array([[1, 0, 0],
                        [0, 1, 0]], dtype=np.float_)
 
 cell_class = tvtk.Quad().cell_type
-n_E, n_i, n_a = x_Eia.shape
+n_E, n_i, n_a = dots.x_Eia.shape
 n_Ei = n_E * n_i
-points = np.einsum('Ia,ab->Ib', x_Eia.reshape(-1, n_c), delta23_ab)
+points = np.einsum('Ia,ab->Ib', dots.x_Eia.reshape(-1, n_c), delta23_ab)
 ug = tvtk.UnstructuredGrid(points=points)
 ug.set_cells(cell_class, np.arange(n_Ei).reshape(n_E, n_i))
 
