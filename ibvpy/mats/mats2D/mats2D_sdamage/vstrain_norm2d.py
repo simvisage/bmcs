@@ -1,11 +1,12 @@
 from math import sqrt, fabs
-
 from ibvpy.mats.mats2D.mats2D_tensor import map2d_sig_eng_to_mtx
 from numpy import where, zeros, dot, diag, linalg
 from traits.api import HasTraits, Float
-
+import numpy as np
 
 #from numpy.dual import *
+
+
 class IStrainNorm2D(HasTraits):
 
     def get_f_trial(self, epsilon, D_el, E, nu, kappa):
@@ -127,12 +128,20 @@ class Rankine(IStrainNorm2D):
     computes main stresses and makes a norm of their positive part
     '''
 
-    def get_f_trial(self, epsilon, D_el, E, nu, kappa):
-        sigma_I = linalg.eigh(map2d_sig_eng_to_mtx(
-            dot(D_el, epsilon)))[0]  # main stresses
-        # positive part and norm
-        eps_eqv = linalg.norm(where(sigma_I >= 0., sigma_I, zeros(2))) / E
-        return eps_eqv - kappa
+    def get_f_trial(self, eps_Emef,
+                    D_abef,
+                    E,
+                    nu,
+                    kappa_Em):
+
+        sig_Emab = np.einsum('abef,Emef->Emab', D_abef, eps_Emef)
+        sig_I_Emc = np.linalg.eigh(sig_Emab)[0]
+        sig2_I_Em = np.zeros_like(sig_I_Emc)
+        sig_idx = np.where(sig_I_Emc >= 0)
+        sig2_I_Em[sig_idx] = sig_I_Emc[sig_idx]
+        eps_eq_Em = np.linalg.norm(sig2_I_Em, axis=2) / E
+        f_trial_Em = eps_eq_Em - kappa_Em
+        return f_trial_Em
 
     def get_dede(self, epsilon, D_el, E, nu):
         dede = zeros(3)

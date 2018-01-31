@@ -1,30 +1,26 @@
 
-from traits.api import \
-     Enum, Float, HasTraits, Enum, \
-     Instance, Trait, Range, HasTraits, on_trait_change, Event, \
-     implements, Dict, Property, cached_property, Array
-
-from traitsui.api import \
-     Item, View, VSplit, Group, Spring
-
-from numpy import \
-     array, zeros, dot, float_
-
 from math import pi as Pi, cos, sin, exp
 
-# from scipy.linalg import eig, inv
-
-from ibvpy.mats.mats_eval import IMATSEval
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
+from ibvpy.mats.mats_eval import IMATSEval
+from numpy import \
+    array, zeros, dot, float_
+from traits.api import \
+    Enum, Float, HasTraits, Enum, \
+    Instance, Trait, Range, HasTraits, on_trait_change, Event, \
+    implements, Dict, Property, cached_property, Array
+from traitsui.api import \
+    Item, View, VSplit, Group, Spring
+from util.traits.either_type import EitherType
 
 from strain_norm2d import Energy, Euclidean, Mises, Rankine, Mazars, \
     IStrainNorm2D
 
-from util.traits.either_type import EitherType
+
+# from scipy.linalg import eig, inv
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
-
 class MATS2DScalarDamage(MATS2DEval):
     '''
     Scalar Damage Model.
@@ -32,49 +28,49 @@ class MATS2DScalarDamage(MATS2DEval):
 
     implements(IMATSEval)
 
-    #---------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)
-    #---------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
     stress_state = Enum("plane_stress", "plane_strain")
     stiffness = Enum("secant", "algoritmic")
 
-    #---------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Material parameters
-    #---------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
     E = Float(34e+3,
-                 label="E",
-                 desc="Young's Modulus",
-                 auto_set=False)
+              label="E",
+              desc="Young's Modulus",
+              auto_set=False)
     nu = Float(0.2,
-                 label='nu',
-                 desc="Poison's ratio",
-                 auto_set=False)
+               label='nu',
+               desc="Poison's ratio",
+               auto_set=False)
     epsilon_0 = Float(59e-6,
-                 label="eps_0",
-                 desc="Breaking Strain",
-                 auto_set=False)
+                      label="eps_0",
+                      desc="Strain at the onset of damage",
+                      auto_set=False)
 
     epsilon_f = Float(191e-4,
-                 label="eps_f",
-                 desc="Shape Factor",
-                 auto_set=False)
+                      label="eps_f",
+                      desc="Slope of the damage function",
+                      auto_set=False)
 
     strain_norm = EitherType(klasses=[Mazars,
-                                       Euclidean,
-                                       Energy,
-                                       Mises,
-                                       Rankine ])
+                                      Euclidean,
+                                      Energy,
+                                      Mises,
+                                      Rankine])
 
     D_el = Property(Array(float), depends_on='E, nu, stress_state')
+
     @cached_property
     def _get_D_el(self):
         if self.stress_state == "plane_stress":
             return self._get_D_plane_stress()
         else:
             return self._get_D_plane_strain()
-
 
     # This event can be used by the clients to trigger an action upon
     # the completed reconfiguration of the material model
@@ -86,24 +82,23 @@ class MATS2DScalarDamage(MATS2DEval):
     #--------------------------------------------------------------------------
 
     view_traits = View(VSplit(Group(Item('E'),
-                                      Item('nu'),
-                                      Item('epsilon_0'),
-                                      Item('epsilon_f'),
-                                      Item('strain_norm')),
-                                Group(Item('stress_state', style='custom'),
-                                       Item('stiffness', style='custom'),
-                                       Spring(resizable=True),
-                                       label='Configuration parameters',
-                                       show_border=True,
-                                       ),
-                                ),
-                        resizable=True
-                        )
+                                    Item('nu'),
+                                    Item('epsilon_0'),
+                                    Item('epsilon_f'),
+                                    Item('strain_norm')),
+                              Group(Item('stress_state', style='custom'),
+                                    Item('stiffness', style='custom'),
+                                    Spring(resizable=True),
+                                    label='Configuration parameters',
+                                    show_border=True,
+                                    ),
+                              ),
+                       resizable=True
+                       )
 
     #--------------------------------------------------------------------------
     # Private initialization methods
     #--------------------------------------------------------------------------
-
 
     #--------------------------------------------------------------------------
     # Setup for computation within a supplied spatial context
@@ -137,7 +132,6 @@ class MATS2DScalarDamage(MATS2DEval):
         '''
         return zeros(3, float_)
 
-
     #--------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
     #--------------------------------------------------------------------------
@@ -164,18 +158,19 @@ class MATS2DScalarDamage(MATS2DEval):
         e_max, omega = self._get_state_variables(sctx, eps_app_eng)
 
         if self.stiffness == "algorithmic" and \
-                    e_max > self.epsilon_0 and \
-                    e_max > sctx.mats_state_array[0]:
+                e_max > self.epsilon_0 and \
+                e_max > sctx.mats_state_array[0]:
             D_e_dam = self._get_alg_stiffness(eps_app_eng,
-                                                  e_max,
-                                                  omega)
+                                              e_max,
+                                              omega)
         else:
             D_e_dam = (1 - omega) * self.D_el
 
         sigma = dot(((1 - omega) * self.D_el), eps_app_eng)
 
-        # You print the stress you just computed and the value of the apparent E
-        return  sigma, D_e_dam
+        # You print the stress you just computed and the value of the apparent
+        # E
+        return sigma, D_e_dam
 
     #--------------------------------------------------------------------------
     # Subsidiary methods realizing configurable features
@@ -184,13 +179,12 @@ class MATS2DScalarDamage(MATS2DEval):
         e_max = sctx.mats_state_array[0]
         omega = sctx.mats_state_array[1]
 
-
         f_trial = self.strain_norm.get_f_trial(eps_app_eng,
                                                self.D_el,
                                                self.E,
                                                self.nu,
                                                e_max)
-        if f_trial > 0 :
+        if f_trial > 0:
             e_max += f_trial
             omega = self._get_omega(e_max)
 
@@ -203,10 +197,10 @@ class MATS2DScalarDamage(MATS2DEval):
         '''
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
-        if kappa >= epsilon_0 :
+        if kappa >= epsilon_0:
             # return 1.-epsilon_0/kappa*exp(-1*(kappa-epsilon_0)/epsilon_f)
-            return 1. - epsilon_0 / kappa * exp(-1 * (kappa - epsilon_0) / \
-                                                  (epsilon_f - epsilon_0))
+            return 1. - epsilon_0 / kappa * exp(-1 * (kappa - epsilon_0) /
+                                                (epsilon_f - epsilon_0))
         else:
             return 0.
 
@@ -220,10 +214,12 @@ class MATS2DScalarDamage(MATS2DEval):
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
         dodk = epsilon_0 / (e_max * e_max) * exp(-(e_max - epsilon_0) / epsilon_f) + \
-                epsilon_0 / e_max / epsilon_f * exp(-(e_max - epsilon_0) / epsilon_f)
-        dede = self.strain_norm.get_dede(eps_app_eng, self.D_el, self.E, self.nu)
+            epsilon_0 / e_max / epsilon_f * \
+            exp(-(e_max - epsilon_0) / epsilon_f)
+        dede = self.strain_norm.get_dede(
+            eps_app_eng, self.D_el, self.E, self.nu)
         D_alg = (1 - omega) * self.D_el - \
-                dot(dot(self.D_el, eps_app_eng), dede) * dodk
+            dot(dot(self.D_el, eps_app_eng), dede) * dodk
         return D_alg
 
     def _get_D_plane_stress(self):
@@ -270,43 +266,43 @@ class MATS2DScalarDamage(MATS2DEval):
     # assemble all the available time-steppers.
     #
     rte_dict = Trait(Dict)
-    def _rte_dict_default(self):
-        return {'sig_app' : self.get_sig_app,
-                'eps_app' : self.get_eps_app,
-                'omega'   : self.get_omega}
 
+    def _rte_dict_default(self):
+        return {'sig_app': self.get_sig_app,
+                'eps_app': self.get_eps_app,
+                'omega': self.get_omega}
 
 
 if __name__ == '__main__':
 
-    #------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Example
-    #------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
     from ibvpy.api import RTDofGraph
     from ibvpy.mats.mats2D.mats2D_explore import MATS2DExplore
 
     mats2D_explore = \
         MATS2DExplore(mats2D_eval=MATS2DScalarDamage(strain_norm_type='Rankine'),
-                       # stiffness = 'algorithmic' ),
-                       rtrace_list=[ RTDofGraph(name='strain - stress',
+                      # stiffness = 'algorithmic' ),
+                      rtrace_list=[RTDofGraph(name='strain - stress',
                                               var_x='eps_app', idx_x=0,
                                               var_y='sig_app', idx_y=0,
                                               record_on='update'),
-                                     RTDofGraph(name='strain - strain',
+                                   RTDofGraph(name='strain - strain',
                                               var_x='eps_app', idx_x=0,
                                               var_y='eps_app', idx_y=1,
                                               record_on='update'),
-                                     RTDofGraph(name='stress - stress',
+                                   RTDofGraph(name='stress - stress',
                                               var_x='sig_app', idx_x=0,
                                               var_y='sig_app', idx_y=1,
                                               record_on='update'),
-        #                             RTDofGraph(name = 'time - sig_norm',
-        #                                      var_x = 'time', idx_x = 0,
-        #                                      var_y = 'sig_norm', idx_y = 0,
-        #                                      record_on = 'update' ),
-                             ]
-                             )
+                                   #                             RTDofGraph(name = 'time - sig_norm',
+                                   #                                      var_x = 'time', idx_x = 0,
+                                   #                                      var_y = 'sig_norm', idx_y = 0,
+                                   # record_on = 'update' ),
+                                   ]
+                      )
 
     mats2D_explore.tloop.eval()
     from ibvpy.plugins.ibvpy_app import IBVPyApp
