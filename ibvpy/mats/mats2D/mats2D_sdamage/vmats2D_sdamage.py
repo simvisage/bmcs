@@ -116,7 +116,7 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
     # Parameters of the numerical algorithm (integration)
     #-------------------------------------------------------------------------
 
-    stiffness = tr.Enum("secant", "algoritmic",
+    stiffness = tr.Enum("secant", "algorithmic",
                         input=True)
 
     epsilon_0 = tr.Float(5e-2,
@@ -192,27 +192,29 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
 
             eps_Emab_n = eps_Emab_n1 - deps_Emab
 
-            kappa_Em, omega_Em = self._get_state_variables(s_Emg, eps_Emab_n)
+            kappa_Em, omega_Em, f_idx = self._get_state_variables(
+                s_Emg, eps_Emab_n)
 
             s_Emg[:, :, 0] = kappa_Em
             s_Emg[:, :, 1] = omega_Em
 
-        kappa_Em, omega_Em = self._get_state_variables(s_Emg, eps_Emab_n1)
+        kappa_Em, omega_Em, f_idx = self._get_state_variables(
+            s_Emg, eps_Emab_n1)
 
-        if self.stiffness == "algorithmic":
-            pass
-#                 e_max > self.epsilon_0 and \
-#                 e_max > sctx.mats_state_array[0]:
-#             D_e_dam = self._get_alg_stiffness(eps_app_eng,
-#                                               e_max,
-#                                               omega)
-        else:
-            phi_Em = (1 - omega_Em)
-            D_Emabef = np.einsum('Em,abef->Emabef',
-                                 phi_Em, self.D_abef)
+        phi_Em = (1 - omega_Em)
+
+        D_Emabef = np.einsum('Em,abef->Emabef',
+                             phi_Em, self.D_abef)
 
         sigma_Emab = np.einsum('Em,Emabef,Emef->Emab',
                                phi_Em, D_Emabef, eps_Emab_n1)
+
+        if self.stiffness == "algorithmic":
+            D_red = self._get_alg_stiffness(
+                kappa_Em[f_idx], eps_Emab_n1[f_idx])
+            print D_red
+            D_Emabef[f_idx] -= D_red
+            print D_Emabef[0, 0]
 
         return D_Emabef, sigma_Emab
 
@@ -222,16 +224,13 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
     def _get_state_variables(self, s_Emg, eps_Emab):
         kappa_Em = np.copy(s_Emg[:, :, 0])
         omega_Em = np.copy(s_Emg[:, :, 1])
-        f_trial_Em = self.strain_norm.get_f_trial(eps_Emab,
-                                                  self.D_abef,
-                                                  self.E,
-                                                  self.nu,
-                                                  kappa_Em)
-
+        eps_eq_Em = self.strain_norm.get_eps_eq(eps_Emab,
+                                                kappa_Em)
+        f_trial_Em = eps_eq_Em - self.epsilon_0
         f_idx = np.where(f_trial_Em > 0)
-        kappa_Em[f_idx] += f_trial_Em[f_idx]
-        omega_Em[f_idx] = self._get_omega(kappa_Em[f_idx])
-        return kappa_Em, omega_Em
+        kappa_Em[f_idx] = eps_eq_Em[f_idx]
+        omega_Em[f_idx] = self._get_omega(eps_eq_Em[f_idx])
+        return kappa_Em, omega_Em, f_idx
 
     def _get_omega(self, kappa_Em):
         '''
@@ -240,6 +239,7 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
         '''
 
         omega_Em = np.zeros_like(kappa_Em)
+
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
         kappa_idx = np.where(kappa_Em >= epsilon_0)
@@ -249,45 +249,34 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
                                     ))
         return omega_Em
 
-    def _get_alg_stiffness(self, eps_app_eng, e_max, omega):
+    def _get_domega(self, kappa_Em):
         '''
-        Return algorithmic stiffness matrix
-        @param eps_app_eng:strain
-        @param e_max:kappa
-        @param omega:damage parameter
+        Return new value of damage parameter
+        @param kappa:
         '''
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
-        dodk = epsilon_0 / (e_max * e_max) * exp(-(e_max - epsilon_0) / epsilon_f) + \
-            epsilon_0 / e_max / epsilon_f * \
-            exp(-(e_max - epsilon_0) / epsilon_f)
-        dede = self.strain_norm.get_dede(
-            eps_app_eng, self.D_el, self.E, self.nu)
-        D_alg = (1 - omega) * self.D_el - \
-            np.dot(np.dot(self.D_el, eps_app_eng), dede) * dodk
-        return D_alg
 
-    #--------------------------------------------------------------------------
-    # Response trace evaluators
-    #--------------------------------------------------------------------------
+        domega_Em = np.zeros_like(kappa_Em)
+        kappa_idx = np.where(kappa_Em >= epsilon_0)
 
-    def get_omega(self, sctx, eps_app_eng, *args, **kw):
+        factor = epsilon_0 / (epsilon_f - epsilon_0)
+
+        domega_Em[kappa_idx] = (
+            factor * np.exp(-(kappa_Em[kappa_idx] - epsilon_0) /
+                            epsilon_f - epsilon_0)
+        )
+        print 'DOMEGA', domega_Em
+        return domega_Em
+
+    def _get_alg_stiffness(self, kappa_Em, eps_Emab_n1):
         '''
-        Return damage parameter for RT
-        @param sctx:spatial context
-        @param eps_app_eng:actual strain
         '''
-        return np.array([sctx.mats_state_array[1]])
-
-    # Declare and fill-in the rte_dict - it is used by the clients to
-    # assemble all the available time-steppers.
-    #
-    rte_dict = tr.Trait(tr.Dict)
-
-    def _rte_dict_default(self):
-        return {'sig_app': self.get_sig_app,
-                'eps_app': self.get_eps_app,
-                'omega': self.get_omega}
+        domega_Em = self._get_domega(kappa_Em)
+        deps_eq_Emcd = self.strain_norm.get_deps_eq(eps_Emab_n1)
+        print 'DEPS', deps_eq_Emcd[0]
+        return np.einsum('...,...cd,abcd,...cd->...abcd',
+                         domega_Em, deps_eq_Emcd, self.D_abef, eps_Emab_n1)
 
 
 if __name__ == '__main__':
@@ -296,32 +285,19 @@ if __name__ == '__main__':
     # Example
     #-------------------------------------------------------------------------
 
-    from ibvpy.api import RTDofGraph
-    from ibvpy.mats.mats2D.mats2D_explore import MATS2DExplore
+    mats = MATS2DScalarDamage(E=30000,
+                              stiffness='algorithmic',
+                              nu=0.0,
+                              epsilon_0=0.3,
+                              epsilon_f=0.5)
 
-    mats2D_explore = \
-        MATS2DExplore(mats2D_eval=MATS2DScalarDamage(strain_norm_type='Rankine'),
-                      # stiffness = 'algorithmic' ),
-                      rtrace_list=[RTDofGraph(name='strain - stress',
-                                              var_x='eps_app', idx_x=0,
-                                              var_y='sig_app', idx_y=0,
-                                              record_on='update'),
-                                   RTDofGraph(name='strain - strain',
-                                              var_x='eps_app', idx_x=0,
-                                              var_y='eps_app', idx_y=1,
-                                              record_on='update'),
-                                   RTDofGraph(name='stress - stress',
-                                              var_x='sig_app', idx_x=0,
-                                              var_y='sig_app', idx_y=1,
-                                              record_on='update'),
-                                   #                             RTDofGraph(name = 'time - sig_norm',
-                                   #                                      var_x = 'time', idx_x = 0,
-                                   #                                      var_y = 'sig_norm', idx_y = 0,
-                                   # record_on = 'update' ),
-                                   ]
-                      )
+    eps_Emab = np.array([[[[0.5, 0],
+                           [0, 0]]
+                          ]], dtype=np.float_)
+    s_Emg = np.array([[[0, 0],
+                       ]], dtype=np.float_)
 
-    mats2D_explore.tloop.eval()
-    from ibvpy.plugins.ibvpy_app import IBVPyApp
-    ibvpy_app = IBVPyApp(ibv_resource=mats2D_explore)
-    ibvpy_app.main()
+    print mats.strain_norm.get_eps_eq(eps_Emab, s_Emg[:, :, 0])
+    print mats._get_state_variables(s_Emg, eps_Emab)
+    D_Emabcd, sig_Emab = mats.get_corr_pred(
+        eps_Emab, eps_Emab, 0, 0, False, s_Emg)

@@ -128,55 +128,25 @@ class Rankine(IStrainNorm2D):
     computes main stresses and makes a norm of their positive part
     '''
 
-    def get_f_trial(self, eps_Emef,
-                    D_abef,
-                    E,
-                    nu,
-                    kappa_Em):
+    def get_eps_eq(self, eps_Emef, kappa_Em):
+        eps_I_Emc = np.linalg.eigh(eps_Emef)[0]
+        eps_eq_Em = np.linalg.norm(eps_I_Emc, axis=2)
+        e_Em = np.concatenate(
+            (eps_eq_Em[:, :, None], kappa_Em[:, :, None]), axis=2)
+        eps_eq = np.max(e_Em, axis=2)
+        return eps_eq
 
-        sig_Emab = np.einsum('abef,Emef->Emab', D_abef, eps_Emef)
-        sig_I_Emc = np.linalg.eigh(sig_Emab)[0]
-        sig2_I_Em = np.zeros_like(sig_I_Emc)
-        sig_idx = np.where(sig_I_Emc >= 0)
-        sig2_I_Em[sig_idx] = sig_I_Emc[sig_idx]
-        eps_eq_Em = np.linalg.norm(sig2_I_Em, axis=2) / E
-        f_trial_Em = eps_eq_Em - kappa_Em
-        return f_trial_Em
-
-    def get_dede(self, epsilon, D_el, E, nu):
-        dede = zeros(3)
-        t1 = D_el[0][0] / 2.
-        t2 = D_el[1][0] / 2.
-        t3 = pow(D_el[0][0], 2.)
-        t4 = pow(epsilon[0], 2.)
-        t6 = D_el[0][0] * epsilon[0]
-        t7 = D_el[0][1] * epsilon[1]
-        t13 = D_el[1][1] * epsilon[1]
-        t16 = pow(D_el[0][1], 2.)
-        t17 = pow(epsilon[1], 2.)
-        t19 = D_el[1][0] * epsilon[0]
-        t25 = pow(D_el[1][0], 2.)
-        t29 = pow(D_el[1][1], 2.)
-        t31 = pow(D_el[2][2], 2.)
-        t32 = pow(epsilon[2], 2.)
-        t35 = t3 * t4 + 2 * t6 * t7 - 2. * D_el[0][0] * t4 * D_el[1][0] - 2. * t6 * t13 + t16 * t17 - 2. * \
-            t7 * t19 - 2. * D_el[0][1] * t17 * D_el[1][1] + t25 * \
-            t4 + 2. * t19 * t13 + t29 * t17 + 4. * t31 * t32
-        t36 = sqrt(t35)
-        t37 = 1. / t36
-        t57 = t37 * (2. * t3 * epsilon[0] + 2. * D_el[0][0] * D_el[0][1] * epsilon[1] - 4. * t6 * D_el[1][0] - 2. * D_el[0][0] *
-                     D_el[1][1] * epsilon[1] - 2. * t7 * D_el[1][0] + 2. * t25 * epsilon[0] + 2. * D_el[1][0] * D_el[1][1] * epsilon[1]) / 4.
-        t59 = fabs(t6 / 2. + t7 / 2. + t19 / 2. + t13 / 2. + t36 / 2.) / \
-            (t6 / 2. + t7 / 2. + t19 / 2. + t13 / 2. + t36 / 2.)
-        t63 = 1. / E
-        t66 = D_el[0][1] / 2.
-        t67 = D_el[1][1] / 2.
-        t85 = t37 * (2. * t6 * D_el[0][1] - 2. * t6 * D_el[1][1] + 2. * t16 * epsilon[1] - 2. * D_el[0][1] *
-                     D_el[1][0] * epsilon[0] - 4. * t7 * D_el[1][1] + 2. * t19 * D_el[1][1] + 2. * t29 * epsilon[1]) / 4.
-        dede[0] = (t1 + t2 + t57 + t59 * (t1 + t2 + t57)) * t63 / 2.
-        dede[1] = (t66 + t67 + t85 + t59 * (t66 + t67 + t85)) * t63 / 2.
-        dede[2] = (t37 * t31 * epsilon[2] + t59 * t37 * t31 * epsilon[2]) * t63
-        return dede
+    def get_deps_eq(self, eps_Emef):
+        eps11 = eps_Emef[..., 0, 0]
+        eps22 = eps_Emef[..., 1, 1]
+        eps12 = eps_Emef[..., 0, 1]
+        eps_11_22 = eps11 - eps22
+        factor = 1. / (2. * np.sqrt(eps_11_22 * eps_11_22 +
+                                    4.0 * eps12 * eps12))
+        df_trial1 = factor * np.array([[eps11 - eps22, 4 * eps12],
+                                       [4 * eps12, eps22 - eps11]])
+        return (np.einsum('ab...->...ab', df_trial1) +
+                0.5 * np.identity(2)[None, :, :])
 
 
 class Mazars(IStrainNorm2D):
@@ -237,3 +207,26 @@ class Mazars(IStrainNorm2D):
         dede[2] = t33 * (t93 * t25 + t15 * (t95 * D_el[0][0] + t100 * D_el[1][0]) +
                          t99 * t29 + t22 * (t95 * D_el[0][1] + t100 * D_el[1][1])) / 2.
         return dede
+
+
+if __name__ == '__main__':
+    import sympy as sp
+
+    eps_0, eps_f, kappa = sp.symbols('eps_0, eps_f, kappa')
+    f = 1 - eps_0 * sp.exp(- (kappa - eps_0) / (eps_f - eps_0))
+    print f
+    print sp.diff(f, kappa)
+
+    s_11, s_22, s_12 = sp.symbols(
+        '\\varepsilon_{11},\\varepsilon_{22},\\varepsilon_{12}')
+    sig = sp.Matrix([[s_11, s_12],
+                     [s_12, s_22]])
+    sig_12 = sig.eigenvals()
+    for sig_principal, item in sig_12.items():
+        print sig_principal
+        sig_diff_11 = sp.diff(sig_principal, s_11)
+        sig_diff_12 = sp.diff(sig_principal, s_12)
+        sig_diff_22 = sp.diff(sig_principal, s_22)
+        print '11', sig_diff_11
+        print '12', sig_diff_12
+        print '22', sig_diff_22

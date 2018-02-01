@@ -1,3 +1,27 @@
+
+import os
+from ibvpy.api import \
+    FEGrid, FETSEval, TLine, BCSlice
+from ibvpy.core.bcond_mngr import BCondMngr
+from mathkit.matrix_la import \
+    SysMtxArray, SysMtxAssembly
+from mayavi import mlab
+from mayavi.filters import extract_tensor_components
+from mayavi.filters.api import WarpVector, ExtractTensorComponents
+from mayavi.modules.outline import Outline
+from mayavi.modules.surface import Surface
+from mayavi.modules.vectors import Vectors
+from traits.has_traits import HasStrictTraits
+from tvtk.api import \
+    tvtk, write_data
+
+from ibvpy.mats.mats2D.mats2D_sdamage.vmats2D_sdamage import \
+    MATS2D, MATS2DScalarDamage
+import numpy as np
+import sympy as sp
+import traits.api as tr
+from tvtk.tvtk_classes import tvtk_helper
+
 '''
 Created on Jan 24, 2018
 
@@ -8,37 +32,19 @@ Example (2D discretization)
 @author: rch, abaktheer
 '''
 
-from ibvpy.api import \
-    FEGrid, FETSEval, TLine, BCSlice
-from ibvpy.core.bcond_mngr import BCondMngr
-from mathkit.matrix_la import \
-    SysMtxArray, SysMtxAssembly
-from mayavi.scripts import mayavi2
-from traits.has_traits import HasStrictTraits
-from tvtk.api import \
-    tvtk
-
-from ibvpy.mats.mats2D.mats2D_sdamage.vmats2D_sdamage import \
-    MATS2D, MATS2DScalarDamage
-import numpy as np
-import sympy as sp
-import traits.api as tr
-from tvtk.tvtk_classes import tvtk_helper
-
 
 #========================================
 # Tensorial operators
 #========================================
 # Identity tensor
 delta = np.identity(2)
-print 'delta', delta
-
 # symetrization operator
 I_sym_abcd = 0.5 * \
     (np.einsum('ac,bd->abcd', delta, delta) +
      np.einsum('ad,bc->abcd', delta, delta))
-print 'I_sym_abcd', I_sym_abcd
-print 'I_sym_abcd.shape', I_sym_abcd.shape
+# expansion tensor
+delta23_ab = np.array([[1, 0, 0],
+                       [0, 1, 0]], dtype=np.float_)
 
 #=================================================
 # 4 nodes iso-parametric quadrilateral element
@@ -64,12 +70,6 @@ dN_xi_ir = sp.Matrix(((-(1.0 / 4.0) * (1.0 - xi_2), -(1.0 / 4.0) * (1.0 - xi_1))
                       ((1.0 / 4.0) * (1.0 + xi_2), (1.0 / 4.0) * (1.0 + xi_1)),
                       (-(1.0 / 4.0) * (1.0 + xi_2), (1.0 / 4.0) * (1.0 - xi_1))), dtype=np.float_)
 
-#dN_xi_ia = N_xi_i.diff('xi_1')
-
-print 'N_xi_i', N_xi_i
-print 'dN_xi_ir', dN_xi_ir
-print 'dN_xi_ia.shape', dN_xi_ir.shape
-
 
 class FETS2D4u4x(FETSEval):
     dof_r = tr.Array(np.float_,
@@ -93,6 +93,11 @@ class FETS2D4u4x(FETSEval):
                            ])
 
     w_m = tr.Array(value=[1, 1, 1, 1], dtype=np.float_)
+
+    n_m = tr.Property
+
+    def _get_n_m(self):
+        return len(self.w_m)
 
     shape_function_values = tr.Property(tr.Tuple)
     '''The values of the shape functions and their derivatives at the IPs
@@ -327,10 +332,9 @@ class TimeLoop(HasStrictTraits):
         update_state = False
 
         s_Emg = np.zeros((self.ts.mesh.n_active_elems,
-                          4,
+                          self.ts.fets.n_m,
                           self.ts.mats.get_state_array_size()), dtype=np.float_)
 
-        print s_Emg
         print 'setting up boundary conditions'
         tloop.bc_mngr.setup(None)
 
@@ -355,8 +359,6 @@ class TimeLoop(HasStrictTraits):
                 K_arr, F_int, n_F_int = self.ts.get_corr_pred(
                     U_k, dU, self.t_n, self.t_n1, update_state, s_Emg)
                 if update_state:
-                    #                     print 'STATE'
-                    #                     print s_Emg
                     update_state = False
 
                 K.sys_mtx_arrays.append(K_arr)
@@ -378,96 +380,128 @@ class TimeLoop(HasStrictTraits):
 
             U_n = np.copy(U_k)
             self.t_n = self.t_n1
+            self.record_response(U_k, self.t_n, s_Emg)
             self.t_n1 = self.t_n + self.d_t
-            # handle the case that due to numerical noise
-            # t_n might exceed the max of the range.
             self.tline.val = min(self.t_n, self.tline.max)
 
         return U_n
 
+    ug = tr.WeakRef
+    write_dir = tr.Directory
 
-mats2d = MATS2DScalarDamage()
+    def record_response(self, U, t, s_Emg):
+        n_c = self.ts.fets.n_nodal_dofs
+        U_Ia = U.reshape(-1, n_c)
+        U_Eia = U_Ia[dots.I_Ei]
+        eps_Enab = np.einsum('Einabc,Eic->Enab', dots.B_Einabc, U_Eia)
+        sig_Enab = np.einsum('abef,Emef->Emab', dots.mats.D_abef, eps_Enab)
+
+        U_vector_field = np.einsum('Ia,ab->Ib',
+                                   U_Eia.reshape(-1, n_c), delta23_ab)
+        self.ug.point_data.vectors = U_vector_field
+        self.ug.point_data.vectors.name = 'displacement'
+        eps_Encd = np.einsum('...ab,ac,bd->...cd',
+                             eps_Enab, delta23_ab, delta23_ab)
+        eps_Encd_tensor_field = eps_Encd.reshape(-1, 9)
+        self.ug.point_data.tensors = eps_Encd_tensor_field
+        self.ug.point_data.tensors.name = 'strain'
+        fname = os.path.join(self.write_dir, 'step_%008.4f' % t)
+        write_data(self.ug, fname.replace('.', '_'))
+
+
+def mlab_view(dataset):
+    #     fig = mlab.figure(bgcolor=(1, 1, 1), fgcolor=(0, 0, 0),
+    #                       figure=dataset.class_name[3:])
+    engine = mlab.get_engine()
+    scene = engine.scenes[0]
+    scene.scene.z_plus_view()
+    src = mlab.pipeline.add_dataset(dataset)
+    warp_vector = mlab.pipeline.warp_vector(src)
+    surf = mlab.pipeline.surface(warp_vector)
+
+    etc = ExtractTensorComponents()
+    engine.add_filter(etc, warp_vector)
+    surface2 = Surface()
+    engine.add_filter(surface2, etc)
+    etc.filter.scalar_mode = 'component'
+
+    lut = etc.children[0]
+    lut.scalar_lut_manager.show_scalar_bar = True
+    lut.scalar_lut_manager.show_legend = True
+    lut.scalar_lut_manager.scalar_bar.height = 0.8
+    lut.scalar_lut_manager.scalar_bar.width = 0.17
+    lut.scalar_lut_manager.scalar_bar.position = np.array([0.82,  0.1])
+
+
+mats2d = MATS2DScalarDamage(
+    stiffness='algorithmic',
+    epsilon_0=0.03,
+    epsilon_f=0.5
+)
 fets2d_4u_4q = FETS2D4u4x()
-dots = DOTSGrid(L_x=600, L_y=100, n_x=101, n_y=20, fets=fets2d_4u_4q,
+xdots = DOTSGrid(L_x=600, L_y=100, n_x=51, n_y=10, fets=fets2d_4u_4q,
+                 mats=mats2d)
+dots = DOTSGrid(L_x=1, L_y=1, n_x=10, n_y=1, fets=fets2d_4u_4q,
                 mats=mats2d)
-
-
-tloop = TimeLoop(tline=TLine(min=0, max=1, step=0.05),
-                 ts=dots)
-
-tloop.bc_list = [BCSlice(slice=dots.mesh[0, :, 0, :],
-                         var='u', dims=[0, 1], value=0),
-                 BCSlice(slice=dots.mesh[50, -1, :, -1],
-                         var='u', dims=[1], value=-50),
-                 BCSlice(slice=dots.mesh[-1, :, -1, :],
-                         var='u', dims=[0, 1], value=0)
-                 ]
-
 if __name__ == '__main__':
-    U = tloop.eval()
-    n_c = fets2d_4u_4q.n_nodal_dofs
-    d_Ia = U.reshape(-1, n_c)
-    d_Eia = d_Ia[dots.I_Ei]
-    eps_Enab = np.einsum('Einabc,Eic->Enab', dots.B_Einabc, d_Eia)
-    # print 'eps_Emab', eps_Enab
-
-    sig_Enab = np.einsum('abef,Emef->Emab', dots.mats.D_abef, eps_Enab)
-    # print 'sig_Emab', sig_Enab
-
-    delta23_ab = np.array([[1, 0, 0],
-                           [0, 1, 0]], dtype=np.float_)
+    tloop = TimeLoop(tline=TLine(min=0, max=1, step=0.1),
+                     ts=dots)
+    if False:
+        tloop.bc_list = [BCSlice(slice=dots.mesh[0, :, 0, :],
+                                 var='u', dims=[0, 1], value=0),
+                         BCSlice(slice=dots.mesh[25, -1, :, -1],
+                                 var='u', dims=[1], value=-50),
+                         BCSlice(slice=dots.mesh[-1, :, -1, :],
+                                 var='u', dims=[0, 1], value=0)
+                         ]
+    tloop.bc_list = [BCSlice(slice=dots.mesh[0, :, 0, :],
+                             var='u', dims=[0], value=0),
+                     BCSlice(slice=dots.mesh[0, 0, 0, 0],
+                             var='u', dims=[1], value=0),
+                     BCSlice(slice=dots.mesh[-1, :, -1, :],
+                             var='u', dims=[1], value=0.1)
+                     ]
 
     cell_class = tvtk.Quad().cell_type
+    #U = tloop.eval()
+    n_c = fets2d_4u_4q.n_nodal_dofs
+    n_i = 4
+    #eps_Enab = np.einsum('Einabc,Eic->Enab', dots.B_Einabc, U_Eia)
+    #sig_Enab = np.einsum('abef,Emef->Emab', dots.mats.D_abef, eps_Enab)
     n_E, n_i, n_a = dots.x_Eia.shape
     n_Ei = n_E * n_i
     points = np.einsum('Ia,ab->Ib', dots.x_Eia.reshape(-1, n_c), delta23_ab)
     ug = tvtk.UnstructuredGrid(points=points)
-    ug.set_cells(cell_class, np.arange(n_Ei).reshape(n_E, n_i))
+    ug.set_cells(cell_class, np.arange(n_E * n_i).reshape(n_E, n_i))
 
-    vectors = np.einsum('Ia,ab->Ib', d_Eia.reshape(-1, n_c), delta23_ab)
+    vectors = np.zeros_like(points)
     ug.point_data.vectors = vectors
     ug.point_data.vectors.name = 'displacement'
-    # Now view the data.
     warp_arr = tvtk.DoubleArray(name='displacement')
     warp_arr.from_array(vectors)
     ug.point_data.add_array(warp_arr)
 
-    eps_Encd = tensors = np.einsum('...ab,ac,bd->...cd',
-                                   eps_Enab, delta23_ab, delta23_ab)
-    tensors = eps_Encd[:, :, [0, 1, 2, 0, 1, 2],
-                       [0, 1, 2, 1, 2, 0]].reshape(-1, 6)
-    tensors = eps_Encd.reshape(-1, 9)
-    ug.point_data.tensors = tensors
-    ug.point_data.tensors.name = 'strain'
+    home = os.path.expanduser('~')
+    target_dir = os.path.join(home, 'simdb', 'simdata')
+    tloop.set(ug=ug, write_dir=target_dir)
+    U = tloop.eval()
 
-    @mayavi2.standalone
-    def view():
-        from mayavi.sources.vtk_data_source import VTKDataSource
-        from mayavi.modules.outline import Outline
-        from mayavi.modules.surface import Surface
-        from mayavi.modules.vectors import Vectors
-        from mayavi.filters.api import WarpVector, ExtractTensorComponents
-
-        mayavi.new_scene()
-        # The single type one
-        src = VTKDataSource(data=ug)
-        mayavi.add_source(src)
-        warp_vector = WarpVector()
-        mayavi.add_filter(warp_vector, src)
-        surface = Surface()
-        mayavi.add_filter(surface, warp_vector)
-
-        etc = ExtractTensorComponents()
-        mayavi.add_filter(etc, warp_vector)
-        surface2 = Surface()
-        mayavi.add_filter(surface2, etc)
-        etc.filter.scalar_mode = 'component'
-
-        lut = etc.children[0]
-        lut.scalar_lut_manager.show_scalar_bar = True
-        lut.scalar_lut_manager.show_legend = True
-        lut.scalar_lut_manager.scalar_bar.height = 0.8
-        lut.scalar_lut_manager.scalar_bar.width = 0.17
-        lut.scalar_lut_manager.scalar_bar.position = np.array([0.82,  0.1])
-
-    view()
+#     eps_Encd = np.einsum('...ab,ac,bd->...cd',
+#                          eps_Enab, delta23_ab, delta23_ab)
+#     tensors = eps_Encd.reshape(-1, 9)
+#     ug.point_data.tensors = tensors
+#     ug.point_data.tensors.name = 'strain'
+#
+#     mlab_view(ug)
+#
+#     def save_data():
+#         """Save the files"""
+#         home = os.path.expanduser('~')
+#         target_dir = os.path.join(home, 'simdb', 'simdata')
+#         for i, (u, eps) in enumerate(zip(tloop.U_Ib_record,
+#                                          tloop.eps_Enab_record)):
+#             ug.point_data.vectors = u
+#             ug.point_data.tensors = eps
+#             write_data(ug, os.path.join(target_dir, 'step_%02d' % i))
+#
+#     save_data()
