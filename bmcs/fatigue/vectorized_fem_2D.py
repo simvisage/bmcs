@@ -434,14 +434,15 @@ def mlab_view(dataset):
 
 
 mats2d = MATS2DScalarDamage(
-    stiffness='algorithmic',
+    # stiffness='algorithmic',
+    stiffness='secant',
     epsilon_0=0.03,
     epsilon_f=0.5
 )
 fets2d_4u_4q = FETS2D4u4x()
 xdots = DOTSGrid(L_x=600, L_y=100, n_x=51, n_y=10, fets=fets2d_4u_4q,
                  mats=mats2d)
-dots = DOTSGrid(L_x=1, L_y=1, n_x=10, n_y=1, fets=fets2d_4u_4q,
+dots = DOTSGrid(L_x=1, L_y=1, n_x=10, n_y=5, fets=fets2d_4u_4q,
                 mats=mats2d)
 if __name__ == '__main__':
     tloop = TimeLoop(tline=TLine(min=0, max=1, step=0.1),
@@ -459,7 +460,7 @@ if __name__ == '__main__':
                      BCSlice(slice=dots.mesh[0, 0, 0, 0],
                              var='u', dims=[1], value=0),
                      BCSlice(slice=dots.mesh[-1, :, -1, :],
-                             var='u', dims=[1], value=0.1)
+                             var='u', dims=[1], value=0.2)
                      ]
 
     cell_class = tvtk.Quad().cell_type
