@@ -129,8 +129,18 @@ class Rankine(IStrainNorm2D):
     '''
 
     def get_eps_eq(self, eps_Emef, kappa_Em):
-        eps_I_Emc = np.linalg.eigh(eps_Emef)[0]
-        eps_eq_Em = np.linalg.norm(eps_I_Emc, axis=2)
+        
+        #eps_I_Emc = np.linalg.eigh(eps_Emef)[0]
+
+        eps_11 = eps_Emef[:,:,0,0]
+        eps_22 = eps_Emef[:,:,1,1]
+        eps_12 = eps_Emef[:,:,0,1]
+        
+        eps_eq_Em = 0.5 *(eps_11 + eps_22) + np.sqrt(((eps_11 - eps_22)/2.0)**2.0 + eps_12**2.0)
+        
+        #eps_eq_Em = np.linalg.norm(eps_I_Emc, axis=2)
+
+        
         e_Em = np.concatenate(
             (eps_eq_Em[:, :, None], kappa_Em[:, :, None]), axis=2)
         eps_eq = np.max(e_Em, axis=2)
@@ -143,11 +153,12 @@ class Rankine(IStrainNorm2D):
         eps_11_22 = eps11 - eps22
         factor = 1. / (2. * np.sqrt(eps_11_22 * eps_11_22 +
                                     4.0 * eps12 * eps12))
-        df_trial1 = factor * np.array([[eps11 - eps22, 4 * eps12],
-                                       [4 * eps12, eps22 - eps11]])
+        df_trial1 = factor * np.array([[eps11 - eps22, 4.0 * eps12],
+                                       [4.0 * eps12, eps22 - eps11]])
         return (np.einsum('ab...->...ab', df_trial1) +
                 0.5 * np.identity(2)[None, :, :])
-
+        
+        
 
 class Mazars(IStrainNorm2D):
 

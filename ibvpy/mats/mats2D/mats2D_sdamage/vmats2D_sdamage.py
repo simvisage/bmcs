@@ -202,20 +202,21 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
         kappa_Em, omega_Em, f_idx = self._get_state_variables(
             s_Emg, eps_Emab_n1)
 
-        phi_Em = (1 - omega_Em)
+        phi_Em = (1.0 - omega_Em)
 
         D_Emabef = np.einsum('Em,abef->Emabef',
                              phi_Em, self.D_abef)
-
+        
+        #print 'D_Emabef', D_Emabef
         sigma_Emab = np.einsum('Em,Emabef,Emef->Emab',
                                phi_Em, D_Emabef, eps_Emab_n1)
 
         if self.stiffness == "algorithmic":
             D_red = self._get_alg_stiffness(
                 kappa_Em[f_idx], eps_Emab_n1[f_idx])
-            print D_red
+            #print 'D_red',D_red
             D_Emabef[f_idx] -= D_red
-            print D_Emabef[0, 0]
+            #print 'D_Emabef',D_Emabef[0, 0]
 
         return D_Emabef, sigma_Emab
 
@@ -244,8 +245,8 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
         kappa_idx = np.where(kappa_Em >= epsilon_0)
-        omega_Em[kappa_idx] = (1 - (epsilon_0 / kappa_Em[kappa_idx] *
-                                    np.exp(-1 * (kappa_Em[kappa_idx] - epsilon_0) /
+        omega_Em[kappa_idx] = (1.0 - (epsilon_0 / kappa_Em[kappa_idx] *
+                                    np.exp(-1.0 * (kappa_Em[kappa_idx] - epsilon_0) /
                                            (epsilon_f - epsilon_0))
                                     ))
         return omega_Em
@@ -261,13 +262,21 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
         domega_Em = np.zeros_like(kappa_Em)
         kappa_idx = np.where(kappa_Em >= epsilon_0)
 
-        factor = epsilon_0 / (epsilon_f - epsilon_0)
+#         factor = epsilon_0 / (epsilon_f - epsilon_0)
+#  
+#         domega_Em[kappa_idx] = (
+#              factor * np.exp(-(kappa_Em[kappa_idx] - epsilon_0) /
+#                              epsilon_f - epsilon_0)
+#         )
 
+        
+        factor_1 = epsilon_0 /(kappa_Em[kappa_idx] * kappa_Em[kappa_idx])
+        factor_2 = epsilon_0 / (kappa_Em[kappa_idx] * (epsilon_f - epsilon_0))
         domega_Em[kappa_idx] = (
-            factor * np.exp(-(kappa_Em[kappa_idx] - epsilon_0) /
-                            epsilon_f - epsilon_0)
+            (factor_1 + factor_2) * np.exp(-(kappa_Em[kappa_idx] - epsilon_0) /
+                            (epsilon_f - epsilon_0))
         )
-        print 'DOMEGA', domega_Em
+        #print 'DOMEGA', domega_Em
         return domega_Em
 
     def _get_alg_stiffness(self, kappa_Em, eps_Emab_n1):
@@ -275,7 +284,7 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
         '''
         domega_Em = self._get_domega(kappa_Em)
         deps_eq_Emcd = self.strain_norm.get_deps_eq(eps_Emab_n1)
-        print 'DEPS', deps_eq_Emcd[0]
+        #print 'DEPS', deps_eq_Emcd[0]
         return np.einsum('...,...cd,abcd,...cd->...abcd',
                          domega_Em, deps_eq_Emcd, self.D_abef, eps_Emab_n1)
 
@@ -292,13 +301,13 @@ if __name__ == '__main__':
                               epsilon_0=0.3,
                               epsilon_f=0.5)
 
-    eps_Emab = np.array([[[[0.5, 0],
-                           [0, 0]]
+    eps_Emab = np.array([[[[0.8, 0],
+                           [0, 0.0]]
                           ]], dtype=np.float_)
     s_Emg = np.array([[[0, 0],
                        ]], dtype=np.float_)
 
-    print mats.strain_norm.get_eps_eq(eps_Emab, s_Emg[:, :, 0])
-    print mats._get_state_variables(s_Emg, eps_Emab)
+    #print mats.strain_norm.get_eps_eq(eps_Emab, s_Emg[:, :, 0])
+    #print mats._get_state_variables(s_Emg, eps_Emab)
     D_Emabcd, sig_Emab = mats.get_corr_pred(
         eps_Emab, eps_Emab, 0, 0, False, s_Emg)
