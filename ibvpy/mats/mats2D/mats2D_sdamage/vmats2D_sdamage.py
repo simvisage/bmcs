@@ -11,7 +11,8 @@ from vstrain_norm2d import Energy, Euclidean, Mises, Rankine, Mazars
 
 class MATS2D(tr.HasStrictTraits):
     # -----------------------------------------------------------------------------------------------------
-    # Construct the fourth order elasticity tensor for the plane stress case (shape: (2,2,2,2))
+    # Construct the fourth order elasticity tensor
+    # for the plane stress case (shape: (2,2,2,2))
     # -----------------------------------------------------------------------------------------------------
     stress_state = tr.Enum("plane_stress", "plane_strain", input=True)
 

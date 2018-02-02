@@ -212,8 +212,9 @@ class Mazars(IStrainNorm2D):
 if __name__ == '__main__':
     import sympy as sp
 
-    eps_0, eps_f, kappa = sp.symbols('eps_0, eps_f, kappa')
-    f = 1 - eps_0 * sp.exp(- (kappa - eps_0) / (eps_f - eps_0))
+    eps_0, eps_f, kappa = sp.symbols(
+        '\\varepsilon_0, \\varepsilon_\\mathrm{f}, \\kappa')
+    f = 1 - (eps_0 / kappa) * sp.exp(- (kappa - eps_0) / (eps_f - eps_0))
     print f
     print sp.diff(f, kappa)
 

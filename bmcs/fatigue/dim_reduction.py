@@ -41,7 +41,7 @@ DD_ab = sp.Matrix(
      [E_ / (1.0 - nu_ * nu_) * nu_, E_ / (1.0 - nu_ * nu_), 0],
      [0, 0, E_ / (1.0 - nu_ * nu_) * (1.0 / 2.0 - nu_ / 2.0)]
      ])
-
+<
 
 def map2d_ijkl2mn(i, j, k, l):
     '''
