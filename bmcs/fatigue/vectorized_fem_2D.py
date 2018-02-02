@@ -343,6 +343,7 @@ class TimeLoop(HasStrictTraits):
         U_n = np.zeros((dots.mesh.n_dofs,), dtype=np.float_)
         dU = np.copy(U_n)
         U_k = np.copy(U_n)
+        F_ext = np.zeros_like(U_n)
 
         while (self.t_n1 - self.tline.max) <= self.step_tolerance:
 
@@ -362,16 +363,21 @@ class TimeLoop(HasStrictTraits):
                     update_state = False
 
                 K.sys_mtx_arrays.append(K_arr)
-                F_int *= -1  # in-place sign change of the internal forces
-                self.bc_mngr.apply(step_flag, None, K, F_int,
+
+                F_ext[:] = 0.0
+                self.bc_mngr.apply(step_flag, None, K, F_ext,
                                    self.t_n, self.t_n1)
-                K.apply_constraints(F_int)
+                R = F_ext - F_int
+                K.apply_constraints(R)
                 if n_F_int == 0.0:
                     n_F_int = 1.0
-                norm = np.linalg.norm(F_int, ord=None)  # / n_F_int
+                norm = np.linalg.norm(R, ord=None)  # / n_F_int
                 if norm < self.tolerance:  # convergence satisfied
                     print 'converged in %d iterations' % (k + 1)
                     update_state = True
+                    self.F_int_record.append(F_int)
+                    self.U_record.append(np.copy(U_k))
+                    # self.t_record.append(self.t_n1)
                     break  # update_switch -> on
                 dU = K.solve()
                 U_k += dU
@@ -388,6 +394,11 @@ class TimeLoop(HasStrictTraits):
 
     ug = tr.WeakRef
     write_dir = tr.Directory
+    F_int_record = tr.List(tr.Array(np.float_))
+    U_record = tr.List(tr.Array(np.float_))
+    F_ext_record = tr.List(tr.Array(np.float_))
+    t_record = tr.List(np.float_)
+    record_dofs = tr.Array(np.int_)
 
     def record_response(self, U, t, s_Emg):
         n_c = self.ts.fets.n_nodal_dofs
@@ -434,20 +445,19 @@ def mlab_view(dataset):
 
 
 mats2d = MATS2DScalarDamage(
-    # stiffness='algorithmic',
     stiffness='secant',
     epsilon_0=0.03,
-    epsilon_f=0.5
+    epsilon_f=1.9 * 1000
 )
 fets2d_4u_4q = FETS2D4u4x()
-xdots = DOTSGrid(L_x=600, L_y=100, n_x=51, n_y=10, fets=fets2d_4u_4q,
-                 mats=mats2d)
-dots = DOTSGrid(L_x=1, L_y=1, n_x=10, n_y=5, fets=fets2d_4u_4q,
+dots = DOTSGrid(L_x=600, L_y=100, n_x=51, n_y=10, fets=fets2d_4u_4q,
                 mats=mats2d)
+xdots = DOTSGrid(L_x=4, L_y=1, n_x=40, n_y=10, fets=fets2d_4u_4q,
+                 mats=mats2d)
 if __name__ == '__main__':
-    tloop = TimeLoop(tline=TLine(min=0, max=1, step=0.1),
+    tloop = TimeLoop(tline=TLine(min=0, max=1, step=0.05),
                      ts=dots)
-    if False:
+    if True:
         tloop.bc_list = [BCSlice(slice=dots.mesh[0, :, 0, :],
                                  var='u', dims=[0, 1], value=0),
                          BCSlice(slice=dots.mesh[25, -1, :, -1],
@@ -455,13 +465,24 @@ if __name__ == '__main__':
                          BCSlice(slice=dots.mesh[-1, :, -1, :],
                                  var='u', dims=[0, 1], value=0)
                          ]
-    tloop.bc_list = [BCSlice(slice=dots.mesh[0, :, 0, :],
-                             var='u', dims=[0], value=0),
-                     BCSlice(slice=dots.mesh[0, 0, 0, 0],
-                             var='u', dims=[1], value=0),
-                     BCSlice(slice=dots.mesh[-1, :, -1, :],
-                             var='u', dims=[1], value=0.2)
-                     ]
+    if False:
+        tloop.bc_list = [BCSlice(slice=dots.mesh[0, 0, 0, 0],
+                                 var='u', dims=[1], value=0),
+                         BCSlice(slice=dots.mesh[-1, 0, -1, 0],
+                                 var='u', dims=[1], value=0),
+                         BCSlice(slice=dots.mesh[25, -1, :, -1],
+                                 var='u', dims=[1], value=-50),
+                         BCSlice(slice=dots.mesh[25, -1, :, -1],
+                                 var='u', dims=[0], value=0)
+                         ]
+    if False:
+        tloop.bc_list = [BCSlice(slice=dots.mesh[0, :, 0, :],
+                                 var='u', dims=[0], value=0),
+                         BCSlice(slice=dots.mesh[0, 0, 0, 0],
+                                 var='u', dims=[1], value=0),
+                         BCSlice(slice=dots.mesh[-1, :, -1, :],
+                                 var='u', dims=[1], value=0.01)
+                         ]
 
     cell_class = tvtk.Quad().cell_type
     #U = tloop.eval()
@@ -487,6 +508,16 @@ if __name__ == '__main__':
     tloop.set(ug=ug, write_dir=target_dir)
     U = tloop.eval()
 
+    record_dofs = dots.mesh[25, -1, :, -1].dofs[:, :, 1].flatten()
+    print 'record dofs', record_dofs
+    Fd_int_t = np.array(tloop.F_int_record)
+    Ud_t = np.array(tloop.U_record)
+    import pylab as p
+    F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
+    U_t = -Ud_t[:, record_dofs[0]]
+    t_arr = np.array(tloop.t_record, dtype=np.float_)
+    p.plot(U_t, F_int_t)
+    p.show()
 #     eps_Encd = np.einsum('...ab,ac,bd->...cd',
 #                          eps_Enab, delta23_ab, delta23_ab)
 #     tensors = eps_Encd.reshape(-1, 9)
