@@ -6,25 +6,23 @@ Created on 29.03.2017
 Microplane damage model 2D - Jirasek [1999]
 '''
 
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
+from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.mats_eval import \
     IMATSEval
 from numpy import \
-    array, zeros,\
-    einsum, zeros_like,\
-    identity, linspace, hstack, \
-    sqrt
-
+    array, einsum, identity, sqrt
 from traits.api import \
     Constant, implements,\
-    Float, HasTraits, \
-    Property, cached_property
+    Float, Property, cached_property
+
+from ibvpy.mats.mats2D.mats2D_sdamage.vmats2D_sdamage import \
+    MATS2D
 import matplotlib.pyplot as plt
 import numpy as np
 import traits.api as tr
 
 
-class MATSEvalMicroplaneFatigue(HasTraits):
+class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
 
     E = Float(34000,
               label="E",
@@ -38,17 +36,17 @@ class MATSEvalMicroplaneFatigue(HasTraits):
                enter_set=True,
                auto_set=False)
 
-    ep = Float(59e-6,
-               label="a",
-               desc="Lateral pressure coefficient",
-               enter_set=True,
-               auto_set=False)
+    epsilon_0 = Float(59e-6,
+                      label="a",
+                      desc="Lateral pressure coefficient",
+                      enter_set=True,
+                      auto_set=False)
 
-    ef = Float(250e-6,
-               label="a",
-               desc="Lateral pressure coefficient",
-               enter_set=True,
-               auto_set=False)
+    epsilon_f = Float(250e-6,
+                      label="a",
+                      desc="Lateral pressure coefficient",
+                      enter_set=True,
+                      auto_set=False)
 
     c_T = Float(0.00,
                 label="a",
@@ -56,34 +54,8 @@ class MATSEvalMicroplaneFatigue(HasTraits):
                 enter_set=True,
                 auto_set=False)
 
-    def _get_phi(self, e, sctx):
-
-        phi = zeros(len(e))
-
-        for i in range(0, len(e)):
-
-            if e[i] >= self.ep:
-                phi[i] = sqrt(
-                    (self.ep / e[i]) * np.exp(- (e[i] - self.ep) / (self.ef - self.ep)))
-            else:
-                phi[i] = 1.0
-
-        return phi
-
-
-class MATSXDMicroplaneDamageFatigueJir(MATSEvalMicroplaneFatigue):
-
-    '''
-    Microplane Damage Fatigue Model.
-    '''
-    #-------------------------------------------------------------------------
-    # Setup for computation within a supplied spatial context
-    #-------------------------------------------------------------------------
-    D4_e = Property
-
-    def _get_D4_e(self):
-        # Return the elasticity tensor
-        return self._get_D_abef()
+    def get_state_array_shape(self):
+        return (self.n_mp, 2)
 
     #-------------------------------------------------------------------------
     # MICROPLANE-Kinematic constraints
@@ -111,124 +83,104 @@ class MATSXDMicroplaneDamageFatigueJir(MATSEvalMicroplaneFatigue):
                            einsum('ni,nj,nr -> nijr', self._MPN, self._MPN, self._MPN))
         return MPTT_nijr
 
-    def _get_e_vct_arr(self, eps_ab):
+    def _get_e_Emna(self, eps_Emab):
         # Projection of apparent strain onto the individual microplanes
-        e_ni = einsum('nj,ji->ni', self._MPN, eps_ab)
+        e_ni = einsum('nb,Emba->Emna', self._MPN, eps_Emab)
         return e_ni
 
-    def _get_e_N_arr(self, e_vct_arr):
+    def _get_e_N_Emn(self, e_Emna):
         # get the normal strain array for each microplane
-        eN_n = einsum('ni,ni->n', e_vct_arr, self._MPN)
-        return eN_n
+        e_N_Emn = einsum('Emna, na->Emn', e_Emna, self._MPN)
+        return e_N_Emn
 
-    def _get_e_T_vct_arr(self, e_vct_arr):
-        # get the tangential strain vector array for each microplane
-        eN_n = self._get_e_N_arr_2(e_vct_arr)
-        eN_vct_ni = einsum('n,ni->ni', eN_n, self._MPN)
-        print 'eN_n', eN_n.shape
-        print 'eN_vct_ni', eN_vct_ni.shape
-        print 'e_vct_arr', e_vct_arr.shape
-
-        return e_vct_arr - eN_vct_ni
-
-    def _get_e_equiv_arr(self, e_vct_arr):
+    def _get_e_equiv_Emn(self, e_Emna):
         '''
         Returns a list of the microplane equivalent strains
         based on the list of microplane strain vectors
         '''
         # magnitude of the normal strain vector for each microplane
-        # @todo: faster numpy functionality possible?
-        e_N_arr = self._get_e_N_arr(e_vct_arr)
-        # print 'e_N_arr', e_N_arr
+        e_N_Emn = self._get_e_N_Emn(e_Emna)
         # positive part of the normal strain magnitude for each microplane
-        e_N_pos_arr = (np.abs(e_N_arr) + e_N_arr) / 2
+        e_N_pos_Emn = (np.abs(e_N_Emn) + e_N_Emn) / 2
         # normal strain vector for each microplane
-        # @todo: faster numpy functionality possible?
-        e_N_vct_arr = einsum('n,ni -> ni', e_N_arr, self._MPN)
-        # print 'e_N_vct_arr', e_N_vct_arr
+        e_N_Emna = einsum('Emn,ni -> Emni', e_N_Emn, self._MPN)
         # tangent strain ratio
         c_T = self.c_T
         # tangential strain vector for each microplane
-        e_T_vct_arr = e_vct_arr - e_N_vct_arr
+        e_T_Emna = e_Emna - e_N_Emna
         # squared tangential strain vector for each microplane
-        e_TT_arr = einsum('ni,ni -> n', e_T_vct_arr, e_T_vct_arr)
+        e_TT_Emn = einsum('Emni,Emni -> Emn', e_T_Emna, e_T_Emna)
         # equivalent strain for each microplane
-        e_equiv_arr = sqrt(e_N_pos_arr * e_N_pos_arr + c_T * e_TT_arr)
-        # print 'e_equiv_arr', e_equiv_arr
-        return e_equiv_arr
+        e_equiv_Emn = sqrt(e_N_pos_Emn * e_N_pos_Emn + c_T * e_TT_Emn)
+        return e_equiv_Emn
 
-    def _get_e_max(self, e_equiv_arr, e_max_arr):
+    def _get_state_variables(self, s_Emng, eps_Emab):
+
+        kappa_Emn = np.copy(s_Emng[:, :, :, 0])
+        omega_Emn = np.copy(s_Emng[:, :, :, 1])
+        e_Emna = self._get_e_Emna(eps_Emab)
+        eps_eq_Emn = self._get_e_equiv_Emn(e_Emna)
+        f_trial_Emn = eps_eq_Emn - self.epsilon_0
+        f_idx = np.where(f_trial_Emn > 0)
+        kappa_Emn[f_idx] = eps_eq_Emn[f_idx]
+        omega_Emn[f_idx] = self._get_omega(eps_eq_Emn[f_idx])
+
+        return kappa_Emn, omega_Emn, f_idx
+
+    def _get_omega(self, kappa_Emn):
         '''
-        Compares the equivalent microplane strain of a single microplane with the
-        maximum strain reached in the loading history for the entire array
+        Return new value of damage parameter
+        @param kappa:
         '''
-        bool_e_max = e_equiv_arr >= e_max_arr
+        omega_Emn = np.zeros_like(kappa_Emn)
+        epsilon_0 = self.epsilon_0
+        epsilon_f = self.epsilon_f
+        kappa_idx = np.where(kappa_Emn >= epsilon_0)
+        omega_Emn[kappa_idx] = (1.0 - (epsilon_0 / kappa_Emn[kappa_idx] *
+                                       np.exp(-1.0 * (kappa_Emn[kappa_idx] - epsilon_0) /
+                                              (epsilon_f - epsilon_0))
+                                       ))
+        return omega_Emn
 
-        # The new value must be created, otherwise side-effect could occur
-        # by writing into a state array.
-        #
-        new_e_max_arr = np.copy(e_max_arr)
-        new_e_max_arr[bool_e_max] = e_equiv_arr[bool_e_max]
-        return new_e_max_arr
-
-    def _get_state_variables(self, sctx, eps_ab):
-        '''
-        Compares the list of current equivalent microplane strains with
-        the values in the state array and returns the higher values
-        '''
-        e_vct_arr = self._get_e_vct_arr(eps_ab)
-        e_equiv_arr = self._get_e_equiv_arr(e_vct_arr)
-        print
-        #e_max_arr_old = sctx.mats_state_array
-        #e_max_arr_new = self._get_e_max(e_equiv_arr, e_max_arr_old)
-        return e_equiv_arr
-
-    def _get_phi_arr(self, sctx, eps_ab):
-        # Returns a list of the integrity factors for all microplanes.
-        e_max_arr = self._get_state_variables(sctx, eps_ab)
-
-        phi_arr = self._get_phi(e_max_arr, sctx)[:]
-
-        return phi_arr
-
-    def _get_phi_mtx(self, sctx, eps_ab):
+    def _get_phi_Emab(self, kappa_Emn):
         # Returns the 2nd order damage tensor 'phi_mtx'
-
         # scalar integrity factor for each microplane
-        phi_arr = self._get_phi_arr(sctx, eps_ab)
-
+        phi_Emn = 1.0 - self._get_omega(kappa_Emn)
         # integration terms for each microplanes
-        phi_ij = einsum('n,n,nij->ij', phi_arr, self._MPW, self._MPNN)
+        phi_Emab = einsum('Emn,n,nab->Emab', phi_Emn, self._MPW, self._MPNN)
+        return phi_Emab
 
-        return phi_ij
-
-    def _get_beta_tns(self, phi_mtx):
+    def _get_beta_Emabcd(self, phi_Emab):
         '''
         Returns the 4th order damage tensor 'beta4' using sum-type symmetrization
         (cf. [Jir99], Eq.(21))
         '''
         delta = identity(2)
+        beta_Emijkl = 0.25 * (einsum('Emik,jl->Emijkl', phi_Emab, delta) +
+                              einsum('Emil,jk->Emijkl', phi_Emab, delta) +
+                              einsum('Emjk,il->Emijkl', phi_Emab, delta) +
+                              einsum('Emjl,ik->Emijkl', phi_Emab, delta))
 
-        beta_ijkl = 0.25 * (einsum('ik,jl->ijkl', phi_mtx, delta) +
-                            einsum('il,jk->ijkl', phi_mtx, delta) +
-                            einsum('jk,il->ijkl', phi_mtx, delta) +
-                            einsum('jl,ik->ijkl', phi_mtx, delta))
-
-        return beta_ijkl
+        return beta_Emijkl
 
     #-------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, sctx, eps_ab):
+    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1, update_state, s_Emng):
 
-        # -----------------------------------------------------------------------------------------------
-        # update state variables
-        # -----------------------------------------------------------------------------------------------
-        # if sctx.update_state_on:
-        #    #eps_n = eps_avg - d_eps
-        #   e_max = self._get_state_variables(sctx, eps_app_eng)
-        #    sctx.mats_state_array[:] = e_max
+        if update_state:
+
+            eps_Emab_n = eps_Emab_n1 - deps_Emab
+
+            kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
+                s_Emng, eps_Emab_n)
+
+            s_Emng[:, :, :, 0] = kappa_Emn
+            s_Emng[:, :, :, 1] = omega_Emn
+
+        kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
+            s_Emng, eps_Emab_n1)
 
         #----------------------------------------------------------------------
         # if the regularization using the crack-band concept is on calculate the
@@ -241,25 +193,25 @@ class MATSXDMicroplaneDamageFatigueJir(MATSEvalMicroplaneFatigue):
         #------------------------------------------------------------------
         # Damage tensor (2th order):
         #------------------------------------------------------------------
-        phi_ij = self._get_phi_mtx(sctx, eps_ab)
+        phi_Emab = self._get_phi_Emab(kappa_Emn)
 
         #------------------------------------------------------------------
         # Damage tensor (4th order) using product- or sum-type symmetrization:
         #------------------------------------------------------------------
-        beta_ijkl = self._get_beta_tns(phi_ij)
+        beta_Emabcd = self._get_beta_Emabcd(phi_Emab)
 
         #------------------------------------------------------------------
         # Damaged stiffness tensor calculated based on the damage tensor beta4:
         #------------------------------------------------------------------
-        D4_mdm_ijab = einsum(
-            'ijkl,klsr,absr->ijab', beta_ijkl, self.D4_e, beta_ijkl)
+        D_Emijab = einsum(
+            'Emijab, abef, Emabef -> Emijab', beta_Emabcd, self.D_abef, beta_Emabcd)
 
-        sig_ij = einsum('ijab,ab -> ij', D4_mdm_ijab, eps_ab)
+        sig_Emab = einsum('Emabef,Emef -> Emab', D_Emijab, eps_Emab_n1)
 
-        return sig_ij, D4_mdm_ijab
+        return D_Emijab, sig_Emab
 
 
-class MATS2DMicroplaneDamageJir(MATSXDMicroplaneDamageFatigueJir, MATS3DEval):
+class MATS2DMicroplane(MATSXDMicroplaneDamageJir, MATS2DEval):
 
     implements(IMATSEval)
 
@@ -379,78 +331,3 @@ class MATS2DMicroplaneDamageJir(MATSXDMicroplaneDamageFatigueJir, MATS3DEval):
     @tr.cached_property
     def _get_D_abef(self):
         return self.D_ab[self.map2d_ijkl2a, self.map2d_ijkl2b]
-
-
-if __name__ == '__main__':
-
-    #=========================
-    # model behavior
-    #=========================
-    n = 200
-    s_levels = linspace(0, 0.002, 10)
-    s_levels[0] = 0
-    s_levels.reshape(-1, 2)[:, 0] *= 0
-    s_history = s_levels.flatten()
-    s_arr = hstack([linspace(s_history[i], s_history[i + 1], n)
-                    for i in range(len(s_levels) - 1)])
-
-    eps = array([array([[s_arr[i], 0],
-                        [0, 0]]) for i in range(0, len(s_arr))])
-
-    m2 = MATS2DMicroplaneDamageJir()
-    sigma = zeros_like(eps)
-    #sigma_kk = zeros(len(s_arr) + 1)
-    w = zeros((len(eps[:, 0, 0]), 28))
-    e_pi = zeros((len(eps[:, 0, 0]), 28))
-    e = zeros((len(eps[:, 0, 0]), 28, 2))
-    e_T = zeros((len(eps[:, 0, 0]), 28, 2))
-    e_N = zeros((len(eps[:, 0, 0]), 28))
-    sctx = zeros((len(eps[:, 0, 0]) + 1, 28))
-
-    for i in range(0, len(eps[:, 0, 0])):
-
-        sigma[i, :] = m2.get_corr_pred(sctx[i, :], eps[i, :])[0]
-        sctx[i + 1] = m2._get_state_variables(sctx[i, :], eps[i, :])
-        w[i, :] = 1 - m2._get_phi_arr(sctx[i], eps[i, :])
-        e[i, :] = m2._get_e_vct_arr(eps[i, :])
-
-    plt.subplot(221)
-    plt.plot(eps[:, 0, 0], sigma[:, 0, 0], linewidth=1, label='sigma_11')
-    plt.xlabel('Strain')
-    plt.ylabel('Stress(MPa)')
-    plt.legend()
-
-    plt.subplot(222)
-    plt.plot(eps[:, 0, 0], w[:], linewidth=1, label='sigma_11')
-    plt.xlabel('Strain')
-    plt.ylabel('Stress(MPa)')
-    # plt.legend()
-
-#     plt.subplot(222)
-#     for i in range(0, 28):
-#         plt.plot(
-#             eps[:, 0, 0], w[:, i], linewidth=1, label='Damage of the microplanes', alpha=1)
-#
-#         plt.xlabel('Strain')
-#         plt.ylabel('Damage of the microplanes')
-#         # plt.legend()
-#
-#     plt.subplot(223)
-#     for i in range(0, 28):
-#         plt.plot(
-#             eps[:, 0, 0], sctx[0:n, i], linewidth=1, label='Damage of the microplanes', alpha=1)
-#
-#         plt.xlabel('Strain')
-#         plt.ylabel('Damage of the microplanes')
-    # plt.legend()
-
-#     plt.subplot(223)
-#     for i in range(0, 28):
-#         plt.plot(
-#             eps[:, 0, 0], e_T[:, i, 0], linewidth=1, label='Tangential_strain')
-#
-#         plt.xlabel('Strain')
-#         plt.ylabel('Tangential_strain')
-#         # plt.legend()
-
-    plt.show()

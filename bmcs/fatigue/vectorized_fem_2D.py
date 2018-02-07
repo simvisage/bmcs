@@ -1,5 +1,20 @@
 
+'''
+Created on Jan 24, 2018
+
+This script demonstrates the looples implementation
+of the finite element code for multiphase continuum.
+Example (2D discretization)
+
+@author: rch, abaktheer
+'''
+#========================================
+# Tensorial operators
+#========================================
+# Identity tensor
+
 import os
+
 from ibvpy.api import \
     FEGrid, FETSEval, TLine, BCSlice
 from ibvpy.core.bcond_mngr import BCondMngr
@@ -15,6 +30,7 @@ from traits.has_traits import HasStrictTraits
 from tvtk.api import \
     tvtk, write_data
 
+from cmdm_2D_Jirasek import MATS2DMicroplane
 from ibvpy.mats.mats2D.mats2D_sdamage.vmats2D_sdamage import \
     MATS2D, MATS2DScalarDamage
 import numpy as np
@@ -22,21 +38,7 @@ import sympy as sp
 import traits.api as tr
 from tvtk.tvtk_classes import tvtk_helper
 
-'''
-Created on Jan 24, 2018
 
-This script demonstrates the looples implementation
-of the finite element code for multiphase continuum.
-Example (2D discretization)
-
-@author: rch, abaktheer
-'''
-
-
-#========================================
-# Tensorial operators
-#========================================
-# Identity tensor
 delta = np.identity(2)
 # symetrization operator
 I_sym_abcd = 0.5 * \
@@ -331,9 +333,9 @@ class TimeLoop(HasStrictTraits):
 
         update_state = False
 
+        mats_sa_shape = self.ts.mats.get_state_array_shape()
         s_Emg = np.zeros((self.ts.mesh.n_active_elems,
-                          self.ts.fets.n_m,
-                          self.ts.mats.get_state_array_size()), dtype=np.float_)
+                          self.ts.fets.n_m,) + mats_sa_shape, dtype=np.float_)
 
         print 'setting up boundary conditions'
         tloop.bc_mngr.setup(None)
@@ -444,20 +446,27 @@ def mlab_view(dataset):
     lut.scalar_lut_manager.scalar_bar.position = np.array([0.82,  0.1])
 
 
-mats2d = MATS2DScalarDamage(
-    stiffness='secant',
+# mats2d = MATS2DScalarDamage(
+#     stiffness='secant',
+#     epsilon_0=0.03,
+#     epsilon_f=1.9 * 1000
+# )
+
+mats2d = MATS2DMicroplane(
+    # stiffness='secant',
     epsilon_0=0.03,
     epsilon_f=1.9 * 1000
 )
+
 fets2d_4u_4q = FETS2D4u4x()
 dots = DOTSGrid(L_x=600, L_y=100, n_x=51, n_y=10, fets=fets2d_4u_4q,
                 mats=mats2d)
 xdots = DOTSGrid(L_x=4, L_y=1, n_x=40, n_y=10, fets=fets2d_4u_4q,
                  mats=mats2d)
 if __name__ == '__main__':
-    tloop = TimeLoop(tline=TLine(min=0, max=1, step=0.05),
+    tloop = TimeLoop(tline=TLine(min=0, max=1, step=0.1),
                      ts=dots)
-    if True:
+    if False:
         tloop.bc_list = [BCSlice(slice=dots.mesh[0, :, 0, :],
                                  var='u', dims=[0, 1], value=0),
                          BCSlice(slice=dots.mesh[25, -1, :, -1],
@@ -465,7 +474,7 @@ if __name__ == '__main__':
                          BCSlice(slice=dots.mesh[-1, :, -1, :],
                                  var='u', dims=[0, 1], value=0)
                          ]
-    if False:
+    if True:
         tloop.bc_list = [BCSlice(slice=dots.mesh[0, 0, 0, 0],
                                  var='u', dims=[1], value=0),
                          BCSlice(slice=dots.mesh[-1, 0, -1, 0],

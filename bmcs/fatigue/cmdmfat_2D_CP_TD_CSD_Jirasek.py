@@ -172,7 +172,8 @@ class MATSEvalMicroplaneFatigue(HasTraits):
         w_N = f_w(Y_N) * thres_2
         z_N = - w_N * thres_2
 
-        new_sctx = zeros((28, 5))
+        n_mp = self.n_mp
+        new_sctx = zeros((n_mp, 5))
 
         new_sctx[:, 0] = w_N
         new_sctx[:, 1] = z_N
@@ -233,8 +234,8 @@ class MATSEvalMicroplaneFatigue(HasTraits):
 #             (sig_pi_trial[:, 2] - X[:, 2]) / norm_2
 
         z_T = z_T + delta_lamda
-
-        new_sctx = zeros((28, 6))
+        n_mp = self.n_mp
+        new_sctx = zeros((n_mp, 6))
         new_sctx[:, 0] = w_T
         new_sctx[:, 1] = z_T
         new_sctx[:, 2:4] = alpha_T
@@ -640,27 +641,28 @@ if __name__ == '__main__':
                           [0, m * s_arr_2[i]]]) for i in range(0, len(s_arr_2))])
 
     m2 = MATS2DMicroplaneDamageJir()
+    n_mp = m2.n_mp
     sigma_1 = zeros_like(eps_1)
     sigma_kk_1 = zeros(len(s_arr_1) + 1)
-    w_1_N = zeros((len(eps_1[:, 0, 0]), 28))
-    w_1_T = zeros((len(eps_1[:, 0, 0]), 28))
-    eps_P_N_1 = zeros((len(eps_1[:, 0, 0]), 28))
-    eps_Pi_T_1 = zeros((len(eps_1[:, 0, 0]), 28, 2))
-    e_1 = zeros((len(eps_1[:, 0, 0]), 28, 2))
-    e_T_1 = zeros((len(eps_1[:, 0, 0]), 28, 2))
-    e_N_1 = zeros((len(eps_1[:, 0, 0]), 28))
-    sctx_1 = zeros((len(eps_1[:, 0, 0]) + 1, 28, 11))
+    w_1_N = zeros((len(eps_1[:, 0, 0]), n_mp))
+    w_1_T = zeros((len(eps_1[:, 0, 0]), n_mp))
+    eps_P_N_1 = zeros((len(eps_1[:, 0, 0]), n_mp))
+    eps_Pi_T_1 = zeros((len(eps_1[:, 0, 0]), n_mp, 2))
+    e_1 = zeros((len(eps_1[:, 0, 0]), n_mp, 2))
+    e_T_1 = zeros((len(eps_1[:, 0, 0]), n_mp, 2))
+    e_N_1 = zeros((len(eps_1[:, 0, 0]), n_mp))
+    sctx_1 = zeros((len(eps_1[:, 0, 0]) + 1, n_mp, 11))
 
     sigma_2 = zeros_like(eps_2)
     sigma_kk_2 = zeros(len(s_arr_2) + 1)
-    w_2_N = zeros((len(eps_2[:, 0, 0]), 28))
-    w_2_T = zeros((len(eps_2[:, 0, 0]), 28))
-    eps_P_N_2 = zeros((len(eps_2[:, 0, 0]), 28))
-    eps_Pi_T_2 = zeros((len(eps_2[:, 0, 0]), 28, 2))
-    e_2 = zeros((len(eps_2[:, 0, 0]), 28, 2))
-    e_T_2 = zeros((len(eps_2[:, 0, 0]), 28, 2))
-    e_N_2 = zeros((len(eps_2[:, 0, 0]), 28))
-    sctx_2 = zeros((len(eps_2[:, 0, 0]) + 1, 28, 11))
+    w_2_N = zeros((len(eps_2[:, 0, 0]), n_mp))
+    w_2_T = zeros((len(eps_2[:, 0, 0]), n_mp))
+    eps_P_N_2 = zeros((len(eps_2[:, 0, 0]), n_mp))
+    eps_Pi_T_2 = zeros((len(eps_2[:, 0, 0]), n_mp, 2))
+    e_2 = zeros((len(eps_2[:, 0, 0]), n_mp, 2))
+    e_T_2 = zeros((len(eps_2[:, 0, 0]), n_mp, 2))
+    e_N_2 = zeros((len(eps_2[:, 0, 0]), n_mp))
+    sctx_2 = zeros((len(eps_2[:, 0, 0]) + 1, n_mp, 11))
 
     for i in range(0, len(eps_1[:, 0, 0])):
 
