@@ -14,10 +14,8 @@ from numpy import \
 from traits.api import \
     Constant, implements,\
     Float, Property, cached_property
-
-from ibvpy.mats.mats2D.mats2D_sdamage.vmats2D_sdamage import \
+from ibvpy.mats.mats2D.vmats2D_eval import \
     MATS2D
-import matplotlib.pyplot as plt
 import numpy as np
 import traits.api as tr
 
@@ -54,8 +52,13 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
                 enter_set=True,
                 auto_set=False)
 
-    def get_state_array_shape(self):
-        return (self.n_mp, 2)
+    state_array_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
+    '''Dictionary of state variable entries with their array shapes.
+    '''
+    @cached_property
+    def _get_state_array_shapes(self):
+        return {'kappa': (self.n_mp,),
+                'omega': (self.n_mp,)}
 
     #-------------------------------------------------------------------------
     # MICROPLANE-Kinematic constraints
@@ -114,10 +117,10 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         e_equiv_Emn = sqrt(e_N_pos_Emn * e_N_pos_Emn + c_T * e_TT_Emn)
         return e_equiv_Emn
 
-    def _get_state_variables(self, s_Emng, eps_Emab):
+    def _get_state_variables(self, eps_Emab, kappa, omega):
 
-        kappa_Emn = np.copy(s_Emng[:, :, :, 0])
-        omega_Emn = np.copy(s_Emng[:, :, :, 1])
+        kappa_Emn = np.copy(kappa)
+        omega_Emn = np.copy(omega)
         e_Emna = self._get_e_Emna(eps_Emab)
         eps_eq_Emn = self._get_e_equiv_Emn(e_Emna)
         f_trial_Emn = eps_eq_Emn - self.epsilon_0
@@ -136,10 +139,11 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
         kappa_idx = np.where(kappa_Emn >= epsilon_0)
-        omega_Emn[kappa_idx] = (1.0 - (epsilon_0 / kappa_Emn[kappa_idx] *
-                                       np.exp(-1.0 * (kappa_Emn[kappa_idx] - epsilon_0) /
-                                              (epsilon_f - epsilon_0))
-                                       ))
+        omega_Emn[kappa_idx] = (
+            1.0 - (epsilon_0 / kappa_Emn[kappa_idx] *
+                   np.exp(-1.0 * (kappa_Emn[kappa_idx] - epsilon_0) /
+                          (epsilon_f - epsilon_0))
+                   ))
         return omega_Emn
 
     def _get_phi_Emab(self, kappa_Emn):
@@ -167,20 +171,21 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1, update_state, s_Emng):
+    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1, update_state,
+                      kappa, omega):
 
         if update_state:
 
             eps_Emab_n = eps_Emab_n1 - deps_Emab
 
             kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
-                s_Emng, eps_Emab_n)
+                eps_Emab_n, kappa, omega)
 
-            s_Emng[:, :, :, 0] = kappa_Emn
-            s_Emng[:, :, :, 1] = omega_Emn
+            kappa[...] = kappa_Emn[...]
+            omega[...] = omega_Emn[...]
 
         kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
-            s_Emng, eps_Emab_n1)
+            eps_Emab_n1, kappa, omega)
 
         #----------------------------------------------------------------------
         # if the regularization using the crack-band concept is on calculate the
@@ -211,7 +216,7 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         return D_Emijab, sig_Emab
 
 
-class MATS2DMicroplane(MATSXDMicroplaneDamageJir, MATS2DEval):
+class MATS2DMplDamageEEQ(MATSXDMicroplaneDamageJir, MATS2DEval):
 
     implements(IMATSEval)
 

@@ -18,7 +18,6 @@ nu = 0.2
 la = E * nu / ((1 + nu) * (1 - 2 * nu))
 # second Lame parameter (shear modulus)
 mu = E / (2 + 2 * nu)
-
 K = la + (2. / 3.) * mu
 
 C_abcd = (K * np.einsum('ab,cd->abcd', delta, delta) +
@@ -35,13 +34,6 @@ D_ab[1, 0] = E / (1.0 - nu * nu) * nu
 D_ab[1, 1] = E / (1.0 - nu * nu)
 D_ab[2, 2] = E / (1.0 - nu * nu) * (1.0 / 2.0 - nu / 2.0)
 
-E_, nu_ = sp.symbols('E,nu')
-DD_ab = sp.Matrix(
-    [[E_ / (1.0 - nu_ * nu_), E_ / (1.0 - nu_ * nu_) * nu_, 0],
-     [E_ / (1.0 - nu_ * nu_) * nu_, E_ / (1.0 - nu_ * nu_), 0],
-     [0, 0, E_ / (1.0 - nu_ * nu_) * (1.0 / 2.0 - nu_ / 2.0)]
-     ])
-<
 
 def map2d_ijkl2mn(i, j, k, l):
     '''
@@ -74,7 +66,8 @@ map2d_ijkl2a = np.array([[[[0, 0],
                          [[[2, 2],
                            [2, 2]],
                           [[1, 1],
-                             [1, 1]]]])
+                           [1, 1]]
+                          ]])
 map2d_ijkl2b = np.array([[[[0, 2],
                            [2, 1]],
                           [[0, 2],
@@ -82,7 +75,8 @@ map2d_ijkl2b = np.array([[[[0, 2],
                          [[[0, 2],
                            [2, 1]],
                           [[0, 2],
-                             [2, 1]]]])
+                           [2, 1]]
+                          ]])
 
 abcd2m = np.zeros((2, 2, 2, 2), np.int_)
 abcd2n = np.zeros((2, 2, 2, 2), np.int_)
@@ -108,3 +102,54 @@ sig3d = sig2d[map2d_3d]
 print 'sig3d', sig3d
 print 'D_ab', D_ab
 print D_abef - D_abcd
+
+E_, nu_ = sp.symbols('E,nu')
+mu_ = E_ / (2 + 2 * nu_)
+la_ = E_ * nu_ / ((1 + nu_) * (1 - 2 * nu_))
+K_ = la_ + (2. / 3.) * mu_
+sp.Matrix()
+
+E_, nu_ = sp.symbols('E,nu')
+
+D2D_ab = sp.Matrix(
+    [[E_ / (1.0 - nu_ * nu_), E_ / (1.0 - nu_ * nu_) * nu_, 0],
+     [E_ / (1.0 - nu_ * nu_) * nu_, E_ / (1.0 - nu_ * nu_), 0],
+     [0, 0, E_ / (1.0 - nu_ * nu_) * (1.0 / 2.0 - nu_ / 2.0)]
+     ])
+
+D_factor = E_ * (1 - nu_) / ((1 + nu_) * (1 - 2 * nu_))
+D3D_ab = D_factor * sp.Matrix(
+    [[1, nu_ / (1 - nu_), nu_ / (1 - nu_), 0, 0, 0],
+     [nu_ / (1 - nu_), 1, nu_ / (1 - nu_), 0, 0, 0],
+     [nu_ / (1 - nu_), nu_ / (1 - nu_), 1, 0, 0, 0],
+     [0, 0, 0, (1 - 2 * nu_) / (2 * (1 - nu_)), 0, 0],
+     [0, 0, 0, 0, (1 - 2 * nu_) / (2 * (1 - nu_)), 0],
+     [0, 0, 0, 0, 0, (1 - 2 * nu_) / (2 * (1 - nu_))]
+     ])
+sig3D_ab = sp.Matrix()
+print D3D_ab.subs({"E": E, "nu": nu})
+
+idx_1 = [0, 1, 3]
+idx_2 = [2, 4, 5]
+D3D_11 = D3D_ab[idx_1, idx_1]
+D3D_12 = D3D_ab[idx_1, idx_2]
+D3D_21 = D3D_ab[idx_2, idx_1]
+D3D_22 = D3D_ab[idx_2, idx_2]
+inv_D3D_22 = D3D_22.inv()
+D2D_ab = D3D_11 - ((D3D_12 * inv_D3D_22) * D3D_21)
+print D2D_ab.subs({"E": E, "nu": nu})
+D2D_ab2 = E_ / (1 - nu_**2) * sp.Matrix([[1, nu_, 0],
+                                         [nu_, 1, 0],
+                                         [0, 0, (1 - nu_) / 2]])
+print D2D_ab2.subs({"E": E, "nu": nu})
+
+idx_1 = [0, 1, 3]
+idx_2 = [2]
+D3D_11 = D3D_ab[idx_1, idx_1]
+D3D_12 = D3D_ab[idx_1, idx_2]
+D3D_21 = D3D_ab[idx_2, idx_1]
+D3D_22 = D3D_ab[idx_2, idx_2]
+inv_D3D_22 = D3D_22.inv()
+D2D_ab3 = D3D_11 - ((D3D_12 * inv_D3D_22) * D3D_21)
+
+print D2D_ab3.subs({"E": E, "nu": nu})
