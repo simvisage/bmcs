@@ -53,8 +53,13 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
     the material model
     '''
 
+<<<<<<< Updated upstream
     state_array_shapes = {'kappa': (),
                           'omega': ()}
+=======
+    state_array_shapes = tr.Dict({'kappa': (),
+                                  'omega': ()})
+>>>>>>> Stashed changes
     r'''
     Shapes of the state variables
     to be stored in the global array at the level 
