@@ -31,6 +31,7 @@ from tvtk.api import \
     tvtk, write_data
 
 from cmdm_2D_Jirasek import MATS2DMicroplane
+from cmdm_2D_ODFs import MATS2DMplDamageODF
 from ibvpy.mats.mats2D.mats2D_sdamage.vmats2D_sdamage import \
     MATS2D, MATS2DScalarDamage
 import numpy as np
@@ -452,7 +453,13 @@ def mlab_view(dataset):
 #     epsilon_f=1.9 * 1000
 # )
 
-mats2d = MATS2DMicroplane(
+# mats2d = MATS2DMicroplane(
+#     # stiffness='secant',
+#     epsilon_0=0.03,
+#     epsilon_f=1.9 * 1000
+# )
+
+mats2d = MATS2DMplDamageODF(
     # stiffness='secant',
     epsilon_0=0.03,
     epsilon_f=1.9 * 1000
