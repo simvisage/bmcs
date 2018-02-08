@@ -96,56 +96,58 @@ class DOTSGrid(tr.HasStrictTraits):
                 B_Einabc, det_J_Em)
 
     BB_Emicjdabef = tr.Property()
-    '''
+    '''Quadratic form of the kinematic mapping.
     '''
 
     def _get_BB_Emicjdabef(self):
         return self.cached_grid_values[0]
 
     B_Eimabc = tr.Property()
-    '''.
+    '''Kinematic mapping between displacements and strains in every
+    integration point.
     '''
 
     def _get_B_Eimabc(self):
         return self.cached_grid_values[1]
 
+    B_Einabc = tr.Property()
+    '''Kinematic mapping between displacement and strain in every
+    visualization point
+    '''
+
+    def _get_B_Einabc(self):
+        return self.cached_grid_values[6]
+
     dof_Eia = tr.Property()
-    '''.
+    '''Mapping [element, node, direction] -> degree of freedom.
     '''
 
     def _get_dof_Eia(self):
         return self.cached_grid_values[2]
 
     x_Eia = tr.Property()
-    '''
+    '''Mapping [element, node, direction] -> value of coordinate.
     '''
 
     def _get_x_Eia(self):
         return self.cached_grid_values[3]
 
     dof_Ia = tr.Property()
-    '''
+    '''[global node, direction] -> degree of freedom
     '''
 
     def _get_dof_Ia(self):
         return self.cached_grid_values[4]
 
     I_Ei = tr.Property()
-    '''
+    '''[element, node] -> global node
     '''
 
     def _get_I_Ei(self):
         return self.cached_grid_values[5]
 
-    B_Einabc = tr.Property()
-    '''
-    '''
-
-    def _get_B_Einabc(self):
-        return self.cached_grid_values[6]
-
     det_J_Em = tr.Property()
-    '''
+    '''Jacobi determinant in every element and integration point.
     '''
 
     def _get_det_J_Em(self):
