@@ -54,8 +54,13 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
     '''
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     state_array_shapes = {'kappa': (),
                           'omega': ()}
+=======
+    state_array_shapes = tr.Dict({'kappa': (),
+                                  'omega': ()})
+>>>>>>> Stashed changes
 =======
     state_array_shapes = tr.Dict({'kappa': (),
                                   'omega': ()})

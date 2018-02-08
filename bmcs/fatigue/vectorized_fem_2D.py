@@ -26,7 +26,10 @@ from tvtk.api import \
     tvtk, write_data
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 <<<<<<< HEAD
 from cmdm_2D_Jirasek import MATS2DMicroplane
 from cmdm_2D_ODFs import MATS2DMplDamageODF
@@ -34,6 +37,9 @@ from ibvpy.mats.mats2D.mats2D_sdamage.vmats2D_sdamage import \
     MATS2D, MATS2DScalarDamage
 =======
 >>>>>>> master
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 import numpy as np
 import sympy as sp
@@ -268,8 +274,11 @@ class TimeLoop(HasStrictTraits):
         update_state = False
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         self.bc_mngr.setup(None)
 =======
+=======
+>>>>>>> Stashed changes
         tloop.bc_mngr.setup(None)
 >>>>>>> Stashed changes
 
@@ -346,6 +355,9 @@ class TimeLoop(HasStrictTraits):
         U_Eia = U_Ia[dots.I_Ei]
         eps_Enab = np.einsum('Einabc,Eic->Enab', dots.B_Einabc, U_Eia)
         sig_Enab = np.einsum('abef,Emef->Emab', dots.mats.D_abcd, eps_Enab)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
         U_vector_field = np.einsum('Ia,ab->Ib',
@@ -386,12 +398,15 @@ def mlab_view(dataset):
 
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 mats2d = MATS2DMplDamageEEQ(
     # stiffness='secant',
     epsilon_0=0.03,
     epsilon_f=1.9 * 1000
 )
 =======
+=======
+>>>>>>> Stashed changes
 <<<<<<< HEAD
 # mats2d = MATS2DScalarDamage(
 #     stiffness='secant',
@@ -419,7 +434,10 @@ mats2d = MATS2DMplDamageEEQ(
 )
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 
 mats2d = MATS2DScalarDamage(
     stiffness='algorithmic',
@@ -430,6 +448,9 @@ mats2d = MATS2DScalarDamage(
 mats2d = MATS2DElastic(
 )
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 fets2d_4u_4q = FETS2D4Q()
 dots = DOTSGrid(L_x=600, L_y=100, n_x=51, n_y=10,
