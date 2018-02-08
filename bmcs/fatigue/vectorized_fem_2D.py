@@ -173,23 +173,29 @@ class DOTSGrid(tr.HasStrictTraits):
         n_c = self.fets.n_nodal_dofs
         U_Ia = U.reshape(-1, n_c)
         U_Eia = U_Ia[self.I_Ei]
-        eps_Emab = np.einsum('Eimabc,Eic->Emab', self.B_Eimabc, U_Eia)
+        eps_Emab = np.einsum(
+            'Eimabc,Eic->Emab', self.B_Eimabc, U_Eia
+        )
         dU_Ia = dU.reshape(-1, n_c)
         dU_Eia = dU_Ia[self.I_Ei]
-        deps_Emab = np.einsum('Eimabc,Eic->Emab', self.B_Eimabc, dU_Eia)
+        deps_Emab = np.einsum(
+            'Eimabc,Eic->Emab', self.B_Eimabc, dU_Eia
+        )
         D_Emabef, sig_Emab = self.mats.get_corr_pred(
             eps_Emab, deps_Emab, t_n, t_n1, update_state,
             **self.state_arrays
         )
-        K_Eicjd = np.einsum('Emicjdabef,Emabef->Eicjd',
-                            self.BB_Emicjdabef, D_Emabef)
+        K_Eicjd = np.einsum(
+            'Emicjdabef,Emabef->Eicjd', self.BB_Emicjdabef, D_Emabef
+        )
         n_E, n_i, n_c, n_j, n_d = K_Eicjd.shape
         K_E = K_Eicjd.reshape(-1, n_i * n_c, n_j * n_d)
         dof_E = dots.dof_Eia.reshape(-1, n_i * n_c)
         K_subdomain = SysMtxArray(mtx_arr=K_E, dof_map_arr=dof_E)
-        f_Eic = np.einsum('m,Eimabc,Emab,Em->Eic',
-                          self.fets.w_m, self.B_Eimabc, sig_Emab,
-                          self.det_J_Em)
+        f_Eic = np.einsum(
+            'm,Eimabc,Emab,Em->Eic', self.fets.w_m, self.B_Eimabc, sig_Emab,
+            self.det_J_Em
+        )
         f_Ei = f_Eic.reshape(-1, n_i * n_c)
         F_dof = np.bincount(dof_E.flatten(), weights=f_Ei.flatten())
         F_int = F_dof
@@ -357,9 +363,6 @@ def mlab_view(dataset):
     lut.scalar_lut_manager.scalar_bar.position = np.array([0.82,  0.1])
 
 
-mats2d = MATS2DElastic(
-)
-
 mats2d = MATS2DMplDamageEEQ(
     # stiffness='secant',
     epsilon_0=0.03,
@@ -371,6 +374,9 @@ mats2d = MATS2DScalarDamage(
     stiffness='algorithmic',
     epsilon_0=0.03,
     epsilon_f=1.9 * 1000
+)
+
+mats2d = MATS2DElastic(
 )
 
 fets2d_4u_4q = FETS2D4Q()

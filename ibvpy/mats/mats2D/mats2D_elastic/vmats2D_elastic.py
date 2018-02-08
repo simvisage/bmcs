@@ -9,12 +9,12 @@ import numpy as np
 
 
 class MATS2DElastic(MATS2D):
-
-    def get_state_array_shape(self):
-        return (0,)
+    '''Elastic material model.
+    '''
+    state_array_shapes = {}
 
     def get_corr_pred(self, eps_Emcd, deps_Emcd, t_n, t_n1,
-                      update_state, s_Emg):
+                      update_state):
         D_Emabcd = self.D_abcd[None, None, :, :, :, :]
         sig_Emab = np.einsum('...abcd,...cd->...ab', D_Emabcd, eps_Emcd)
         return D_Emabcd, sig_Emab
