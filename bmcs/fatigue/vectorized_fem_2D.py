@@ -25,24 +25,7 @@ from traits.has_traits import HasStrictTraits
 from tvtk.api import \
     tvtk, write_data
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
-<<<<<<< HEAD
-from cmdm_2D_Jirasek import MATS2DMicroplane
-from cmdm_2D_ODFs import MATS2DMplDamageODF
-from ibvpy.mats.mats2D.mats2D_sdamage.vmats2D_sdamage import \
-    MATS2D, MATS2DScalarDamage
-=======
->>>>>>> master
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 import numpy as np
-import sympy as sp
 import traits.api as tr
 from tvtk.tvtk_classes import tvtk_helper
 
@@ -272,16 +255,7 @@ class TimeLoop(HasStrictTraits):
     def eval(self):
 
         update_state = False
-
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        self.bc_mngr.setup(None)
-=======
-=======
->>>>>>> Stashed changes
         tloop.bc_mngr.setup(None)
->>>>>>> Stashed changes
-
         K = SysMtxAssembly()
         self.bc_mngr.apply_essential(K)
         U_n = np.zeros((self.ts.mesh.n_dofs,), dtype=np.float_)
@@ -347,19 +321,9 @@ class TimeLoop(HasStrictTraits):
     def record_response(self, U, t):
         n_c = self.ts.fets.n_nodal_dofs
         U_Ia = U.reshape(-1, n_c)
-<<<<<<< Updated upstream
         U_Eia = U_Ia[self.ts.I_Ei]
         eps_Enab = np.einsum('Einabc,Eic->Enab', self.ts.B_Einabc, U_Eia)
         sig_Enab = np.einsum('abef,Emef->Emab', self.ts.mats.D_abcd, eps_Enab)
-=======
-        U_Eia = U_Ia[dots.I_Ei]
-        eps_Enab = np.einsum('Einabc,Eic->Enab', dots.B_Einabc, U_Eia)
-        sig_Enab = np.einsum('abef,Emef->Emab', dots.mats.D_abcd, eps_Enab)
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-
         U_vector_field = np.einsum('Ia,ab->Ib',
                                    U_Eia.reshape(-1, n_c), delta23_ab)
         self.ug.point_data.vectors = U_vector_field
@@ -397,48 +361,6 @@ def mlab_view(dataset):
     lut.scalar_lut_manager.scalar_bar.position = np.array([0.82,  0.1])
 
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-mats2d = MATS2DMplDamageEEQ(
-    # stiffness='secant',
-    epsilon_0=0.03,
-    epsilon_f=1.9 * 1000
-)
-=======
-=======
->>>>>>> Stashed changes
-<<<<<<< HEAD
-# mats2d = MATS2DScalarDamage(
-#     stiffness='secant',
-#     epsilon_0=0.03,
-#     epsilon_f=1.9 * 1000
-# )
->>>>>>> Stashed changes
-
-
-<<<<<<< Updated upstream
-mats2d = MATS2DElastic(
-)
-
-mats2d = MATS2DScalarDamage(
-    stiffness='algorithmic',
-=======
-mats2d = MATS2DMplDamageODF(
-=======
-mats2d = MATS2DMplDamageEEQ(
->>>>>>> master
-    # stiffness='secant',
->>>>>>> Stashed changes
-    epsilon_0=0.03,
-    epsilon_f=1.9 * 1000
-)
-
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
-
 mats2d = MATS2DScalarDamage(
     stiffness='algorithmic',
     epsilon_0=0.03,
@@ -448,10 +370,12 @@ mats2d = MATS2DScalarDamage(
 mats2d = MATS2DElastic(
 )
 
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+mats2d = MATS2DMplDamageEEQ(
+    # stiffness='secant',
+    epsilon_0=0.03,
+    epsilon_f=1.9 * 1000
+)
+
 fets2d_4u_4q = FETS2D4Q()
 dots = DOTSGrid(L_x=600, L_y=100, n_x=51, n_y=10,
                 fets=fets2d_4u_4q, mats=mats2d)
