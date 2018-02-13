@@ -355,7 +355,7 @@ def run_bending3pt_elastic():
     )
 
     bt.w_max = 10
-    bt.tline.step = 0.05
+    bt.tline.step = 0.2
     bt.geometry.L = 600
     bt.loading_scenario.set(loading_type='monotonic')
     w = BMCSWindow(model=bt)

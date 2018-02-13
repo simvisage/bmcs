@@ -163,10 +163,10 @@ class BMCSStudy(ReportStudy):
         if self.running:
             return
         self.enable_stop = True
-        # self.model.run()
-        self.run_thread = RunThread(self)
+        self.model.run()
+        #self.run_thread = RunThread(self)
         print 'run_thread start'
-        self.run_thread.start()
+        # self.run_thread.start()
         print 'launched'
 
     def pause(self):
