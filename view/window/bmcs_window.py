@@ -68,31 +68,33 @@ class RunThread(Thread):
     '''Time loop thread responsible.
     '''
 
-    def __init__(self, ui, *args, **kw):
+    def __init__(self, study, *args, **kw):
         super(RunThread, self).__init__(*args, **kw)
         self.daemon = True
-        self.ui = ui
+        self.study = study
 
     def run(self):
-        self.ui.model.run()
+        print 'STARTING THREAD'
+        self.study.model.run()
+        print 'THREAD ENDED'
 
     def xrun(self):
-        self.ui.model.init()
-        self.ui.start_event = True
-        self.ui.running = True
+        self.study.model.init()
+        self.study.start_event = True
+        self.study.running = True
         try:
-            self.ui.model.eval()
+            self.study.model.eval()
         except Exception as e:
-            self.ui.running = False
+            self.study.running = False
             raise
-        self.ui.running = False
-        self.ui.finish_event = True
+        self.study.running = False
+        self.study.finish_event = True
 
     def pause(self):
-        self.ui.model.paused = True
+        self.study.model.paused = True
 
     def stop(self):
-        self.ui.model.restart = True
+        self.study.model.restart = True
 
 
 class BMCSStudy(ReportStudy):
@@ -162,8 +164,10 @@ class BMCSStudy(ReportStudy):
             return
         self.enable_stop = True
         # self.model.run()
-        self.run_thread = RunThread(ui=self)
+        self.run_thread = RunThread(self)
+        print 'run_thread start'
         self.run_thread.start()
+        print 'launched'
 
     def pause(self):
         self.model.pause()
