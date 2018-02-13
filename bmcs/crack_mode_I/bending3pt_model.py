@@ -181,20 +181,10 @@ class BendingTestModel(BMCSModel, Vis2D):
 
     w_max = Float(-50, BC=True, auto_set=False, enter_set=True)
 
-    free_end_dof = Property
+    controlled_elem = Property
 
-    def _get_free_end_dof(self):
-        return self.n_e_x + 1
-
-    controlled_dof = Property
-
-    def _get_controlled_dof(self):
-        return 2 + 2 * self.n_e_x - 1
-
-    fixed_dof = Property
-
-    def _get_fixed_dof(self):
-        return 0
+    def _get_controlled_elem(self):
+        return self.n_e_x / 2
 
     #=========================================================================
     # Material model
@@ -269,7 +259,7 @@ class BendingTestModel(BMCSModel, Vis2D):
     '''Foxed boundary condition'''
     @cached_property
     def _get_fixed_middle_bc(self):
-        return BCSlice(slice=self.fe_grid[self.n_e_x / 2, -1, :, -1],
+        return BCSlice(slice=self.fe_grid[self.controlled_elem, -1, :, -1],
                        var='u', dims=[0], value=0)
 
     control_bc = Property(depends_on='BC,GEO,MESH')
@@ -278,7 +268,7 @@ class BendingTestModel(BMCSModel, Vis2D):
     '''
     @cached_property
     def _get_control_bc(self):
-        return BCSlice(slice=self.fe_grid[self.n_e_x / 2, -1, :, -1],
+        return BCSlice(slice=self.fe_grid[self.controlled_elem, -1, :, -1],
                        var='u', dims=[1], value=-self.w_max)
 
     dots_grid = Property(Instance(DOTSGrid), depends_on='MAT,GEO,MESH,FE')
@@ -322,8 +312,8 @@ class BendingTestModel(BMCSModel, Vis2D):
                         bc_mngr=self.bcond_mngr)
 
     def get_PW(self):
-        record_dofs = self.fe_grid[self.n_e_x /
-                                   2, -1, :, -1].dofs[:, :, 1].flatten()
+        record_dofs = self.fe_grid[self.controlled_elem, -
+                                   1, :, -1].dofs[:, :, 1].flatten()
         Fd_int_t = np.array(self.tloop.F_int_record)
         Ud_t = np.array(self.tloop.U_record)
         F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
@@ -344,7 +334,7 @@ from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 
 
 def run_bending3pt_elastic():
-    bt = BendingTestModel(n_e_x=30, k_max=500,
+    bt = BendingTestModel(n_e_x=19, k_max=500,
                           mats_eval_type='scalar damage'
                           #mats_eval_type='microplane damage (eeq)'
                           )
@@ -369,7 +359,7 @@ def run_bending3pt_elastic():
 
 #    w.run()
     w.offline = True
-    w.finish_event = True
+#    w.finish_event = True
     w.configure_traits()
 
 

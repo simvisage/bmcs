@@ -11,6 +11,7 @@ from mayavi import mlab
 from mayavi.filters.api import ExtractTensorComponents
 from mayavi.modules.api import Surface
 from mayavi.sources.vtk_xml_file_reader import VTKXMLFileReader
+from pyface.api import GUI
 from tvtk.api import \
     tvtk, write_data
 
@@ -69,6 +70,7 @@ class Vis3DPoll(Vis3D):
         print 'writing', target_file
         write_data(self.ug, target_file)
         self.file_list.append(target_file)
+        print 'FILE WRITTEN'
         # self.lock.release()
 
 
@@ -79,6 +81,7 @@ class Viz3DPoll(Viz3D):
 
     def setup(self):
         #self.lock = threading.Lock()
+        print 'SETTING UP VIZ3D'
         m = mlab
         fname = self.vis3d.file_list[0]
         self.d = VTKXMLFileReader()
@@ -105,9 +108,13 @@ class Viz3DPoll(Viz3D):
         )
 
     def plot(self, vot):
+        self._later_plot(vot)
+        #GUI.invoke_later(self._later_plot, vot)
+
+    def _later_plot(self, vot):
         # self.lock.acquire()
         idx = self.vis3d.tloop.get_time_idx(vot)
 
         self.d.file_list = self.vis3d.file_list
-        self.d.timestep = idx  # len(self.vis3d.file_list) - 1
+        self.d.timestep = idx + 1  # len(self.vis3d.file_list) - 1
         # self.lock.release()

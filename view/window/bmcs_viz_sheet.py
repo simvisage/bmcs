@@ -146,11 +146,11 @@ class VizSheet(ROutputSection):
             ax = self.reference_axes
             ax.clear()
             self.reference_viz2d.reset(ax)
-        self.setup_pipeline()
 
     def run_finished(self):
         self.skipped_steps = self.monitor_chunk_size
         self.replot()
+        # self.update_pipeline(1.0)
         self.offline = True
 
     monitor_chunk_size = Int(10, label='Monitor each # steps')
@@ -174,7 +174,8 @@ class VizSheet(ROutputSection):
             self.reference_viz2d.plot(ax, self.vot)
         self.data_changed = True
         self.skipped_steps = 0
-        self.update_pipeline(self.vot)
+        if self.mode == 'browse':
+            self.update_pipeline(self.vot)
 
     viz2d_list = List(Viz2D)
     '''List of visualization adaptors for 2D.
@@ -369,15 +370,21 @@ class VizSheet(ROutputSection):
             map_order_viz3d['%5g%5g' % (order, idx)] = viz3d
         return [map_order_viz3d[key] for key in sorted(map_order_viz3d.keys())]
 
+    pipeline_ready = Bool(False)
+
     def setup_pipeline(self):
+        if self.pipeline_ready:
+            return
         self.fig
         fig = self.mlab.gcf()
         fig.scene.disable_render = True
         for viz3d in self.viz3d_list:
             viz3d.setup()
         fig.scene.disable_render = False
+        self.pipeline_ready = True
 
     def update_pipeline(self, vot):
+        self.setup_pipeline()
         # get the current constrain information
         self.vot = vot
         fig = self.mlab.gcf()
