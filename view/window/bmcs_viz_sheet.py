@@ -7,10 +7,13 @@ Created on Mar 2, 2017
 from __builtin__ import len
 import os
 import tempfile
+from threading import Thread
+
 from matplotlib.figure import \
     Figure
 from mayavi.core.ui.api import \
     MayaviScene, SceneEditor, MlabSceneModel
+from pyface.api import GUI
 from reporter import ROutputSection
 from traits.api import \
     Str, Instance,  Event, Enum, \
@@ -29,6 +32,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 import traits.api as tr
 from view.plot3d.viz3d import Viz3D
+
+
+class RunThread(Thread):
+    '''Time loop thread responsible.
+    '''
+
+    def __init__(self, vs, vot, *args, **kw):
+        super(RunThread, self).__init__(*args, **kw)
+        self.daemon = True
+        self.vs = vs
+        self.vot = vot
+
+    def run(self):
+        print 'STARTING THREAD'
+        GUI.invoke_later(self.vs.update_pipeline, self.vot)
+        print 'THREAD ENDED'
 
 
 class Viz2DAdapter(TabularAdapter):
@@ -176,6 +195,9 @@ class VizSheet(ROutputSection):
         self.skipped_steps = 0
         if self.mode == 'browse':
             self.update_pipeline(self.vot)
+        else:
+            up = RunThread(self, self.vot)
+            up.start()
 
     viz2d_list = List(Viz2D)
     '''List of visualization adaptors for 2D.
