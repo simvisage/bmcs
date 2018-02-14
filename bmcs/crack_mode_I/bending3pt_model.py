@@ -230,7 +230,7 @@ class BendingTestModel(BMCSModel, Vis2D):
                         b=self.cross_section.b)
 
     bcond_mngr = Property(Instance(BCondMngr),
-                          depends_on='BC,MESH')
+                          depends_on='CS,BC,MESH')
     '''Boundary condition manager
     '''
     @cached_property
@@ -241,28 +241,28 @@ class BendingTestModel(BMCSModel, Vis2D):
                    self.control_bc]
         return BCondMngr(bcond_list=bc_list)
 
-    fixed_left_bc = Property(depends_on='BC,GEO,MESH')
+    fixed_left_bc = Property(depends_on='CS, BC,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
     def _get_fixed_left_bc(self):
         return BCSlice(slice=self.fe_grid[0, 0, 0, 0],
                        var='u', dims=[1], value=0)
 
-    fixed_right_bc = Property(depends_on='BC,GEO,MESH')
+    fixed_right_bc = Property(depends_on='CS,BC,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
     def _get_fixed_right_bc(self):
         return BCSlice(slice=self.fe_grid[-1, 0, -1, 0],
                        var='u', dims=[1], value=0)
 
-    fixed_middle_bc = Property(depends_on='BC,GEO,MESH')
+    fixed_middle_bc = Property(depends_on='CS,BC,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
     def _get_fixed_middle_bc(self):
         return BCSlice(slice=self.fe_grid[self.controlled_elem, -1, :, -1],
                        var='u', dims=[0], value=0)
 
-    control_bc = Property(depends_on='BC,GEO,MESH')
+    control_bc = Property(depends_on='CS,BC,GEO,MESH')
     '''Control boundary condition - make it accessible directly
     for the visualization adapter as property
     '''
@@ -271,11 +271,13 @@ class BendingTestModel(BMCSModel, Vis2D):
         return BCSlice(slice=self.fe_grid[self.controlled_elem, -1, :, -1],
                        var='u', dims=[1], value=-self.w_max)
 
-    dots_grid = Property(Instance(DOTSGrid), depends_on='MAT,GEO,MESH,FE')
+    dots_grid = Property(Instance(DOTSGrid),
+                         depends_on='CS,MAT,GEO,MESH,FE')
     '''Discretization object.
     '''
     @cached_property
     def _get_dots_grid(self):
+        print 'new dots grid'
         return DOTSGrid(L_x=self.geometry.L, L_y=self.cross_section.h,
                         n_x=self.n_e_x, n_y=self.n_e_y,
                         fets=self.fets_eval, mats=self.mats_eval)
@@ -334,28 +336,32 @@ from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 
 
 def run_bending3pt_elastic():
-    bt = BendingTestModel(n_e_x=19, k_max=500,
-                          mats_eval_type='scalar damage'
-                          #mats_eval_type='microplane damage (eeq)'
+    bt = BendingTestModel(n_e_x=100, n_e_y=10, k_max=500,
+                          #mats_eval_type='scalar damage'
+                          mats_eval_type='microplane damage (eeq)'
                           )
     bt.mats_eval.set(
-        stiffness='algorithmic',
+        # stiffness='algorithmic',
         epsilon_0=0.005,
-        epsilon_f=1. * 1000
+        epsilon_f=1.0E+8
     )
 
+    print bt.tloop.ts.mats.epsilon_f
+
     bt.w_max = 10
-    bt.tline.step = 0.2
-    bt.geometry.L = 600
+    bt.tline.step = 0.02
+    bt.cross_section.h = 40
+    bt.geometry.L = 300
     bt.loading_scenario.set(loading_type='monotonic')
     w = BMCSWindow(model=bt)
-    #bt.add_viz2d('load function', 'load-time')
+    bt.add_viz2d('load function', 'load-time')
     bt.add_viz2d('F-w', 'load-displacement')
 
     vis3d = Vis3DPoll()
     bt.tloop.response_traces.append(vis3d)
     viz3d = Viz3DPoll(vis3d=vis3d)
     w.viz_sheet.add_viz3d(viz3d)
+    w.viz_sheet.monitor_chunk_size = 1
 
 #    w.run()
     w.offline = True

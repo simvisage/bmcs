@@ -182,8 +182,9 @@ if __name__ == '__main__':
     eps_Emab = np.array([[[[0.8, 0],
                            [0, 0.0]]
                           ]], dtype=np.float_)
-    s_Emg = np.array([[[0, 0],
-                       ]], dtype=np.float_)
+    kappa = np.array([[0]], dtype=np.float_)
+    omega = np.array([[0]], dtype=np.float_)
 
     D_Emabcd, sig_Emab = mats.get_corr_pred(
-        eps_Emab, eps_Emab, 0, 0, False, s_Emg)
+        eps_Emab, eps_Emab, 0, 0, False, kappa, omega)
+    print D_Emabcd
