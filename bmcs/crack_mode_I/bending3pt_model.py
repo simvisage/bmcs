@@ -8,22 +8,67 @@ Created on 12.01.2016
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
-    FEGrid, BCSlice, TStepper, TLoop, IMATSEval
+    IMATSEval, TLine, BCSlice
 from ibvpy.core.bcond_mngr import BCondMngr
-from ibvpy.core.tline import TLine
-from ibvpy.fets.fets2D import FETS2D4Q
-from ibvpy.mats.mats2D.mats2D_elastic import MATS2DElastic
-from ibvpy.rtrace.rt_dof import RTDofGraph
+from ibvpy.fets import \
+    FETS2D4Q
+from ibvpy.mats.mats2D import \
+    MATS2DElastic, MATS2DMplDamageEEQ, MATS2DScalarDamage
 from traits.api import \
     Property, Instance, cached_property, \
-    Bool, List, Float, Trait, Int, on_trait_change
+    List, Float, Trait, Int, on_trait_change
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
 
+from ibvpy.core.vtloop import TimeLoop
+from ibvpy.dots.vdots_grid import DOTSGrid
 import numpy as np
+import traits.api as tr
+
+
+class Viz2DForceDeflection(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = 'F-W'
+
+    show_legend = tr.Bool(True, auto_set=False, enter_set=True)
+
+    def plot(self, ax, vot, *args, **kw):
+        P, W = self.vis2d.get_PW()
+        ymin, ymax = np.min(P), np.max(P)
+        L_y = ymax - ymin
+        ymax += 0.05 * L_y
+        ymin -= 0.05 * L_y
+        xmin, xmax = np.min(W), np.max(W)
+        L_x = xmax - xmin
+        xmax += 0.03 * L_x
+        xmin -= 0.03 * L_x
+        ax.plot(W, P, linewidth=2, color='black', alpha=0.4,
+                label='P(w;x=L)')
+        ax.set_ylim(ymin=ymin, ymax=ymax)
+        ax.set_xlim(xmin=xmin, xmax=xmax)
+        ax.set_ylabel('Force P [N]')
+        ax.set_xlabel('Deflection w [mm]')
+        if self.show_legend:
+            ax.legend(loc=4)
+        self.plot_marker(ax, vot)
+
+    def plot_marker(self, ax, vot):
+        P, W = self.vis2d.get_PW()
+        idx = self.vis2d.tloop.get_time_idx(vot)
+        P, w = P[idx], W[idx]
+        ax.plot([w], [P], 'o', color='black', markersize=10)
+
+    def plot_tex(self, ax, vot, *args, **kw):
+        self.plot(ax, vot, *args, **kw)
+
+    traits_view = View(
+        Item('name', style='readonly'),
+        Item('show_legend'),
+    )
 
 
 class CrossSection(BMCSLeafNode):
@@ -51,7 +96,7 @@ class CrossSection(BMCSLeafNode):
 class Geometry(BMCSLeafNode):
 
     node_name = 'geometry'
-    L = Float(500.0,
+    L = Float(600.0,
               GEO=True,
               auto_set=False, enter_set=True,
               desc='Length of the specimen')
@@ -81,8 +126,7 @@ class BendingTestModel(BMCSModel, Vis2D):
             self.geometry,
             self.fixed_left_bc,
             self.fixed_right_bc,
-            self.control_bc,
-            self.rt_Pu
+            self.control_bc
         ]
 
     def _update_node_list(self):
@@ -93,8 +137,7 @@ class BendingTestModel(BMCSModel, Vis2D):
             self.geometry,
             self.fixed_left_bc,
             self.fixed_right_bc,
-            self.control_bc,
-            self.rt_Pu
+            self.control_bc
         ]
 
     #=========================================================================
@@ -134,30 +177,22 @@ class BendingTestModel(BMCSModel, Vis2D):
     # Discretization
     #=========================================================================
     n_e_x = Int(20, auto_set=False, enter_set=True)
-    n_e_y = Int(4, auto_set=False, enter_set=True)
+    n_e_y = Int(8, auto_set=False, enter_set=True)
 
-    w_max = Float(1, BC=True, auto_set=False, enter_set=True)
+    w_max = Float(-50, BC=True, auto_set=False, enter_set=True)
 
-    free_end_dof = Property
+    controlled_elem = Property
 
-    def _get_free_end_dof(self):
-        return self.n_e_x + 1
-
-    controlled_dof = Property
-
-    def _get_controlled_dof(self):
-        return 2 + 2 * self.n_e_x - 1
-
-    fixed_dof = Property
-
-    def _get_fixed_dof(self):
-        return 0
+    def _get_controlled_elem(self):
+        return self.n_e_x / 2
 
     #=========================================================================
     # Material model
     #=========================================================================
-    mats_eval_type = Trait('elastic',
-                           {'elastic': MATS2DElastic
+    mats_eval_type = Trait('microplane damage (eeg)',
+                           {'elastic': MATS2DElastic,
+                            'microplane damage (eeq)': MATS2DMplDamageEEQ,
+                            'scalar damage': MATS2DScalarDamage
                             },
                            MAT=True
                            )
@@ -192,8 +227,7 @@ class BendingTestModel(BMCSModel, Vis2D):
     @cached_property
     def _get_fets_eval(self):
         return FETS2D4Q(h=self.cross_section.h,
-                        b=self.cross_section.b,
-                        mats_eval=self.mats_eval)
+                        b=self.cross_section.b)
 
     bcond_mngr = Property(Instance(BCondMngr),
                           depends_on='BC,MESH')
@@ -203,6 +237,7 @@ class BendingTestModel(BMCSModel, Vis2D):
     def _get_bcond_mngr(self):
         bc_list = [self.fixed_left_bc,
                    self.fixed_right_bc,
+                   self.fixed_middle_bc,
                    self.control_bc]
         return BCondMngr(bcond_list=bc_list)
 
@@ -210,15 +245,22 @@ class BendingTestModel(BMCSModel, Vis2D):
     '''Foxed boundary condition'''
     @cached_property
     def _get_fixed_left_bc(self):
-        return BCSlice(var='u', value=0., dims=[0, 1],
-                       slice=self.fe_grid[0, 0, 0, 0])
+        return BCSlice(slice=self.fe_grid[0, 0, 0, 0],
+                       var='u', dims=[1], value=0)
 
     fixed_right_bc = Property(depends_on='BC,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
     def _get_fixed_right_bc(self):
-        return BCSlice(var='u', value=0., dims=[1],
-                       slice=self.fe_grid[-1, 0, -1, 0])
+        return BCSlice(slice=self.fe_grid[-1, 0, -1, 0],
+                       var='u', dims=[1], value=0)
+
+    fixed_middle_bc = Property(depends_on='BC,GEO,MESH')
+    '''Foxed boundary condition'''
+    @cached_property
+    def _get_fixed_middle_bc(self):
+        return BCSlice(slice=self.fe_grid[self.controlled_elem, -1, :, -1],
+                       var='u', dims=[0], value=0)
 
     control_bc = Property(depends_on='BC,GEO,MESH')
     '''Control boundary condition - make it accessible directly
@@ -226,51 +268,28 @@ class BendingTestModel(BMCSModel, Vis2D):
     '''
     @cached_property
     def _get_control_bc(self):
-        return BCSlice(var='u', value=self.w_max, dims=[1],
-                       slice=self.fe_grid[self.n_e_x / 2, -1, :, -1])
+        return BCSlice(slice=self.fe_grid[self.controlled_elem, -1, :, -1],
+                       var='u', dims=[1], value=-self.w_max)
 
-    fe_grid = Property(Instance(FEGrid), depends_on='MAT,GEO,MESH,FE')
-    '''Diescretization object.
+    dots_grid = Property(Instance(DOTSGrid), depends_on='MAT,GEO,MESH,FE')
+    '''Discretization object.
     '''
     @cached_property
+    def _get_dots_grid(self):
+        return DOTSGrid(L_x=self.geometry.L, L_y=self.cross_section.h,
+                        n_x=self.n_e_x, n_y=self.n_e_y,
+                        fets=self.fets_eval, mats=self.mats_eval)
+
+    fe_grid = Property
+
     def _get_fe_grid(self):
-        # Element definition
-        return FEGrid(coord_max=(self.geometry.L, self.cross_section.h),
-                      shape=(self.n_e_x, self.n_e_y),
-                      fets_eval=self.fets_eval)
-
-    rt_Pu = Property(depends_on='BC,MESH')
-    '''Control boundary condition - make it accessible directly
-    for the visualization adapter as property
-    '''
-    @cached_property
-    def _get_rt_Pu(self):
-        return RTDofGraph(name='P(u)',
-                          var_y='F_int', idx_y=self.controlled_dof,
-                          var_x='U_k', idx_x=self.controlled_dof)
-
-    tstepper = Property(Instance(TStepper),
-                        depends_on='MAT,GEO,MESH,CS,ALG,BC')
-    '''Objects representing the state of the model providing
-    the predictor and corrector functionality needed for time-stepping
-    algorithm.
-    '''
-    @cached_property
-    def _get_tstepper(self):
-        ts = TStepper(
-            sdomain=self.fe_grid,
-            bcond_mngr=self.bcond_mngr,
-            rtrace_list=[self.rt_Pu,
-                         ]
-        )
-        return ts
+        return self.dots_grid.mesh
 
     tline = Instance(TLine)
 
     def _tline_default(self):
-        # assign the parameters for solver and loading_scenario
-        t_max = 1.0  # self.loading_scenario.t_max
-        d_t = 0.02  # self.loading_scenario.d_t
+        t_max = 1.0
+        d_t = 0.1
         return TLine(min=0.0, step=d_t, max=t_max,
                      time_change_notifier=self.time_changed,
                      )
@@ -279,8 +298,7 @@ class BendingTestModel(BMCSModel, Vis2D):
                 ALG=True)
     tolerance = Float(1e-4,
                       ALG=True)
-
-    tloop = Property(Instance(TLoop),
+    tloop = Property(Instance(TimeLoop),
                      depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
     '''Algorithm controlling the time stepping.
     '''
@@ -288,169 +306,60 @@ class BendingTestModel(BMCSModel, Vis2D):
     def _get_tloop(self):
         k_max = self.k_max
         tolerance = self.tolerance
-        return TLoop(tstepper=self.tstepper, k_max=k_max,
-                     tolerance=tolerance, debug=False,
-                     tline=self.tline)
+        return TimeLoop(ts=self.dots_grid, k_max=k_max,
+                        tolerance=tolerance,
+                        tline=self.tline,
+                        bc_mngr=self.bcond_mngr)
 
-    def get_d_ECid(self, vot):
-        '''Get the displacements as a four-dimensional array 
-        corresponding to element, material component, node, spatial dimension
-        '''
-        idx = self.tloop.get_time_idx(vot)
-        d = self.tloop.U_record[idx]
-        dof_ECid = self.tstepper.dof_ECid
-        return d[dof_ECid]
+    def get_PW(self):
+        record_dofs = self.fe_grid[self.controlled_elem, -
+                                   1, :, -1].dofs[:, :, 1].flatten()
+        Fd_int_t = np.array(self.tloop.F_int_record)
+        Ud_t = np.array(self.tloop.U_record)
+        F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
+        U_t = -Ud_t[:, record_dofs[0]]
+        t_arr = np.array(self.tloop.t_record, dtype=np.float_)
+        return F_int_t, U_t
 
-    def get_u_C(self, vot):
-        '''Displacement field
-        '''
-        d_ECid = self.get_d_ECid(vot)
-        N_mi = self.fets_eval.N_mi
-        u_EmdC = np.einsum('mi,ECid->EmdC', N_mi, d_ECid)
-        return u_EmdC.reshape(-1, 2)
-
-    def get_eps_C(self, vot):
-        '''Epsilon in the components'''
-        d_ECid = self.get_d_ECid(vot)
-        eps_EmdC = np.einsum('Eimd,ECid->EmdC', self.tstepper.dN_Eimd, d_ECid)
-        return eps_EmdC.reshape(-1, 2)
-
-    def get_sig_C(self, vot):
-        '''Get streses in the components 
-        @todo: unify the index protocol
-        for eps and sig. Currently eps uses multi-layer indexing, sig
-        is extracted from the material model format.
-        '''
-        idx = self.tloop.get_time_idx(vot)
-        return self.tloop.sig_EmC_record[idx].reshape(-1, 2)
-
-    def get_s(self, vot):
-        '''Slip between the two material phases'''
-        d_ECid = self.get_d_ECid(vot)
-        s_Emd = np.einsum('Cim,ECid->Emd', self.tstepper.sN_Cim, d_ECid)
-        return s_Emd.flatten()
-
-    def get_sf(self, vot):
-        '''Get the shear flow in the interface
-        @todo: unify the index protocol
-        for eps and sig. Currently eps uses multi-layer indexing, sig
-        is extracted from the material model format.
-        '''
-        idx = self.tloop.get_time_idx(vot)
-        sf = self.tloop.sf_Em_record[idx].flatten()
-        return sf
-
-    def get_P_t(self):
-        F_array = np.array(self.tloop.F_record, dtype=np.float_)
-        return F_array[:, self.controlled_dof]
-
-    def get_w_t(self):
-        d_t = self.tloop.U_record
-        dof_ECid = self.tstepper.dof_ECid
-        d_t_ECid = d_t[:, dof_ECid]
-        w_0 = d_t_ECid[:, 0, 1, 0, 0]
-        w_L = d_t_ECid[:, -1, 1, -1, -1]
-        return w_0, w_L
-
-        U_array = np.array(self.tloop.U_record, dtype=np.float_)
-        return U_array[:, (self.free_end_dof, self.controlled_dof)]
-
-    def get_w(self, vot):
-        '''Damage variables
-        '''
-        idx = self.tloop.get_time_idx(vot)
-        w_Emd = self.tloop.w_record[idx]
-        return w_Emd.flatten()
-
-    def plot_u_C(self, ax, vot):
-        X_M = self.tstepper.X_M
-        L = self.geometry.L_x
-        u_C = self.get_u_C(vot).T
-        ax.plot(X_M, u_C[0], linewidth=2, color='blue', label='matrix')
-        ax.fill_between(X_M, 0, u_C[0], facecolor='blue', alpha=0.2)
-        ax.plot(X_M, u_C[1], linewidth=2, color='orange', label='reinf')
-        ax.fill_between(X_M, 0, u_C[1], facecolor='orange', alpha=0.2)
-        ax.plot([0, L], [0, 0], color='black')
-        ax.set_ylabel('displacement')
-        ax.set_xlabel('bond length')
-        ax.legend(loc=2)
-
-    def plot_eps_C(self, ax, vot):
-        X_M = self.tstepper.X_M
-        L = self.geometry.L_x
-        eps_C = self.get_eps_C(vot).T
-        ax.plot(X_M, eps_C[0], linewidth=2, color='blue',)
-        ax.fill_between(X_M, 0, eps_C[0], facecolor='blue', alpha=0.2)
-        ax.plot(X_M, eps_C[1], linewidth=2, color='orange',)
-        ax.fill_between(X_M, 0, eps_C[1], facecolor='orange', alpha=0.2)
-        ax.plot([0, L], [0, 0], color='black')
-        ax.set_ylabel('strain')
-        ax.set_xlabel('bond length')
-
-    def plot_sig_C(self, ax, vot):
-        X_M = self.tstepper.X_M
-        sig_C = self.get_sig_C(vot).T
-        A_m = self.cross_section.A_m
-        A_f = self.cross_section.A_f
-        L = self.geometry.L_x
-        F_m = A_m * sig_C[0]
-        F_f = A_f * sig_C[1]
-        ax.plot(X_M, F_m, linewidth=2, color='blue', )
-        ax.fill_between(X_M, 0, F_m, facecolor='blue', alpha=0.2)
-        ax.plot(X_M, F_f, linewidth=2, color='orange')
-        ax.fill_between(X_M, 0, F_f, facecolor='orange', alpha=0.2)
-        ax.plot([0, L], [0, 0], color='black')
-        ax.set_ylabel('stress flow')
-        ax.set_xlabel('bond length')
-
-    def plot_s(self, ax, vot):
-        X_J = self.tstepper.X_J
-        s = self.get_s(vot)
-        ax.fill_between(X_J, 0, s, facecolor='lightcoral', alpha=0.3)
-        ax.plot(X_J, s, linewidth=2, color='lightcoral')
-        ax.set_ylabel('slip')
-        ax.set_xlabel('bond length')
-
-    def plot_sf(self, ax, vot):
-        X_J = self.tstepper.X_J
-        sf = self.get_sf(vot)
-        ax.fill_between(X_J, 0, sf, facecolor='lightcoral', alpha=0.3)
-        ax.plot(X_J, sf, linewidth=2, color='lightcoral')
-        ax.set_ylabel('shear flow')
-        ax.set_xlabel('bond length')
-
-    def plot_w(self, ax, vot):
-        X_J = self.tstepper.X_J
-        w = self.get_w(vot)
-        ax.fill_between(X_J, 0, w, facecolor='lightcoral', alpha=0.3)
-        ax.plot(X_J, w, linewidth=2, color='lightcoral')
-        ax.set_ylabel('damage')
-        ax.set_xlabel('bond length')
+    viz2d_classes = {'F-w': Viz2DForceDeflection,
+                     'load function': Viz2DLoadControlFunction,
+                     }
 
     traits_view = View(Item('mats_eval_type'),)
 
     tree_view = traits_view
 
 
+from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
+
+
 def run_bending3pt_elastic():
-    po = BendingTestModel(n_e_x=10, k_max=500,
-                          mats_eval_type='elastic')
+    bt = BendingTestModel(n_e_x=19, k_max=500,
+                          mats_eval_type='scalar damage'
+                          #mats_eval_type='microplane damage (eeq)'
+                          )
+    bt.mats_eval.set(
+        stiffness='algorithmic',
+        epsilon_0=0.005,
+        epsilon_f=1. * 1000
+    )
 
-    po.w_max = 0.01
-    po.tline.step = 0.01
-    po.geometry.L = 1.0
-    po.loading_scenario.set(loading_type='monotonic')
-    Pu = po.rt_Pu
-    w = BMCSWindow(model=po)
-    Pu.add_viz2d('diagram', 'Pu')
+    bt.w_max = 10
+    bt.tline.step = 0.2
+    bt.geometry.L = 600
+    bt.loading_scenario.set(loading_type='monotonic')
+    w = BMCSWindow(model=bt)
+    #bt.add_viz2d('load function', 'load-time')
+    bt.add_viz2d('F-w', 'load-displacement')
 
-    print po.control_bc.slice
-    print po.control_bc.slice.fe_grid
-    po.run()
-    return
+    vis3d = Vis3DPoll()
+    bt.tloop.response_traces.append(vis3d)
+    viz3d = Viz3DPoll(vis3d=vis3d)
+    w.viz_sheet.add_viz3d(viz3d)
 
-    w.offline = False
-    w.finish_event = True
+#    w.run()
+    w.offline = True
+#    w.finish_event = True
     w.configure_traits()
 
 

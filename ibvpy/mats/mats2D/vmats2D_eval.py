@@ -4,11 +4,17 @@ Created on Feb 8, 2018
 @author: rch
 '''
 
+from ibvpy.mats.mats_eval import IMATSEval
+from view.ui import BMCSTreeNode
+
 import numpy as np
 import traits.api as tr
 
 
-class MATS2D(tr.HasStrictTraits):
+class MATS2D(BMCSTreeNode):
+
+    tr.implements(IMATSEval)
+
     # -----------------------------------------------------------------------------------------------------
     # Construct the fourth order elasticity tensor
     # for the plane stress case (shape: (2,2,2,2))

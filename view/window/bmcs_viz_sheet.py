@@ -4,21 +4,25 @@ Created on Mar 2, 2017
 @author: rch
 '''
 
+from __builtin__ import len
 import os
 import tempfile
+from threading import Thread
 
 from matplotlib.figure import \
     Figure
+from mayavi.core.ui.api import \
+    MayaviScene, SceneEditor, MlabSceneModel
+from pyface.api import GUI
 from reporter import ROutputSection
 from traits.api import \
-    Str, \
-    Instance,  Event, Enum, \
-    List,  Range, Int, Float, \
+    Str, Instance,  Event, Enum, \
+    List, Range, Int, Float, \
     Property, cached_property, \
     on_trait_change, Bool, Button, Directory
 from traitsui.api import \
     View, Item, UItem, VGroup, VSplit, \
-    HSplit, HGroup, TabularEditor
+    HSplit, HGroup, Tabbed, TabularEditor
 from traitsui.tabular_adapter import TabularAdapter
 from util.traits.editors import \
     MPLFigureEditor
@@ -26,6 +30,24 @@ from view.plot2d.viz2d import Viz2D
 
 import matplotlib.pyplot as plt
 import numpy as np
+import traits.api as tr
+from view.plot3d.viz3d import Viz3D
+
+
+class RunThread(Thread):
+    '''Time loop thread responsible.
+    '''
+
+    def __init__(self, vs, vot, *args, **kw):
+        super(RunThread, self).__init__(*args, **kw)
+        self.daemon = True
+        self.vs = vs
+        self.vot = vot
+
+    def run(self):
+        print 'STARTING THREAD'
+        GUI.invoke_later(self.vs.update_pipeline, self.vot)
+        print 'THREAD ENDED'
 
 
 class Viz2DAdapter(TabularAdapter):
@@ -123,10 +145,6 @@ class VizSheet(ROutputSection):
                 self.vot_slider = self.time
                 self.vot = self.time
 
-    n_cols = Int(2, label='Number of columns',
-                 tooltip='Defines a number of columns within the plot pane',
-                 enter_set=True, auto_set=False)
-
     offline = Bool(True)
     '''If the sheet is offline, the plot refresh is inactive.
     The sheet starts in offline mode and is activated once the signal
@@ -143,15 +161,20 @@ class VizSheet(ROutputSection):
             ax.clear()
             viz2d.reset(ax)
         self.mode = 'monitor'
+        if self.reference_viz2d:
+            ax = self.reference_axes
+            ax.clear()
+            self.reference_viz2d.reset(ax)
 
     def run_finished(self):
         self.skipped_steps = self.monitor_chunk_size
         self.replot()
+        # self.update_pipeline(1.0)
         self.offline = True
 
     monitor_chunk_size = Int(10, label='Monitor each # steps')
 
-    skipped_steps = Int(10)
+    skipped_steps = Int(1)
 
     @on_trait_change('vot,n_cols')
     def replot(self):
@@ -164,20 +187,40 @@ class VizSheet(ROutputSection):
         for ax, viz2d in zip(self.axes, self.viz2d_list):
             ax.clear()
             viz2d.plot(ax, self.vot)
+        if self.reference_viz2d:
+            ax = self.reference_axes
+            ax.clear()
+            self.reference_viz2d.plot(ax, self.vot)
         self.data_changed = True
         self.skipped_steps = 0
+        if self.mode == 'browse':
+            self.update_pipeline(self.vot)
+        else:
+            up = RunThread(self, self.vot)
+            up.start()
 
     viz2d_list = List(Viz2D)
-
+    '''List of visualization adaptors for 2D.
+    '''
     viz2d_dict = Property
 
     def _get_viz2d_dict(self):
         return {viz2d.name: viz2d for viz2d in self.viz2d_list}
 
+    viz2d_names = Property
+    '''Names to be supplied to the selector of the
+    reference graph.
+    '''
+
+    def _get_viz2d_names(self):
+        return self.viz2d_dict.keys()
+
     def viz2d_list_items_changed(self):
         self.replot()
 
     def get_subrecords(self):
+        '''What is this good for?
+        '''
         return self.viz2d_list
 
     export_button = Button(label='Export selected diagram')
@@ -224,7 +267,50 @@ class VizSheet(ROutputSection):
 
     save_button = Button(label='Save selected diagram')
 
+    #=========================================================================
+    # Reference figure serving for orientation.
+    #=========================================================================
+    reference_viz2d_name = Enum('', values="viz2d_names")
+    '''Current name of the reference graphs.
+    '''
+    reference_viz2d = Property(Instance(Viz2D),
+                               depends_on='reference_viz2d_name')
+    '''Visualization of a graph showing the time context of the
+    current visualization state. 
+    '''
+
+    def _get_reference_viz2d(self):
+        if self.reference_viz2d_name == None:
+            if len(self.viz2d_dict):
+                return self.viz2d_list[0]
+            else:
+                return None
+        return self.viz2d_dict[self.reference_viz2d_name]
+
+    reference_figure = Instance(Figure)
+
+    def _reference_figure_default(self):
+        figure = Figure(facecolor='white')
+        figure.set_tight_layout(True)
+        return figure
+
+    reference_axes = Property(List,
+                              depends_on='reference_viz2d_name')
+    '''Derived axes objects reflecting the layout of plot pane
+    and the individual. 
+    '''
+    @cached_property
+    def _get_reference_axes(self):
+        return self.reference_figure.add_subplot(1, 1, 1)
+
+    #=========================================================================
+    # Parameters of the current viz2d
+    #=========================================================================
     selected_viz2d = Instance(Viz2D)
+
+    n_cols = Int(2, label='Number of columns',
+                 tooltip='Defines a number of columns within the plot pane',
+                 enter_set=True, auto_set=False)
 
     figure = Instance(Figure)
 
@@ -233,7 +319,8 @@ class VizSheet(ROutputSection):
         figure.set_tight_layout(True)
         return figure
 
-    axes = Property(List, depends_on='viz2d_list,viz2d_list_items,n_cols')
+    axes = Property(List,
+                    depends_on='viz2d_list,viz2d_list_items,n_cols')
     '''Derived axes objects reflecting the layout of plot pane
     and the individual. 
     '''
@@ -248,11 +335,93 @@ class VizSheet(ROutputSection):
 
     data_changed = Event
 
+    bgcolor = tr.Tuple(1.0, 1.0, 1.0)
+    fgcolor = tr.Tuple(0.0, 0.0, 0.0)
+
+    scene = Instance(MlabSceneModel)
+
+    def _scene_default(self):
+        return MlabSceneModel()
+
+    mlab = Property(depends_on='input_change')
+    '''Get the mlab handle'''
+
+    def _get_mlab(self):
+        return self.scene.mlab
+
+    fig = Property()
+    '''Figure for 3D visualization.
+    '''
+    @cached_property
+    def _get_fig(self):
+        fig = self.mlab.gcf()
+        bgcolor = tuple(self.bgcolor)
+        fgcolor = tuple(self.fgcolor)
+        self.mlab.figure(fig, fgcolor=fgcolor, bgcolor=bgcolor)
+        return fig
+
+    def show(self, *args, **kw):
+        '''Render the visualization.
+        '''
+        self.mlab.show(*args, **kw)
+
+    def add_viz3d(self, viz3d, order=1):
+        '''Add a new visualization objectk.'''
+        viz3d.ftv = self
+        vis3d = viz3d.vis3d
+        label = '%s[%s:%s]-%s' % (viz3d.label,
+                                  str(vis3d.__class__),
+                                  str(viz3d.__class__),
+                                  vis3d
+                                  )
+        if self.viz3d_dict.has_key(label):
+            raise KeyError, 'viz3d object named %s already registered' % label
+        viz3d.order = order
+        self.viz3d_dict[label] = viz3d
+
+    viz3d_dict = tr.Dict(tr.Str, tr.Instance(Viz3D))
+    '''Dictionary of visualization objects.
+    '''
+
+    viz3d_list = tr.Property
+
+    def _get_viz3d_list(self):
+        map_order_viz3d = {}
+        for idx, (viz3d) in enumerate(self.viz3d_dict.values()):
+            order = viz3d.order
+            map_order_viz3d['%5g%5g' % (order, idx)] = viz3d
+        return [map_order_viz3d[key] for key in sorted(map_order_viz3d.keys())]
+
+    pipeline_ready = Bool(False)
+
+    def setup_pipeline(self):
+        if self.pipeline_ready:
+            return
+        self.fig
+        fig = self.mlab.gcf()
+        fig.scene.disable_render = True
+        for viz3d in self.viz3d_list:
+            viz3d.setup()
+        fig.scene.disable_render = False
+        self.pipeline_ready = True
+
+    def update_pipeline(self, vot):
+        self.setup_pipeline()
+        # get the current constrain information
+        self.vot = vot
+        fig = self.mlab.gcf()
+        fig.scene.disable_render = True
+        for viz3d in self.viz3d_list:
+            viz3d.plot(vot)
+        fig.scene.disable_render = False
+
     # Traits view definition:
     traits_view = View(
         VSplit(
             HSplit(
-                VGroup(
+                Tabbed(
+                    UItem('scene',
+                          editor=SceneEditor(scene_class=MayaviScene)),
                     UItem('figure', editor=MPLFigureEditor(),
                           resizable=True,
                           springy=True),
@@ -293,6 +462,13 @@ class VizSheet(ROutputSection):
                                 UItem('status_message', style='readonly')
                             ),
                         ),
+                        VGroup(
+                            UItem('reference_viz2d_name', resizable=True),
+                            UItem('reference_figure', editor=MPLFigureEditor(),
+                                  # height=350,
+                                  springy=True),
+                            label='Reference graph',
+                        )
                     ),
                     label='Plot configure',
                     scrollable=True
@@ -300,8 +476,8 @@ class VizSheet(ROutputSection):
             ),
             VGroup(
                 HGroup(
-                    Item('mode'),
-                    Item('monitor_chunk_size'),
+                    Item('mode', resizable=False, springy=False),
+                    Item('monitor_chunk_size', resizable=False, springy=False),
                 ),
                 Item('vot_slider', height=40),
             )
@@ -313,6 +489,27 @@ class VizSheet(ROutputSection):
 
 
 if __name__ == '__main__':
+    import traits.api as tr
+    from ibvpy.dots.vdots_grid import DOTSGrid
+    from ibvpy.fets.fets2D.vfets2D4q import FETS2D4Q
+    dots = DOTSGrid(n_x=5, n_y=2, fets=FETS2D4Q())
 
-    replot = VizSheet()
-    replot.configure_traits()
+    n_elems = dots.mesh.n_active_elems
+    U = np.random.random(n_elems * 4 * 3).reshape(-1, 3) * 10.0
+
+    class TLoop(tr.HasTraits):
+
+        U_record = tr.List()
+        ts = tr.Instance(dots)
+
+    tl = TLoop(ts=dots)
+    tl.U_record.append(U)
+    viz3d = Viz3D()
+    viz3d.set_tloop(tloop=tl)
+
+    vs = VizSheet()
+    vs.add_viz3d(viz3d)
+    vs.run_started()
+    vs.replot()
+    vs.run_finished()
+    vs.configure_traits()
