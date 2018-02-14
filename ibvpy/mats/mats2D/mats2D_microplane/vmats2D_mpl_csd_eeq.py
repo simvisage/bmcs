@@ -130,25 +130,40 @@ class MATSEvalMicroplaneFatigue(HasTraits):
                     enter_set=True,
                     auto_set=False)
 
+    state_array_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
+    '''Dictionary of state variable entries with their array shapes.
+    '''
+    @cached_property
+    def _get_state_array_shapes(self):
+        return {'omega_N': (self.n_mp,),
+                'z_N': (self.n_mp,),
+                'alpha_N': (self.n_mp,),
+                'r_N': (self.n_mp,),
+                'eps_N_p': (self.n_mp,),
+                'omega_T': (self.n_mp,),
+                'z_T': (self.n_mp,),
+                'alpha_T': (self.n_mp, 2),
+                'eps_T_pi': (self.n_mp, 2), }
+
     #--------------------------------------------------------------
     # microplane constitutive law (normal behavior CP + TD)
     #--------------------------------------------------------------
-    def get_normal_law(self, eps, sctx):
+    def get_normal_law(self, eps, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_P_Emn):
 
         E_N = self.E / (1.0 - 2.0 * self.nu)
 
-        w_N = sctx[:, 0]
-        z_N = sctx[:, 1]
-        alpha_N = sctx[:, 2]
-        r_N = sctx[:, 3]
-        eps_N_p = sctx[:, 4]
+#         w_N = sctx[:, 0]
+#         z_N = sctx[:, 1]
+#         alpha_N = sctx[:, 2]
+#         r_N = sctx[:, 3]
+#         eps_N_p = sctx[:, 4]
 
         pos = eps > 1e-6
         H = 1.0 * pos
 
-        sigma_n_trial = (1 - H * w_N) * E_N * (eps - eps_N_p)
-        Z = self.K_N * r_N
-        X = self.gamma_N * alpha_N
+        sigma_n_trial = (1.0 - H * w_N_Emn) * E_N * (eps - eps_N_p_Emn)
+        Z = self.K_N * r_N_Emn
+        X = self.gamma_N * alpha_N_Emn
 
         h = self.sigma_0 + Z
         pos_iso = h > 1e-6
@@ -158,18 +173,18 @@ class MATSEvalMicroplaneFatigue(HasTraits):
 
         delta_lamda = f_trial / \
             (E_N + abs(self.K_N) + self.gamma_N) * thres_1
-        eps_N_p = eps_N_p + delta_lamda * sign(sigma_n_trial - X)
-        r_N = r_N + delta_lamda
-        alpha_N = alpha_N + delta_lamda * sign(sigma_n_trial - X)
+        eps_N_p = eps_N_p_Emn + delta_lamda * sign(sigma_n_trial - X)
+        r_N_Emn = r_N_Emn + delta_lamda
+        alpha_N_Emn = alpha_N_Emn + delta_lamda * sign(sigma_n_trial - X)
 
-        def Z_N(z_N): return 1. / self.Ad * (-z_N) / (1 + z_N)
-        Y_N = 0.5 * H * E_N * eps ** 2
-        Y_0 = 0.5 * E_N * self.eps_0 ** 2
+        def Z_N(z_N): return 1. / self.Ad * (-z_N) / (1.0 + z_N)
+        Y_N = 0.5 * H * E_N * eps ** 2.0
+        Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
         f = Y_N - (Y_0 + Z_N(z_N))
 
         thres_2 = f > 1e-6
 
-        def f_w(Y): return 1 - 1. / (1 + self.Ad * (Y - Y_0))
+        def f_w(Y): return 1.0 - 1.0 / (1.0 + self.Ad * (Y - Y_0))
         w_N = f_w(Y_N) * thres_2
         z_N = - w_N * thres_2
 
