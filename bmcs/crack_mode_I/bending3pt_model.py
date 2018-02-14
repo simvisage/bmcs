@@ -30,6 +30,7 @@ import traits.api as tr
 
 
 class Viz2DForceDeflection(Viz2D):
+
     '''Plot adaptor for the pull-out simulator.
     '''
     label = 'F-W'
@@ -72,6 +73,7 @@ class Viz2DForceDeflection(Viz2D):
 
 
 class CrossSection(BMCSLeafNode):
+
     '''Parameters of the pull-out cross section
     '''
     node_name = 'cross-section'
@@ -336,14 +338,14 @@ from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 
 
 def run_bending3pt_elastic():
-    bt = BendingTestModel(n_e_x=100, n_e_y=10, k_max=500,
+    bt = BendingTestModel(n_e_x=41, n_e_y=10, k_max=500,
                           #mats_eval_type='scalar damage'
                           mats_eval_type='microplane damage (eeq)'
                           )
     bt.mats_eval.set(
         # stiffness='algorithmic',
         epsilon_0=0.005,
-        epsilon_f=1.0E+8
+        epsilon_f=1.0E+4
     )
 
     print bt.tloop.ts.mats.epsilon_f
