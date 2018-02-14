@@ -82,7 +82,7 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         # Third order tangential tensor for each microplane
         delta = identity(2)
         MPTT_nijr = 0.5 * (einsum('ni,jr -> nijr', self._MPN, delta) +
-                           einsum('nj,ir -> njir', self._MPN, delta) - 2 *
+                           einsum('nj,ir -> njir', self._MPN, delta) - 2.0 *
                            einsum('ni,nj,nr -> nijr', self._MPN, self._MPN, self._MPN))
         return MPTT_nijr
 
@@ -149,7 +149,7 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
     def _get_phi_Emab(self, kappa_Emn):
         # Returns the 2nd order damage tensor 'phi_mtx'
         # scalar integrity factor for each microplane
-        phi_Emn = 1.0 - self._get_omega(kappa_Emn)
+        phi_Emn = np.sqrt(1.0 - self._get_omega(kappa_Emn))
         # integration terms for each microplanes
         phi_Emab = einsum('Emn,n,nab->Emab', phi_Emn, self._MPW, self._MPNN)
         return phi_Emab
@@ -209,7 +209,7 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         # Damaged stiffness tensor calculated based on the damage tensor beta4:
         #------------------------------------------------------------------
         D_Emijab = einsum(
-            'Emijab, abef, Emabef -> Emijab', beta_Emabcd, self.D_abef, beta_Emabcd)
+            'Emijab, abef, Emcdef -> Emijcd', beta_Emabcd, self.D_abef, beta_Emabcd)
 
         sig_Emab = einsum('Emabef,Emef -> Emab', D_Emijab, eps_Emab_n1)
 
