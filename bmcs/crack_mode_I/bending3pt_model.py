@@ -348,8 +348,6 @@ def run_bending3pt_elastic():
         epsilon_f=1.0E+4
     )
 
-    print bt.tloop.ts.mats.epsilon_f
-
     bt.w_max = 10
     bt.tline.step = 0.02
     bt.cross_section.h = 40

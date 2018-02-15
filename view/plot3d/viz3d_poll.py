@@ -102,19 +102,20 @@ class Viz3DPoll(Viz3D):
             data_name='strain field'
         )
         lut.scalar_lut_manager.scalar_bar.set(
-            height=0.8,
-            width=0.04,
-            position=np.array([0.82,  0.1])
+            height=0.1,
+            width=0.7,
+            position=np.array([0.1,  0.1])
         )
 
+#        lut.scalar_lut_manager.scalar_bar_representation.set(
+#            position2=np.array([0.8,  0.1]),
+#            position=np.array([0.1,  0.1]),
+#            orientation=0,
+#            maximum_size=np.array([100000, 100000]),
+#            minimum_size=np.array([1, 1]),
+#        )
+
     def plot(self, vot):
-        self._later_plot(vot)
-        #GUI.invoke_later(self._later_plot, vot)
-
-    def _later_plot(self, vot):
-        # self.lock.acquire()
         idx = self.vis3d.tloop.get_time_idx(vot)
-
         self.d.file_list = self.vis3d.file_list
-        self.d.timestep = idx + 1  # len(self.vis3d.file_list) - 1
-        # self.lock.release()
+        self.d.timestep = idx + 1
