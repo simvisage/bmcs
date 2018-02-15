@@ -343,12 +343,12 @@ def run_bending3pt_elastic():
     bt.mats_eval.set(
         # stiffness='algorithmic',
         epsilon_0=0.005,
-        epsilon_f=1.0E+8
+        epsilon_f=1.0E+6
     )
 
     print bt.tloop.ts.mats.epsilon_f
 
-    bt.w_max = 10
+    bt.w_max = 50
     bt.tline.step = 0.02
     bt.cross_section.h = 40
     bt.geometry.L = 300

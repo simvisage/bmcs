@@ -429,13 +429,13 @@ class VizSheet(ROutputSection):
                     label='Plot panel'
                 ),
                 VGroup(
-                    Item('n_cols', width=100),
+                    Item('n_cols', width=200),
                     VSplit(
                         UItem('viz2d_list@',
                               editor=tabular_editor,
                               width=100),
                         UItem('selected_viz2d@',
-                              width=100),
+                              width=200),
                         VGroup(
                             UItem('export_button',
                                   springy=False, resizable=True),
@@ -465,8 +465,9 @@ class VizSheet(ROutputSection):
                         VGroup(
                             UItem('reference_viz2d_name', resizable=True),
                             UItem('reference_figure', editor=MPLFigureEditor(),
-                                  # height=350,
-                                  springy=True),
+                                  width=200,
+                                  # springy=True
+                                  ),
                             label='Reference graph',
                         )
                     ),
