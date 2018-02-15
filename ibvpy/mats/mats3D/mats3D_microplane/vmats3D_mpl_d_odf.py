@@ -15,11 +15,12 @@ from traits.api import \
     Constant, implements,\
     Float, Property, cached_property
 
+from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 import numpy as np
 import traits.api as tr
 
 
-class MATS3DMplDamageODF(MATS3DEval):
+class MATS3DMplDamageODF(MATS3DEval, MATS3D):
 
     implements(IMATSEval)
 
@@ -384,7 +385,7 @@ class MATS3DMplDamageODF(MATS3DEval):
             eps_Emab_n = eps_Emab_n1 - deps_Emab
 
             kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
-                eps_Emab_n1, kappa, omega)
+                eps_Emab_n, kappa, omega)
 
             kappa[...] = kappa_Emn[...]
             omega[...] = omega_Emn[...]
@@ -456,37 +457,3 @@ class MATS3DMplDamageODF(MATS3DEval):
     #-------------------------------------------------------------------------
     # Cached elasticity tensors
     #-------------------------------------------------------------------------
-
-    #-------------------------------------------------------------------------
-    # Elasticity parameters
-    #-------------------------------------------------------------------------
-    E = tr.Float(34e+3,
-                 label="E",
-                 desc="Young's Modulus",
-                 auto_set=False,
-                 input=True)
-
-    nu = tr.Float(0.2,
-                  label='nu',
-                  desc="Poison ratio",
-                  auto_set=False,
-                  input=True)
-
-    def _get_lame_params(self):
-        la = self.E * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
-        # second Lame parameter (shear modulus)
-        mu = self.E / (2. + 2. * self.nu)
-        return la, mu
-
-    D_abef = tr.Property(tr.Array, depends_on='+input')
-
-    @tr.cached_property
-    def _get_D_abef(self):
-        la = self._get_lame_params()[0]
-        mu = self._get_lame_params()[1]
-        delta = identity(3)
-        D_abef = (einsum(',ij,kl->ijkl', la, delta, delta) +
-                  einsum(',ik,jl->ijkl', mu, delta, delta) +
-                  einsum(',il,jk->ijkl', mu, delta, delta))
-
-        return D_abef

@@ -4,17 +4,14 @@ Created on Feb 8, 2018
 @author: rch
 '''
 
-import os
-
+from ibvpy.core.i_tstepper_eval import ITStepperEval
 from mathkit.matrix_la import \
     SysMtxAssembly
 
 from bcond_mngr import BCondMngr
-from ibvpy.dots.vdots_grid import DOTSGrid
 import numpy as np
 from tline import TLine
 import traits.api as tr
-from view.plot3d.viz3d_poll import Vis3DPoll
 
 
 class TimeLoop(tr.HasStrictTraits):
@@ -26,7 +23,7 @@ class TimeLoop(tr.HasStrictTraits):
     def _tline_default(self):
         return TLine(min=0.0, max=1.0, step=1.0)
 
-    ts = tr.Instance(DOTSGrid)
+    ts = tr.Instance(ITStepperEval)
     '''State object delivering the predictor and corrector
     '''
 

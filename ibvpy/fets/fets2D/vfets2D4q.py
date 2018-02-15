@@ -5,6 +5,7 @@ Created on Feb 8, 2018
 '''
 
 from ibvpy.fets.fets_eval import FETSEval
+from mathkit.tensor import DELTA23_ab
 import numpy as np
 import sympy as sp
 import traits.api as tr
@@ -47,6 +48,10 @@ class FETS2D4Q(FETSEval):
                                        [-1, 1]])
     vtk_cells = [[0, 1, 2, 3]]
     vtk_cell_types = 'Quad'
+    vtk_cell = [0, 1, 2, 3]
+    vtk_cell_type = 'Quad'
+
+    vtk_expand_operator = tr.Array(np.float_, value=DELTA23_ab)
 
     # numerical integration points (IP) and weights
     xi_m = tr.Array(np.float_,

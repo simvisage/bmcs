@@ -75,9 +75,7 @@ class RunThread(Thread):
         self.study = study
 
     def run(self):
-        print 'STARTING THREAD'
         self.study.model.run()
-        print 'THREAD ENDED'
 
     def xrun(self):
         self.study.model.init()

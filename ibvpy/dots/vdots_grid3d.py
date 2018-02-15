@@ -7,7 +7,7 @@ Created on Feb 8, 2018
 from ibvpy.api import \
     IFETSEval, FEGrid
 from ibvpy.core.i_tstepper_eval import ITStepperEval
-from ibvpy.mats.mats2D import MATS2D
+from ibvpy.mats.mats3D import MATS3D
 from mathkit.matrix_la import \
     SysMtxArray
 
@@ -15,7 +15,7 @@ import numpy as np
 import traits.api as tr
 
 
-delta = np.identity(2)
+delta = np.identity(3)
 # symetrization operator
 I_sym_abcd = 0.5 * \
     (np.einsum('ac,bd->abcd', delta, delta) +
@@ -29,16 +29,18 @@ class DOTSGrid(tr.HasStrictTraits):
 
     L_x = tr.Float(200, input=True)
     L_y = tr.Float(100, input=True)
+    L_z = tr.Float(100, input=True)
     n_x = tr.Int(100, input=True)
     n_y = tr.Int(30, input=True)
+    n_z = tr.Int(10, input=True)
     fets = tr.Instance(IFETSEval, input=True)
-    mats = tr.Instance(MATS2D, input=True)
+    mats = tr.Instance(MATS3D, input=True)
     mesh = tr.Property(tr.Instance(FEGrid), depends_on='+input')
 
     @tr.cached_property
     def _get_mesh(self):
-        return FEGrid(coord_max=(self.L_x, self.L_y),
-                      shape=(self.n_x, self.n_y),
+        return FEGrid(coord_max=(self.L_x, self.L_y, self.L_z),
+                      shape=(self.n_x, self.n_y, self.n_z),
                       fets_eval=self.fets)
 
     cached_grid_values = tr.Property(tr.Tuple,

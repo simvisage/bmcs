@@ -14,12 +14,12 @@ from numpy import \
 from traits.api import \
     Constant, implements,\
     Float, Property, cached_property
-
+from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 import numpy as np
 import traits.api as tr
 
 
-class MATS3DMplDamageEEQ(MATS3DEval):
+class MATS3DMplDamageEEQ(MATS3DEval, MATS3D):
 
     implements(IMATSEval)
 

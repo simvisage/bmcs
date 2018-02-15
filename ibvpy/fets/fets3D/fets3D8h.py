@@ -1,19 +1,16 @@
+from numpy import \
+    zeros, dot, hstack, identity
+from scipy.linalg import \
+    inv
 from traits.api import \
     Instance, Int, Property, Array, cached_property
-
-from numpy import \
-     zeros, dot, hstack, identity
-
-from scipy.linalg import \
-     inv
 
 from fets3D import FETS3D
 
 
-#-----------------------------------------------------------------------------------
-# FETS3D8H - 8 nodes isoparametric volume element (3D, linear, Lagrange family)    
-#-----------------------------------------------------------------------------------
-
+#-------------------------------------------------------------------------
+# FETS3D8H - 8 nodes isoparametric volume element (3D, linear, Lagrange family)
+#-------------------------------------------------------------------------
 class FETS3D8H(FETS3D):
     '''
     eight nodes volume element
@@ -33,37 +30,37 @@ class FETS3D8H(FETS3D):
 
     # Here an isoparametric element formulation is applied.
     # The implemented shape functions are derived based on the following
-    # ordering of the nodes of the parent element 
+    # ordering of the nodes of the parent element
 
     dof_r = \
-             Array(value=[[ -1., -1., -1.],
-                            [  1., -1., -1.],
-                            [ -1., 1., -1.],
-                            [  1., 1., -1.],
-                            [ -1., -1., 1.],
-                            [  1., -1., 1.],
-                            [ -1., 1., 1.],
-                            [  1., 1., 1.]])
+        Array(value=[[-1., -1., -1.],
+                     [1., -1., -1.],
+                     [-1., 1., -1.],
+                     [1., 1., -1.],
+                     [-1., -1., 1.],
+                     [1., -1., 1.],
+                     [-1., 1., 1.],
+                     [1., 1., 1.]])
 
     geo_r = \
-             Array(value=[[ -1., -1., -1.],
-                            [  1., -1., -1.],
-                            [ -1., 1., -1.],
-                            [  1., 1., -1.],
-                            [ -1., -1., 1.],
-                            [  1., -1., 1.],
-                            [ -1., 1., 1.],
-                            [  1., 1., 1.]])
+        Array(value=[[-1., -1., -1.],
+                     [1., -1., -1.],
+                     [-1., 1., -1.],
+                     [1., 1., -1.],
+                     [-1., -1., 1.],
+                     [1., -1., 1.],
+                     [-1., 1., 1.],
+                     [1., 1., 1.]])
 
-    # Used for Visualization 
-    vtk_r = Array(value=[[ -1., -1., -1.],
-                           [  1., -1., -1.],
-                           [ -1., 1., -1.],
-                           [  1., 1., -1.],
-                           [ -1., -1., 1.],
-                           [  1., -1., 1.],
-                           [ -1., 1., 1.],
-                           [  1., 1., 1.]])
+    # Used for Visualization
+    vtk_r = Array(value=[[-1., -1., -1.],
+                         [1., -1., -1.],
+                         [-1., 1., -1.],
+                         [1., 1., -1.],
+                         [-1., -1., 1.],
+                         [1., -1., 1.],
+                         [-1., 1., 1.],
+                         [1., 1., 1.]])
     vtk_cells = [[0, 1, 3, 2, 4, 5, 7, 6]]
     vtk_cell_types = 'Hexahedron'
 
@@ -76,22 +73,22 @@ class FETS3D8H(FETS3D):
         specified local coordinate r_pnt
         '''
         N_geo_mtx = zeros((1, 8), dtype='float_')
-        N_geo_mtx[0, 0] = -((-1 + r_pnt[2]) * (-1 + r_pnt[1]) * \
-                              (-1 + r_pnt[0])) / 8.0
-        N_geo_mtx[0, 1] = ((-1 + r_pnt[2]) * (-1 + r_pnt[1]) * \
-                              (1 + r_pnt[0])) / 8.0
-        N_geo_mtx[0, 2] = ((-1 + r_pnt[2]) * (1 + r_pnt[1]) * \
-                              (-1 + r_pnt[0])) / 8.0
-        N_geo_mtx[0, 3] = -((-1 + r_pnt[2]) * (1 + r_pnt[1]) * \
-                              (1 + r_pnt[0])) / 8.0
-        N_geo_mtx[0, 4] = ((1 + r_pnt[2]) * (-1 + r_pnt[1]) * \
-                              (-1 + r_pnt[0])) / 8.0
-        N_geo_mtx[0, 5] = -((1 + r_pnt[2]) * (-1 + r_pnt[1]) * \
-                              (1 + r_pnt[0])) / 8.0
-        N_geo_mtx[0, 6] = -((1 + r_pnt[2]) * (1 + r_pnt[1]) * \
-                              (-1 + r_pnt[0])) / 8.0
-        N_geo_mtx[0, 7] = ((1 + r_pnt[2]) * (1 + r_pnt[1]) * \
-                             (1 + r_pnt[0])) / 8.0
+        N_geo_mtx[0, 0] = -((-1 + r_pnt[2]) * (-1 + r_pnt[1]) *
+                            (-1 + r_pnt[0])) / 8.0
+        N_geo_mtx[0, 1] = ((-1 + r_pnt[2]) * (-1 + r_pnt[1]) *
+                           (1 + r_pnt[0])) / 8.0
+        N_geo_mtx[0, 2] = ((-1 + r_pnt[2]) * (1 + r_pnt[1]) *
+                           (-1 + r_pnt[0])) / 8.0
+        N_geo_mtx[0, 3] = -((-1 + r_pnt[2]) * (1 + r_pnt[1]) *
+                            (1 + r_pnt[0])) / 8.0
+        N_geo_mtx[0, 4] = ((1 + r_pnt[2]) * (-1 + r_pnt[1]) *
+                           (-1 + r_pnt[0])) / 8.0
+        N_geo_mtx[0, 5] = -((1 + r_pnt[2]) * (-1 + r_pnt[1]) *
+                            (1 + r_pnt[0])) / 8.0
+        N_geo_mtx[0, 6] = -((1 + r_pnt[2]) * (1 + r_pnt[1]) *
+                            (-1 + r_pnt[0])) / 8.0
+        N_geo_mtx[0, 7] = ((1 + r_pnt[2]) * (1 + r_pnt[1]) *
+                           (1 + r_pnt[0])) / 8.0
         return N_geo_mtx
 
     def get_dNr_geo_mtx(self, r_pnt):
@@ -151,6 +148,7 @@ class FETS3D8H(FETS3D):
 
 #----------------------- example --------------------
 
+
 if __name__ == '__main__':
     from ibvpy.api import \
         TStepper as TS, RTDofGraph, RTraceDomainListField, TLoop, \
@@ -164,39 +162,39 @@ if __name__ == '__main__':
 
     # Discretization
     domain = FEGrid(coord_max=(3., 3., 3.),
-                           shape=(10, 10, 10),
-                           fets_eval=fets_eval)
+                    shape=(10, 10, 10),
+                    fets_eval=fets_eval)
 
     ts = TS(
-            sdomain=domain,
-             bcond_list=[BCDofGroup(var='u', value=0., dims=[0],
-                                  get_dof_method=domain.get_left_dofs),
-                        BCDofGroup(var='u', value=0., dims=[1, 2],
-                                  get_dof_method=domain.get_bottom_left_dofs),
-                        BCDofGroup(var='u', value=0.002, dims=[0],
-                                  get_dof_method=domain.get_right_dofs) ],
-             rtrace_list=[
-#                        RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
-#                                  var_y = 'F_int', idx_y = right_dof,
-#                                  var_x = 'U_k', idx_x = right_dof,
-#                                  record_on = 'update'),
-                        RTraceDomainListField(name='Deformation' ,
+        sdomain=domain,
+        bcond_list=[BCDofGroup(var='u', value=0., dims=[0],
+                               get_dof_method=domain.get_left_dofs),
+                    BCDofGroup(var='u', value=0., dims=[1, 2],
+                               get_dof_method=domain.get_bottom_left_dofs),
+                    BCDofGroup(var='u', value=0.002, dims=[0],
+                               get_dof_method=domain.get_right_dofs)],
+        rtrace_list=[
+            #                        RTDofGraph(name = 'Fi,right over u_right (iteration)' ,
+            #                                  var_y = 'F_int', idx_y = right_dof,
+            #                                  var_x = 'U_k', idx_x = right_dof,
+            #                                  record_on = 'update'),
+            RTraceDomainListField(name='Deformation',
                                        var='eps_app', idx=0,
                                        record_on='update'),
-                         RTraceDomainListField(name='Displacement' ,
-                                        var='u', idx=0),
-#                         RTraceDomainListField(name = 'Stress' ,
-#                                        var = 'sig', idx = 0,
-#                                        record_on = 'update'),
-#                        RTraceDomainListField(name = 'N0' ,
-#                                       var = 'N_mtx', idx = 0,
-#                                       record_on = 'update')
-                        ]
-            )
+            RTraceDomainListField(name='Displacement',
+                                       var='u', idx=0),
+            #                         RTraceDomainListField(name = 'Stress' ,
+            #                                        var = 'sig', idx = 0,
+            #                                        record_on = 'update'),
+            #                        RTraceDomainListField(name = 'N0' ,
+            #                                       var = 'N_mtx', idx = 0,
+            #                                       record_on = 'update')
+        ]
+    )
 
     # Add the time-loop control
     tloop = TLoop(tstepper=ts,
-         tline=TLine(min=0.0, step=0.5, max=1.0))
+                  tline=TLine(min=0.0, step=0.5, max=1.0))
 
     tloop.eval()
 

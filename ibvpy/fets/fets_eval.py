@@ -96,6 +96,11 @@ class FETSEval(TStepperEval):
     vtk_cells = List(
         desc='List of maps of nodes constituting the vtk cells covering the single element')
 
+    vtk_cell_class = Property
+
+    def _get_vtk_cell_class(self):
+        return tvtk_helper.get_class(self.vtk_cell_type)
+
     # Distinguish the type of base geometric entity to be used for
     # the visualization of the results.
     #

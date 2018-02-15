@@ -24,20 +24,19 @@ xi_3 = sp.symbols('xi_3')
 #=========================================================================
 
 N_xi_i = sp.Matrix([(1.0 - xi_1) * (1.0 - xi_2) * (1.0 - xi_3) / 8.0,
-                    (1.0 + xi_1) * (-1.0 + xi_2) * (-1.0 + xi_3) / 8.0,
+                    (1.0 + xi_1) * (-1.0 + xi_2) * (-1.0 + xi_3) / 8.0,  # 2
                     (-1.0 + xi_1) * (1.0 + xi_2) * (-1.0 + xi_3) / 8.0,
                     (-1.0 - xi_1) * (-1.0 - xi_2) * (1.0 - xi_3) / 8.0,
                     (-1.0 + xi_1) * (-1.0 + xi_2) * (1.0 + xi_3) / 8.0,
-                    (-1.0 - xi_1) * (1.0 - xi_2) * (-1.0 - xi_3) / 8.0,
+                    (-1.0 - xi_1) * (1.0 - xi_2) * (-1.0 - xi_3) / 8.0,  # 6
                     (1.0 - xi_1) * (-1.0 - xi_2) * (-1.0 - xi_3) / 8.0,
                     (1.0 + xi_1) * (1.0 + xi_2) * (1.0 + xi_3) / 8.0, ], dtype=np.float_)
-
 
 dN_xi_ir = sp.Matrix((((-1.0 / 8.0) * (-1.0 + xi_2) * (-1.0 + xi_3),
                        (-1.0 / 8.0) * (-1.0 + xi_1) * (-1.0 + xi_3),
                        (-1.0 / 8.0) * (-1.0 + xi_1) * (-1.0 + xi_2)),
 
-                      ((1.0 / 8.0) * (-1.0 + xi_2) * (-1.0 + xi_3),
+                      ((1.0 / 8.0) * (-1.0 + xi_2) * (-1.0 + xi_3),  # 2
                        (1.0 / 8.0) * (1.0 + xi_1) * (-1.0 + xi_3),
                        (1.0 / 8.0) * (1.0 + xi_1) * (-1.0 + xi_2)),
 
@@ -53,7 +52,7 @@ dN_xi_ir = sp.Matrix((((-1.0 / 8.0) * (-1.0 + xi_2) * (-1.0 + xi_3),
                        (1.0 / 8.0) * (-1.0 + xi_1) * (1.0 + xi_3),
                        (1.0 / 8.0) * (-1.0 + xi_1) * (-1.0 + xi_2)),
 
-                      ((-1.0 / 8.0) * (-1.0 + xi_2) * (1.0 + xi_3),
+                      ((-1.0 / 8.0) * (-1.0 + xi_2) * (1.0 + xi_3),  # 6
                        (-1.0 / 8.0) * (1.0 + xi_1) * (1.0 + xi_3),
                        (-1.0 / 8.0) * (1.0 + xi_1) * (-1.0 + xi_2)),
 
@@ -62,7 +61,7 @@ dN_xi_ir = sp.Matrix((((-1.0 / 8.0) * (-1.0 + xi_2) * (-1.0 + xi_3),
                        (-1.0 / 8.0) * (-1.0 + xi_1) * (1.0 + xi_2)),
 
                       ((1.0 / 8.0) * (1.0 + xi_2) * (1.0 + xi_3),
-                       (1.0 / 8.0) * (1.0 + xi_1) * (1.0 + xi_2),
+                       (1.0 / 8.0) * (1.0 + xi_1) * (1.0 + xi_3),
                        (1.0 / 8.0) * (1.0 + xi_1) * (1.0 + xi_2))), dtype=np.float_)
 
 
@@ -86,7 +85,10 @@ class FETS3D8H(FETSEval):
     n_nodal_dofs = 3
 
     vtk_cells = [[0, 1, 3, 2, 4, 5, 7, 6]]
-    vtk_cell_types = 'Hexahedron'
+    vtk_cell = [0, 1, 3, 2, 4, 5, 7, 6]
+    vtk_cell_type = 'Hexahedron'
+
+    vtk_expand_operator = tr.Array(np.float_, value=np.identity(3))
 
     # numerical integration points (IP) and weights
     xi_m = tr.Array(np.float_,
@@ -119,13 +121,17 @@ class FETS3D8H(FETSEval):
     '''
     @tr.cached_property
     def _get_shape_function_values(self):
-        N_mi = np.array([N_xi_i.subs(zip([xi_1, xi_2], xi))
+        N_mi = np.array([N_xi_i.subs(zip([xi_1, xi_2, xi_3], xi))
                          for xi in self.xi_m], dtype=np.float_)
         N_im = np.einsum('mi->im', N_mi)
-        dN_mir = np.array([dN_xi_ir.subs(zip([xi_1, xi_2], xi))
-                           for xi in self.xi_m], dtype=np.float_).reshape(8, 8, 3)
-        dN_nir = np.array([dN_xi_ir.subs(zip([xi_1, xi_2], xi))
-                           for xi in self.vtk_r], dtype=np.float_).reshape(8, 8, 3)
+        dN_mir = np.array(
+            [dN_xi_ir.subs(zip([xi_1, xi_2, xi_3], xi))
+             for xi in self.xi_m], dtype=np.float_
+        ).reshape(8, 8, 3)
+        dN_nir = np.array(
+            [dN_xi_ir.subs(zip([xi_1, xi_2, xi_3], xi))
+             for xi in self.vtk_r], dtype=np.float_
+        ).reshape(8, 8, 3)
         dN_imr = np.einsum('mir->imr', dN_mir)
         dN_inr = np.einsum('nir->inr', dN_nir)
         return (N_im, dN_imr, dN_inr)
