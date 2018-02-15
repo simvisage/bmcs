@@ -429,7 +429,7 @@ class VizSheet(ROutputSection):
                     label='Plot panel'
                 ),
                 VGroup(
-                    Item('n_cols', width=200),
+                    Item('n_cols', width=250),
                     VSplit(
                         UItem('viz2d_list@',
                               editor=tabular_editor,

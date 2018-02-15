@@ -29,6 +29,7 @@ from reinf_cross_section import SimplyRatio, GridReinforcement
 
 
 class SCM(HasTraits):
+
     '''
     Stochastic Cracking Theory
     '''
@@ -148,9 +149,15 @@ class SCM(HasTraits):
     def eps_c(self, sigma_c):
         cs = self._get_cs(sigma_c)
         delta = self._get_delta(sigma_c)
+        print 'delta'
+        print delta
         if cs > 2 * delta:
+            print sigma_c / self.E_c * (1 + self.alpha * delta / cs)
             return sigma_c / self.E_c * (1 + self.alpha * delta / cs)
         else:
+            print sigma_c * (1. / (self.E_f * self.V_f) -
+                             (self.alpha * cs) / (4. * delta * self.E_c))
+
             return sigma_c * (1. / (self.E_f * self.V_f) -
                               (self.alpha * cs) / (4. * delta * self.E_c))
 
@@ -202,6 +209,7 @@ class SCM(HasTraits):
     @cached_property
     def _get_sig_eps_fn(self):
         '''Get the stress and strain arrays'''
+        print 'update'
         n_points = 100
         sigma_c_arr = linspace(0, self.sigma_cu, n_points)
         if self.sigma_cu == self.sigma_fu * self.V_f * cos(self.orientation):
@@ -214,6 +222,8 @@ class SCM(HasTraits):
 
         # stress of reinforcement with no matrix interaction
         sigma_fiber = epsilon_c_arr[[0, -1]] * self.E_f * self.rho
+
+        print epsilon_c_arr
 
         return epsilon_c_arr, sigma_c_arr, sigma_f_arr, sigma_fiber
 
