@@ -69,7 +69,7 @@ tabular_editor = TabularEditor(
 )
 
 
-class VizSheet(ROutputSection):
+class BMCSVizSheet(ROutputSection):
     '''Vieualization sheet
     - controls the time displayed
     - contains several vizualization adapters.
@@ -78,7 +78,7 @@ class VizSheet(ROutputSection):
     '''
 
     def __init__(self, *args, **kw):
-        super(VizSheet, self).__init__(*args, **kw)
+        super(BMCSVizSheet, self).__init__(*args, **kw)
         self.on_trait_change(self.viz2d_list_items_changed,
                              'viz2d_list_items')
 
@@ -508,7 +508,7 @@ if __name__ == '__main__':
     viz3d = Viz3D()
     viz3d.set_tloop(tloop=tl)
 
-    vs = VizSheet()
+    vs = BMCSVizSheet()
     vs.add_viz3d(viz3d)
     vs.run_started()
     vs.replot()
