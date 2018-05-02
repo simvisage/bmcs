@@ -7,23 +7,17 @@ Created on 12.01.2016
 @todo: introduce a switch for left and right supports
 '''
 
-from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from bmcs.mats.mats_bondslip import MATSBondSlipFatigue
-from bmcs.mats.tloop import TLoop
-from bmcs.mats.tstepper import TStepper
 from bmcs.time_functions import \
-    LoadingScenario, Viz2DLoadControlFunction
-from ibvpy.api import BCDof, FEGrid, BCSlice
-from ibvpy.core.bcond_mngr import BCondMngr
+    LoadingScenario
 from reporter import RInputRecord
 from traits.api import \
     Property, Instance, cached_property, \
-    Bool, List, Float, Trait, Int, Str, Enum
+    Bool, List, Float, Trait, Int, Enum
 from traitsui.api import \
     View, Item, Group
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
-from view.window import BMCSModel, BMCSWindow, TLine
+from view.window import BMCSModel, TLine
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -249,7 +243,7 @@ class PullOutModelBase(BMCSModel, Vis2D):
 
     tree_view = View(
         Group(
-            Item('u_f0_max', resizable=True, full_size=True),
+            Item('w_max', resizable=True, full_size=True),
             Item('n_e_x', resizable=True, full_size=True),
             Item('fixed_boundary'),
             Group(
@@ -268,37 +262,83 @@ class PullOutModelBase(BMCSModel, Vis2D):
                      time_change_notifier=self.time_changed,
                      )
 
-    loading_scenario = Instance(LoadingScenario, report=False)
+    #=========================================================================
+    # Test setup parameters
+    #=========================================================================
+    loading_scenario = Instance(LoadingScenario,
+                                report=True,
+                                desc='object defining the loading scenario')
 
     def _loading_scenario_default(self):
         return LoadingScenario()
 
-    cross_section = Instance(CrossSection, report=True)
+    cross_section = Instance(CrossSection,
+                             report=True,
+                             desc='cross section parameters')
 
     def _cross_section_default(self):
         return CrossSection()
 
-    geometry = Instance(Geometry, report=True)
+    geometry = Instance(Geometry,
+                        report=True,
+                        desc='geometry parameters of the boundary value problem')
 
     def _geometry_default(self):
         return Geometry()
 
-    u_f0_max = Float(1, BC=True,
-                     label='pull-out displacement',
-                     symbol='$u_{\mathrm{f},0,{\max}}$',
-                     unit='mm',
-                     desc='maximum displacement of the pulled reinforcement',
-                     auto_set=False, enter_set=True)
+#
+#     loading_scenario = Instance(LoadingScenario, report=False)
+#
+#     def _loading_scenario_default(self):
+#         return LoadingScenario()
+#
+#     cross_section = Instance(CrossSection, report=True)
+#
+#     def _cross_section_default(self):
+#         return CrossSection()
+#
+#     geometry = Instance(Geometry, report=True)
+#
+#     def _geometry_default(self):
+#         return Geometry()
+
+    #=========================================================================
+    # Discretization
+    #=========================================================================
+    n_e_x = Int(20,
+                auto_set=False,
+                enter_set=True,
+                MESH=True,
+                symbol='n_\mathrm{e}',
+                unit='-',
+                desc='number of finite elements')
+
+    w_max = Float(1, BC=True,
+                  symbol='w_{\max}',
+                  unit='mm',
+                  desc='maximum pullout slip',
+                  auto_set=False, enter_set=True)
+
+    u_f0_max = Property(depends_on='u_f0_max')
+
+    @cached_property
+    def _get_u_f0_max(self):
+        return self.w_max
+
+    def _set_u_f0_max(self, value):
+        self.w_max = value
 
     n_e_x = Int(20, MESH=True, auto_set=False, enter_set=True,
-                symbol='$n_\mathrm{E}$', unit='-',
+                symbol='n_\mathrm{E}',
+                unit='-',
                 desc='number of finite elements along the embedded length'
                 )
 
     fixed_boundary = Enum('non-loaded end (matrix)',
                           'loaded end (matrix)',
-                          'non-loaded end (reinf)', BC=True,
-                          desc='which side of the specimen is fixed')
+                          'non-loaded end (reinf)',
+                          BC=True,
+                          desc='which side of the specimen is fixed [non-loaded end [matrix], loaded end [matrix], non-loaded end [reinf]]')
 
     fixed_dof = Property
 
@@ -315,16 +355,21 @@ class PullOutModelBase(BMCSModel, Vis2D):
     def _get_controlled_dof(self):
         return 2 + 2 * self.n_e_x - 1
 
+    free_end_dof = Property
+
+    def _get_free_end_dof(self):
+        return self.n_e_x + 1
+
     k_max = Int(400,
-                unit='$\mathrm{mm}$',
-                symbol='$k_{\max}$',
+                unit='\mathrm{mm}',
+                symbol='k_{\max}',
                 desc='maximum number of iterations',
                 ALG=True)
 
     tolerance = Float(1e-4,
                       unit='-',
-                      symbol='$\epsilon$',
-                      desc='tolerance of residual',
+                      symbol='\epsilon',
+                      desc='required accuracy',
                       ALG=True)
 
     def plot_u_C(self, ax, vot,

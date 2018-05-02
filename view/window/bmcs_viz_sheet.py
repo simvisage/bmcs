@@ -52,10 +52,9 @@ class RunThread(Thread):
 
 class Viz2DAdapter(TabularAdapter):
     # List of (Column labels, Column ID).
-    columns = [('Label',    'label'),
-               ]
-
-#-- Tabular Editor Definition --------------------------------------------
+    columns = [
+        ('Label',    'label'),
+    ]
 
 
 # The tabular editor works in conjunction with an adapter class, derived from
@@ -420,11 +419,12 @@ class BMCSVizSheet(ROutputSection):
         VSplit(
             HSplit(
                 Tabbed(
-                    UItem('scene',
-                          editor=SceneEditor(scene_class=MayaviScene)),
                     UItem('figure', editor=MPLFigureEditor(),
                           resizable=True,
-                          springy=True),
+                          springy=True,
+                          label='2d plots'),
+                    UItem('scene', label='3d scene',
+                          editor=SceneEditor(scene_class=MayaviScene)),
                     scrollable=True,
                     label='Plot panel'
                 ),

@@ -11,6 +11,17 @@ from traits.api import \
 from traitsui.api import \
     View
 
+itags = dict(
+    TIME=True,
+    ALG=True,
+    GEO=True,
+    MESH=True,
+    MAT=True,
+    FE=True,
+    CS=True,
+    BC=True
+)
+
 
 class BMCSNodeBase(HasStrictTraits):
 
@@ -42,49 +53,49 @@ class BMCSListeningTreeNodeMixIn(HasStrictTraits):
     @on_trait_change('+TIME')
     def _TIME_change(self):
         if self.parent:
-            print 'TIME change'
+            # print 'TIME change'
             self.root.TIME = True
 
     @on_trait_change('+ALG')
     def _ALG_change(self):
         if self.parent:
-            print 'ALG change'
+            # print 'ALG change'
             self.root.ALG = True
 
     @on_trait_change('+GEO')
     def _GEO_change(self):
         if self.parent:
-            print 'GEO change'
+            # print 'GEO change'
             self.root.GEO = True
 
     @on_trait_change('+MESH')
     def _MESH_change(self):
         if self.parent:
-            print 'MESH change'
+            # print 'MESH change'
             self.root.MESH = True
 
     @on_trait_change('+MAT')
     def _MAT_change(self):
         if self.parent:
-            print 'MAT change'
+            # print 'MAT change'
             self.root.MAT = True
 
     @on_trait_change('+FE')
     def _FE_change(self):
         if self.parent:
-            print 'FE change'
+            # print 'FE change'
             self.root.FE = True
 
     @on_trait_change('+CS')
     def _CS_change(self):
         if self.parent:
-            print 'CS change'
+            # print 'CS change'
             self.root.CS = True
 
     @on_trait_change('+BC')
     def _BC_change(self):
         if self.parent:
-            print 'BC change'
+            # print 'BC change'
             self.root.BC = True
 
 
@@ -138,14 +149,14 @@ class BMCSLeafNode(BMCSNodeBase,
                    RInputRecord,
                    BMCSLeafNodeMixIn,
                    BMCSListeningTreeNodeMixIn):
-    pass
+    itags = itags
 
 
 class BMCSTreeNode(BMCSNodeBase,
                    RInputRecord,
                    BMCSTreeNodeMixIn,
                    BMCSListeningTreeNodeMixIn):
-    pass
+    itags = itags
 
 
 class BMCSRootNode(BMCSNodeBase,
@@ -166,6 +177,8 @@ class BMCSRootNode(BMCSNodeBase,
 
     '''
 
+    itags = itags
+
     TIME = Event
     ALG = Event
     GEO = Event
@@ -181,40 +194,40 @@ class BMCSRootNode(BMCSNodeBase,
 
     @on_trait_change('+TIME')
     def _TIME_change(self):
-        print 'TIME change'
+        # print 'TIME change'
         self.root.TIME = True
 
     @on_trait_change('+ALG')
     def _ALG_change(self):
-        print 'ALG change'
+        # print 'ALG change'
         self.root.ALG = True
 
     @on_trait_change('+GEO')
     def _GEO_change(self):
-        print 'GEO change'
+        # print 'GEO change'
         self.root.GEO = True
 
     @on_trait_change('+MESH')
     def _MESH_change(self):
-        print 'MESH change'
+        # print 'MESH change'
         self.root.MESH = True
 
     @on_trait_change('+MAT')
     def _MAT_change(self):
-        print 'MAT change'
+        # print 'MAT change'
         self.root.MAT = True
 
     @on_trait_change('+FE')
     def _FE_change(self):
-        print 'FE change'
+        # print 'FE change'
         self.root.FE = True
 
     @on_trait_change('+CS')
     def _CS_change(self):
-        print 'CS change'
+        # print 'CS change'
         self.root.CS = True
 
     @on_trait_change('+BC')
     def _BC_change(self):
-        print 'BC change'
+        # print 'BC change'
         self.root.BC = True

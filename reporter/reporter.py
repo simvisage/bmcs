@@ -66,7 +66,8 @@ class ReportStudy(HasStrictTraits):
         study_name = self.name
         rel_study_path = os.path.join('examples', study_name)
         rdir = os.path.join(examples_dir, study_name)
-        os.mkdir(rdir)
+        if not os.path.exists(rdir):
+            os.mkdir(rdir)
         subfile_tex_name = study_name + '.tex'
         rfile_tex = os.path.join(rdir, subfile_tex_name)
 

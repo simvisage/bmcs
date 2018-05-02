@@ -42,35 +42,35 @@ class MATSBondSlipEP(MATSBondSlipBase):
     node_name = 'bond model: plasticity'
     E_b = Float(12900,
                 label="E_b",
-                desc="Bond stiffness",
+                desc="bond stiffness",
                 MAT=True,
-                symbol=r'$E_\mathrm{b}$',
+                symbol=r'E_\mathrm{b}',
                 unit='MPa/mm',
                 enter_set=True,
                 auto_set=False)
 
     gamma = Float(0,
                   label="Gamma",
-                  desc="Kinematic hardening modulus",
+                  desc="kinematic hardening modulus",
                   MAT=True,
-                  symbol=r'$\gamma$',
+                  symbol=r'\gamma',
                   unit='MPa/mm',
                   enter_set=True,
                   auto_set=False)
 
     K = Float(0,
               label="K",
-              desc="Isotropic hardening modulus",
+              desc="isotropic hardening modulus",
               MAT=True,
-              symbol='$K$',
+              symbol='K',
               unit='MPa/mm',
               enter_set=True,
               auto_set=False)
 
     tau_bar = Float(5,
                     label="Tau_0 ",
-                    desc="Yield stress",
-                    symbol=r'$\bar{\tau}$',
+                    desc="yield stress",
+                    symbol=r'\bar{\tau}',
                     unit='MPa',
                     MAT=True,
                     enter_set=True,
@@ -126,13 +126,17 @@ class MATSBondSlipD(MATSBondSlipBase):
 
     E_b = Float(12900,
                 label="E_b",
-                desc="Bond Stiffness",
+                symbol='E_\mathrm{b}',
+                unit='MPa',
+                desc="bond stiffness",
                 enter_set=True,
                 auto_set=False)
 
     tau_bar = Float(5,
                     label="Tau_0 ",
                     desc="yield stress",
+                    unit='MPa',
+                    symbol='\bar{\tau}',
                     enter_set=True,
                     auto_set=False)
 
@@ -144,6 +148,7 @@ class MATSBondSlipD(MATSBondSlipBase):
                                ),
                           symbol='option',
                           unit='-',
+                          desc='damage function [li,jirasek,abaqus,FRP]',
                           MAT=True,
                           )
 
@@ -152,7 +157,8 @@ class MATSBondSlipD(MATSBondSlipBase):
         self.omega_fn = self.omega_fn_type_()
 
     omega_fn = Instance(IDamageFn,
-                        report=True)
+                        report=True,
+                        desc='object definng the damage function')
 
     def _omega_fn_default(self):
         # return JirasekDamageFn()
@@ -198,27 +204,27 @@ class MATSBondSlipDP(MATSBondSlipBase):
 
     E_b = Float(12900,
                 label="E_b",
-                desc="Bond stiffness",
                 MAT=True,
-                symbol=r'$E_\mathrm{b}$',
+                symbol=r'E_\mathrm{b}',
                 unit='MPa/mm',
+                desc='elastic bond stiffness',
                 enter_set=True,
                 auto_set=False)
 
     gamma = Float(1,
                   label="Gamma",
-                  desc="Kinematic hardening modulus",
+                  desc="kinematic hardening modulus",
                   MAT=True,
-                  symbol=r'$\gamma$',
+                  symbol=r'\gamma',
                   unit='MPa/mm',
                   enter_set=True,
                   auto_set=False)
 
     K = Float(1,
               label="K",
-              desc="Isotropic hardening modulus",
+              desc="isotropic hardening modulus",
               MAT=True,
-              symbol='$K$',
+              symbol='K',
               unit='MPa/mm',
               enter_set=True,
               auto_set=False)
@@ -226,7 +232,7 @@ class MATSBondSlipDP(MATSBondSlipBase):
     tau_bar = Float(5,
                     label="Tau_0 ",
                     desc="Yield stress",
-                    symbol=r'$\bar{\tau}$',
+                    symbol=r'\bar{\tau}',
                     unit='MPa',
                     MAT=True,
                     enter_set=True,

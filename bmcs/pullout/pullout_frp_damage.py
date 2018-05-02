@@ -75,7 +75,7 @@ class PullOutModel(PullOutModelBase):
     @cached_property
     def _get_control_bc(self):
         return BCDof(node_name='pull-out displacement', var='u',
-                     dof=self.controlled_dof, value=self.u_f0_max,
+                     dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
     bcond_mngr = Property(Instance(BCondMngr),
@@ -291,7 +291,7 @@ class PullOutModel(PullOutModelBase):
 
 
 def run_pullout_frp_damage(*args, **kw):
-    po = PullOutModel(n_e_x=100, k_max=500, u_f0_max=1.5)
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
     po.tline.step = 0.01
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')

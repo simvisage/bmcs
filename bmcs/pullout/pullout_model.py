@@ -53,60 +53,21 @@ class PullOutModel(PullOutModelBase):
         self.tloop.restart = True
 
     #=========================================================================
-    # Test setup parameters
-    #=========================================================================
-    loading_scenario = Instance(LoadingScenario)
-
-    def _loading_scenario_default(self):
-        return LoadingScenario()
-
-    cross_section = Instance(CrossSection)
-
-    def _cross_section_default(self):
-        return CrossSection()
-
-    geometry = Instance(Geometry)
-
-    def _geometry_default(self):
-        return Geometry()
-
-    #=========================================================================
-    # Discretization
-    #=========================================================================
-    n_e_x = Int(20, auto_set=False, enter_set=True)
-
-    w_max = Float(1, BC=True, auto_set=False, enter_set=True)
-
-    free_end_dof = Property
-
-    def _get_free_end_dof(self):
-        return self.n_e_x + 1
-
-    controlled_dof = Property
-
-    def _get_controlled_dof(self):
-        return 2 + 2 * self.n_e_x - 1
-
-    fixed_dof = Property
-
-    def _get_fixed_dof(self):
-        return 0
-
-    #=========================================================================
     # Material model
     #=========================================================================
     mats_eval_type = Trait('multilinear',
                            {'damage-plasticity': MATSBondSlipDP,
                             'multilinear': MATSBondSlipMultiLinear},
                            MAT=True,
-                           desc='material model type')
+                           desc='material model type [damage-plasticity, multilinear]')
 
     @on_trait_change('mats_eval_type')
     def _set_mats_eval(self):
         self.mats_eval = self.mats_eval_type_()
         self._update_node_list()
 
-    mats_eval = Instance(IMATSEval, report=True)
+    mats_eval = Instance(IMATSEval, report=True,
+                         desc='object representing the material model')
     '''Material model'''
 
     def _mats_eval_default(self):
@@ -187,7 +148,6 @@ class PullOutModel(PullOutModelBase):
     @cached_property
     def _get_tstepper(self):
         #self.fe_grid.dots = self.dots
-        print 'new tstepper'
         ts = TStepper(
             sdomain=self.fe_grid,
             bcond_mngr=self.bcond_mngr,
@@ -216,10 +176,38 @@ class PullOutModel(PullOutModelBase):
                      time_change_notifier=self.time_changed,
                      )
 
-    k_max = Int(200,
+    fixed_dof = Property
+
+    def _get_fixed_dof(self):
+        if self.fixed_boundary == 'non-loaded end (matrix)':
+            return 0
+        elif self.fixed_boundary == 'non-loaded end (reinf)':
+            return 1
+        elif self.fixed_boundary == 'loaded end (matrix)':
+            return self.controlled_dof - 1
+
+    controlled_dof = Property
+
+    def _get_controlled_dof(self):
+        return 2 + 2 * self.n_e_x - 1
+
+    free_end_dof = Property
+
+    def _get_free_end_dof(self):
+        return self.n_e_x + 1
+
+    k_max = Int(400,
+                unit='mm',
+                symbol='k_{\max}',
+                desc='maximum number of iterations',
                 ALG=True)
+
     tolerance = Float(1e-4,
+                      unit='-',
+                      symbol='\epsilon',
+                      desc='required accuracy',
                       ALG=True)
+
     tloop = Property(Instance(TLoop),
                      depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
     '''Algorithm controlling the time stepping.
@@ -229,7 +217,6 @@ class PullOutModel(PullOutModelBase):
         k_max = self.k_max
 
         tolerance = self.tolerance
-        print 'new tloop', self.tstepper
         return TLoop(tstepper=self.tstepper, KMAX=k_max,
                      RESETMAX=0,
                      tolerance=tolerance, debug=False,
@@ -446,7 +433,7 @@ def run_with_new_state():
 
 def run_pullout_multi(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=2, k_max=1000, u_f0_max=0.1)
+                      n_e_x=2, k_max=1000, w_max=0.1)
     po.mats_eval_type = 'multilinear'
     po.tline.step = 0.1
     po.geometry.L_x = 200.0

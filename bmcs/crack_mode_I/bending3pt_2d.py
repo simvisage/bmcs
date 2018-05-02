@@ -10,6 +10,8 @@ from bmcs.time_functions import \
 from ibvpy.api import \
     IMATSEval, TLine, BCSlice
 from ibvpy.core.bcond_mngr import BCondMngr
+from ibvpy.core.vtloop import TimeLoop
+from ibvpy.dots.vdots_grid import DOTSGrid
 from ibvpy.fets import \
     FETS2D4Q
 from ibvpy.mats.mats2D import \
@@ -20,11 +22,10 @@ from traits.api import \
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
+from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
 
-from ibvpy.core.vtloop import TimeLoop
-from ibvpy.dots.vdots_grid import DOTSGrid
 import numpy as np
 import traits.api as tr
 
@@ -334,15 +335,12 @@ class BendingTestModel(BMCSModel, Vis2D):
     tree_view = traits_view
 
 
-from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
-
-
 def run_bending3pt_elastic():
     bt = BendingTestModel(n_e_x=41, n_e_y=10, k_max=500,
                           #mats_eval_type='scalar damage'
                           mats_eval_type='microplane damage (eeq)'
                           )
-    bt.mats_eval.set(
+    bt.mats_eval.trait_set(
         # stiffness='algorithmic',
         epsilon_0=0.005,
         epsilon_f=1.0E+4
@@ -352,7 +350,7 @@ def run_bending3pt_elastic():
     bt.tline.step = 0.02
     bt.cross_section.h = 40
     bt.geometry.L = 300
-    bt.loading_scenario.set(loading_type='monotonic')
+    bt.loading_scenario.trait_set(loading_type='monotonic')
     w = BMCSWindow(model=bt)
     bt.add_viz2d('load function', 'load-time')
     bt.add_viz2d('F-w', 'load-displacement')

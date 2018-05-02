@@ -4,12 +4,10 @@ Created on 12.01.2016
 @author: Yingxiong
 '''
 from ibvpy.core.tline import TLine
-from traits.api import Int, HasStrictTraits, Instance, \
-    Float, Property, property_depends_on, Callable, \
+from traits.api import \
+    Int, HasStrictTraits, Instance, \
+    Float, \
     Array, List, Bool
-from traitsui.api import View, Item
-from view.ui import BMCSLeafNode
-
 import numpy as np
 from tstepper_dp import TStepper
 
@@ -62,7 +60,6 @@ class TLoop(HasStrictTraits):
         self.D_record = [np.zeros_like(D)]
 
     def init(self):
-        print 'INIT'
         if self.paused:
             self.paused = False
         if self.restart:
@@ -127,7 +124,7 @@ class TLoop(HasStrictTraits):
                 step_flag = 'corrector'
 
             if k >= self.k_max:
-                print ' ----------> No Convergence any more'
+                print ' ----------> No convergence for the time step %f', t_n1
                 break
             if self.restart or self.paused:
                 print 'interrupted iteration'

@@ -11,7 +11,7 @@ from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from reporter.report_item import RInputRecord
 from traits.api import  \
     Constant, Float, Tuple, List, on_trait_change, \
-    Instance, Trait, Bool, Str, Button
+    Instance, Trait, Bool, Str, Button, Property
 from traitsui.api import View, VGroup, Item, UItem, Group
 from view.ui import BMCSTreeNode
 
@@ -415,24 +415,33 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
     state_arr_shape = Tuple((0,))
 
     E_m = Float(28000.0, tooltip='Stiffness of the matrix [MPa]',
-                MAT=True, unit='MPa', symbol='$E_\mathrm{m}$',
+                MAT=True, unit='MPa', symbol='E_\mathrm{m}',
                 desc='E-modulus of the matrix',
                 auto_set=True, enter_set=True)
 
     E_f = Float(170000.0, tooltip='Stiffness of the fiber [MPa]',
-                MAT=True, unit='MPa', symbol='$E_\mathrm{f}$',
+                MAT=True, unit='MPa', symbol='E_\mathrm{f}',
                 desc='E-modulus of the reinforcement',
                 auto_set=False, enter_set=True)
 
     s_data = Str('', tooltip='Comma-separated list of strain values',
-                 MAT=True, unit='mm', symbol='$s$',
+                 MAT=True, unit='mm', symbol='s',
                  desc='slip values',
                  auto_set=True, enter_set=False)
 
     tau_data = Str('', tooltip='Comma-separated list of stress values',
-                   MAT=True, unit='MPa', symbol='$\\tau$',
+                   MAT=True, unit='MPa', symbol=r'\tau',
                    desc='shear stress values',
                    auto_set=True, enter_set=False)
+
+    s_tau_table = Property
+
+    def _set_s_tau_table(self, data):
+        s_data, tau_data = data
+        if len(s_data) != len(tau_data):
+            raise ValueError, 's array and tau array must have the same size'
+        self.bs_law.set(xdata=s_data,
+                        ydata=tau_data)
 
     update_bs_law = Button(label='update bond-slip law')
 

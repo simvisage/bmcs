@@ -20,15 +20,15 @@ class CrossSection(RInputRecord):
     name = 'Cross section'
     A_m = Float(0.4, CS=True, unit='mm',
                 label='Area of the matrix',
-                math_symbol='A_\mathrm{m}')
+                symbol='A_\mathrm{m}')
 
     A_f = Float(0.4, CS=True, unit='mm',
                 label='Area of the reinforcement',
-                math_symbol='A_\mathrm{f}')
+                symbol='A_\mathrm{f}')
 
     P_b = Float(0.2, CS=True, unit='mm',
                 label='Contact perimeter',
-                math_symbol='P_\mathrm{b}')
+                symbol='P_\mathrm{b}')
 
 
 class Geometry(RInputRecord):
@@ -41,7 +41,7 @@ class ModelPart(RInputRecord):
     name = 'part1'
     title = 'Model part 1'
     desc = 'Some description'
-    n_e = Int(20, GEO=True)
+    n_e = Int(20, symbol='n_\mathrm{e}', GEO=True)
     cs = Instance(CrossSection, (), report=True)
     geo = Instance(Geometry, (), report=True)
 
