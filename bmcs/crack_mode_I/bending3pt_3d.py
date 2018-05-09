@@ -342,23 +342,23 @@ class BendingTestModel(BMCSModel, Vis2D):
 
 def run_bending3pt_mic_odf(*args, **kw):
 
-    bt = BendingTestModel(n_e_x=21, n_e_y=5, n_e_z=3,
+    bt = BendingTestModel(n_e_x=21, n_e_y=5, n_e_z=1,
                           k_max=500,
-                          #mats_eval_type='microplane damage (eeq)'
-                          mats_eval_type='microplane damage (odf)'
+                          mats_eval_type='microplane damage (eeq)'
+                          #mats_eval_type='microplane damage (odf)'
                           )
     bt.mats_eval.trait_set(
         # stiffness='algorithmic',
         epsilon_0=0.005,
-        epsilon_f=0.01
+        epsilon_f=0.05
     )
 
     dots = bt.tloop.ts
 
-    bt.w_max = 50
+    bt.w_max = 100
     bt.tline.step = 0.02
-    bt.cross_section.h = 40
-    bt.geometry.L = 300
+    bt.cross_section.h = 100
+    bt.geometry.L = 800
     bt.loading_scenario.trait_set(loading_type='monotonic')
     w = BMCSWindow(model=bt)
     bt.add_viz2d('load function', 'load-time')

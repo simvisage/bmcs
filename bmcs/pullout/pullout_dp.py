@@ -24,7 +24,7 @@ from view.window import BMCSModel, BMCSWindow, TLine
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     Viz2DEnergyPlot, Viz2DEnergyRatesPlot, \
-    CrossSection, Geometry, PullOutModelBase
+    PullOutModelBase
 
 
 class PullOutModel(PullOutModelBase):

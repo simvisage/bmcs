@@ -8,19 +8,16 @@ from bmcs.mats.mats_bondslip import MATSBondSlipDP, MATSBondSlipMultiLinear, MAT
 from bmcs.mats.tloop_dp import TLoop
 from bmcs.mats.tstepper_dp import TStepper
 from bmcs.time_functions import \
-    LoadingScenario, Viz2DLoadControlFunction
+    Viz2DLoadControlFunction
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from reporter import Reporter
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
-    List, Float, Int, Trait, on_trait_change
+    Float, Int, Trait, on_trait_change
 from traitsui.api import \
-    View, Item, Group
-from view.plot2d import Vis2D, Viz2D
-from view.window import BMCSModel, BMCSWindow, TLine
+    View, Item
+from view.window import BMCSWindow
 
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
@@ -206,7 +203,6 @@ class PullOutModel(PullOutModelBase):
         sf_t_Em = np.array(self.tloop.sf_Em_record)
         w_ip = self.fets_eval.ip_weights
         J_det = self.tstepper.J_det
-        sN_Cim = self.tstepper.sN_Cim
         P_b = self.cross_section.P_b
         shear_integ = np.einsum('tEm,m,em->t', sf_t_Em, w_ip, J_det) * P_b
         return shear_integ

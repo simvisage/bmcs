@@ -30,22 +30,22 @@ class CrossSection(BMCSLeafNode, RInputRecord):
     A_m = Float(15240,
                 CS=True,
                 input=True,
-                unit='$\\mathrm{mm}^2$',
-                symbol='$A_\mathrm{m}$',
+                unit=r'$\mathrm{mm}^2$',
+                symbol=r'A_\mathrm{m}',
                 auto_set=False, enter_set=True,
                 desc='matrix area')
     A_f = Float(153.9,
                 CS=True,
                 input=True,
                 unit='$\\mathrm{mm}^2$',
-                symbol='$A_\mathrm{f}$',
+                symbol='A_\mathrm{f}',
                 auto_set=False, enter_set=True,
                 desc='reinforcement area')
     P_b = Float(44,
                 CS=True,
                 input=True,
                 unit='$\\mathrm{mm}$',
-                symbol='$P_\mathrm{b}$',
+                symbol='p_\mathrm{b}',
                 auto_set=False, enter_set=True,
                 desc='perimeter of the bond interface')
 
@@ -65,7 +65,7 @@ class Geometry(BMCSLeafNode, RInputRecord):
                 GEO=True,
                 input=True,
                 unit='$\mathrm{mm}$',
-                symbol='$L$',
+                symbol='L',
                 auto_set=False, enter_set=True,
                 desc='embedded length')
 

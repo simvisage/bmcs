@@ -16,7 +16,8 @@ from traitsui.api import View, VGroup, Item, UItem, Group
 from view.ui import BMCSTreeNode
 
 from mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
+    MultilinearDamageFn, \
     FRPDamageFn
 import numpy as np
 
@@ -270,6 +271,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
                                jirasek=JirasekDamageFn,
                                abaqus=AbaqusDamageFn,
                                FRP=FRPDamageFn,
+                               multilinear=MultilinearDamageFn
                                ),
                           MAT=True,
                           )

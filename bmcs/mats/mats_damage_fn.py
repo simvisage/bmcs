@@ -7,7 +7,7 @@ from scipy.optimize import newton
 from traits.api import \
     Instance, Str, \
     Float, on_trait_change,\
-    HasStrictTraits, Interface, implements, Range, Property
+    Interface, implements, Range, Property, Button
 from traitsui.api import \
     View, Item, UItem, VGroup
 from view.ui import BMCSLeafNode
@@ -82,6 +82,12 @@ class DamageFn(BMCSLeafNode, PlottableFn):
 
     def _repr_latex_(self):
         return self.latex_eq + super(DamageFn, self)._repr_latex_()
+
+    def plot(self, ax):
+        n_vals = 200
+        xdata = np.linspace(self.plot_min, self.plot_max, n_vals)
+        ydata = self.__call__(xdata)
+        ax.plot(xdata, ydata, color='green')
 
 
 class JirasekDamageFn(DamageFn):
@@ -412,8 +418,74 @@ class FRPDamageFn(DamageFn):
     tree_view = traits_view
 
 
+class MultilinearDamageFn(DamageFn):
+
+    node_name = 'Multilinear damage function'
+
+    implements(IDamageFn)
+
+    s_data = Str('0,1', tooltip='Comma-separated list of strain values',
+                 MAT=True, unit='mm', symbol='s',
+                 desc='slip values',
+                 auto_set=True, enter_set=False)
+
+    omega_data = Str('0,0', tooltip='Comma-separated list of damage values',
+                     MAT=True, unit='-', symbol=r'\omega',
+                     desc='shear stress values',
+                     auto_set=True, enter_set=False)
+
+    s_omega_table = Property
+
+    def _set_s_omega_table(self, data):
+        s_data, omega_data = data
+        if len(s_data) != len(omega_data):
+            raise ValueError, 's array and tau array must have the same size'
+        self.damage_law.set(xdata=s_data,
+                            ydata=omega_data)
+
+    update_damage_law = Button(label='update bond-slip law')
+
+    def _update_damage_law_fired(self):
+        s_data = np.fromstring(self.s_data, dtype=np.float_, sep=',')
+        omega_data = np.fromstring(self.omega_data, dtype=np.float_, sep=',')
+        if len(s_data) != len(omega_data):
+            raise ValueError, 's array and tau array must have the same size'
+        self.damage_law.set(xdata=s_data,
+                            ydata=omega_data)
+        self.damage_law.replot()
+
+    damage_law = Instance(MFnLineArray)
+
+    def _damage_law_default(self):
+        return MFnLineArray(
+            xdata=[0.0, 1.0],
+            ydata=[0.0, 0.0],
+            plot_diff=False)
+
+    def __call__(self, kappa):
+        shape = kappa.shape
+        return self.damage_law(kappa.flatten()).reshape(*shape)
+
+    def diff(self, kappa):
+        shape = kappa.shape
+        return self.damage_law.diff(kappa.flatten()).reshape(*shape)
+
+    traits_view = View(
+        VGroup(
+            VGroup(
+                Item('s_data', full_size=True, resizable=True),
+                Item('omega_data'),
+                UItem('update_damage_law')
+            ),
+            UItem('damage_law@')
+        )
+    )
+
+    tree_view = traits_view
+
+
 if __name__ == '__main__':
     #ld = LiDamageFn()
-    #ld = JirasekDamageFn()
-    ld = FRPDamageFn()
+    ld = MultilinearDamageFn()
+    #ld = FRPDamageFn()
     ld.configure_traits()
