@@ -196,6 +196,7 @@ class BCDof(BMCSTreeNode):
 
     traits_view = tree_view
 
+
 if __name__ == '__main__':
 
     from ibvpy.mesh.fe_grid import FEGrid

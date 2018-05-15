@@ -12,9 +12,11 @@ from bmcs.mats.mats_bondslip import \
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
-    BCDof, FEGrid, BCSlice, TStepper, TLoop, IMATSEval
+    BCDof, FEGrid, BCSlice, TStepper, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.core.tline import TLine
+from ibvpy.core.vtloop import TimeLoop as TLoop
+from ibvpy.dots.vdots_grid3d import DOTSGrid
 from ibvpy.rtrace.rt_dof import RTDofGraph
 from traits.api import \
     Property, Instance, cached_property, \
@@ -119,15 +121,34 @@ class PullOutModel(PullOutModelBase):
                      dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
-    fe_grid = Property(Instance(FEGrid), depends_on='MAT,GEO,MESH,FE')
-    '''Diescretization object.
+    dots_grid = Property(Instance(DOTSGrid),
+                         depends_on='CS,MAT,GEO,MESH,FE')
+    '''Discretization object.
     '''
     @cached_property
+    def _get_dots_grid(self):
+        geo = self.geometry
+        return DOTSGrid(
+            L_x=geo.L_x,
+            n_x=self.n_e_x,
+            fets=self.fets_eval, mats=self.mats_eval
+        )
+
+    fe_grid = Property
+
     def _get_fe_grid(self):
-        # Element definition
-        return FEGrid(coord_max=(self.geometry.L_x,),
-                      shape=(self.n_e_x,),
-                      fets_eval=self.fets_eval)
+        return self.dots_grid.mesh
+
+#
+#     fe_grid = Property(Instance(FEGrid), depends_on='MAT,GEO,MESH,FE')
+#     '''Diescretization object.
+#     '''
+#     @cached_property
+#     def _get_fe_grid(self):
+#         # Element definition
+#         return FEGrid(coord_max=(self.geometry.L_x,),
+#                       shape=(self.n_e_x,),
+#                       fets_eval=self.fets_eval)
 
     rt_Pu = Property(depends_on='BC,MESH')
     '''Control boundary condition - make it accessible directly
@@ -217,10 +238,10 @@ class PullOutModel(PullOutModelBase):
         k_max = self.k_max
 
         tolerance = self.tolerance
-        return TLoop(tstepper=self.tstepper, KMAX=k_max,
-                     RESETMAX=0,
-                     tolerance=tolerance, debug=False,
-                     tline=self.tline)
+        return TLoop(ts=self.dots_grid, k_max=k_max,
+                     tolerance=tolerance,
+                     tline=self.tline,
+                     bc_mngr=self.bcond_mngr)
 
     def get_d_ECid(self, vot):
         '''Get the displacements as a four-dimensional array 
@@ -276,7 +297,7 @@ class PullOutModel(PullOutModelBase):
         return sf
 
     def get_P_t(self):
-        F_array = np.array(self.tloop.F_record, dtype=np.float_)
+        F_array = np.array(self.tloop.F_int_record, dtype=np.float_)
         return F_array[:, self.controlled_dof]
 
     def get_w_t(self):
@@ -381,13 +402,17 @@ def run_pullout_dp():
     po.loading_scenario.set(loading_type='monotonic')
     po.material.set(K=100000.0, gamma=-0.0)
     po.material.set(tau_bar=3.5, E_m=35000.0, E_f=170000.0, E_b=6700.0)
+    po.material.omega_fn_type = 'li'
     po.material.omega_fn.set(alpha_1=1.0, alpha_2=1000.0, plot_max=0.01)
-    Pu = po.rt_Pu
-    w = BMCSWindow(model=po)
-    Pu.add_viz2d('diagram')
-    w.offline = False
-    w.finish_event = True
-    w.configure_traits()
+    po.run()
+#     Pu = po.rt_Pu
+#     w = BMCSWindow(model=po)
+#     po.add_viz2d('load function', 'load-time')
+#     po.add_viz2d('F-w', 'load-displacement')
+#     Pu.add_viz2d('diagram', 'Pu')
+#     w.offline = False
+#     w.finish_event = True
+#     w.configure_traits()
 
 
 def run_pullout_multilinear():
@@ -425,8 +450,8 @@ def run_with_new_state():
     po.cross_section.set(A_f=64.0, P_b=28.0, A_m=28000.0)
     po.material.set(K=-0.0, gamma=-500, tau_bar=13.137)
     po.material.set(E_m=35000.0, E_f=170000.0, E_b=6700.0)
+    po.material.omega_fn_type = 'li'
     po.material.omega_fn.set(alpha_1=1.0, alpha_2=100.0, plot_max=0.01)
-#    po.material.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=0.01)
     po.run()
     po.rt_Pu.trace.configure_traits()
 
@@ -460,4 +485,5 @@ def run_pullout_multi(*args, **kw):
 
 if __name__ == '__main__':
     # run_pullout_multi()
-    run_with_new_state()
+    # run_with_new_state()
+    run_pullout_dp()

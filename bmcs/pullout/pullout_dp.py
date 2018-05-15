@@ -296,6 +296,7 @@ def run_pullout_dp(*args, **kw):
     po.loading_scenario.trait_set(loading_type='monotonic')
     po.cross_section.trait_set(A_f=16.67, P_b=1.0, A_m=1540.0)
     po.mats_eval.trait_set(gamma=0.0, K=15.0, tau_bar=45.0)
+    po.mats_eval.omega_fn_type = 'li'
     po.mats_eval.omega_fn.trait_set(alpha_2=1.0, plot_max=10.0)
     po.run()
 

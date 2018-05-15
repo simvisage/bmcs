@@ -176,7 +176,7 @@ class LiDamageFn(DamageFn):
                     input=True,
                     symbol=r'\alpha_1',
                     unit='-',
-                    desc="parameter controls the damage function",
+                    desc="parameter controlling the shape of the damage function",
                     enter_set=True,
                     auto_set=False)
 
@@ -185,7 +185,7 @@ class LiDamageFn(DamageFn):
                     input=True,
                     symbol=r'\alpha_2',
                     unit='-',
-                    desc="parameter controls the damage function",
+                    desc="parameter controlling the shape of the damage function",
                     enter_set=True,
                     auto_set=False)
 
@@ -314,11 +314,12 @@ class FRPDamageFn(DamageFn):
 
     implements(IDamageFn)
 
-    b = Float(10.4,
+    B = Float(10.4,
               MAT=True,
               input=True,
-              symbol="b",
-              desc="parameter controls the damage function",
+              symbol="B",
+              unit='mm$^{-1}$',
+              desc="parameter controlling the damage maximum stress level",
               enter_set=True,
               auto_set=False)
 
@@ -326,6 +327,7 @@ class FRPDamageFn(DamageFn):
                MAT=True,
                input=True,
                symbol="G_\mathrm{f}",
+               unit='N/mm',
                desc="fracture energy",
                enter_set=True,
                auto_set=False)
@@ -338,20 +340,20 @@ class FRPDamageFn(DamageFn):
 
     E_b = Float
 
-    @on_trait_change('b, Gf')
+    @on_trait_change('B, Gf')
     def _update_dependent_params(self):
 
-        self.E_b = 1.734 * self.Gf * self.b ** 2.0
+        self.E_b = 1.734 * self.Gf * self.B ** 2.0
         # calculation of s_0, implicit function solved using Newton method
 
         def f_s(s_0): return s_0 / \
-            (np.exp(- self.b * s_0) - np.exp(-2.0 * self.b * s_0)) - \
-            2.0 * self.b * self.Gf / self.E_b
+            (np.exp(- self.B * s_0) - np.exp(-2.0 * self.B * s_0)) - \
+            2.0 * self.B * self.Gf / self.E_b
         self.s_0 = newton(f_s, 0.00000001, tol=1e-5, maxiter=20)
 
     def __call__(self, kappa):
 
-        b = self.b
+        b = self.B
         Gf = self.Gf
         Eb = self.E_b  # 1.734 * Gf * b**2
         s_0 = self.s_0
@@ -374,7 +376,7 @@ class FRPDamageFn(DamageFn):
 
         nz_ix = np.where(kappa != 0.0)[0]
 
-        b = self.b
+        b = self.B
         Gf = self.Gf
         Eb = 1.734 * Gf * b**2
 
@@ -392,8 +394,10 @@ class FRPDamageFn(DamageFn):
         )
         return domega_dkappa
 
-    _latex_eq = r'''Damage function (FRP)
+    latex_eq = r'''Damage function (FRP)
         \begin{align}
+        \omega = g(\kappa) = 
+        1 - {\frac {{\exp(-2\,Bs)}-{\exp(-Bs)}}{Bs}}
         \end{align}
         where $\kappa$ is the state variable representing 
         the maximum slip that occurred so far in
@@ -405,7 +409,7 @@ class FRPDamageFn(DamageFn):
             VGroup(
                 Item('s_0', style='readonly', full_size=True, resizable=True),
                 Item('E_b', style='readonly', full_size=True, resizable=True),
-                Item('b'),
+                Item('B'),
                 Item('Gf'),
                 Item('plot_max'),
             ),
