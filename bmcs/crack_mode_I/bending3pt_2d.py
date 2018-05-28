@@ -13,7 +13,7 @@ from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.fets import \
     FETS2D4Q
 from ibvpy.mats.mats2D import \
-    MATS2DElastic, MATS2DMplDamageEEQ, MATS2DScalarDamage
+    MATS2DElastic, MATS2DMplDamageEEQ, MATS2DScalarDamage, MATS2DMplCSDEEQ, MATS2DMplCSDODF
 from traits.api import \
     Property, Instance, cached_property, \
     List, Float, Trait, Int, on_trait_change
@@ -194,6 +194,8 @@ class BendingTestModel(BMCSModel, Vis2D):
     mats_eval_type = Trait('microplane damage (eeg)',
                            {'elastic': MATS2DElastic,
                             'microplane damage (eeq)': MATS2DMplDamageEEQ,
+                            'microplane CSD (eeq)': MATS2DMplCSDEEQ,
+                            'microplane CSD (odf)': MATS2DMplCSDODF,
                             'scalar damage': MATS2DScalarDamage
                             },
                            MAT=True
@@ -338,18 +340,20 @@ from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 
 
 def run_bending3pt_elastic():
-    bt = BendingTestModel(n_e_x=41, n_e_y=10, k_max=500,
+    bt = BendingTestModel(n_e_x=11, n_e_y=5, k_max=500,
                           #mats_eval_type='scalar damage'
-                          mats_eval_type='microplane damage (eeq)'
+                          #mats_eval_type='microplane damage (eeq)'
+                          #mats_eval_type='microplane CSD (eeq)'
+                          mats_eval_type='microplane CSD (odf)'
                           )
     bt.mats_eval.set(
         # stiffness='algorithmic',
-        epsilon_0=0.005,
-        epsilon_f=1.0E+4
+        # epsilon_0=0.005,
+        # epsilon_f=1.0E+4
     )
 
-    bt.w_max = 50
-    bt.tline.step = 0.02
+    bt.w_max = 5
+    bt.tline.step = 0.05
     bt.cross_section.h = 40
     bt.geometry.L = 300
     bt.loading_scenario.set(loading_type='monotonic')

@@ -142,7 +142,7 @@ class PullOutModel(PullOutModelBase):
     '''
     @cached_property
     def _get_control_bc(self):
-        return BCDof(node_name='pull-out force', var='f',
+        return BCDof(node_name='pull-out force', var='u',
                      dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 

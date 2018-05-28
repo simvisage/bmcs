@@ -24,19 +24,19 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
 
     implements(IMATSEval)
 
-    epsilon_0 = Float(59e-6,
+    epsilon_0 = Float(59.0e-6,
                       label="a",
                       desc="Lateral pressure coefficient",
                       enter_set=True,
                       auto_set=False)
 
-    epsilon_f = Float(250e-6,
+    epsilon_f = Float(250.0e-6,
                       label="a",
                       desc="Lateral pressure coefficient",
                       enter_set=True,
                       auto_set=False)
 
-    c_T = Float(0.00,
+    c_T = Float(1.0,
                 label="a",
                 desc="Lateral pressure coefficient",
                 enter_set=True,
@@ -47,6 +47,18 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
                    desc="anisotropy parameter",
                    enter_set=True,
                    auto_set=False)
+
+    E = tr.Float(34000.0,
+                 label="E",
+                 desc="Young's Modulus",
+                 auto_set=False,
+                 input=True)
+
+    nu = tr.Float(0.2,
+                  label='nu',
+                  desc="Poison ratio",
+                  auto_set=False,
+                  input=True)
 
     state_array_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
@@ -92,6 +104,17 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
         e_N_Emn = einsum('Emna, na->Emn', e_Emna, self._MPN)
         return e_N_Emn
 
+    def _get_e_N_arr_2(self, eps_Emab):
+
+        #eps_mtx = self.map_eps_eng_to_mtx(eps_eng)
+        return einsum('nij,Emij->Emn', self._MPNN, eps_Emab)
+
+    def _get_e_t_vct_arr_2(self, eps_Emab):
+
+        #eps_mtx = self.map_eps_eng_to_mtx(eps_eng)
+        MPTT_ijr = self._get__MPTT()
+        return einsum('nijr,Emij->Emnr', MPTT_ijr, eps_Emab)
+
     def _get_e_equiv_Emn(self, e_Emna):
         '''
         Returns a list of the microplane equivalent strains
@@ -99,6 +122,7 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
         '''
         # magnitude of the normal strain vector for each microplane
         e_N_Emn = self._get_e_N_Emn(e_Emna)
+        # print e_N_Emn[0, -1, :]
         # positive part of the normal strain magnitude for each microplane
         e_N_pos_Emn = (np.abs(e_N_Emn) + e_N_Emn) / 2.0
         # normal strain vector for each microplane
@@ -109,6 +133,7 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
         e_T_Emna = e_Emna - e_N_Emna
         # squared tangential strain vector for each microplane
         e_TT_Emn = einsum('Emni,Emni -> Emn', e_T_Emna, e_T_Emna)
+        # print e_TT_Emn[0, -1, :]
         # equivalent strain for each microplane
         e_equiv_Emn = sqrt(e_N_pos_Emn * e_N_pos_Emn + c_T * e_TT_Emn)
         return e_equiv_Emn
@@ -148,6 +173,7 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
         phi_Emn = 1.0 - self._get_omega(kappa_Emn)
         # integration terms for each microplanes
         phi_Emab = einsum('Emn,n,nab->Emab', phi_Emn, self._MPW, self._MPNN)
+
         return phi_Emab
 
     #----------------------------------------------------------------
@@ -167,7 +193,7 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
         delta = identity(3)
         I_dev_abcd = 0.5 * (einsum('ac,bd -> abcd', delta, delta) +
                             einsum('ad,bc -> abcd', delta, delta)) \
-            - (1. / 3.0) * einsum('ab,cd -> abcd', delta, delta)
+            - (1.0 / 3.0) * einsum('ab,cd -> abcd', delta, delta)
 
         return I_dev_abcd
 
@@ -214,6 +240,49 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
 
         return PP_dev_nabcd
 
+    def _get_I_vol_4(self):
+        # The fourth order volumetric-identity tensor
+        delta = identity(3)
+        I_vol_ijkl = (1.0 / 3.0) * einsum('ij,kl -> ijkl', delta, delta)
+        return I_vol_ijkl
+
+    def _get_I_dev_4(self):
+        # The fourth order deviatoric-identity tensor
+        delta = identity(3)
+        I_dev_ijkl = 0.5 * (einsum('ik,jl -> ijkl', delta, delta) +
+                            einsum('il,jk -> ijkl', delta, delta)) \
+            - (1 / 3.0) * einsum('ij,kl -> ijkl', delta, delta)
+
+        return I_dev_ijkl
+
+    def _get_P_vol(self):
+        delta = identity(3)
+        P_vol_ij = (1 / 3.0) * delta
+        return P_vol_ij
+
+    def _get_P_dev(self):
+        delta = identity(3)
+        P_dev_njkl = 0.5 * einsum('ni,ij,kl -> njkl', self._MPN, delta, delta)
+        return P_dev_njkl
+
+    def _get_PP_vol_4(self):
+        # outer product of P_vol
+        delta = identity(3)
+        PP_vol_ijkl = (1 / 9.) * einsum('ij,kl -> ijkl', delta, delta)
+        return PP_vol_ijkl
+
+    def _get_PP_dev_4(self):
+        # inner product of P_dev
+        delta = identity(3)
+        PP_dev_nijkl = 0.5 * (0.5 * (einsum('ni,nk,jl -> nijkl', self._MPN, self._MPN, delta) +
+                                     einsum('ni,nl,jk -> nijkl', self._MPN, self._MPN, delta)) +
+                              0.5 * (einsum('ik,nj,nl -> nijkl',  delta, self._MPN, self._MPN) +
+                                     einsum('il,nj,nk -> nijkl',  delta, self._MPN, self._MPN))) -\
+            (1 / 3.) * (einsum('ni,nj,kl -> nijkl', self._MPN, self._MPN, delta) +
+                        einsum('ij,nk,nl -> nijkl', delta, self._MPN, self._MPN)) +\
+            (1 / 9.) * einsum('ij,kl -> ijkl', delta, delta)
+        return PP_dev_nijkl
+
     #--------------------------------------------------------------------------
     # Returns the fourth order secant stiffness tensor (cf. [Wu.2009], Eq.(29))
     #--------------------------------------------------------------------------
@@ -223,10 +292,15 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
         G0 = self.E / (1.0 + self.nu)
 
         phi_Emn = 1.0 - self._get_omega(kappa)
+        # print 'phi_Emn', phi_Emn
 
         PP_vol_abcd = self._get_PP_vol_abcd()
         PP_dev_nabcd = self._get_PP_dev_nabcd()
         I_dev_abcd = self._get_I_dev_abcd()
+
+#         PP_vol_abcd = self._get_PP_vol_4()
+#         PP_dev_nabcd = self._get_PP_dev_4()
+#         I_dev_abcd = self._get_I_dev_4()
 
         S_1_Emabcd = K0 * einsum('Emn, n, abcd-> Emabcd', phi_Emn, self._MPW, PP_vol_abcd) + \
             G0 * 2.0 * self.zeta_G * einsum('Emn, n, nabcd-> Emabcd',
@@ -338,19 +412,23 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
 
         K0 = self.E / (1.0 - 2.0 * self.nu)
         G0 = self.E / (1.0 + self.nu)
-
         I_vol_abcd = self._get_I_vol_abcd()
         I_dev_abcd = self._get_I_dev_abcd()
+
         delta = identity(3)
-
         phi_Emab = self._get_phi_Emab(kappa)
-        D_Emab = delta - phi_Emab
-        d_Em = (1.0 / 3.0) * np.trace(D_Emab)
-        D_bar_Emab = self.zeta_G * (D_Emab - d_Em * delta)
 
-        S_4_Emabcd = (1.0 - d_Em) * K0 * I_vol_abcd + (1.0 - d_Em) * G0 * I_dev_abcd + (2.0 / 3.0) * (G0 - K0) * \
-            (einsum('ij,Emkl -> Emijkl', delta, D_bar_Emab) +
-             einsum('Emij,kl -> Emijkl', D_bar_Emab, delta)) + 0.5 * (- K0 + 2.0 * G0) *\
+        D_Emab = delta - phi_Emab
+
+        d_Em = (1.0 / 3.0) * np.einsum('Emaa -> Em', D_Emab)
+
+        D_bar_Emab = self.zeta_G * \
+            (D_Emab - np.einsum('Em, ab -> Emab', d_Em, delta))
+
+        S_4_Emabcd = K0 * I_vol_abcd - K0 * einsum('Em,abcd -> Emabcd', d_Em, I_vol_abcd) +\
+            G0 * I_dev_abcd - G0 * einsum('Em,abcd -> Emabcd', d_Em, I_dev_abcd) +\
+            (2.0 / 3.0) * (G0 - K0) * (einsum('ij,Emkl -> Emijkl', delta, D_bar_Emab) +
+                                       einsum('Emij,kl -> Emijkl', D_bar_Emab, delta)) + 0.5 * (- K0 + 2.0 * G0) *\
             (0.5 * (einsum('ik,Emjl -> Emijkl', delta, D_bar_Emab) + einsum('Emil,jk -> Emijkl', D_bar_Emab, delta)) +
              0.5 * (einsum('Emil,jk -> Emijkl', D_bar_Emab, delta) + einsum('ik,Emjl -> Emijkl', delta, D_bar_Emab)))
 
@@ -361,11 +439,12 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
     #----------------------------------------------------------------------
     def _get_S_5_Emabcd(self, eps_Emab, kappa, omega):
 
-        K0 = self.E / (1. - 2. * self.nu)
-        G0 = self.E / (1. + self.nu)
+        K0 = self.E / (1.0 - 2.0 * self.nu)
+        G0 = self.E / (1.0 + self.nu)
 
         delta = identity(3)
         phi_Emab = self._get_phi_Emab(kappa)
+
         # damaged stiffness without simplification
         S_5_Emabcd = (1.0 / 3.0) * (K0 - G0) * 0.5 * ((einsum('ij,Emkl -> Emijkl', delta, phi_Emab) +
                                                        einsum('Emij,kl -> Emijkl', phi_Emab, delta))) + \
@@ -393,7 +472,7 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
         kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
             eps_Emab_n1, kappa, omega)
 
-        D_Emabcd = self._get_S_1_Emabcd(eps_Emab_n1, kappa, omega)
+        D_Emabcd = self._get_S_4_Emabcd(eps_Emab_n1, kappa, omega)
 
         sig_Emab = einsum('Emabcd,Emcd -> Emab', D_Emabcd, eps_Emab_n1)
 

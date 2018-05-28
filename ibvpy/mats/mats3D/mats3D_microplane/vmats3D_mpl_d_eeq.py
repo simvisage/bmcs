@@ -23,19 +23,19 @@ class MATS3DMplDamageEEQ(MATS3DEval, MATS3D):
 
     implements(IMATSEval)
 
-    epsilon_0 = Float(59e-6,
+    epsilon_0 = Float(59.0e-6,
                       label="a",
                       desc="Lateral pressure coefficient",
                       enter_set=True,
                       auto_set=False)
 
-    epsilon_f = Float(250e-6,
+    epsilon_f = Float(250.0e-6,
                       label="a",
                       desc="Lateral pressure coefficient",
                       enter_set=True,
                       auto_set=False)
 
-    c_T = Float(0.00,
+    c_T = Float(0.01,
                 label="a",
                 desc="Lateral pressure coefficient",
                 enter_set=True,
@@ -102,6 +102,7 @@ class MATS3DMplDamageEEQ(MATS3DEval, MATS3D):
         e_T_Emna = e_Emna - e_N_Emna
         # squared tangential strain vector for each microplane
         e_TT_Emn = einsum('Emni,Emni -> Emn', e_T_Emna, e_T_Emna)
+
         # equivalent strain for each microplane
         e_equiv_Emn = sqrt(e_N_pos_Emn * e_N_pos_Emn + c_T * e_TT_Emn)
         return e_equiv_Emn
@@ -139,6 +140,7 @@ class MATS3DMplDamageEEQ(MATS3DEval, MATS3D):
         # Returns the 2nd order damage tensor 'phi_mtx'
         # scalar integrity factor for each microplane
         phi_Emn = np.sqrt(1.0 - self._get_omega(kappa_Emn))
+        # print 'phi_Emn', phi_Emn[:, -1, :]
         # integration terms for each microplanes
         phi_Emab = einsum('Emn,n,nab->Emab', phi_Emn, self._MPW, self._MPNN)
         return phi_Emab
