@@ -220,10 +220,12 @@ class PullOutModel(PullOutModelBase):
         A = self.tstepper.A
         sig_t = np.array(self.tloop.sig_record)
         eps_t = np.array(self.tloop.eps_record)
+        eps_p_t = np.array(self.tloop.eps_p_record)
+        eps_e_t = eps_t - eps_p_t
         w_ip = self.fets_eval.ip_weights
         J_det = self.tstepper.J_det
         U_bar_t = np.einsum('m,Em,s,tEms,tEms->t',
-                            w_ip, J_det, A, sig_t, eps_t)
+                            w_ip, J_det, A, sig_t, eps_e_t)
 
         return U_bar_t / 2.0
 
@@ -293,8 +295,18 @@ def run_pullout_frp_damage(*args, **kw):
     po.loading_scenario.set(loading_type='monotonic')
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
     # po.mats_eval.set()
-    po.mats_eval.omega_fn.set(plot_max=0.5)
+
+#     po.w_max = 7.0
+#     po.tline.step = 0.01
+#     po.geometry.L_x = 10000.0
+#     po.n_e_x = 200
+#     po.mats_eval.omega_fn.set(plot_max=0.5)
     po.run()
+
+    U_bar_t = po.get_U_bar_t()
+    W_t = po.get_W_t()
+    G_t = W_t - U_bar_t
+    print 'Fracture energy', G_t
 
     w = BMCSWindow(model=po)
     po.add_viz2d('load function', 'load-time')

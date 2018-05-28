@@ -12,6 +12,7 @@
 #
 # Created on Aug 7, 2009 by: rchx
 
+print 'importing either_type'
 from traits.api import TraitType, HasTraits, TraitError
 from traits.trait_base import ClassTypes
 from traitsui.api import View, Item, InstanceEditor
@@ -62,6 +63,7 @@ class EitherType(TraitType):
                            for k in self._klasses]
 
         return InstanceEditor(values=choice_list, kind='live')
+
 
 if __name__ == '__main__':
 

@@ -73,7 +73,8 @@ class PullOutModel(PullOutModelBase):
     '''
     @cached_property
     def _get_control_bc(self):
-        return BCDof(node_name='pull-out displacement', var='u',
+        cvar = self.control_variable
+        return BCDof(node_name='pull-out displacement', var=cvar,
                      dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
@@ -223,11 +224,12 @@ class PullOutModel(PullOutModelBase):
         A = self.tstepper.A
         sig_t = np.array(self.tloop.sig_record)
         eps_t = np.array(self.tloop.eps_record)
+        eps_p_t = np.array(self.tloop.eps_p_record)
+        eps_e_t = eps_t - eps_p_t
         w_ip = self.fets_eval.ip_weights
         J_det = self.tstepper.J_det
         U_bar_t = np.einsum('m,Em,s,tEms,tEms->t',
-                            w_ip, J_det, A, sig_t, eps_t)
-
+                            w_ip, J_det, A, sig_t, eps_e_t)
         return U_bar_t / 2.0
 
     def get_dG_t(self):

@@ -243,6 +243,7 @@ class PullOutModelBase(BMCSModel, Vis2D):
 
     tree_view = View(
         Group(
+            Item('control_variable', resizable=True, full_size=True),
             Item('w_max', resizable=True, full_size=True),
             Item('n_e_x', resizable=True, full_size=True),
             Item('fixed_boundary'),
@@ -301,6 +302,10 @@ class PullOutModelBase(BMCSModel, Vis2D):
 #
 #     def _geometry_default(self):
 #         return Geometry()
+
+    control_variable = Enum('u', 'f',
+                            auto_set=False, enter_set=True,
+                            BC=True)
 
     #=========================================================================
     # Discretization

@@ -14,7 +14,8 @@ from ibvpy.core.vtloop import TimeLoop
 from ibvpy.dots.vdots_grid3d import DOTSGrid
 from ibvpy.fets import FETS3D8H
 from ibvpy.mats.mats3D import \
-    MATS3DMplDamageODF, MATS3DMplDamageEEQ, MATS3DElastic
+    MATS3DMplDamageODF, MATS3DMplDamageEEQ, MATS3DElastic, \
+    MATS3DScalarDamage
 from traits.api import \
     Property, Instance, cached_property, \
     List, Float, Trait, Int, on_trait_change

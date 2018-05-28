@@ -1,32 +1,28 @@
 
+from math import pi as Pi, cos, sin, exp
+
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
+from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
+from ibvpy.mats.mats_eval import IMATSEval
+from numpy import \
+    array, zeros, dot, float_
 from traits.api import \
-     Enum, Float, HasTraits, Enum, \
-     Instance, Trait, Range, HasTraits, on_trait_change, Event, \
-     implements, Dict, Property, Array, cached_property
-
+    Enum, Float, HasTraits, Enum, \
+    Instance, Trait, Range, HasTraits, on_trait_change, Event, \
+    implements, Dict, Property, Array, cached_property
 from traitsui.api import \
-     Item, View, VSplit, Group, Spring
-
+    Item, View, VSplit, Group, Spring
 from util.traits.either_type import \
     EitherType
 
-from numpy import \
-     array, zeros, dot, float_
+from strain_norm3d import Energy, Euclidean, Mises, Rankine, Mazars, \
+    IStrainNorm3D
 
-from math import pi as Pi, cos, sin, exp
 
 #from scipy.linalg import eig, inv
-
-from ibvpy.mats.mats_eval import IMATSEval
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-
-from strain_norm3d import Energy, Euclidean, Mises, Rankine, Mazars, \
-IStrainNorm3D
-
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
-
 class MATS3DScalarDamage(MATS3DEval):
     '''
     Scalar Damage Model.
@@ -34,43 +30,45 @@ class MATS3DScalarDamage(MATS3DEval):
 
     implements(IMATSEval)
 
-    #---------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)
-    #---------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
     stiffness = Enum("algoritmic", "secant")
 
-    #---------------------------------------------------------------------------
-    # Material parameters 
-    #---------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
+    # Material parameters
+    #-------------------------------------------------------------------------
 
-    E = Float(1., #34e+3,
-                 label = "E",
-                 desc = "Young's Modulus",
-                 auto_set = False)
+    E = Float(1.,  # 34e+3,
+              label="E",
+              desc="Young's Modulus",
+              auto_set=False)
     nu = Float(0.2,
-                 label = 'nu',
-                 desc = "Poison's ratio",
-                 auto_set = False)
+               label='nu',
+               desc="Poison's ratio",
+               auto_set=False)
+
     epsilon_0 = Float(59e-6,
-                 label = "eps_0",
-                 desc = "Breaking Strain",
-                 auto_set = False)
+                      label="eps_0",
+                      desc="Breaking Strain",
+                      auto_set=False)
 
     epsilon_f = Float(191e-6,
-                 label = "eps_f",
-                 desc = "Shape Factor",
-                 auto_set = False)
+                      label="eps_f",
+                      desc="Shape Factor",
+                      auto_set=False)
 
     stiffness = Enum("secant", "algorithmic")
 
-    strain_norm = EitherType(klasses = [Energy,
-                                         Euclidean,
-                                         Mises,
-                                         Rankine,
-                                         Mazars])
+    strain_norm = EitherType(klasses=[Energy,
+                                      Euclidean,
+                                      Mises,
+                                      Rankine,
+                                      Mazars])
 
-    D_el = Property(Array(float), depends_on = 'E, nu')
+    D_el = Property(Array(float), depends_on='E, nu')
+
     @cached_property
     def _get_D_el(self):
         return self._get_D_el()
@@ -85,21 +83,20 @@ class MATS3DScalarDamage(MATS3DEval):
     #--------------------------------------------------------------------------
 
     view_traits = View(VSplit(Group(Item('E'),
-                                      Item('nu'),
-                                      Item('strain_norm')),
-                                Group(Item('stiffness', style = 'custom'),
-                                       Spring(resizable = True),
-                                       label = 'Configuration parameters',
-                                       show_border = True,
-                                       ),
-                                ),
-                        resizable = True
-                        )
+                                    Item('nu'),
+                                    Item('strain_norm')),
+                              Group(Item('stiffness', style='custom'),
+                                    Spring(resizable=True),
+                                    label='Configuration parameters',
+                                    show_border=True,
+                                    ),
+                              ),
+                       resizable=True
+                       )
 
     #--------------------------------------------------------------------------
     # Private initialization methods
     #--------------------------------------------------------------------------
-
 
     #--------------------------------------------------------------------------
     # Setup for computation within a supplied spatial context
@@ -132,23 +129,22 @@ class MATS3DScalarDamage(MATS3DEval):
         '''
         return zeros(6, float_)
 
-
     #--------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
     #--------------------------------------------------------------------------
 
-    def get_corr_pred(self, sctx, eps_app_eng, d_eps, tn, tn1, eps_avg = None):
+    def get_corr_pred(self, sctx, eps_app_eng, d_eps, tn, tn1, eps_avg=None):
         '''
         Corrector predictor computation.
         @param eps_app_eng input variable - engineering strain
         '''
-        if  eps_avg != None:
+        if eps_avg != None:
             pass
         else:
             eps_avg = eps_app_eng
 
         if sctx.update_state_on:
-            #print "in us"
+            # print "in us"
             eps_n = eps_avg - d_eps
 
             e_max, omega = self._get_state_variables(sctx, eps_n)
@@ -161,15 +157,16 @@ class MATS3DScalarDamage(MATS3DEval):
         if self.stiffness == "algorithmic" and e_max > self.epsilon_0:
             D_e_dam = self._get_alg_stiffness(eps_app_eng,
                                               e_max,
-                                            omega)
+                                              omega)
         else:
             D_e_dam = (1 - omega) * self.D_el
 
         sigma = dot(((1 - omega) * self.D_el), eps_app_eng)
 
-        # You print the stress you just computed and the value of the apparent E
+        # You print the stress you just computed and the value of the apparent
+        # E
 
-        return  sigma, D_e_dam
+        return sigma, D_e_dam
 
     #--------------------------------------------------------------------------
     # Subsidiary methods realizing configurable features
@@ -178,13 +175,12 @@ class MATS3DScalarDamage(MATS3DEval):
         e_max = sctx.mats_state_array[0]
         omega = sctx.mats_state_array[1]
 
-
         f_trial = self.strain_norm.get_f_trial(eps_app_eng,
                                                self.D_el,
                                                self.E,
                                                self.nu,
                                                e_max)
-        if f_trial > 0 :
+        if f_trial > 0:
             e_max += f_trial
             omega = self._get_omega(e_max)
 
@@ -245,7 +241,7 @@ class MATS3DScalarDamage(MATS3DEval):
         '''
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
-        if kappa >= epsilon_0 :
+        if kappa >= epsilon_0:
             return 1. - epsilon_0 / kappa * exp(-1 * (kappa - epsilon_0) / epsilon_f)
         else:
             return 0.
@@ -260,12 +256,13 @@ class MATS3DScalarDamage(MATS3DEval):
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
         dodk = epsilon_0 / (e_max * e_max) * exp(-(e_max - epsilon_0) / epsilon_f) + \
-                epsilon_0 / e_max / epsilon_f * exp(-(e_max - epsilon_0) / epsilon_f)
-        dede = self.strain_norm.get_dede(eps_app_eng, self.D_el, self.E, self.nu)
+            epsilon_0 / e_max / epsilon_f * \
+            exp(-(e_max - epsilon_0) / epsilon_f)
+        dede = self.strain_norm.get_dede(
+            eps_app_eng, self.D_el, self.E, self.nu)
         D_alg = (1 - omega) * self.D_el - \
-                dot(dot(self.D_el, eps_app_eng), dede) * dodk
+            dot(dot(self.D_el, eps_app_eng), dede) * dodk
         return D_alg
-
 
     #--------------------------------------------------------------------------
     # Response trace evaluators
@@ -283,11 +280,7 @@ class MATS3DScalarDamage(MATS3DEval):
     # assemble all the available time-steppers.
     #
     rte_dict = Trait(Dict)
-    def _rte_dict_default(self):
-        return {'sig_app' : self.get_sig_app,
-                'omega'   : self.get_omega}
 
-    
-    
-    
-    
+    def _rte_dict_default(self):
+        return {'sig_app': self.get_sig_app,
+                'omega': self.get_omega}

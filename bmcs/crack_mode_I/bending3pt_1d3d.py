@@ -20,7 +20,8 @@ from ibvpy.core.vtloop import TimeLoop
 from ibvpy.dots.vdots_grid3d import DOTSGrid
 from ibvpy.fets import FETS3D8H
 from ibvpy.mats.mats3D import \
-    MATS3DMplDamageODF, MATS3DMplDamageEEQ, MATS3DElastic
+    MATS3DMplDamageODF, MATS3DMplDamageEEQ, MATS3DElastic, \
+    MATS3DScalarDamage
 from traits.api import \
     Property, Instance, cached_property, \
     List, Float, Trait, Int, on_trait_change
@@ -187,8 +188,9 @@ class BendingTestModel(BMCSModel, Vis2D):
     #=========================================================================
     # Material model
     #=========================================================================
-    mats_eval_type = Trait('microplane damage (eeg)',
+    mats_eval_type = Trait('scalar damage',
                            {'elastic': MATS3DElastic,
+                            'scalar damage': MATS3DScalarDamage,
                             'microplane damage (eeq)': MATS3DMplDamageEEQ,
                             'microplane damage (odf)': MATS3DMplDamageODF,
                             },
@@ -384,16 +386,14 @@ def run_bending3pt_mic_odf(*args, **kw):
 
     bt = BendingTestModel(n_e_x=2, n_e_y=10, n_e_z=1,
                           k_max=500,
-                          #mats_eval_type='microplane damage (eeq)'
-                          mats_eval_type='microplane damage (odf)'
+                          mats_eval_type='scalar damage'
+                          #mats_eval_type='microplane damage (odf)'
                           )
-    bt.mats_eval.trait_set(
-        # stiffness='algorithmic',
-        epsilon_0=59e-6,
-        epsilon_f=100e-6
-    )
-    # return
-    dots = bt.tloop.ts
+#     bt.mats_eval.trait_set(
+#         # stiffness='algorithmic',
+#         epsilon_0=59e-6,
+#         epsilon_f=100e-6
+#     )
 
     bt.w_max = 0.02
     bt.tline.step = 0.05
