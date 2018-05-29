@@ -27,11 +27,11 @@ from traitsui.tabular_adapter import TabularAdapter
 from util.traits.editors import \
     MPLFigureEditor
 from view.plot2d.viz2d import Viz2D
+from view.plot3d.viz3d import Viz3D
 
 import matplotlib.pyplot as plt
 import numpy as np
 import traits.api as tr
-from view.plot3d.viz3d import Viz3D
 
 
 class RunThread(Thread):
@@ -52,10 +52,10 @@ class RunThread(Thread):
 
 class Viz2DAdapter(TabularAdapter):
     # List of (Column labels, Column ID).
-    columns = [('Label',    'label'),
-               ]
-
-#-- Tabular Editor Definition --------------------------------------------
+    columns = [
+        ('Label',    'label'),
+        ('Visible', 'visible')
+    ]
 
 
 # The tabular editor works in conjunction with an adapter class, derived from
@@ -69,7 +69,7 @@ tabular_editor = TabularEditor(
 )
 
 
-class VizSheet(ROutputSection):
+class BMCSVizSheet(ROutputSection):
     '''Vieualization sheet
     - controls the time displayed
     - contains several vizualization adapters.
@@ -78,7 +78,7 @@ class VizSheet(ROutputSection):
     '''
 
     def __init__(self, *args, **kw):
-        super(VizSheet, self).__init__(*args, **kw)
+        super(BMCSVizSheet, self).__init__(*args, **kw)
         self.on_trait_change(self.viz2d_list_items_changed,
                              'viz2d_list_items')
 
@@ -157,7 +157,7 @@ class VizSheet(ROutputSection):
 
     def run_started(self):
         self.offline = False
-        for ax, viz2d in zip(self.axes, self.viz2d_list):
+        for ax, viz2d in zip(self.axes, self.visible_viz2d_list):
             ax.clear()
             viz2d.reset(ax)
         self.mode = 'monitor'
@@ -176,6 +176,11 @@ class VizSheet(ROutputSection):
 
     skipped_steps = Int(1)
 
+    replot_button = Button(label='replot')
+
+    def _replot_button_fired(self):
+        self.replot()
+
     @on_trait_change('vot,n_cols')
     def replot(self):
         if self.offline:
@@ -184,9 +189,11 @@ class VizSheet(ROutputSection):
                 self.skipped_steps < (self.monitor_chunk_size - 1):
             self.skipped_steps += 1
             return
-        for ax, viz2d in zip(self.axes, self.viz2d_list):
+        print 'replotting 1'
+        for ax, viz2d in zip(self.axes, self.visible_viz2d_list):
             ax.clear()
             viz2d.plot(ax, self.vot)
+        print 'replotting 2'
         if self.reference_viz2d:
             ax = self.reference_axes
             ax.clear()
@@ -306,6 +313,22 @@ class VizSheet(ROutputSection):
     #=========================================================================
     # Parameters of the current viz2d
     #=========================================================================
+    visible = Property(Bool, depends_on='selected_viz2d')
+
+    @cached_property
+    def _get_visible(self):
+        if self.selected_viz2d:
+            return self.selected_viz2d.visible
+        else:
+            return False
+
+    def _set_visible(self, value):
+        if self.selected_viz2d:
+            self.selected_viz2d.visible = value
+            self.visible_changed = True
+
+    visible_changed = Event
+
     selected_viz2d = Instance(Viz2D)
 
     n_cols = Int(2, label='Number of columns',
@@ -319,17 +342,32 @@ class VizSheet(ROutputSection):
         figure.set_tight_layout(True)
         return figure
 
+    visible_viz2d_list = Property(List,
+                                  depends_on='viz2d_list,viz2d_list_items,n_cols,visible_changed')
+    '''Derived axes objects reflecting the layout of plot pane
+    and the individual. 
+    '''
+    @cached_property
+    def _get_visible_viz2d_list(self):
+        viz_list = []
+        for viz2d in self.viz2d_list:
+            if viz2d.visible:
+                viz_list.append(viz2d)
+        print 'NEW list', viz_list
+        return viz_list
+
     axes = Property(List,
-                    depends_on='viz2d_list,viz2d_list_items,n_cols')
+                    depends_on='viz2d_list,viz2d_list_items,n_cols,visible_changed')
     '''Derived axes objects reflecting the layout of plot pane
     and the individual. 
     '''
     @cached_property
     def _get_axes(self):
-        n_fig = len(self.viz2d_list)
+        n_fig = len(self.visible_viz2d_list)
         n_cols = self.n_cols
         n_rows = (n_fig + n_cols - 1) / self.n_cols
         self.figure.clear()
+        print 'NEW figure'
         return [self.figure.add_subplot(n_rows, self.n_cols, i + 1)
                 for i in range(n_fig)]
 
@@ -420,20 +458,23 @@ class VizSheet(ROutputSection):
         VSplit(
             HSplit(
                 Tabbed(
-                    UItem('scene',
-                          editor=SceneEditor(scene_class=MayaviScene)),
                     UItem('figure', editor=MPLFigureEditor(),
                           resizable=True,
-                          springy=True),
+                          springy=True,
+                          label='2d plots'),
+                    UItem('scene', label='3d scene',
+                          editor=SceneEditor(scene_class=MayaviScene)),
                     scrollable=True,
                     label='Plot panel'
                 ),
                 VGroup(
                     Item('n_cols', width=250),
+                    UItem('replot_button', width=250),
                     VSplit(
                         UItem('viz2d_list@',
                               editor=tabular_editor,
                               width=100),
+                        Item('visible'),
                         UItem('selected_viz2d@',
                               width=200),
                         VGroup(
@@ -508,7 +549,7 @@ if __name__ == '__main__':
     viz3d = Viz3D()
     viz3d.set_tloop(tloop=tl)
 
-    vs = VizSheet()
+    vs = BMCSVizSheet()
     vs.add_viz3d(viz3d)
     vs.run_started()
     vs.replot()

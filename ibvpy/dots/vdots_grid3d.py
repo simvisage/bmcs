@@ -8,18 +8,12 @@ from ibvpy.api import \
     IFETSEval, FEGrid
 from ibvpy.core.i_tstepper_eval import ITStepperEval
 from ibvpy.mats.mats3D import MATS3D
+from ibvpy.mats.mats_eval import IMATSEval
 from mathkit.matrix_la import \
     SysMtxArray
 
 import numpy as np
 import traits.api as tr
-
-
-delta = np.identity(3)
-# symetrization operator
-I_sym_abcd = 0.5 * \
-    (np.einsum('ac,bd->abcd', delta, delta) +
-     np.einsum('ad,bc->abcd', delta, delta))
 
 
 class DOTSGrid(tr.HasStrictTraits):
@@ -34,7 +28,7 @@ class DOTSGrid(tr.HasStrictTraits):
     n_y = tr.Int(30, input=True)
     n_z = tr.Int(10, input=True)
     fets = tr.Instance(IFETSEval, input=True)
-    mats = tr.Instance(MATS3D, input=True)
+    mats = tr.Instance(IMATSEval, input=True)
     mesh = tr.Property(tr.Instance(FEGrid), depends_on='+input')
 
     @tr.cached_property
@@ -66,6 +60,7 @@ class DOTSGrid(tr.HasStrictTraits):
         det_J_Em = np.linalg.det(J_Emar)
         inv_J_Emar = np.linalg.inv(J_Emar)
         inv_J_Enar = np.linalg.inv(J_Enar)
+        I_sym_abcd = self.fets.I_sym_abcd
         B_Eimabc = np.einsum(
             'abcd,imr,Eidr->Eimabc', I_sym_abcd, self.fets.dN_imr, inv_J_Emar
         )

@@ -12,9 +12,11 @@ from bmcs.mats.mats_bondslip import \
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
-    BCDof, FEGrid, BCSlice, TStepper, TLoop, IMATSEval
+    BCDof, FEGrid, BCSlice, TStepper, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.core.tline import TLine
+from ibvpy.core.vtloop import TimeLoop as TLoop
+from ibvpy.dots.vdots_grid3d import DOTSGrid
 from ibvpy.rtrace.rt_dof import RTDofGraph
 from traits.api import \
     Property, Instance, cached_property, \
@@ -53,60 +55,21 @@ class PullOutModel(PullOutModelBase):
         self.tloop.restart = True
 
     #=========================================================================
-    # Test setup parameters
-    #=========================================================================
-    loading_scenario = Instance(LoadingScenario)
-
-    def _loading_scenario_default(self):
-        return LoadingScenario()
-
-    cross_section = Instance(CrossSection)
-
-    def _cross_section_default(self):
-        return CrossSection()
-
-    geometry = Instance(Geometry)
-
-    def _geometry_default(self):
-        return Geometry()
-
-    #=========================================================================
-    # Discretization
-    #=========================================================================
-    n_e_x = Int(20, auto_set=False, enter_set=True)
-
-    w_max = Float(1, BC=True, auto_set=False, enter_set=True)
-
-    free_end_dof = Property
-
-    def _get_free_end_dof(self):
-        return self.n_e_x + 1
-
-    controlled_dof = Property
-
-    def _get_controlled_dof(self):
-        return 2 + 2 * self.n_e_x - 1
-
-    fixed_dof = Property
-
-    def _get_fixed_dof(self):
-        return 0
-
-    #=========================================================================
     # Material model
     #=========================================================================
     mats_eval_type = Trait('multilinear',
                            {'damage-plasticity': MATSBondSlipDP,
                             'multilinear': MATSBondSlipMultiLinear},
                            MAT=True,
-                           desc='material model type')
+                           desc='material model type [damage-plasticity, multilinear]')
 
     @on_trait_change('mats_eval_type')
     def _set_mats_eval(self):
         self.mats_eval = self.mats_eval_type_()
         self._update_node_list()
 
-    mats_eval = Instance(IMATSEval, report=True)
+    mats_eval = Instance(IMATSEval, report=True,
+                         desc='object representing the material model')
     '''Material model'''
 
     def _mats_eval_default(self):
@@ -158,15 +121,34 @@ class PullOutModel(PullOutModelBase):
                      dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
-    fe_grid = Property(Instance(FEGrid), depends_on='MAT,GEO,MESH,FE')
-    '''Diescretization object.
+    dots_grid = Property(Instance(DOTSGrid),
+                         depends_on='CS,MAT,GEO,MESH,FE')
+    '''Discretization object.
     '''
     @cached_property
+    def _get_dots_grid(self):
+        geo = self.geometry
+        return DOTSGrid(
+            L_x=geo.L_x,
+            n_x=self.n_e_x,
+            fets=self.fets_eval, mats=self.mats_eval
+        )
+
+    fe_grid = Property
+
     def _get_fe_grid(self):
-        # Element definition
-        return FEGrid(coord_max=(self.geometry.L_x,),
-                      shape=(self.n_e_x,),
-                      fets_eval=self.fets_eval)
+        return self.dots_grid.mesh
+
+#
+#     fe_grid = Property(Instance(FEGrid), depends_on='MAT,GEO,MESH,FE')
+#     '''Diescretization object.
+#     '''
+#     @cached_property
+#     def _get_fe_grid(self):
+#         # Element definition
+#         return FEGrid(coord_max=(self.geometry.L_x,),
+#                       shape=(self.n_e_x,),
+#                       fets_eval=self.fets_eval)
 
     rt_Pu = Property(depends_on='BC,MESH')
     '''Control boundary condition - make it accessible directly
@@ -187,7 +169,6 @@ class PullOutModel(PullOutModelBase):
     @cached_property
     def _get_tstepper(self):
         #self.fe_grid.dots = self.dots
-        print 'new tstepper'
         ts = TStepper(
             sdomain=self.fe_grid,
             bcond_mngr=self.bcond_mngr,
@@ -216,10 +197,38 @@ class PullOutModel(PullOutModelBase):
                      time_change_notifier=self.time_changed,
                      )
 
-    k_max = Int(200,
+    fixed_dof = Property
+
+    def _get_fixed_dof(self):
+        if self.fixed_boundary == 'non-loaded end (matrix)':
+            return 0
+        elif self.fixed_boundary == 'non-loaded end (reinf)':
+            return 1
+        elif self.fixed_boundary == 'loaded end (matrix)':
+            return self.controlled_dof - 1
+
+    controlled_dof = Property
+
+    def _get_controlled_dof(self):
+        return 2 + 2 * self.n_e_x - 1
+
+    free_end_dof = Property
+
+    def _get_free_end_dof(self):
+        return self.n_e_x + 1
+
+    k_max = Int(400,
+                unit='mm',
+                symbol='k_{\max}',
+                desc='maximum number of iterations',
                 ALG=True)
+
     tolerance = Float(1e-4,
+                      unit='-',
+                      symbol='\epsilon',
+                      desc='required accuracy',
                       ALG=True)
+
     tloop = Property(Instance(TLoop),
                      depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
     '''Algorithm controlling the time stepping.
@@ -229,11 +238,10 @@ class PullOutModel(PullOutModelBase):
         k_max = self.k_max
 
         tolerance = self.tolerance
-        print 'new tloop', self.tstepper
-        return TLoop(tstepper=self.tstepper, KMAX=k_max,
-                     RESETMAX=0,
-                     tolerance=tolerance, debug=False,
-                     tline=self.tline)
+        return TLoop(ts=self.dots_grid, k_max=k_max,
+                     tolerance=tolerance,
+                     tline=self.tline,
+                     bc_mngr=self.bcond_mngr)
 
     def get_d_ECid(self, vot):
         '''Get the displacements as a four-dimensional array 
@@ -289,7 +297,7 @@ class PullOutModel(PullOutModelBase):
         return sf
 
     def get_P_t(self):
-        F_array = np.array(self.tloop.F_record, dtype=np.float_)
+        F_array = np.array(self.tloop.F_int_record, dtype=np.float_)
         return F_array[:, self.controlled_dof]
 
     def get_w_t(self):
@@ -394,13 +402,17 @@ def run_pullout_dp():
     po.loading_scenario.set(loading_type='monotonic')
     po.material.set(K=100000.0, gamma=-0.0)
     po.material.set(tau_bar=3.5, E_m=35000.0, E_f=170000.0, E_b=6700.0)
+    po.material.omega_fn_type = 'li'
     po.material.omega_fn.set(alpha_1=1.0, alpha_2=1000.0, plot_max=0.01)
-    Pu = po.rt_Pu
-    w = BMCSWindow(model=po)
-    Pu.add_viz2d('diagram')
-    w.offline = False
-    w.finish_event = True
-    w.configure_traits()
+    po.run()
+#     Pu = po.rt_Pu
+#     w = BMCSWindow(model=po)
+#     po.add_viz2d('load function', 'load-time')
+#     po.add_viz2d('F-w', 'load-displacement')
+#     Pu.add_viz2d('diagram', 'Pu')
+#     w.offline = False
+#     w.finish_event = True
+#     w.configure_traits()
 
 
 def run_pullout_multilinear():
@@ -438,15 +450,15 @@ def run_with_new_state():
     po.cross_section.set(A_f=64.0, P_b=28.0, A_m=28000.0)
     po.material.set(K=-0.0, gamma=-500, tau_bar=13.137)
     po.material.set(E_m=35000.0, E_f=170000.0, E_b=6700.0)
+    po.material.omega_fn_type = 'li'
     po.material.omega_fn.set(alpha_1=1.0, alpha_2=100.0, plot_max=0.01)
-#    po.material.omega_fn.set(alpha_1=0.0, alpha_2=1.0, plot_max=0.01)
     po.run()
     po.rt_Pu.trace.configure_traits()
 
 
 def run_pullout_multi(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=2, k_max=1000, u_f0_max=0.1)
+                      n_e_x=2, k_max=1000, w_max=0.1)
     po.mats_eval_type = 'multilinear'
     po.tline.step = 0.1
     po.geometry.L_x = 200.0
@@ -473,4 +485,5 @@ def run_pullout_multi(*args, **kw):
 
 if __name__ == '__main__':
     # run_pullout_multi()
-    run_with_new_state()
+    # run_with_new_state()
+    run_pullout_dp()

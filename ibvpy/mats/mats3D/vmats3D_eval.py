@@ -31,21 +31,6 @@ class MATS3D(BMCSTreeNode):
                   auto_set=False,
                   input=True)
 
-    #-------------------------------------------------------------------------
-    # Elasticity parameters
-    #-------------------------------------------------------------------------
-    E = tr.Float(34e+3,
-                 label="E",
-                 desc="Young's Modulus",
-                 auto_set=False,
-                 input=True)
-
-    nu = tr.Float(0.2,
-                  label='nu',
-                  desc="Poison ratio",
-                  auto_set=False,
-                  input=True)
-
     def _get_lame_params(self):
         la = self.E * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
         # second Lame parameter (shear modulus)

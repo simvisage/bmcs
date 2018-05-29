@@ -5,9 +5,9 @@ from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from reporter import RInputRecord
 from scipy.optimize import newton
 from traits.api import \
-    Instance, \
+    Instance, Str, \
     Float, on_trait_change,\
-    HasStrictTraits, Interface, implements, Range, Property
+    Interface, implements, Range, Property, Button
 from traitsui.api import \
     View, Item, UItem, VGroup
 from view.ui import BMCSLeafNode
@@ -30,6 +30,12 @@ class PlottableFn(RInputRecord):
     def __init__(self, *args, **kw):
         super(PlottableFn, self).__init__(*args, **kw)
         self.update()
+
+    def plot(self, ax):
+        n_vals = 200
+        xdata = np.linspace(self.plot_min, self.plot_max, n_vals)
+        ydata = self.__call__(xdata)
+        ax.plot(xdata, ydata, color='green')
 
     @on_trait_change('+input')
     def update(self):
@@ -59,24 +65,29 @@ class IDamageFn(Interface):
 
 
 class DamageFn(BMCSLeafNode, PlottableFn):
-    #     L_s = Float(1.0,
-    #                 MAT=True,
-    #                 input=True,
-    #                 label="s_0",
-    #                 desc="length of the strain softening zone",
-    #                 enter_set=True,
-    #                 auto_set=False)
 
     s_0 = Float(0.0004,
                 MAT=True,
                 input=True,
-                symbol="$s_0$",
+                symbol="s_0",
                 desc="elastic strain limit",
+                unit='mm',
                 enter_set=True,
                 auto_set=False)
 
     def diff(self, k):
         return self.fn.diff(k)
+
+    latex_eq = Str(None)
+
+    def _repr_latex_(self):
+        return self.latex_eq + super(DamageFn, self)._repr_latex_()
+
+    def plot(self, ax):
+        n_vals = 200
+        xdata = np.linspace(self.plot_min, self.plot_max, n_vals)
+        ydata = self.__call__(xdata)
+        ax.plot(xdata, ydata, color='green')
 
 
 class JirasekDamageFn(DamageFn):
@@ -88,8 +99,9 @@ class JirasekDamageFn(DamageFn):
     s_f = Float(0.001,
                 MAT=True,
                 input=True,
-                symbol="$s_f$",
-                desc="parameter controls the damage function",
+                symbol="s_\mathrm{f}",
+                unit='mm/mm',
+                desc="derivative of the damage function at the onset of damage",
                 enter_set=True,
                 auto_set=False)
 
@@ -117,6 +129,17 @@ class JirasekDamageFn(DamageFn):
 
         return domega_dkappa
 
+    latex_eq = Str(r'''Damage function (Jirasek)
+        \begin{align}
+        \omega &= g(\kappa) 
+        = 1 - \left[\frac{s_0}{\kappa} \exp \left(- \frac{\kappa 
+        - s_0}{s_f - s_0}\right)\right]
+        \end{align}
+        where $\kappa$ is the state variable representing 
+        the maximum slip that occurred so far in
+        in the history of loading.
+        ''')
+
     traits_view = View(
         VGroup(
             VGroup(
@@ -137,21 +160,32 @@ class LiDamageFn(DamageFn):
 
     node_name = 'Li damage function'
 
+    latex_eq = Str(r'''Damage function (Jirasek)
+        \begin{align}
+        \omega = g(\kappa) = \frac{\alpha_1}{1 + \exp(-\alpha_2 \kappa + 6 )}
+        \end{align}
+        where $\kappa$ is the state variable representing 
+        the maximum slip that occurred so far in
+        in the history of loading.
+        ''')
+
     implements(IDamageFn)
 
     alpha_1 = Range(value=1., low=0.0, high=1.0,
                     MAT=True,
                     input=True,
-                    symbol=r'$\alpha_1$',
-                    desc="parameter controls the damage function",
+                    symbol=r'\alpha_1',
+                    unit='-',
+                    desc="parameter controlling the shape of the damage function",
                     enter_set=True,
                     auto_set=False)
 
     alpha_2 = Float(2000.,
                     MAT=True,
                     input=True,
-                    symbol=r'$\alpha_2$',
-                    desc="parameter controls the damage function",
+                    symbol=r'\alpha_2',
+                    unit='-',
+                    desc="parameter controlling the shape of the damage function",
                     enter_set=True,
                     auto_set=False)
 
@@ -199,19 +233,30 @@ class AbaqusDamageFn(DamageFn):
 
     implements(IDamageFn)
 
+    latex_eq = Str(r'''Damage function (Jirasek)
+        \begin{align}
+        \omega = g(\kappa) = 1 -\left(\frac{s_0}{\kappa}\right)\left[ 1 - \frac{1 - \exp(- \alpha(\frac{\kappa - s_0}{s_u - s_0})}{1 - \exp(-\alpha)}  \right]
+        \end{align}
+        where $\kappa$ is the state variable representing 
+        the maximum slip that occurred so far in
+        in the history of loading.
+        ''')
+
     s_u = Float(0.003,
                 MAT=True,
                 input=True,
-                symbol="$s_u$",
-                desc="parameter controls the damage function",
+                symbol="s_u",
+                unit='mm',
+                desc="parameter of the damage function",
                 enter_set=True,
                 auto_set=False)
 
     alpha = Float(0.1,
                   MAT=True,
                   input=True,
-                  symbol="$\alpha$",
-                  desc="parameter controlling the slop of damage",
+                  symbol=r"\alpha",
+                  desc="parameter controlling the slope of damage",
+                  unit='-',
                   enter_set=True,
                   auto_set=False)
 
@@ -269,18 +314,20 @@ class FRPDamageFn(DamageFn):
 
     implements(IDamageFn)
 
-    b = Float(10.4,
+    B = Float(10.4,
               MAT=True,
               input=True,
-              symbol="$b$",
-              desc="parameter controls the damage function",
+              symbol="B",
+              unit='mm$^{-1}$',
+              desc="parameter controlling the damage maximum stress level",
               enter_set=True,
               auto_set=False)
 
     Gf = Float(1.19,
                MAT=True,
                input=True,
-               symbol="$G_\mathrm{f}$",
+               symbol="G_\mathrm{f}",
+               unit='N/mm',
                desc="fracture energy",
                enter_set=True,
                auto_set=False)
@@ -293,20 +340,20 @@ class FRPDamageFn(DamageFn):
 
     E_b = Float
 
-    @on_trait_change('b, Gf')
+    @on_trait_change('B, Gf')
     def _update_dependent_params(self):
 
-        self.E_b = 1.734 * self.Gf * self.b ** 2.0
+        self.E_b = 1.734 * self.Gf * self.B ** 2.0
         # calculation of s_0, implicit function solved using Newton method
 
         def f_s(s_0): return s_0 / \
-            (np.exp(- self.b * s_0) - np.exp(-2.0 * self.b * s_0)) - \
-            2.0 * self.b * self.Gf / self.E_b
+            (np.exp(- self.B * s_0) - np.exp(-2.0 * self.B * s_0)) - \
+            2.0 * self.B * self.Gf / self.E_b
         self.s_0 = newton(f_s, 0.00000001, tol=1e-5, maxiter=20)
 
     def __call__(self, kappa):
 
-        b = self.b
+        b = self.B
         Gf = self.Gf
         Eb = self.E_b  # 1.734 * Gf * b**2
         s_0 = self.s_0
@@ -329,7 +376,7 @@ class FRPDamageFn(DamageFn):
 
         nz_ix = np.where(kappa != 0.0)[0]
 
-        b = self.b
+        b = self.B
         Gf = self.Gf
         Eb = 1.734 * Gf * b**2
 
@@ -347,12 +394,22 @@ class FRPDamageFn(DamageFn):
         )
         return domega_dkappa
 
+    latex_eq = r'''Damage function (FRP)
+        \begin{align}
+        \omega = g(\kappa) = 
+        1 - {\frac {{\exp(-2\,Bs)}-{\exp(-Bs)}}{Bs}}
+        \end{align}
+        where $\kappa$ is the state variable representing 
+        the maximum slip that occurred so far in
+        in the history of loading.
+        '''
+
     traits_view = View(
         VGroup(
             VGroup(
                 Item('s_0', style='readonly', full_size=True, resizable=True),
                 Item('E_b', style='readonly', full_size=True, resizable=True),
-                Item('b'),
+                Item('B'),
                 Item('Gf'),
                 Item('plot_max'),
             ),
@@ -365,8 +422,74 @@ class FRPDamageFn(DamageFn):
     tree_view = traits_view
 
 
+class MultilinearDamageFn(DamageFn):
+
+    node_name = 'Multilinear damage function'
+
+    implements(IDamageFn)
+
+    s_data = Str('0,1', tooltip='Comma-separated list of strain values',
+                 MAT=True, unit='mm', symbol='s',
+                 desc='slip values',
+                 auto_set=True, enter_set=False)
+
+    omega_data = Str('0,0', tooltip='Comma-separated list of damage values',
+                     MAT=True, unit='-', symbol=r'\omega',
+                     desc='shear stress values',
+                     auto_set=True, enter_set=False)
+
+    s_omega_table = Property
+
+    def _set_s_omega_table(self, data):
+        s_data, omega_data = data
+        if len(s_data) != len(omega_data):
+            raise ValueError, 's array and tau array must have the same size'
+        self.damage_law.set(xdata=s_data,
+                            ydata=omega_data)
+
+    update_damage_law = Button(label='update bond-slip law')
+
+    def _update_damage_law_fired(self):
+        s_data = np.fromstring(self.s_data, dtype=np.float_, sep=',')
+        omega_data = np.fromstring(self.omega_data, dtype=np.float_, sep=',')
+        if len(s_data) != len(omega_data):
+            raise ValueError, 's array and tau array must have the same size'
+        self.damage_law.set(xdata=s_data,
+                            ydata=omega_data)
+        self.damage_law.replot()
+
+    damage_law = Instance(MFnLineArray)
+
+    def _damage_law_default(self):
+        return MFnLineArray(
+            xdata=[0.0, 1.0],
+            ydata=[0.0, 0.0],
+            plot_diff=False)
+
+    def __call__(self, kappa):
+        shape = kappa.shape
+        return self.damage_law(kappa.flatten()).reshape(*shape)
+
+    def diff(self, kappa):
+        shape = kappa.shape
+        return self.damage_law.diff(kappa.flatten()).reshape(*shape)
+
+    traits_view = View(
+        VGroup(
+            VGroup(
+                Item('s_data', full_size=True, resizable=True),
+                Item('omega_data'),
+                UItem('update_damage_law')
+            ),
+            UItem('damage_law@')
+        )
+    )
+
+    tree_view = traits_view
+
+
 if __name__ == '__main__':
     #ld = LiDamageFn()
-    #ld = JirasekDamageFn()
-    ld = FRPDamageFn()
+    ld = MultilinearDamageFn()
+    #ld = FRPDamageFn()
     ld.configure_traits()

@@ -24,7 +24,7 @@ from view.window import BMCSModel, BMCSWindow, TLine
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     Viz2DEnergyPlot, Viz2DEnergyRatesPlot, \
-    CrossSection, Geometry, PullOutModelBase
+    PullOutModelBase
 
 
 class PullOutModel(PullOutModelBase):
@@ -73,8 +73,9 @@ class PullOutModel(PullOutModelBase):
     '''
     @cached_property
     def _get_control_bc(self):
-        return BCDof(node_name='pull-out displacement', var='u',
-                     dof=self.controlled_dof, value=self.u_f0_max,
+        cvar = self.control_variable
+        return BCDof(node_name='pull-out displacement', var=cvar,
+                     dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
     bcond_mngr = Property(Instance(BCondMngr),
@@ -223,11 +224,12 @@ class PullOutModel(PullOutModelBase):
         A = self.tstepper.A
         sig_t = np.array(self.tloop.sig_record)
         eps_t = np.array(self.tloop.eps_record)
+        eps_p_t = np.array(self.tloop.eps_p_record)
+        eps_e_t = eps_t - eps_p_t
         w_ip = self.fets_eval.ip_weights
         J_det = self.tstepper.J_det
         U_bar_t = np.einsum('m,Em,s,tEms,tEms->t',
-                            w_ip, J_det, A, sig_t, eps_t)
-
+                            w_ip, J_det, A, sig_t, eps_e_t)
         return U_bar_t / 2.0
 
     def get_dG_t(self):
@@ -290,13 +292,14 @@ class PullOutModel(PullOutModelBase):
 
 
 def run_pullout_dp(*args, **kw):
-    po = PullOutModel(n_e_x=100, k_max=500, u_f0_max=1.5)
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
     po.tline.step = 0.01
     po.geometry.L_x = 200.0
-    po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(gamma=0.0, K=15.0, tau_bar=45.0)
-    po.mats_eval.omega_fn.set(alpha_2=1.0, plot_max=10.0)
+    po.loading_scenario.trait_set(loading_type='monotonic')
+    po.cross_section.trait_set(A_f=16.67, P_b=1.0, A_m=1540.0)
+    po.mats_eval.trait_set(gamma=0.0, K=15.0, tau_bar=45.0)
+    po.mats_eval.omega_fn_type = 'li'
+    po.mats_eval.omega_fn.trait_set(alpha_2=1.0, plot_max=10.0)
     po.run()
 
     w = BMCSWindow(model=po)

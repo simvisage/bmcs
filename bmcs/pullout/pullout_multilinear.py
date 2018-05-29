@@ -45,6 +45,11 @@ class PullOutModel(PullOutModelBase):
     def _mats_eval_default(self):
         return self.mats_eval_type_()
 
+    mm = Property
+
+    def _get_mm(self):
+        return self.mats_eval
+
     material = Property
 
     def _get_material(self):
@@ -74,7 +79,7 @@ class PullOutModel(PullOutModelBase):
     @cached_property
     def _get_control_bc(self):
         return BCDof(node_name='pull-out displacement', var='u',
-                     dof=self.controlled_dof, value=self.u_f0_max,
+                     dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
     bcond_mngr = Property(Instance(BCondMngr),
@@ -285,7 +290,7 @@ class PullOutModel(PullOutModelBase):
 def run_pullout_multilinear(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
                       title='Multi-linear bond slip law',
-                      n_e_x=20, k_max=1000, u_f0_max=1.75)
+                      n_e_x=20, k_max=1000, w_max=1.75)
     po.tline.step = 0.05
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
@@ -313,7 +318,7 @@ def run_pullout_multilinear(*args, **kw):
 
 def run_pullout_multi(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=100, k_max=1000, u_f0_max=2.0)
+                      n_e_x=100, k_max=1000, w_max=2.0)
     po.tline.step = 0.02
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')

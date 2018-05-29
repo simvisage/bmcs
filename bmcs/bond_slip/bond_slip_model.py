@@ -179,27 +179,30 @@ class BondSlipModel(BMCSModel, Vis2D):
                                self.mats_eval,
                                self.loading_scenario]
 
-    interaction_type = Trait('interactive',
+    interaction_type = Trait('predefined',
                              {'interactive': TFunPWLInteractive,
                               'predefined': LoadingScenario},
                              BC=True,
                              symbol='option',
-                             unit='-'
+                             unit='-',
+                             desc=r'type of loading scenario, possible values:'
+                             r'[predefined, interactive]'
                              )
     '''Type of control - either interactive or predefined.
     '''
 
     def _interaction_type_changed(self):
-        print 'assigning interaction type'
         self.loading_scenario = self.interaction_type_()
 
-    loading_scenario = Instance(MFnLineArray, report=True)
+    loading_scenario = Instance(MFnLineArray,
+                                report=True,
+                                desc=r'object describing the loading scenario as a function')
     '''Loading scenario in form of a function that maps the time variable
     to the control slip.
     '''
 
     def _loading_scenario_default(self):
-        return TFunPWLInteractive()
+        return self.interaction_type_()
 
     material_model = Trait('plasticity',
                            {'damage': MATSBondSlipD,
@@ -209,7 +212,9 @@ class BondSlipModel(BMCSModel, Vis2D):
                            enter_set=True, auto_set=False,
                            MAT=True,
                            symbol='option',
-                           unit='-'
+                           unit='-',
+                           desc=r'type of material model - possible values:'
+                           r'[damage, plasticity, damage-plasticity]'
                            )
     '''Available material models.
     '''
@@ -219,7 +224,9 @@ class BondSlipModel(BMCSModel, Vis2D):
         self.mats_eval = self.material_model_()
         self._update_node_list()
 
-    mats_eval = Instance(IMATSEval, report=True)
+    mats_eval = Instance(IMATSEval,
+                         report=True,
+                         desc='object defining the material behavior')
     '''Material model'''
 
     def _mats_eval_default(self):
@@ -250,7 +257,6 @@ class BondSlipModel(BMCSModel, Vis2D):
 
     @on_trait_change('MAT,BC')
     def _sv_hist_reset(self):
-        print 'sv_hist_reset'
         for sv_name in self.sv_names:
             self.sv_hist[sv_name] = []
 
@@ -266,9 +272,11 @@ class BondSlipModel(BMCSModel, Vis2D):
     _restart = Bool(True)
 
     n_steps = Int(1000, ALG=True,
-                  symbol='$n_\mathrm{s}$',
+                  symbol='n_\mathrm{s}',
                   unit='-',
-                  enter_set=True, auto_set=False)
+                  desc=r'number of increments',
+                  enter_set=True,
+                  auto_set=False)
 
     state_vars = Tuple
 
@@ -332,12 +340,13 @@ def run_bond_slip_model_d(*args, **kw):
     bsm.add_viz2d('bond history', 'tau-s', x_sv_name='s', y_sv_name='tau')
     bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
     bsm.add_viz2d('bond history', 'kappa-s', x_sv_name='s', y_sv_name='kappa')
-    bsm.loading_scenario.set(loading_type='cyclic',
-                             amplitude_type='constant'
-                             )
-    bsm.loading_scenario.set(number_of_cycles=1,
-                             maximum_loading=0.005,
-                             unloading_ratio=0.5)
+
+    bsm.loading_scenario.trait_set(loading_type='cyclic',
+                                   amplitude_type='constant'
+                                   )
+    bsm.loading_scenario.trait_set(number_of_cycles=1,
+                                   maximum_loading=0.005,
+                                   unloading_ratio=0.5)
     bsm.material.omega_fn_type = 'jirasek'
     bsm.material.omega_fn.s_f = 0.003
     bsm.run()
@@ -355,12 +364,12 @@ def run_bond_slip_model_p(*args, **kw):
     bsm.add_viz2d('bond history', 's_p-s', x_sv_name='s', y_sv_name='s_p')
     bsm.add_viz2d('bond history', 'z-s', x_sv_name='s', y_sv_name='z')
     #bsm.add_viz2d('bond history', 'alpha-s', x_sv_name='s', y_sv_name='alpha')
-    bsm.loading_scenario.set(loading_type='cyclic',
-                             amplitude_type='constant'
-                             )
-    bsm.loading_scenario.set(number_of_cycles=1,
-                             maximum_loading=0.005)
-    bsm.material.set(gamma=0, K=-0)
+    bsm.loading_scenario.trait_set(loading_type='cyclic',
+                                   amplitude_type='constant'
+                                   )
+    bsm.loading_scenario.trait_set(number_of_cycles=1,
+                                   maximum_loading=0.005)
+    bsm.material.trait_set(gamma=0, K=-0)
     bsm.run()
     w.configure_traits(*args, **kw)
 
@@ -377,13 +386,13 @@ def run_bond_slip_model_dp(*args, **kw):
     bsm.add_viz2d('bond history', 'z-s', x_sv_name='s', y_sv_name='z')
     bsm.add_viz2d('bond history', 'alpha-s', x_sv_name='s', y_sv_name='alpha')
     bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
-    bsm.loading_scenario.set(loading_type='cyclic',
-                             amplitude_type='constant'
-                             )
-    bsm.loading_scenario.set(maximum_loading=0.005)
+    bsm.loading_scenario.trait_set(loading_type='cyclic',
+                                   amplitude_type='constant'
+                                   )
+    bsm.loading_scenario.trait_set(maximum_loading=0.005)
     bsm.material.omega_fn_type = 'li'
-    bsm.material.set(gamma=0, K=1000)
-    bsm.material.omega_fn.set(alpha_1=1.0, alpha_2=2000)
+    bsm.material.trait_set(gamma=0, K=1000)
+    bsm.material.omega_fn.trait_set(alpha_1=1.0, alpha_2=2000)
     bsm.run()
     w.configure_traits(*args, **kw)
 
@@ -434,4 +443,8 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_bond_slip_model_dp()
     # run_predefined_load_test(
-    run_bond_slip_model_d()
+    # run_bond_slip_model_d()
+    from IPython.display import Latex
+    import IPython as ip
+    bsm = BondSlipModel()
+    print(bsm._repr_latex_())

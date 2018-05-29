@@ -156,7 +156,6 @@ class TLoop(IBVResource):
         if not os.path.exists(mod_path):
             os.mkdir(mod_path)
 
-        print 'directory', mod_path
         return mod_path
 
     user_wants_abort = False
@@ -306,11 +305,9 @@ class TLoop(IBVResource):
     restart = Bool(True)
 
     def init(self):
-        print 'INIT'
         if self.paused:
             self.paused = False
         if self.restart:
-            print 'RESET TIME'
             self.tline.val = 0
             self.setup()
             self.restart = False
@@ -371,9 +368,6 @@ class TLoop(IBVResource):
 
             self.ls_counter += 1
             self.report_load_step_start()
-
-            print 't_n1', self.t_n1
-            print 'tline.max', self.tline.max
 
             self.k = 0
             step_flag = 'predictor'
@@ -592,7 +586,9 @@ class TLoop(IBVResource):
 
         self.tstepper.update_state(self.U_k)
 
-    verbose_time = Bool(True)
+    verbose_time = Bool(False)
+    verbose_load_step = Bool(False)
+    verbose_iteration = Bool(False)
 
     def record_equilibrium(self):
         '''Record current state in the state array.
@@ -601,8 +597,6 @@ class TLoop(IBVResource):
         self.rtrace_mngr.record_equilibrium(self.tstepper.sctx,
                                             self.U_k, t=self.t_n1)
         self.rtrace_mngr_timer.record()
-
-    verbose_load_step = Bool(True)
 
     def report_load_step_start(self):
         if self.verbose_load_step:
@@ -616,8 +610,6 @@ class TLoop(IBVResource):
             # just a summary of iterations within the load step
             print ' Iter: %4d' % \
                 (self.k,)
-
-    verbose_iteration = Bool(True)
 
     def report_iteration(self):
         if self.verbose_iteration:

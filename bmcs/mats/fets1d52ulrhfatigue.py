@@ -11,9 +11,27 @@ from traits.api import implements, Int, Array, \
 
 import numpy as np
 import sympy as sp
+import traits.api as tr
 
 
 r_ = sp.symbols('r')
+
+#=================================================
+# 8 nodes isoparametric volume element (3D)
+#=================================================
+# generate shape functions with sympy
+xi_1 = sp.symbols('xi_1')
+xi_2 = sp.symbols('xi_2')
+xi_3 = sp.symbols('xi_3')
+
+
+#=========================================================================
+# Finite element specification
+#=========================================================================
+
+N_xi_i = sp.Matrix([0.5 - xi_1 / 2., 0.5 + xi_1 / 2.], dtype=np.float_)
+
+dN_xi_ir = sp.Matrix([[-1. / 2], [1. / 2]], dtype=np.float_)
 
 
 class FETS1D52ULRHFatigue(FETSEval):
@@ -102,6 +120,7 @@ class FETS1D52ULRHFatigue(FETSEval):
         '''
         return self.get_dNr_geo_mtx(r_pnt)
 
+    xi_m = Array(value=[[-1], [1]], dtype=np.float)
     r_m = Array(value=[[-1], [1]], dtype=np.float_)
     w_m = Array(value=[1, 1], dtype=np.float_)
 
@@ -210,3 +229,54 @@ class FETS1D52ULRHFatigue(FETSEval):
         B_EimsC[..., [0, 2], [0, 1]] = dN_Eimd[:, [0, 1], :, :]
 
         return B_EimsC
+
+    shape_function_values = tr.Property(tr.Tuple)
+    '''The values of the shape functions and their derivatives at the IPs
+    '''
+    @tr.cached_property
+    def _get_shape_function_values(self):
+        N_mi = np.array([N_xi_i.subs(zip([xi_1, xi_2, xi_3], xi))
+                         for xi in self.xi_m], dtype=np.float_)
+        N_im = np.einsum('mi->im', N_mi)
+        dN_mir_arr = [np.array(dN_xi_ir.subs(zip([xi_1], xi))).astype(np.float_)
+                      for xi in self.xi_m]
+        dN_mir = np.array(dN_mir_arr, dtype=np.float)
+        dN_nir_arr = [np.array(dN_xi_ir.subs(zip([xi_1], xi))).astype(np.float_)
+                      for xi in self.vtk_r]
+        dN_nir = np.array(dN_nir_arr, dtype=np.float)
+        dN_imr = np.einsum('mir->imr', dN_mir)
+        dN_inr = np.einsum('nir->inr', dN_nir)
+        return (N_im, dN_imr, dN_inr)
+
+    N_im = tr.Property()
+    '''Shape function values in integration poindots.
+    '''
+
+    def _get_N_im(self):
+        return self.shape_function_values[0]
+
+    dN_imr = tr.Property()
+    '''Shape function derivatives in integration poindots.
+    '''
+
+    def _get_dN_imr(self):
+        return self.shape_function_values[1]
+
+    dN_inr = tr.Property()
+    '''Shape function derivatives in visualization poindots.
+    '''
+
+    def _get_dN_inr(self):
+        return self.shape_function_values[2]
+
+    I_sym_abcd = tr.Array(np.float)
+
+    def _I_sym_abcd_default(self):
+        return 0.5 * \
+            (np.einsum('ac,bd->abcd', delta, delta) +
+             np.einsum('ad,bc->abcd', delta, delta))
+
+
+if __name__ == '__main__':
+    fe = FETS1D52ULRHFatigue()
+    print 'dN_imr', fe.dN_imr

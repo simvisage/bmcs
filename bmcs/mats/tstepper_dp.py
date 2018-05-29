@@ -338,4 +338,5 @@ class TStepper(HasTraits):
         F_ext = np.zeros_like(F_int, dtype=np.float_)
         self.apply_bc(step_flag, self.K, F_ext, t_n, t_n1)
 
-        return F_ext - F_int, F_int, self.K, eps, sig, xs_pi, alpha, z, kappa, omega, D
+        return (F_ext - F_int, F_int, self.K, eps,
+                sig, xs_pi, alpha, z, kappa, omega, D, xs_pi)

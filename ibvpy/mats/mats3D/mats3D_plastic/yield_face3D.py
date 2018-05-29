@@ -194,7 +194,7 @@ def show_yield_faces():
     f = yc.f(sig)
     print 'f', f
 
-    return
+    # return
 
     min_sig = -20.0
     max_sig = 5.0

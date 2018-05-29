@@ -72,11 +72,8 @@ class CrossSection(BMCSLeafNode):
                 desc='perimeter of the bond interface')
 
     view = View(
-        VGroup(
-            Item('A_m', full_size=True, resizable=True),
-            Item('A_f'),
-            Item('P_b')
-        )
+        Item('A_m', full_size=True, resizable=True),
+        Item('P_b')
     )
 
     tree_view = view
@@ -290,7 +287,7 @@ class PullOutModel(BMCSModel, Vis2D):
         for idx, t in enumerate(tarray):
             if self._restart or self._paused:
                 break
-            w = self.u_f0_max * self.loading_scenario(t)
+            w = self.w_max * self.loading_scenario(t)
             state_vars = \
                 self.analytical_po_model(w)
             t_ = np.array([t], dtype=np.float_)
@@ -329,12 +326,12 @@ class PullOutModel(BMCSModel, Vis2D):
 
     n_x = Int(100, auto_set=False, enter_set=True)
 
-    u_f0_max = Float(1,
-                     BC=True,
-                     symbol='$u_{\mathrm{f},0}$',
-                     unit='mm',
-                     desc='control displacement',
-                     auto_set=False, enter_set=True)
+    w_max = Float(1,
+                  BC=True,
+                  symbol='$u_{\mathrm{f},0}$',
+                  unit='mm',
+                  desc='control displacement',
+                  auto_set=False, enter_set=True)
 
     tline = Instance(TLine)
 
@@ -428,13 +425,13 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.set_xlabel('bond length: x [mm]')
         return np.min(sf_x), np.max(sf_x)
 
-    tree_view = View(
-        VGroup(
-            Group(
-                Item('u_f0_max', full_size=True, resizable=True),
-            ),
-        )
-    )
+#     tree_view = View(
+#         VGroup(
+#             Group(
+#                 Item('w_max', full_size=True, resizable=True),
+#             ),
+#         )
+#     )
     viz2d_classes = {'field': Viz2DPullOutField,
                      'F-w': Viz2DPullOutFW,
                      'load function': Viz2DLoadControlFunction,
@@ -442,10 +439,10 @@ class PullOutModel(BMCSModel, Vis2D):
 
 
 def run_pullout_const_shear(*args, **kw):
-    po = PullOutModel(name='t32_analytical_pullout', n_x=200, u_f0_max=1.5)
-    po.geometry.set(L_x=800)
-#     po.cross_section.set(A_f=4.5, P_b=1.0)
-#     po.material.set(E_f=9 * 180000.0, tau_pi_bar=2.77 * 9)
+    po = PullOutModel(name='t32_analytical_pullout', n_x=200, w_max=1.5)
+    po.geometry.trait_set(L_x=800)
+#     po.cross_section.trait_set(A_f=4.5, P_b=1.0)
+#     po.material.trait_set(E_f=9 * 180000.0, tau_pi_bar=2.77 * 9)
     po.tline.step = 0.01
 
     po.run()

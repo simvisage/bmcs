@@ -13,9 +13,13 @@ from bmcs.bond_slip import \
     run_bond_slip_model_p, \
     run_bond_slip_model_d, \
     run_bond_slip_model_dp
+from bmcs.crack_mode_I import \
+    run_bending3pt_mic_odf
 from bmcs.pullout import \
     run_pullout_const_shear, \
-    run_pullout_dp, run_pullout_multilinear, run_pullout_frp_damage
+    run_pullout_dp, \
+    run_pullout_multilinear, \
+    run_pullout_frp_damage
 from traits.api import HasTraits, Button, Str, Constant
 from traitsui.api import \
     View, Item, UItem, VGroup, Group, Spring, HGroup
@@ -74,12 +78,20 @@ class BMCSLauncher(HasTraits):
         run_pullout_dp(kind='live')
 
     #=========================================================================
-    # Lecture #8
+    # Lecture #6
     #=========================================================================
     yield_face_explorer = Button(label='Yield conditions for concrete')
 
     def _yield_face_explorer_fired(self):
         run_explorer(kind='live')
+
+    #=========================================================================
+    # Lecture #8
+    #=========================================================================
+    bending3pt_3d = Button(label='Bending test (3D)')
+
+    def _bending3pt_3d_fired(self):
+        run_bending3pt_mic_odf(kind='live')
 
     view = View(
         VGroup(
@@ -95,7 +107,9 @@ class BMCSLauncher(HasTraits):
                       full_size=True, resizable=True),
                 UItem('bond_slip_model_dp',
                       full_size=True, resizable=True),
-                label='Bond-slip models, lecture #2'
+                UItem('yield_face_explorer',
+                      full_size=True, resizable=True),
+                label='Bond-slip models, lecture #1-2'
             ),
             Group(
                 UItem('pullout_model_const_shear',
@@ -106,12 +120,12 @@ class BMCSLauncher(HasTraits):
                       full_size=True, resizable=True),
                 UItem('pullout_model_dp',
                       full_size=True, resizable=True),
-                label='Pull-out models, lecture #3'
+                label='Pull-out models, lecture #3-4'
             ),
             Group(
-                UItem('yield_face_explorer',
+                UItem('bending3pt_3d',
                       full_size=True, resizable=True),
-                label='Yield conditions, lecture #8'
+                label='Bending, crack propagation, lecture #7'
             ),
         ),
         title='BMCS application launcher',

@@ -4,12 +4,10 @@ Created on 12.01.2016
 @author: Yingxiong
 '''
 from ibvpy.core.tline import TLine
-from traits.api import Int, HasStrictTraits, Instance, \
-    Float, Property, property_depends_on, Callable, \
+from traits.api import \
+    Int, HasStrictTraits, Instance, \
+    Float, \
     Array, List, Bool
-from traitsui.api import View, Item
-from view.ui import BMCSLeafNode
-
 import numpy as np
 from tstepper_dp import TStepper
 
@@ -32,6 +30,7 @@ class TLoop(HasStrictTraits):
     sf_Em_record = List
     t_record = List
     eps_record = List
+    eps_p_record = List
     sig_record = List
     sig_EmC_record = List
     D_record = List
@@ -55,6 +54,7 @@ class TLoop(HasStrictTraits):
         t_n = self.tline.val
         self.t_record = [t_n]
         self.eps_record = [np.zeros_like(eps)]
+        self.eps_p_record = [np.zeros_like(eps)]
         self.sig_record = [np.zeros_like(sig)]
         self.sig_EmC_record = [np.copy(sig_rec)]
         self.sf_Em_record = [np.copy(sf_rec)]
@@ -62,7 +62,6 @@ class TLoop(HasStrictTraits):
         self.D_record = [np.zeros_like(D)]
 
     def init(self):
-        print 'INIT'
         if self.paused:
             self.paused = False
         if self.restart:
@@ -104,7 +103,7 @@ class TLoop(HasStrictTraits):
             while k <= self.k_max and \
                     not (self.restart or self.paused):
 
-                R, F_int, K, eps, sig, xs_pi, alpha, z, kappa, omega, D = self.ts.get_corr_pred(
+                R, F_int, K, eps, sig, xs_pi, alpha, z, kappa, omega, D, eps_p = self.ts.get_corr_pred(
                     step_flag, U_k, d_U_k, eps, sig, t_n, t_n1, xs_pi, alpha, z, kappa, omega)
 
                 K.apply_constraints(R)
@@ -116,6 +115,9 @@ class TLoop(HasStrictTraits):
                     self.t_record.append(t_n1)
                     self.U_record = np.vstack((self.U_record, U_k))
                     self.eps_record.append(np.copy(eps))
+                    eps_p_full = np.zeros_like(eps)
+                    eps_p_full[:, :, 1] = eps_p
+                    self.eps_p_record.append(np.copy(eps_p_full))
                     self.sig_record.append(np.copy(sig))
                     self.sig_EmC_record.append(sig[:, :, (0, 2)])
                     self.sf_Em_record.append(np.copy(sig[:, :, 1]))
@@ -127,7 +129,7 @@ class TLoop(HasStrictTraits):
                 step_flag = 'corrector'
 
             if k >= self.k_max:
-                print ' ----------> No Convergence any more'
+                print ' ----------> No convergence for the time step %f', t_n1
                 break
             if self.restart or self.paused:
                 print 'interrupted iteration'

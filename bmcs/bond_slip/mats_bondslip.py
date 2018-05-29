@@ -42,35 +42,35 @@ class MATSBondSlipEP(MATSBondSlipBase):
     node_name = 'bond model: plasticity'
     E_b = Float(12900,
                 label="E_b",
-                desc="Bond stiffness",
+                desc="bond stiffness",
                 MAT=True,
-                symbol=r'$E_\mathrm{b}$',
+                symbol=r'E_\mathrm{b}',
                 unit='MPa/mm',
                 enter_set=True,
                 auto_set=False)
 
     gamma = Float(0,
                   label="Gamma",
-                  desc="Kinematic hardening modulus",
+                  desc="kinematic hardening modulus",
                   MAT=True,
-                  symbol=r'$\gamma$',
+                  symbol=r'\gamma',
                   unit='MPa/mm',
                   enter_set=True,
                   auto_set=False)
 
     K = Float(0,
               label="K",
-              desc="Isotropic hardening modulus",
+              desc="isotropic hardening modulus",
               MAT=True,
-              symbol='$K$',
+              symbol='K',
               unit='MPa/mm',
               enter_set=True,
               auto_set=False)
 
     tau_bar = Float(5,
                     label="Tau_0 ",
-                    desc="Yield stress",
-                    symbol=r'$\bar{\tau}$',
+                    desc="yield stress",
+                    symbol=r'\bar{\tau}',
                     unit='MPa',
                     MAT=True,
                     enter_set=True,
@@ -109,6 +109,44 @@ class MATSBondSlipEP(MATSBondSlipBase):
 
         return tau, tau_e, z, alpha, s_p
 
+    def plot(self, ax, **kw):
+        s = np.linspace(0, 1, 100)
+        kappa_n = s
+        d_s = s
+        s_p_n = 0.0
+        z_n = 0
+        alpha_n = 0
+
+        sig_pi_trial = self.E_b * (s - s_p_n)
+
+        Z = self.K * z_n
+
+        # for handeling the negative values of isotropic hardening
+        h_1 = self.tau_bar + Z
+        pos_iso = h_1 > 1e-6
+
+        X = self.gamma * alpha_n
+
+        # for handling the negative values of kinematic hardening (not yet)
+        # h_2 = h * np.sign(sig_pi_trial - X) * \
+        #    np.sign(sig_pi_trial) + X * np.sign(sig_pi_trial)
+        #pos_kin = h_2 > 1e-6
+
+        f = np.fabs(sig_pi_trial - X) - h_1 * pos_iso
+
+        elas = f <= 1e-6
+        plas = f > 1e-6
+
+        # Return mapping
+        delta_lamda = f / (self.E_b + self.gamma + np.fabs(self.K)) * plas
+        # update all the state variables
+
+        s_p_n1 = s_p_n + delta_lamda * np.sign(sig_pi_trial - X)
+
+        tau = self.E_b * (s - s_p_n1)
+
+        ax.plot(s, tau, **kw)
+
 
 class MATSBondSlipD(MATSBondSlipBase):
     '''Damage model of bond.
@@ -126,13 +164,17 @@ class MATSBondSlipD(MATSBondSlipBase):
 
     E_b = Float(12900,
                 label="E_b",
-                desc="Bond Stiffness",
+                symbol='E_\mathrm{b}',
+                unit='MPa',
+                desc="bond stiffness",
                 enter_set=True,
                 auto_set=False)
 
     tau_bar = Float(5,
                     label="Tau_0 ",
                     desc="yield stress",
+                    unit='MPa',
+                    symbol='\bar{\tau}',
                     enter_set=True,
                     auto_set=False)
 
@@ -144,6 +186,7 @@ class MATSBondSlipD(MATSBondSlipBase):
                                ),
                           symbol='option',
                           unit='-',
+                          desc='damage function [li,jirasek,abaqus,FRP]',
                           MAT=True,
                           )
 
@@ -152,7 +195,8 @@ class MATSBondSlipD(MATSBondSlipBase):
         self.omega_fn = self.omega_fn_type_()
 
     omega_fn = Instance(IDamageFn,
-                        report=True)
+                        report=True,
+                        desc='object definng the damage function')
 
     def _omega_fn_default(self):
         # return JirasekDamageFn()
@@ -198,27 +242,27 @@ class MATSBondSlipDP(MATSBondSlipBase):
 
     E_b = Float(12900,
                 label="E_b",
-                desc="Bond stiffness",
                 MAT=True,
-                symbol=r'$E_\mathrm{b}$',
+                symbol=r'E_\mathrm{b}',
                 unit='MPa/mm',
+                desc='elastic bond stiffness',
                 enter_set=True,
                 auto_set=False)
 
     gamma = Float(1,
                   label="Gamma",
-                  desc="Kinematic hardening modulus",
+                  desc="kinematic hardening modulus",
                   MAT=True,
-                  symbol=r'$\gamma$',
+                  symbol=r'\gamma',
                   unit='MPa/mm',
                   enter_set=True,
                   auto_set=False)
 
     K = Float(1,
               label="K",
-              desc="Isotropic hardening modulus",
+              desc="isotropic hardening modulus",
               MAT=True,
-              symbol='$K$',
+              symbol='K',
               unit='MPa/mm',
               enter_set=True,
               auto_set=False)
@@ -226,7 +270,7 @@ class MATSBondSlipDP(MATSBondSlipBase):
     tau_bar = Float(5,
                     label="Tau_0 ",
                     desc="Yield stress",
-                    symbol=r'$\bar{\tau}$',
+                    symbol=r'\bar{\tau}',
                     unit='MPa',
                     MAT=True,
                     enter_set=True,

@@ -9,7 +9,7 @@ from os.path import join
 from reporter import ROutputItem
 from traits.api import \
     HasStrictTraits, Dict, Property, Float, \
-    WeakRef, DelegatesTo, cached_property, \
+    Bool, WeakRef, DelegatesTo, cached_property, \
     Str, List, Button
 from traitsui.api import \
     View, Group, UItem, Include, EnumEditor, HGroup, \
@@ -26,6 +26,7 @@ class Viz2D(ROutputItem):
 
     name = Str('<unnamed>')
     label = Property(depends_on='label')
+    visible = Bool(True)
 
     @cached_property
     def _get_label(self):
@@ -61,11 +62,12 @@ class Viz2D(ROutputItem):
     def reset(self, ax):
         pass
 
-    view = View(
+    trait_view = View(
         HSplit(
             VGroup(
                 UItem('label'),
-                label='Vizualization inteerface',
+                Item('visible'),
+                label='Vizualization interface',
                 springy=True
             )),
         resizable=True

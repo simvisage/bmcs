@@ -4,33 +4,35 @@ Created on 12.01.2016
 '''
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from bmcs.mats.mats_bondslip import MATSBondSlipDP, MATSBondSlipMultiLinear, MATSBondSlipFRPDamage
+from bmcs.mats.mats_bondslip import MATSBondSlipDP, MATSBondSlipMultiLinear
 from bmcs.mats.tloop_dp import TLoop
 from bmcs.mats.tstepper_dp import TStepper
 from bmcs.time_functions import \
-    Viz2DLoadControlFunction
+    LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
-    Float, Int, Trait, on_trait_change
+    List, Float, Int, Trait, on_trait_change
 from traitsui.api import \
-    View, Item
-from view.window import BMCSWindow
+    View, Item, Group
+from view.plot2d import Vis2D, Viz2D
+from view.window import BMCSModel, BMCSWindow, TLine
 
 import numpy as np
-from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
-    PullOutModelBase, Viz2DEnergyPlot, Viz2DEnergyRatesPlot
+from bmcs.pullout.pullout import Viz2DPullOutFW, Viz2DPullOutField, \
+    Viz2DEnergyPlot, Viz2DEnergyRatesPlot, \
+    PullOutModelBase
 
 
 class PullOutModel(PullOutModelBase):
 
-    name = 'Pull-out model, FRP damage'
-    mats_eval_type = Trait('FRP-damage',
+    mats_eval_type = Trait('multilinear',
                            {'damage-plasticity': MATSBondSlipDP,
-                            'multilinear': MATSBondSlipMultiLinear,
-                            'FRP-damage': MATSBondSlipFRPDamage})
+                            'multilinear': MATSBondSlipMultiLinear},
+                           MAT=True,
+                           desc='material model type')
 
     @on_trait_change('mats_eval_type')
     def _set_mats_eval(self):
@@ -72,7 +74,7 @@ class PullOutModel(PullOutModelBase):
     @cached_property
     def _get_control_bc(self):
         return BCDof(node_name='pull-out displacement', var='u',
-                     dof=self.controlled_dof, value=self.w_max,
+                     dof=self.controlled_dof, value=self.u_f0_max,
                      time_function=self.loading_scenario)
 
     bcond_mngr = Property(Instance(BCondMngr),
@@ -100,11 +102,6 @@ class PullOutModel(PullOutModelBase):
                         L_x=self.geometry.L_x,
                         bcond_mngr=self.bcond_mngr
                         )
-
-    k_max = Int(200,
-                ALG=True)
-    tolerance = Float(1e-4,
-                      ALG=True)
 
     tloop = Property(Instance(TLoop),
                      depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
@@ -203,6 +200,7 @@ class PullOutModel(PullOutModelBase):
         sf_t_Em = np.array(self.tloop.sf_Em_record)
         w_ip = self.fets_eval.ip_weights
         J_det = self.tstepper.J_det
+        sN_Cim = self.tstepper.sN_Cim
         P_b = self.cross_section.P_b
         shear_integ = np.einsum('tEm,m,em->t', sf_t_Em, w_ip, J_det) * P_b
         return shear_integ
@@ -220,12 +218,10 @@ class PullOutModel(PullOutModelBase):
         A = self.tstepper.A
         sig_t = np.array(self.tloop.sig_record)
         eps_t = np.array(self.tloop.eps_record)
-        eps_p_t = np.array(self.tloop.eps_p_record)
-        eps_e_t = eps_t - eps_p_t
         w_ip = self.fets_eval.ip_weights
         J_det = self.tstepper.J_det
         U_bar_t = np.einsum('m,Em,s,tEms,tEms->t',
-                            w_ip, J_det, A, sig_t, eps_e_t)
+                            w_ip, J_det, A, sig_t, eps_t)
 
         return U_bar_t / 2.0
 
@@ -254,13 +250,6 @@ class PullOutModel(PullOutModelBase):
         w_0, w_L = self.get_w_t()
         return w_L
 
-    def get_omega(self, vot):
-        '''Damage variables
-        '''
-        idx = self.tloop.get_time_idx(vot)
-        omega_Emd = self.tloop.omega_record[idx]
-        return omega_Emd.flatten()
-
     t = Property
 
     def _get_t(self):
@@ -269,10 +258,15 @@ class PullOutModel(PullOutModelBase):
     def get_t(self):
         return np.array(self.tloop.t_record, dtype=np.float_)
 
+    n_t = Property
+
+    def _get_n_t(self):
+        return len(self.tloop.t_record)
+
     sig_tC = Property
 
     def _get_sig_tC(self):
-        n_t = len(self.tloop.t_record)
+        n_t = self.n_t
         sig_tEmC = np.array(self.tloop.sig_EmC_record, dtype=np.float_)
         sig_tC = sig_tEmC.reshape(n_t, -1, 2)
         return sig_tC
@@ -288,37 +282,57 @@ class PullOutModel(PullOutModelBase):
                      }
 
 
-def run_pullout_frp_damage(*args, **kw):
-    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
-    po.tline.step = 0.01
+def run_pullout_multilinear(*args, **kw):
+    po = PullOutModel(name='t33_pullout_multilinear',
+                      title='Multi-linear bond slip law',
+                      n_e_x=50, k_max=1000, u_f0_max=1.75)
+    po.tline.step = 0.02
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    # po.mats_eval.set()
-
-#     po.w_max = 7.0
-#     po.tline.step = 0.01
-#     po.geometry.L_x = 10000.0
-#     po.n_e_x = 200
-#     po.mats_eval.omega_fn.set(plot_max=0.5)
+    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
+    po.mats_eval.set(s_data='0, 0.1, 0.4, 1.7',
+                     tau_data='0, 70, 0, 0')
+    po.mats_eval.update_bs_law = True
     po.run()
 
-    U_bar_t = po.get_U_bar_t()
-    W_t = po.get_W_t()
-    G_t = W_t - U_bar_t
-    print 'Fracture energy', G_t
+    w = BMCSWindow(model=po)
+#     po.add_viz2d('load function', 'load-time')
+    po.add_viz2d('F-w', 'load-displacement')
+#     po.add_viz2d('field', 'u_C', plot_fn='u_C')
+#     po.add_viz2d('dissipation', 'dissipation')
+    po.add_viz2d('field', 's', plot_fn='s')
+    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
+#     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+    po.add_viz2d('field', 'sf', plot_fn='sf')
+#     po.add_viz2d('dissipation rate', 'dissipation rate')
+
+    w.offline = False
+    w.finish_event = True
+    w.configure_traits(*args, **kw)
+
+
+def run_pullout_multi(*args, **kw):
+    po = PullOutModel(name='t33_pullout_multilinear',
+                      n_e_x=100, k_max=1000, u_f0_max=2.0)
+    po.tline.step = 0.02
+    po.geometry.L_x = 200.0
+    po.loading_scenario.set(loading_type='monotonic')
+    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
+    po.mats_eval.set(s_data='0, 0.1, 0.4, 4.0',
+                     tau_data='0, 70.0, 0, 0')
+    po.mats_eval.update_bs_law = True
+    po.run()
 
     w = BMCSWindow(model=po)
-    po.add_viz2d('load function', 'load-time')
+#     po.add_viz2d('load function', 'load-time')
     po.add_viz2d('F-w', 'load-displacement')
-    po.add_viz2d('field', 'omega', plot_fn='u_C')
-    po.add_viz2d('field', 'damage', plot_fn='omega')
+    po.add_viz2d('field', 'u_C', plot_fn='u_C')
+#     po.add_viz2d('dissipation', 'dissipation')
     po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
     po.add_viz2d('field', 's', plot_fn='s')
     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
     po.add_viz2d('field', 'sf', plot_fn='sf')
-    po.add_viz2d('dissipation', 'dissipation')
-    po.add_viz2d('dissipation rate', 'dissipation rate')
+#     po.add_viz2d('dissipation rate', 'dissipation rate')
 
     w.offline = False
     w.finish_event = True
@@ -326,4 +340,6 @@ def run_pullout_frp_damage(*args, **kw):
 
 
 if __name__ == '__main__':
-    run_pullout_frp_damage()
+    run_pullout_multilinear()
+    # run_pullout_multi()
+    # test_B()

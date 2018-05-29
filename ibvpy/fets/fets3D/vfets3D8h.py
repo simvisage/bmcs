@@ -64,6 +64,9 @@ dN_xi_ir = sp.Matrix((((-1.0 / 8.0) * (-1.0 + xi_2) * (-1.0 + xi_3),
                        (1.0 / 8.0) * (1.0 + xi_1) * (1.0 + xi_3),
                        (1.0 / 8.0) * (1.0 + xi_1) * (1.0 + xi_2))), dtype=np.float_)
 
+# symetrization operator
+delta = np.identity(3)
+
 
 class FETS3D8H(FETSEval):
     dof_r = tr.Array(np.float_,
@@ -156,3 +159,10 @@ class FETS3D8H(FETSEval):
 
     def _get_dN_inr(self):
         return self.shape_function_values[2]
+
+    I_sym_abcd = tr.Array(np.float)
+
+    def _I_sym_abcd_default(self):
+        return 0.5 * \
+            (np.einsum('ac,bd->abcd', delta, delta) +
+             np.einsum('ad,bc->abcd', delta, delta))

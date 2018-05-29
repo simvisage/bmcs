@@ -11,12 +11,13 @@ from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from reporter.report_item import RInputRecord
 from traits.api import  \
     Constant, Float, Tuple, List, on_trait_change, \
-    Instance, Trait, Bool, Str, Button
+    Instance, Trait, Bool, Str, Button, Property
 from traitsui.api import View, VGroup, Item, UItem, Group
 from view.ui import BMCSTreeNode
 
 from mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
+    MultilinearDamageFn, \
     FRPDamageFn
 import numpy as np
 
@@ -208,15 +209,21 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
         self.tree_node_list = [self.omega_fn]
 
     E_m = Float(30000.0, tooltip='Stiffness of the matrix [MPa]',
+                symbol='E_\mathrm{m}',
+                unit='MPa',
+                desc='Stiffness of the matrix',
                 MAT=True,
                 auto_set=True, enter_set=True)
 
-    E_f = Float(200000.0, tooltip='Stiffness of the fiber [MPa]',
+    E_f = Float(200000.0, tooltip='Stiffness of the reinforcement [MPa]',
+                symbol='E_\mathrm{f}',
+                unit='MPa',
+                desc='Stiffness of the reinforcement',
                 MAT=True,
                 auto_set=False, enter_set=False)
 
     E_b = Float(12900.0,
-                symbol="$E_\mathrm{b}$",
+                symbol="E_\mathrm{b}",
                 unit='MPa',
                 desc="Bond stiffness",
                 MAT=True,
@@ -224,21 +231,24 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
                 auto_set=False)
 
     gamma = Float(100.0,
-                  symbol="$\gamma$",
+                  symbol="\gamma",
+                  unit='MPa',
                   desc="Kinematic hardening modulus",
                   MAT=True,
                   enter_set=True,
                   auto_set=False)
 
     K = Float(1000.0,
-              symbol="$K$",
+              symbol="K",
+              unit='MPa',
               desc="Isotropic hardening modulus",
               MAT=True,
               enter_set=True,
               auto_set=False)
 
     tau_bar = Float(5.0,
-                    symbol=r'$\bar{\tau}$',
+                    symbol=r'\bar{\tau}',
+                    unite='MPa',
                     desc="Reversibility limit",
                     MAT=True,
                     enter_set=True,
@@ -265,11 +275,12 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
                 self.s_0 = self.tau_bar / self.E_b
             self.omega_fn.s_0 = self.s_0
 
-    omega_fn_type = Trait('li',
+    omega_fn_type = Trait('multilinear',
                           dict(li=LiDamageFn,
                                jirasek=JirasekDamageFn,
                                abaqus=AbaqusDamageFn,
                                FRP=FRPDamageFn,
+                               multilinear=MultilinearDamageFn
                                ),
                           MAT=True,
                           )
@@ -282,10 +293,7 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
                         report=True)
 
     def _omega_fn_default(self):
-        # return JirasekDamageFn()
-        return LiDamageFn(alpha_1=1.,
-                          alpha_2=100.
-                          )
+        return MultilinearDamageFn()
 
     state_arr_shape = Tuple((8,))
 
@@ -384,6 +392,51 @@ class MATSBondSlipDP(MATSEval, BMCSTreeNode):
 
     n_s = Constant(5)
 
+    def plot(self, ax, **kw):
+        s = np.linspace(0, 1, 100)
+        kappa_n = s
+        d_s = s
+        s_p_n = 0.0
+        z_n = 0
+        alpha_n = 0
+
+        sig_pi_trial = self.E_b * (s - s_p_n)
+
+        Z = self.K * z_n
+
+        # for handeling the negative values of isotropic hardening
+        h_1 = self.tau_bar + Z
+        pos_iso = h_1 > 1e-6
+
+        X = self.gamma * alpha_n
+
+        # for handeling the negative values of kinematic hardening (not yet)
+        # h_2 = h * np.sign(sig_pi_trial - X) * \
+        #    np.sign(sig_pi_trial) + X * np.sign(sig_pi_trial)
+        #pos_kin = h_2 > 1e-6
+
+        f = np.fabs(sig_pi_trial - X) - h_1 * pos_iso
+
+        elas = f <= 1e-6
+        plas = f > 1e-6
+
+        tau = self.E_b * s
+
+        # Return mapping
+        delta_lamda = f / (self.E_b + self.gamma + np.fabs(self.K)) * plas
+        # update all the state variables
+
+        s_p_n1 = s_p_n + delta_lamda * np.sign(sig_pi_trial - X)
+        z_n1 = z_n + delta_lamda
+        alpha_n1 = alpha_n + delta_lamda * np.sign(sig_pi_trial - X)
+
+        kappa_n1 = np.max(np.array([kappa_n, np.fabs(s)]), axis=0)
+        omega_n1 = self.omega(kappa_n1)
+
+        tau = (1 - omega_n1) * self.E_b * (s - s_p_n1)
+
+        ax.plot(s, tau, **kw)
+
     tree_view = View(
         VGroup(
             VGroup(
@@ -415,24 +468,33 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
     state_arr_shape = Tuple((0,))
 
     E_m = Float(28000.0, tooltip='Stiffness of the matrix [MPa]',
-                MAT=True, unit='MPa', symbol='$E_\mathrm{m}$',
+                MAT=True, unit='MPa', symbol='E_\mathrm{m}',
                 desc='E-modulus of the matrix',
                 auto_set=True, enter_set=True)
 
     E_f = Float(170000.0, tooltip='Stiffness of the fiber [MPa]',
-                MAT=True, unit='MPa', symbol='$E_\mathrm{f}$',
+                MAT=True, unit='MPa', symbol='E_\mathrm{f}',
                 desc='E-modulus of the reinforcement',
                 auto_set=False, enter_set=True)
 
     s_data = Str('', tooltip='Comma-separated list of strain values',
-                 MAT=True, unit='mm', symbol='$s$',
+                 MAT=True, unit='mm', symbol='s',
                  desc='slip values',
                  auto_set=True, enter_set=False)
 
     tau_data = Str('', tooltip='Comma-separated list of stress values',
-                   MAT=True, unit='MPa', symbol='$\\tau$',
+                   MAT=True, unit='MPa', symbol=r'\tau',
                    desc='shear stress values',
                    auto_set=True, enter_set=False)
+
+    s_tau_table = Property
+
+    def _set_s_tau_table(self, data):
+        s_data, tau_data = data
+        if len(s_data) != len(tau_data):
+            raise ValueError, 's array and tau array must have the same size'
+        self.bs_law.set(xdata=s_data,
+                        ydata=tau_data)
 
     update_bs_law = Button(label='update bond-slip law')
 
@@ -500,6 +562,9 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
         self.bs_law.replot()
         self.bs_law.savefig(join(rdir, fname))
 
+    def plot(self, ax, **kw):
+        ax.plot(self.bs_law.xdata, self.bs_law.xdata, **kw)
+
     tree_view = View(
         VGroup(
             VGroup(
@@ -550,7 +615,7 @@ class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode):
 
     def _omega_fn_default(self):
         # return JirasekDamageFn()
-        return FRPDamageFn(b=10.4,
+        return FRPDamageFn(B=10.4,
                            Gf=1.19
                            )
 
@@ -627,6 +692,12 @@ class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode):
 
         return tau, D, s_p_n1, alpha_n1, z_n1, kappa_n1, omega_n1
 
+    def plot(self, ax, **kw):
+        s = np.linspace(0, 1, 100)
+        omega = self.omega(s)
+        tau = (1 - omega) * self.omega_fn.E_b * s
+        ax.plot(s, tau, **kw)
+
     tree_view = View(
         VGroup(
             VGroup(
@@ -640,5 +711,9 @@ class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode):
 
 if __name__ == '__main__':
     #m = MATSBondSlipMultiLinear()
-    m = MATSBondSlipDP()
-    m.configure_traits()
+    #m = MATSBondSlipDP()
+    m = MATSBondSlipFRPDamage()
+    # m.configure_traits()
+    import matplotlib.pyplot as p
+    m.plot(p.axes())
+    p.show()

@@ -14,13 +14,13 @@ def multilinear_bond_slip_law_sbr_jbielak():
 
     po = l04.PullOutModel(n_e_x=200, k_max=500, w_max=5.0)
     po.tline.step = 0.01
-    po.loading_scenario.set(loading_type='cyclic',
-                            amplitude_type='constant',
-                            loading_range='non-symmetric'
-                            )
-    po.loading_scenario.set(number_of_cycles=1,
-                            unloading_ratio=0.98,
-                            )
+    po.loading_scenario.trait_set(loading_type='cyclic',
+                                  amplitude_type='constant',
+                                  loading_range='non-symmetric'
+                                  )
+    po.loading_scenario.trait_set(number_of_cycles=1,
+                                  unloading_ratio=0.98,
+                                  )
     po.geometry.set(L_x=100.0)
     po.cross_section.set(A_f=16.65, P_b=1.0, A_m=1543.35)
     po.mats_eval_type = 'multilinear'
@@ -50,7 +50,7 @@ def multilinear_bond_slip_law_epoxy_tvlach():
     '''This is the verification of the calculation by Li. 
     '''
 
-    po = l04.PullOutModel(n_e_x=200, k_max=500, u_f0_max=0.15)
+    po = l04.PullOutModel(n_e_x=200, k_max=500, w_max=0.15)
     po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic',
                             amplitude_type='constant',

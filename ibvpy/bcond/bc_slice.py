@@ -69,7 +69,8 @@ class BCSlice(BMCSTreeNode, Vis2D):
     node_name = Property
 
     def _get_node_name(self):
-        return '%s:%s=%s' % (self.var, self.slice, self.value)
+        s = '%s:%s=%s' % (self.var, self.slice, self.value)
+        return s
 
     var = Enum('u', 'f', 'eps', 'sig')
 
@@ -101,7 +102,7 @@ class BCSlice(BMCSTreeNode, Vis2D):
     link_dims = Property(List(Int))
 
     def _get_link_dims(self):
-        if self._link_dims == None:
+        if len(self._link_dims) == 0:
             return self.dims
         else:
             return self._link_dims
