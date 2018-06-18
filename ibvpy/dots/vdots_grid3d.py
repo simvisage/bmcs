@@ -27,6 +27,7 @@ class DOTSGrid(tr.HasStrictTraits):
     n_x = tr.Int(100, input=True)
     n_y = tr.Int(30, input=True)
     n_z = tr.Int(10, input=True)
+    integ_factor = tr.Float(1.0, input=True)
     fets = tr.Instance(IFETSEval, input=True)
     mats = tr.Instance(IMATSEval, input=True)
     mesh = tr.Property(tr.Instance(FEGrid), depends_on='+input')
@@ -167,14 +168,14 @@ class DOTSGrid(tr.HasStrictTraits):
             eps_Emab, deps_Emab, t_n, t_n1, update_state,
             **self.state_arrays
         )
-        K_Eicjd = np.einsum(
+        K_Eicjd = self.integ_factor * np.einsum(
             'Emicjdabef,Emabef->Eicjd', self.BB_Emicjdabef, D_Emabef
         )
         n_E, n_i, n_c, n_j, n_d = K_Eicjd.shape
         K_E = K_Eicjd.reshape(-1, n_i * n_c, n_j * n_d)
         dof_E = self.dof_Eia.reshape(-1, n_i * n_c)
         K_subdomain = SysMtxArray(mtx_arr=K_E, dof_map_arr=dof_E)
-        f_Eic = np.einsum(
+        f_Eic = self.integ_factor * np.einsum(
             'm,Eimabc,Emab,Em->Eic', self.fets.w_m, self.B_Eimabc, sig_Emab,
             self.det_J_Em
         )

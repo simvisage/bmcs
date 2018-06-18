@@ -62,7 +62,19 @@ class TimeLoop(tr.HasStrictTraits):
     '''Current time increment size.
     '''
 
+    paused = tr.Bool(False)
+    restart = tr.Bool(True)
+    stop = tr.Bool(False)
+
     def init(self):
+        self.stop = False
+        if self.paused:
+            self.paused = False
+            return
+        if self.restart:
+            self.tline.val = 0
+            # self.setup()
+            self.restart = False
         self.bc_mngr.setup(None)
         for rt in self.response_traces:
             rt.setup(self)
@@ -75,6 +87,8 @@ class TimeLoop(tr.HasStrictTraits):
         dU = np.copy(U_n)
         U_k = np.copy(U_n)
         F_ext = np.zeros_like(U_n)
+        algorithmic = True
+        pos_def = True
 
         while (self.t_n1 - self.tline.max) <= self.step_tolerance:
 
@@ -85,9 +99,13 @@ class TimeLoop(tr.HasStrictTraits):
 
             while k < self.k_max:
 
+                if self.stop:
+                    return U_n
+
                 K.reset_mtx()
                 K_arr, F_int, n_F_int = self.ts.get_corr_pred(
-                    U_k, dU, self.t_n, self.t_n1, update_state
+                    U_k, dU, self.t_n, self.t_n1, update_state,
+                    algorithmic
                 )
                 if update_state:
                     update_state = False
@@ -107,7 +125,11 @@ class TimeLoop(tr.HasStrictTraits):
                     update_state = True
                     self.record_response(U_k, F_int, self.t_n1)
                     break
-                dU = K.solve()
+                dU, pos_def = K.solve(check_pos_def=algorithmic)
+                if algorithmic and not pos_def:
+                    algorithmic = False
+                    print 'switched to secant'
+                    continue
                 U_k += dU
                 k += 1
                 step_flag = 'corrector'

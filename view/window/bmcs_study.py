@@ -99,6 +99,11 @@ class BMCSStudy(ReportStudy):
         self.run_thread = RunTimeLoopThread(self)
         self.run_thread.start()
 
+    def join(self):
+        '''Wait until the thread finishes
+        '''
+        self.run_thread.join()
+
     def pause(self):
         self.model.pause()
 

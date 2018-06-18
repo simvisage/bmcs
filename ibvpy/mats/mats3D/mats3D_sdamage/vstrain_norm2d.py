@@ -32,10 +32,7 @@ class Rankine(IStrainNorm3D):
 #         )
 
         eps_eq_Eme = np.linalg.eig(eps_Emef)[0]
-        print eps_eq_Eme.shape
-
         eps_eq_Em = np.ndarray.max(eps_eq_Eme, axis=2)
-        print eps_eq_Em.shape
 
         e_Em = np.concatenate(
             (eps_eq_Em[:, :, None], kappa_Em[:, :, None]), axis=2

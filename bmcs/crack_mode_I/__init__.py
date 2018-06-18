@@ -1,2 +1,3 @@
 
+from bending3pt_2d import run_bending3pt_sdamage
 from bending3pt_3d import run_bending3pt_mic_odf

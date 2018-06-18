@@ -351,7 +351,8 @@ class FEGrid(FEGridActivationMap):
             self.inactive_elems.append(self.dof_grid.get_cell_offset(idx))
         elif isinstance(idx, int):
             self.inactive_elems.append(idx)
-        self.level.set_changed_structure()
+        if self.level:
+            self.level.set_changed_structure()
 
     #-------------------------------------------------------------
     # Implement the IFEUniformDomain interface

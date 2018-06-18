@@ -190,7 +190,7 @@ class SysMtxAssembly(HasTraits):
                 constraint.ix_a = ix_a
                 if self.debug:
                     print 'frozen constraint:', constraint
-            elif  not constraint.u_a == u_a or \
+            elif not constraint.u_a == u_a or \
                     not allclose(constraint.alpha, alpha, rtol=1e-4) or \
                     not array_equal(constraint.ix_a, ix_a):
                 raise ValueError, \
@@ -249,7 +249,7 @@ class SysMtxAssembly(HasTraits):
             cached_addresses.append(ix_maps)
         return cached_addresses
 
-    def solve(self, rhs=None, matrix_type=None):
+    def solve(self, rhs=None, matrix_type=None, check_pos_def=False):
         '''Solve the system of equations using a specified
         type of matrix format
         '''
@@ -267,7 +267,7 @@ class SysMtxAssembly(HasTraits):
             self.matrix_type = matrix_type
 
         mtx = self.matrix_type_(assemb=self)
-        return mtx.solve(self._rhs)
+        return mtx.solve(self._rhs, check_pos_def)
 
     def reset(self):
         self.sys_mtx_arrays = []

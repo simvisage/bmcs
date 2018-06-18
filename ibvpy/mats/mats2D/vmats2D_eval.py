@@ -5,6 +5,7 @@ Created on Feb 8, 2018
 '''
 
 from ibvpy.mats.mats_eval import IMATSEval
+from traitsui.api import View
 from view.ui import BMCSTreeNode
 
 import numpy as np
@@ -106,7 +107,16 @@ class MATS2D(BMCSTreeNode):
     def _get_D_abcd(self):
         return self.D_ab[self.map2d_ijkl2a, self.map2d_ijkl2b]
 
+    state_vars = tr.Property()
+    '''List of state variable names
+    '''
+
+    def _get_state_vars(self):
+        return self.state_array_shapes.keys()
+
     state_array_shapes = tr.Property(tr.Dict())
 
     def _get_state_array_shapes(self):
         raise NotImplementedError
+
+    view = View()

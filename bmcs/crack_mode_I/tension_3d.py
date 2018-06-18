@@ -1,14 +1,9 @@
 '''
 Created on May 15, 2018
 
-@author: rch
-'''
-
-'''
 Created on 12.01.2016
-@author: RChudoba, ABaktheer, Yingxiong
+@author: RChudoba, ABaktheer
 
-@todo: derive the size of the state array.
 '''
 
 from bmcs.time_functions import \
@@ -22,19 +17,21 @@ from ibvpy.fets import FETS3D8H
 from ibvpy.mats.mats3D import \
     MATS3DMplDamageODF, MATS3DMplDamageEEQ, MATS3DElastic, \
     MATS3DScalarDamage
+from ibvpy.mats.mats3D.mats3D_sdamage.viz3d_sdamage import \
+    Vis3DSDamage, Viz3DSDamage
 from traits.api import \
     Property, Instance, cached_property, \
     List, Float, Trait, Int, on_trait_change
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
-from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
+#from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
-from ibvpy.mats.mats3D.mats3D_sdamage.viz3d_sdamage import \
-    Vis3DSDamage, Viz3DSDamage
+
 import numpy as np
 import traits.api as tr
+from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyRatesPlot
 
 
 class Viz2DForceDeflectionX(Viz2D):
@@ -110,20 +107,25 @@ class Geometry(BMCSLeafNode):
               GEO=True,
               auto_set=False, enter_set=True,
               desc='Length of the specimen')
+    a = Float(20.0,
+              GEO=True,
+              auto_set=False, enter_set=True,
+              desc='Length of the specimen')
 
     view = View(
         Item('L'),
+        Item('a'),
     )
 
     tree_view = view
 
 
-class BendingTestModel(BMCSModel, Vis2D):
+class DCBTestModel(BMCSModel, Vis2D):
 
     #=========================================================================
     # Tree node attributes
     #=========================================================================
-    node_name = 'bending test simulation'
+    node_name = 'double cantilever beam simulation'
 
     tree_node_list = List([])
 
@@ -236,12 +238,10 @@ class BendingTestModel(BMCSModel, Vis2D):
     @cached_property
     def _get_bcond_mngr(self):
         bc_list = [self.fixed_left_x,
-                   self.fixed_left_y,
-                   self.fixed_left_z,
-                   # self.fixed_top_right_x,
-                   self.link_right_cs,
-                   self.control_bc,
-                   ] + self.link_right_x
+                   self.fixed_top_y,
+                   # self.link_right_cs,
+                   self.uniform_control_bc,
+                   ]  # + self.link_right_x
 
         return BCondMngr(bcond_list=bc_list)
 
@@ -249,22 +249,18 @@ class BendingTestModel(BMCSModel, Vis2D):
     '''Foxed boundary condition'''
     @cached_property
     def _get_fixed_left_x(self):
-        return BCSlice(slice=self.fe_grid[0, :, :, 0, -1, :],
+        a_L = self.geometry.a / self.geometry.L
+        n_a = int(a_L * self.n_e_y)
+        print 'n_a', n_a
+        return BCSlice(slice=self.fe_grid[0, :, :, 0, :, :],
                        var='u', dims=[0], value=0)
 
-    fixed_left_y = Property(depends_on='CS, BC,GEO,MESH')
+    fixed_top_y = Property(depends_on='CS, BC,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
-    def _get_fixed_left_y(self):
-        return BCSlice(slice=self.fe_grid[0, -1, :, 0, -1, :],
-                       var='u', dims=[1], value=0)
-
-    fixed_left_z = Property(depends_on='CS, BC,GEO,MESH')
-    '''Foxed boundary condition'''
-    @cached_property
-    def _get_fixed_left_z(self):
-        return BCSlice(slice=self.fe_grid[0, -1, 0, 0, -1, 0],
-                       var='u', dims=[2], value=0)
+    def _get_fixed_top_y(self):
+        return BCSlice(slice=self.fe_grid[:, -1, :, :, -1, :],
+                       var='u', dims=[1, 2], value=0)
 
     link_right_cs = Property(depends_on='CS,BC,GEO,MESH')
     '''Foxed boundary condition'''
@@ -304,19 +300,21 @@ class BendingTestModel(BMCSModel, Vis2D):
             bcdof_list.append(link_bc)
         return bcdof_list
 
-    fixed_top_right_x = Property(depends_on='CS,BC,GEO,MESH')
-    '''Foxed boundary condition'''
-    @cached_property
-    def _get_fixed_top_right_x(self):
-        return BCSlice(slice=self.fe_grid[-1, -1, 0, -1, -1, 0],
-                       var='u', dims=[0], value=0)
-
     control_bc = Property(depends_on='CS,BC,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
     def _get_control_bc(self):
         return BCSlice(
             slice=self.fe_grid[-1, 0, 0, -1, 0, 0],
+            var='u', dims=[0], value=self.w_max
+        )
+
+    uniform_control_bc = Property(depends_on='CS,BC,GEO,MESH')
+    '''Foxed boundary condition'''
+    @cached_property
+    def _get_uniform_control_bc(self):
+        return BCSlice(
+            slice=self.fe_grid[-1, :, :, -1, :, :],
             var='u', dims=[0], value=self.w_max
         )
 
@@ -329,7 +327,7 @@ class BendingTestModel(BMCSModel, Vis2D):
         cs = self.cross_section
         geo = self.geometry
         return DOTSGrid(
-            L_x=geo.L, L_y=cs.h, L_z=cs.b,
+            L_x=cs.h, L_y=geo.L, L_z=cs.b,
             n_x=self.n_e_x, n_y=self.n_e_y, n_z=self.n_e_z,
             fets=self.fets_eval, mats=self.mats_eval
         )
@@ -366,8 +364,9 @@ class BendingTestModel(BMCSModel, Vis2D):
                         bc_mngr=self.bcond_mngr)
 
     def get_PW(self):
-        record_dofs = self.fe_grid[
-            -1, 0, :, -1, 0, :].dofs[:, :, 0].flatten()
+        record_dofs = np.unique(
+            self.fe_grid[-1, :, :, -1, :, :].dofs[:, :, 0].flatten()
+        )
         Fd_int_t = np.array(self.tloop.F_int_record)
         Ud_t = np.array(self.tloop.U_record)
         F_int_t = np.sum(Fd_int_t[:, record_dofs], axis=1)
@@ -385,36 +384,45 @@ class BendingTestModel(BMCSModel, Vis2D):
 
 def run_bending3pt_mic_odf(*args, **kw):
 
-    bt = BendingTestModel(n_e_x=2, n_e_y=10, n_e_z=1,
-                          k_max=500,
-                          mats_eval_type='scalar damage'
-                          #mats_eval_type='microplane damage (odf)'
-                          )
+    bt = DCBTestModel(n_e_x=2, n_e_y=2, n_e_z=1,
+                      k_max=500,
+                      mats_eval_type='scalar damage'
+                      #mats_eval_type='microplane damage (odf)'
+                      )
     bt.mats_eval.trait_set(
         # stiffness='algorithmic',
-        epsilon_0=59e-6,
-        epsilon_f=600e-6
+        epsilon_0=59e-3,
+        epsilon_f=400e-3
     )
 
-    bt.w_max = 0.02
-    bt.tline.step = 0.05
+    bt.w_max = 10.0
+    bt.tline.step = 0.2
     bt.cross_section.h = 100
     bt.cross_section.b = 50
-    bt.geometry.L = 20
+    bt.geometry.L = 1000
+    bt.geometry.a = 200
     bt.loading_scenario.trait_set(loading_type='monotonic')
     w = BMCSWindow(model=bt)
     bt.add_viz2d('load function', 'load-time')
     bt.add_viz2d('F-w', 'load-displacement')
 
+    vis2d_energy = Vis2DEnergy(model=bt)
+    viz2d_energy = Viz2DEnergy(name='dissipation', vis2d=vis2d_energy)
+    viz2d_energy_rates = Viz2DEnergyRatesPlot(
+        name='dissipation rate', vis2d=vis2d_energy)
+    w.viz_sheet.viz2d_list.append(viz2d_energy)
+    w.viz_sheet.viz2d_list.append(viz2d_energy_rates)
+
     vis3d = Vis3DSDamage()
     bt.tloop.response_traces.append(vis3d)
-    viz3d = Viz3DSDamage(vis3d=vis3d)
+    bt.tloop.response_traces.append(vis2d_energy)
+    viz3d = Viz3DSDamage(vis3d=vis3d, warp_factor=10.0)
     w.viz_sheet.add_viz3d(viz3d)
     w.viz_sheet.monitor_chunk_size = 1
 
-#    w.run()
-    w.offline = False
-#    w.finish_event = True
+#     w.run()
+#     w.offline = True
+#     w.finish_event = True
     w.configure_traits()
 
 

@@ -5,7 +5,6 @@ Created on Feb 11, 2018
 '''
 
 import os
-import threading
 
 from mayavi import mlab
 from mayavi.filters.api import ExtractTensorComponents
@@ -13,13 +12,13 @@ from mayavi.modules.api import Surface
 from mayavi.sources.vtk_xml_file_reader import VTKXMLFileReader
 from tvtk.api import \
     tvtk, write_data
+from view.plot3d.viz3d import Vis3D, Viz3D
 
 import numpy as np
 import traits.api as tr
-from viz3d import Vis3D, Viz3D
 
 
-class Vis3DPoll(Vis3D):
+class Vis3DStrainField(Vis3D):
 
     def setup(self, tloop):
         self.tloop = tloop
@@ -54,11 +53,11 @@ class Vis3DPoll(Vis3D):
         U_vector_field = np.einsum(
             'Ia,ab->Ib', U_Eia.reshape(-1, n_c), DELTA_ab
         )
+        self.ug.point_data.vectors = U_vector_field
+        self.ug.point_data.vectors.name = 'displacement'
         eps_Enab = np.einsum(
             'Einabc,Eic->Enab', ts.B_Einabc, U_Eia
         )
-        self.ug.point_data.vectors = U_vector_field
-        self.ug.point_data.vectors.name = 'displacement'
         eps_Encd = np.einsum(
             '...ab,ac,bd->...cd', eps_Enab, DELTA_ab, DELTA_ab
         )
@@ -74,7 +73,7 @@ class Vis3DPoll(Vis3D):
         self.file_list.append(target_file)
 
 
-class Viz3DPoll(Viz3D):
+class Viz3DStrainField(Viz3D):
 
     label = tr.Str('<unnambed>')
     vis3d = tr.WeakRef
@@ -104,14 +103,6 @@ class Viz3DPoll(Viz3D):
             width=0.7,
             position=np.array([0.1,  0.1])
         )
-
-#        lut.scalar_lut_manager.scalar_bar_representation.set(
-#            position2=np.array([0.8,  0.1]),
-#            position=np.array([0.1,  0.1]),
-#            orientation=0,
-#            maximum_size=np.array([100000, 100000]),
-#            minimum_size=np.array([1, 1]),
-#        )
 
     def plot(self, vot):
         idx = self.vis3d.tloop.get_time_idx(vot)

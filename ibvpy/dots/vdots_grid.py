@@ -31,6 +31,7 @@ class DOTSGrid(tr.HasStrictTraits):
     L_y = tr.Float(100, input=True)
     n_x = tr.Int(100, input=True)
     n_y = tr.Int(30, input=True)
+    integ_factor = tr.Float(1.0, input=True)
     fets = tr.Instance(IFETSEval, input=True)
     mats = tr.Instance(MATS2D, input=True)
     mesh = tr.Property(tr.Instance(FEGrid), depends_on='+input')
@@ -151,7 +152,7 @@ class DOTSGrid(tr.HasStrictTraits):
             in self.mats.state_array_shapes.items()
         }
 
-    def get_corr_pred(self, U, dU, t_n, t_n1, update_state):
+    def get_corr_pred(self, U, dU, t_n, t_n1, update_state, algorithmic):
         '''Get the corrector and predictor for the given increment
         of unknown .
         '''
@@ -167,17 +168,17 @@ class DOTSGrid(tr.HasStrictTraits):
             'Eimabc,Eic->Emab', self.B_Eimabc, dU_Eia
         )
         D_Emabef, sig_Emab = self.mats.get_corr_pred(
-            eps_Emab, deps_Emab, t_n, t_n1, update_state,
+            eps_Emab, deps_Emab, t_n, t_n1, update_state, algorithmic,
             **self.state_arrays
         )
-        K_Eicjd = np.einsum(
+        K_Eicjd = self.integ_factor * np.einsum(
             'Emicjdabef,Emabef->Eicjd', self.BB_Emicjdabef, D_Emabef
         )
         n_E, n_i, n_c, n_j, n_d = K_Eicjd.shape
         K_E = K_Eicjd.reshape(-1, n_i * n_c, n_j * n_d)
         dof_E = self.dof_Eia.reshape(-1, n_i * n_c)
         K_subdomain = SysMtxArray(mtx_arr=K_E, dof_map_arr=dof_E)
-        f_Eic = np.einsum(
+        f_Eic = self.integ_factor * np.einsum(
             'm,Eimabc,Emab,Em->Eic', self.fets.w_m, self.B_Eimabc, sig_Emab,
             self.det_J_Em
         )

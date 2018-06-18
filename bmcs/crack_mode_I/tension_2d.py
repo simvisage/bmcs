@@ -28,217 +28,16 @@ from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
 
+from bending3pt_2d import \
+    Viz2DForceDeflection, Vis2DCrackBand
 from ibvpy.mats.mats3D.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
 from ibvpy.mats.mats3D.viz3d_stress_field import \
     Vis3DStressField, Viz3DStressField
 import numpy as np
+import numpy as np
 import traits.api as tr
 from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyRatesPlot
-
-
-class Viz2DForceDeflection(Viz2D):
-
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = 'F-W'
-
-    show_legend = tr.Bool(True, auto_set=False, enter_set=True)
-
-    def plot(self, ax, vot, *args, **kw):
-        P, W = self.vis2d.get_PW()
-        ymin, ymax = np.min(P), np.max(P)
-        L_y = ymax - ymin
-        ymax += 0.05 * L_y
-        ymin -= 0.05 * L_y
-        xmin, xmax = np.min(W), np.max(W)
-        L_x = xmax - xmin
-        xmax += 0.03 * L_x
-        xmin -= 0.03 * L_x
-        color = kw.get('color', 'black')
-        linewidth = kw.get('linewidth', 2)
-        label = kw.get('label', 'P(w)')
-        ax.plot(W, P, linewidth=linewidth, color=color, alpha=0.4,
-                label=label)
-        ax.set_ylim(ymin=ymin, ymax=ymax)
-        ax.set_xlim(xmin=xmin, xmax=xmax)
-        ax.set_ylabel('Force P [N]')
-        ax.set_xlabel('Deflection w [mm]')
-        if self.show_legend:
-            ax.legend(loc=4)
-        self.plot_marker(ax, vot)
-
-    def plot_marker(self, ax, vot):
-        P, W = self.vis2d.get_PW()
-        idx = self.vis2d.tloop.get_time_idx(vot)
-        P, w = P[idx], W[idx]
-        ax.plot([w], [P], 'o', color='black', markersize=10)
-
-    def plot_tex(self, ax, vot, *args, **kw):
-        self.plot(ax, vot, *args, **kw)
-
-    traits_view = View(
-        Item('name', style='readonly'),
-        Item('show_legend'),
-    )
-
-
-class Vis2DCrackBand(Vis2D):
-
-    model = tr.WeakRef
-    tloop = tr.WeakRef
-
-    def setup(self, tloop):
-        self.tloop = tloop
-
-    X_E = tr.Array(np.float_)
-    eps_t = tr.List
-    a_t = tr.List
-
-    def update(self, U, t):
-        bt = self.model
-        tl = self.tloop
-        ts = tl.ts
-        fe_grid = ts.mesh
-        mats = ts.mats
-        fets = ts.fets
-        n_c = fets.n_nodal_dofs
-        U_Ia = U.reshape(-1, n_c)
-        U_Eia = U_Ia[ts.I_Ei]
-        eps_Enab = np.einsum(
-            'Einabc,Eic->Enab', ts.B_Einabc, U_Eia
-        )
-        crack_band = fe_grid[0, bt.n_a:]
-        E = crack_band.elems
-        X = crack_band.dof_X
-        eps_Ey = eps_Enab[E, :, 0, 0]
-        eps_E1 = np.average(eps_Ey, axis=1)
-        X_E = np.average(X[:, :, 1], axis=1)
-        eps_0 = mats.omega_fn.eps_0
-        eps_thr = eps_E1 - eps_0
-        a_idx = np.argwhere(eps_thr < 0)
-        if len(a_idx) > 0:
-            x_1 = X_E[0]
-            x_a = X_E[a_idx[0][0]]
-            self.a_t.append(x_a - x_1)
-        else:
-            self.a_t.append(0)
-
-        self.X_E = X_E
-        self.eps_t.append(eps_E1)
-
-    def get_t(self):
-        return np.array(self.tloop.t_record, dtype=np.float_)
-
-    def get_a_x(self):
-        return self.X_E
-
-    def get_eps_t(self, vot):
-        t_idx = self.tloop.get_time_idx(vot)
-        return self.eps_t[t_idx]
-
-    def get_a_t(self):
-        return np.array(self.a_t, dtype=np.float_)
-
-    def get_da_dt(self):
-        a = self.get_a_t()
-        t = self.get_t()
-        tck = ip.splrep(t, a, s=0, k=1)
-        return ip.splev(t, tck, der=1)
-
-
-class Viz2DStrainInCrack(Viz2D):
-
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = 'strain in crack'
-
-    show_legend = tr.Bool(True, auto_set=False, enter_set=True)
-
-    def plot(self, ax, vot, *args, **kw):
-        eps = self.vis2d.get_eps_t(vot)
-        a_x = self.vis2d.get_a_x()
-        ax.plot(a_x, eps, linewidth=3, color='red', alpha=0.4,
-                label='P(w;x=L)')
-        ax.fill_between(a_x, 0, eps, facecolor='orange', alpha=0.2)
-        ax.set_ylabel('Strain [-]')
-        ax.set_xlabel('Position [mm]')
-        if self.show_legend:
-            ax.legend(loc=4)
-
-    traits_view = View(
-        Item('name', style='readonly'),
-        Item('show_legend'),
-    )
-
-
-class Viz2DTA(Viz2D):
-
-    '''Plot adaptor for bending test simulator.
-    '''
-    label = 'crack length'
-
-    show_legend = tr.Bool(True, auto_set=False, enter_set=True)
-
-    def plot(self, ax, vot, *args, **kw):
-        t = self.vis2d.get_t()
-        a = self.vis2d.get_a_t()
-        ax.plot(t, a, linewidth=3, color='blue', alpha=0.4,
-                label='Crack length')
-        ax.fill_between(t, 0, a, facecolor='blue', alpha=0.2)
-        ax.set_xlabel('time')
-        ax.set_ylabel('a')
-        if self.show_legend:
-            ax.legend(loc=4)
-
-    traits_view = View(
-        Item('name', style='readonly'),
-        Item('show_legend'),
-    )
-
-
-class Viz2DdGdA(Viz2D):
-    label = 'Energy release per unit crack length'
-
-    show_legend = tr.Bool(True, auto_set=False, enter_set=True)
-
-    vis2d_cb = tr.WeakRef
-
-    def plot(self, ax, vot, *args, **kw):
-        t = self.vis2d_cb.get_t()
-        G_t = self.vis2d.get_G_t()
-        a_t = self.vis2d_cb.get_a_t()
-        b = self.vis2d_cb.model.cross_section.b
-
-        tck = ip.splrep(a_t * b, G_t, s=0, k=1)
-        dG_da = ip.splev(a_t, tck, der=1)
-
-#         ax.plot(a_t, dG_da, linewidth=3, color='blue', alpha=0.4,
-#                 label='dG/da')
-#         ax.fill_between(a_t, 0, dG_da, facecolor='blue', alpha=0.2)
-#         ax.set_xlabel('time')
-#         ax.set_ylabel('dG_da')
-
-        tck = ip.splrep(t, G_t, s=0, k=1)
-        dG_dt = ip.splev(t[:-1], tck, der=1)
-        tck = ip.splrep(t, a_t, s=0, k=1)
-        da_dt = ip.splev(t[:-1], tck, der=1)
-        nz = da_dt != 0.0
-        dG_da = np.zeros_like(da_dt)
-        dG_da[nz] = dG_dt[nz] / da_dt[nz] / b
-        ax.plot(a_t[1:], dG_da, linewidth=3, color='green', alpha=0.4,
-                label='dG/dt / da_dt')
-
-#         ax.plot(a_t, G_t, linewidth=3, color='black')
-#         ax.fill_between(a_t, 0, G_t, facecolor='blue', alpha=0.2)
-
-        if self.show_legend:
-            ax.legend(loc=4)
-
-    traits_view = View(
-        Item('name', style='readonly'),
-        Item('show_legend'),
-    )
 
 
 class CrossSection(BMCSLeafNode):
@@ -253,7 +52,7 @@ class CrossSection(BMCSLeafNode):
               desc='cross-section width [mm2]')
 
     view = View(
-        Item('b'),
+        Item('h'),
     )
 
     tree_view = view
@@ -262,21 +61,16 @@ class CrossSection(BMCSLeafNode):
 class Geometry(BMCSLeafNode):
 
     node_name = 'geometry'
-    H = Float(100.0,
+    H = Float(10.0,
               label='beam depth',
               GEO=True,
               auto_set=False, enter_set=True,
-              desc='cross section height [mm2]')
-    L = Float(600.0,
+              desc='Depth of the beam')
+    L = Float(100.0,
               label='beam length',
               GEO=True,
               auto_set=False, enter_set=True,
               desc='Length of the specimen')
-    a = Float(20.0,
-              GEO=True,
-              label='notch depth',
-              auto_set=False, enter_set=True,
-              desc='Depth of the notch')
     L_c = Float(4.0,
                 GEO=True,
                 label='crack band width',
@@ -285,9 +79,7 @@ class Geometry(BMCSLeafNode):
 
     traits_view = View(
         VGroup(
-            Item('H'),
             Item('L'),
-            Item('a'),
             Item('L_c'),
         )
     )
@@ -295,12 +87,10 @@ class Geometry(BMCSLeafNode):
     tree_view = traits_view
 
 
-class BendingTestModel(BMCSModel, Vis2D):
-
-    #=========================================================================
-    # Tree node attributes
-    #=========================================================================
-    node_name = 'bending test simulation'
+class TensileTestModel(BMCSModel, Vis2D):
+    '''The tensile test is used to verify the softening behavior
+    '''
+    node_name = 'tensile test simulation'
 
     tree_node_list = List([])
 
@@ -311,8 +101,6 @@ class BendingTestModel(BMCSModel, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.fixed_x,
-            self.fixed_right_bc,
             self.control_bc
         ]
 
@@ -322,8 +110,6 @@ class BendingTestModel(BMCSModel, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.fixed_x,
-            self.fixed_right_bc,
             self.control_bc
         ]
 
@@ -337,11 +123,9 @@ class BendingTestModel(BMCSModel, Vis2D):
         return self.tloop.eval()
 
     def pause(self):
-        self.tloop.stop = True
         self.tloop.paused = True
 
     def stop(self):
-        self.tloop.stop = True
         self.tloop.restart = True
 
     #=========================================================================
@@ -366,9 +150,10 @@ class BendingTestModel(BMCSModel, Vis2D):
     # Discretization
     #=========================================================================
     n_e_x = Int(20, MESH=True, auto_set=False, enter_set=True)
-    n_e_y = Int(8, MESH=True, auto_set=False, enter_set=True)
 
-    w_max = Float(-50, BC=True, auto_set=False, enter_set=True)
+    n_e_y = Int(1, MESH=True, auto_set=False, enter_set=True)
+
+    w_max = Float(4, BC=True, auto_set=False, enter_set=True)
 
     controlled_elem = Property
 
@@ -425,31 +210,23 @@ class BendingTestModel(BMCSModel, Vis2D):
     '''
     @cached_property
     def _get_bcond_mngr(self):
-        bc_list = [self.fixed_right_bc,
+        bc_list = [self.fixed_y,
                    self.fixed_x,
                    self.control_bc]
         return BCondMngr(bcond_list=bc_list)
 
-    fixed_right_bc = Property(depends_on='CS,BC,GEO,MESH')
+    fixed_y = Property(depends_on='CS,BC,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
-    def _get_fixed_right_bc(self):
-        return BCSlice(slice=self.fe_grid[-1, 0, -1, 0],
+    def _get_fixed_y(self):
+        return BCSlice(slice=self.fe_grid[0, 0, 0, 0],
                        var='u', dims=[1], value=0)
-
-    n_a = Property
-    '''Element at the notch
-    '''
-
-    def _get_n_a(self):
-        a_L = self.geometry.a / self.geometry.H
-        return int(a_L * self.n_e_y)
 
     fixed_x = Property(depends_on='CS,BC,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
     def _get_fixed_x(self):
-        return BCSlice(slice=self.fe_grid[0, self.n_a:, 0, -1],
+        return BCSlice(slice=self.fe_grid[0, :, 0, :],
                        var='u', dims=[0], value=0)
 
     control_bc = Property(depends_on='CS,BC,GEO,MESH')
@@ -458,8 +235,8 @@ class BendingTestModel(BMCSModel, Vis2D):
     '''
     @cached_property
     def _get_control_bc(self):
-        return BCSlice(slice=self.fe_grid[0, -1, :, -1],
-                       var='u', dims=[1], value=-self.w_max)
+        return BCSlice(slice=self.fe_grid[-1, :, -1, :],
+                       var='u', dims=[0], value=self.w_max)
 
     dots_grid = Property(Instance(DOTSGrid),
                          depends_on='CS,MAT,GEO,MESH,FE')
@@ -467,12 +244,12 @@ class BendingTestModel(BMCSModel, Vis2D):
     '''
     @cached_property
     def _get_dots_grid(self):
-        dgrid = DOTSGrid(L_x=self.geometry.L / 2., L_y=self.geometry.H,
+        dgrid = DOTSGrid(L_x=self.geometry.L, L_y=self.geometry.H,
                          integ_factor=self.cross_section.b,
                          n_x=self.n_e_x, n_y=self.n_e_y,
                          fets=self.fets_eval, mats=self.mats_eval)
 
-        L = self.geometry.L / 2.0
+        L = self.geometry.L
         L_c = self.geometry.L_c
         x_x, x_y = dgrid.mesh.geo_grid.point_x_grid
         L_1 = x_x[1, 0]
@@ -511,6 +288,10 @@ class BendingTestModel(BMCSModel, Vis2D):
                         tline=self.tline,
                         bc_mngr=self.bcond_mngr)
 
+    n_a = Int(0)
+    '''Notch offset index
+    '''
+
     t = Property
 
     def _get_t(self):
@@ -521,13 +302,12 @@ class BendingTestModel(BMCSModel, Vis2D):
 
     def get_PW(self):
         record_dofs = np.unique(
-            self.fe_grid[self.controlled_elem, -
-                         1, :, -1].dofs[:, :, 1].flatten()
+            self.fe_grid[-1, :, -1, :].dofs[:, :, 0].flatten()
         )
         Fd_int_t = np.array(self.tloop.F_int_record)
         Ud_t = np.array(self.tloop.U_record)
-        F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
-        U_t = -Ud_t[:, record_dofs[0]]
+        F_int_t = np.sum(Fd_int_t[:, record_dofs], axis=1)
+        U_t = Ud_t[:, record_dofs[0]]
         return F_int_t, U_t
 
     viz2d_classes = {'F-w': Viz2DForceDeflection,
@@ -535,43 +315,46 @@ class BendingTestModel(BMCSModel, Vis2D):
                      }
 
     traits_view = View(Item('mats_eval_type'),
-                       UItem('geometry@')
+                       # UItem('geometry@')
                        )
 
     tree_view = traits_view
 
 
 def run_bending3pt_sdamage(*args, **kw):
-    bt = BendingTestModel(n_e_x=20, n_e_y=30, k_max=500,
+    bt = TensileTestModel(n_e_x=2, n_e_y=1, k_max=500,
                           mats_eval_type='scalar damage'
                           #mats_eval_type='microplane damage (eeq)'
                           #mats_eval_type='microplane CSD (eeq)'
                           #mats_eval_type='microplane CSD (odf)'
                           )
-    L_c = 2.0
+    L = 20.
+    L_c = L / 10.0
     E = 20000.0
-    f_t = 2.5
-    G_f = 0.01
+    f_t = 2.4
+    G_f = 0.09
     bt.mats_eval.trait_set(
         stiffness='algorithmic',
         E=E,
         nu=0.2
     )
+    f_t_Em = np.ones_like(bt.dots_grid.state_arrays['omega']) * 10.0
+    l_f_t_Em = len(f_t_Em)
+    f_t_Em[0, ...] = 1.0
     bt.mats_eval.omega_fn.trait_set(
         E=E,
         f_t=f_t,
+        f_t_Em=f_t_Em,
         G_f=G_f,
         L_s=L_c
     )
-    # print 'Gf', h_b * bt.mats_eval.get_G_f()
 
-    bt.w_max = 1.0
-    bt.tline.step = 0.04
-    bt.cross_section.b = 100
+    bt.w_max = 0.5
+    bt.tline.step = 0.05
+    bt.cross_section.b = 1
     bt.geometry.trait_set(
-        L=900,
-        H=100,
-        a=10,
+        L=L,
+        H=1,
         L_c=L_c
     )
     bt.loading_scenario.trait_set(loading_type='monotonic')
@@ -584,24 +367,14 @@ def run_bending3pt_sdamage(*args, **kw):
     viz2d_energy_rates = Viz2DEnergyRatesPlot(
         name='dissipation rate', vis2d=vis2d_energy)
     vis2d_crack_band = Vis2DCrackBand(model=bt)
-    viz2d_cb_strain = Viz2DStrainInCrack(name='strain in crack',
-                                         vis2d=vis2d_crack_band)
-    viz2d_cb_a = Viz2DTA(name='crack length',
-                         vis2d=vis2d_crack_band)
-    viz2d_cb_dGda = Viz2DdGdA(name='energy release per crack extension',
-                              vis2d=vis2d_energy,
-                              vis2d_cb=vis2d_crack_band)
     w.viz_sheet.viz2d_list.append(viz2d_energy)
     w.viz_sheet.viz2d_list.append(viz2d_energy_rates)
-    w.viz_sheet.viz2d_list.append(viz2d_cb_strain)
-    w.viz_sheet.viz2d_list.append(viz2d_cb_a)
-    w.viz_sheet.viz2d_list.append(viz2d_cb_dGda)
 
-    vis3d = Vis3DSDamage()
+    vis3d = Vis3DStressField()
     bt.tloop.response_traces.append(vis3d)
     bt.tloop.response_traces.append(vis2d_energy)
     bt.tloop.response_traces.append(vis2d_crack_band)
-    viz3d = Viz3DSDamage(vis3d=vis3d)
+    viz3d = Viz3DStressField(vis3d=vis3d)
     w.viz_sheet.add_viz3d(viz3d)
     w.viz_sheet.monitor_chunk_size = 1
 

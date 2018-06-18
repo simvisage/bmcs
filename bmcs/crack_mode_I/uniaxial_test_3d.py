@@ -15,6 +15,8 @@ from bmcs.time_functions import \
 from ibvpy.api import \
     IMATSEval, TLine, BCSlice
 from ibvpy.core.bcond_mngr import BCondMngr
+from ibvpy.core.vtloop import TimeLoop
+from ibvpy.dots.vdots_grid3d import DOTSGrid
 from ibvpy.fets import FETS3D8H
 from ibvpy.mats.mats3D import \
     MATS3DMplDamageODF, MATS3DMplDamageEEQ, MATS3DElastic, MATS3DMplCSDEEQ, MATS3DMplCSDODF
@@ -24,11 +26,10 @@ from traits.api import \
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
+from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
 
-from ibvpy.core.vtloop import TimeLoop
-from ibvpy.dots.vdots_grid3d import DOTSGrid
 import numpy as np
 import traits.api as tr
 
@@ -349,9 +350,6 @@ class UniaxialTestModel(BMCSModel, Vis2D):
     traits_view = View(Item('mats_eval_type'),)
 
     tree_view = traits_view
-
-
-from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 
 
 def run_uniaxial_elastic():

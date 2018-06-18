@@ -14,7 +14,8 @@ from bmcs.bond_slip import \
     run_bond_slip_model_d, \
     run_bond_slip_model_dp
 from bmcs.crack_mode_I import \
-    run_bending3pt_mic_odf
+    run_bending3pt_mic_odf, \
+    run_bending3pt_sdamage
 from bmcs.pullout import \
     run_pullout_const_shear, \
     run_pullout_dp, \
@@ -93,6 +94,12 @@ class BMCSLauncher(HasTraits):
     def _bending3pt_3d_fired(self):
         run_bending3pt_mic_odf(kind='live')
 
+    bending3pt_2d_sdamage = Button(
+        label='Bending test - isotropic damage (2D)')
+
+    def _bending3pt_2d_sdamage_fired(self):
+        run_bending3pt_sdamage(kind='live')
+
     view = View(
         VGroup(
             HGroup(
@@ -123,6 +130,8 @@ class BMCSLauncher(HasTraits):
                 label='Pull-out models, lecture #3-4'
             ),
             Group(
+                UItem('bending3pt_2d_sdamage',
+                      full_size=True, resizable=True),
                 UItem('bending3pt_3d',
                       full_size=True, resizable=True),
                 label='Bending, crack propagation, lecture #7'

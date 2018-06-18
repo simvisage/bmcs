@@ -8,7 +8,6 @@ from __builtin__ import len
 import os
 import tempfile
 from threading import Thread
-
 from matplotlib.figure import \
     Figure
 from mayavi.core.ui.api import \
@@ -17,7 +16,7 @@ from pyface.api import GUI
 from reporter import ROutputSection
 from traits.api import \
     Str, Instance,  Event, Enum, \
-    List, Range, Int, Float, \
+    Tuple, List, Range, Int, Float, \
     Property, cached_property, \
     on_trait_change, Bool, Button, Directory
 from traitsui.api import \
@@ -32,6 +31,12 @@ from view.plot3d.viz3d import Viz3D
 import matplotlib.pyplot as plt
 import numpy as np
 import traits.api as tr
+from traitsui.api \
+    import View, Item, TableEditor
+from traitsui.extras.checkbox_column \
+    import CheckboxColumn
+from traitsui.table_column \
+    import ObjectColumn
 
 
 class RunThread(Thread):
@@ -45,9 +50,9 @@ class RunThread(Thread):
         self.vot = vot
 
     def run(self):
-        print 'STARTING THREAD'
+        # print 'STARTING THREAD'
         GUI.invoke_later(self.vs.update_pipeline, self.vot)
-        print 'THREAD ENDED'
+        # print 'THREAD ENDED'
 
 
 class Viz2DAdapter(TabularAdapter):
@@ -67,6 +72,20 @@ tabular_editor = TabularEditor(
     auto_update=True,
     selected='selected_viz2d',
 )
+
+
+# The 'players' trait table editor:
+viz2d_list_editor = TableEditor(
+    sortable=False,
+    configurable=False,
+    auto_size=False,
+    selected='selected_viz2d',
+    click='viz2d_list_editor_clicked',
+    columns=[CheckboxColumn(name='visible',  label='visible',
+                            width=0.12),
+             ObjectColumn(name='name', editable=False, width=0.24,
+                          horizontal_alignment='left'),
+             ])
 
 
 class BMCSVizSheet(ROutputSection):
@@ -155,7 +174,10 @@ class BMCSVizSheet(ROutputSection):
     and reploting is activated.
     '''
 
+    running = Bool(False)
+
     def run_started(self):
+        self.running = True
         self.offline = False
         for ax, viz2d in zip(self.axes, self.visible_viz2d_list):
             ax.clear()
@@ -171,29 +193,23 @@ class BMCSVizSheet(ROutputSection):
         self.replot()
         # self.update_pipeline(1.0)
         self.offline = True
+        self.running = False
 
     monitor_chunk_size = Int(10, label='Monitor each # steps')
 
     skipped_steps = Int(1)
 
-    replot_button = Button(label='replot')
-
-    def _replot_button_fired(self):
-        self.replot()
-
     @on_trait_change('vot,n_cols')
     def replot(self):
         if self.offline:
             return
-        if self.mode == 'monitor' and \
+        if self.running and self.mode == 'monitor' and \
                 self.skipped_steps < (self.monitor_chunk_size - 1):
             self.skipped_steps += 1
             return
-        print 'replotting 1'
         for ax, viz2d in zip(self.axes, self.visible_viz2d_list):
             ax.clear()
             viz2d.plot(ax, self.vot)
-        print 'replotting 2'
         if self.reference_viz2d:
             ax = self.reference_axes
             ax.clear()
@@ -222,6 +238,41 @@ class BMCSVizSheet(ROutputSection):
     def _get_viz2d_names(self):
         return self.viz2d_dict.keys()
 
+    viz2d_list_editor_clicked = Tuple
+    viz2d_list_changed = Event
+
+    def _viz2d_list_editor_clicked_changed(self, *args, **kw):
+        object, column = self.viz2d_list_editor_clicked
+        self.offline = False
+        self.viz2d_list_changed = True
+        if self.plot_mode == 'single':
+            if column.name == 'visible':
+                self.selected_viz2d.visible = True
+                self.plot_mode = 'multiple'
+            else:
+                self.replot()
+        elif self.plot_mode == 'multiple':
+            if column.name != 'visible':
+                self.plot_mode = 'single'
+            else:
+                self.replot()
+
+    plot_mode = Enum('multiple', 'single')
+
+    def _plot_mode_changed(self):
+        if self.plot_mode == 'single':
+            self.replot_selected_viz2d()
+        elif self.plot_mode == 'multiple':
+            self.replot()
+
+    def replot_selected_viz2d(self):
+        for viz2d in self.viz2d_list:
+            viz2d.visible = False
+        self.selected_viz2d.visible = True
+        self.n_cols = 1
+        self.viz2d_list_changed = True
+        self.replot()
+
     def viz2d_list_items_changed(self):
         self.replot()
 
@@ -232,11 +283,16 @@ class BMCSVizSheet(ROutputSection):
 
     export_button = Button(label='Export selected diagram')
 
-    def _export_button_fired(self, vot=0):
+    def plot_in_window(self):
         fig = plt.figure(figsize=(self.fig_width, self.fig_height))
         ax = fig.add_subplot(111)
         self.selected_viz2d.plot(ax, self.vot)
         fig.show()
+
+    def _export_button_fired(self, vot=0):
+        print 'in export button fired'
+        Thread(target=self.plot_in_window).start()
+        print 'thread started'
 
     export_path = Directory
     status_message = Str('')
@@ -280,6 +336,10 @@ class BMCSVizSheet(ROutputSection):
     reference_viz2d_name = Enum('', values="viz2d_names")
     '''Current name of the reference graphs.
     '''
+
+    def _reference_viz2d_name_changed(self):
+        self.replot()
+
     reference_viz2d = Property(Instance(Viz2D),
                                depends_on='reference_viz2d_name')
     '''Visualization of a graph showing the time context of the
@@ -310,30 +370,15 @@ class BMCSVizSheet(ROutputSection):
     def _get_reference_axes(self):
         return self.reference_figure.add_subplot(1, 1, 1)
 
-    #=========================================================================
-    # Parameters of the current viz2d
-    #=========================================================================
-    visible = Property(Bool, depends_on='selected_viz2d')
-
-    @cached_property
-    def _get_visible(self):
-        if self.selected_viz2d:
-            return self.selected_viz2d.visible
-        else:
-            return False
-
-    def _set_visible(self, value):
-        if self.selected_viz2d:
-            self.selected_viz2d.visible = value
-            self.visible_changed = True
-
-    visible_changed = Event
-
     selected_viz2d = Instance(Viz2D)
 
-    n_cols = Int(2, label='Number of columns',
-                 tooltip='Defines a number of columns within the plot pane',
-                 enter_set=True, auto_set=False)
+    def _selected_viz2d_changed(self):
+        if self.plot_mode == 'single':
+            self.replot_selected_viz2d()
+
+    n_cols = Range(low=1, high=3, value=2, label='Number of columns',
+                   tooltip='Defines a number of columns within the plot pane',
+                   enter_set=True, auto_set=False)
 
     figure = Instance(Figure)
 
@@ -343,7 +388,7 @@ class BMCSVizSheet(ROutputSection):
         return figure
 
     visible_viz2d_list = Property(List,
-                                  depends_on='viz2d_list,viz2d_list_items,n_cols,visible_changed')
+                                  depends_on='viz2d_list,viz2d_list_items,n_cols,viz2d_list_changed')
     '''Derived axes objects reflecting the layout of plot pane
     and the individual. 
     '''
@@ -353,11 +398,10 @@ class BMCSVizSheet(ROutputSection):
         for viz2d in self.viz2d_list:
             if viz2d.visible:
                 viz_list.append(viz2d)
-        print 'NEW list', viz_list
         return viz_list
 
     axes = Property(List,
-                    depends_on='viz2d_list,viz2d_list_items,n_cols,visible_changed')
+                    depends_on='viz2d_list,viz2d_list_items,n_cols,viz2d_list_changed')
     '''Derived axes objects reflecting the layout of plot pane
     and the individual. 
     '''
@@ -367,7 +411,6 @@ class BMCSVizSheet(ROutputSection):
         n_cols = self.n_cols
         n_rows = (n_fig + n_cols - 1) / self.n_cols
         self.figure.clear()
-        print 'NEW figure'
         return [self.figure.add_subplot(n_rows, self.n_cols, i + 1)
                 for i in range(n_fig)]
 
@@ -469,25 +512,24 @@ class BMCSVizSheet(ROutputSection):
                 ),
                 VGroup(
                     Item('n_cols', width=250),
-                    UItem('replot_button', width=250),
+                    Item('plot_mode@', width=250),
                     VSplit(
                         UItem('viz2d_list@',
-                              editor=tabular_editor,
+                              editor=viz2d_list_editor,
                               width=100),
-                        Item('visible'),
                         UItem('selected_viz2d@',
                               width=200),
                         VGroup(
-                            UItem('export_button',
-                                  springy=False, resizable=True),
-                            VGroup(
-                                HGroup(
-                                    UItem('fig_width', springy=True,
-                                          resizable=False),
-                                    UItem('fig_height', springy=True),
-                                ),
-                                label='Figure size'
-                            ),
+                            #                             UItem('export_button',
+                            #                                   springy=False, resizable=True),
+                            #                             VGroup(
+                            #                                 HGroup(
+                            #                                     UItem('fig_width', springy=True,
+                            #                                           resizable=False),
+                            #                                     UItem('fig_height', springy=True),
+                            #                                 ),
+                            #                                 label='Figure size'
+                            #                             ),
                             UItem('animate_button',
                                   springy=False, resizable=True),
                             VGroup(

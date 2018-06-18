@@ -27,9 +27,9 @@ class Rankine(IStrainNorm2D):
             np.sqrt(((eps_11 - eps_22) / 2.0)**2.0 + eps_12**2.0)
         )
         e_Em = np.concatenate(
-            (eps_eq_Em[:, :, None], kappa_Em[:, :, None]), axis=2
+            (eps_eq_Em[..., None], kappa_Em[..., None]), axis=-1
         )
-        eps_eq = np.max(e_Em, axis=2)
+        eps_eq = np.max(e_Em, axis=-1)
         return eps_eq
 
     def get_deps_eq(self, eps_Emef):
@@ -37,8 +37,13 @@ class Rankine(IStrainNorm2D):
         eps22 = eps_Emef[..., 1, 1]
         eps12 = eps_Emef[..., 0, 1]
         eps_11_22 = eps11 - eps22
-        factor = 1. / (2. * np.sqrt(eps_11_22 * eps_11_22 +
-                                    4.0 * eps12 * eps12))
+
+        denom = 2. * np.sqrt(eps_11_22 * eps_11_22 + 4.0 * eps12 * eps12)
+        factor = np.zeros_like(denom)
+        nz_idx = np.where(denom != 0.0)
+        factor[nz_idx] = 1. / denom[nz_idx]
+#         factor = 1. / (2. * np.sqrt(eps_11_22 * eps_11_22 +
+#                                     4.0 * eps12 * eps12))
         df_trial1 = factor * np.array([[eps11 - eps22, 4.0 * eps12],
                                        [4.0 * eps12, eps22 - eps11]])
         return (np.einsum('ab...->...ab', df_trial1) +

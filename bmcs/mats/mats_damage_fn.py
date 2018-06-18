@@ -7,7 +7,8 @@ from scipy.optimize import newton
 from traits.api import \
     Instance, Str, \
     Float, on_trait_change,\
-    Interface, implements, Range, Property, Button
+    Interface, implements, Range, Property, Button, \
+    Array
 from traitsui.api import \
     View, Item, UItem, VGroup
 from view.ui import BMCSLeafNode
@@ -34,14 +35,18 @@ class PlottableFn(RInputRecord):
     def plot(self, ax):
         n_vals = 200
         xdata = np.linspace(self.plot_min, self.plot_max, n_vals)
-        ydata = self.__call__(xdata)
+        ydata = np.zeros_like(xdata)
+        f_idx = self.get_f_trial(xdata)
+        ydata[f_idx] = self.__call__(xdata[f_idx])
         ax.plot(xdata, ydata, color='green')
 
     @on_trait_change('+input')
     def update(self):
         n_vals = 200
         xdata = np.linspace(self.plot_min, self.plot_max, n_vals)
-        ydata = self.__call__(xdata)
+        ydata = np.zeros_like(xdata)
+        f_idx = self.get_f_trial(xdata)
+        ydata[f_idx] = self.__call__(xdata[f_idx])
         self.fn.set(xdata=xdata, ydata=ydata)
         self.fn.replot()
 
@@ -63,6 +68,9 @@ class IDamageFn(Interface):
     def diff(self, k):
         '''get the first derivative of the function'''
 
+    def get_f_trial(self, k):
+        '''get the map of indexes with inelastic behavior'''
+
 
 class DamageFn(BMCSLeafNode, PlottableFn):
 
@@ -83,11 +91,133 @@ class DamageFn(BMCSLeafNode, PlottableFn):
     def _repr_latex_(self):
         return self.latex_eq + super(DamageFn, self)._repr_latex_()
 
-    def plot(self, ax):
-        n_vals = 200
-        xdata = np.linspace(self.plot_min, self.plot_max, n_vals)
-        ydata = self.__call__(xdata)
-        ax.plot(xdata, ydata, color='green')
+
+class GfDamageFn(DamageFn):
+    '''Class defining the damage function coupled with the fracture 
+    energy of a cohesive crack model.
+    '''
+    L_s = Float(1.0,
+                MAT=True,
+                input=True,
+                label="L_s",
+                desc="Length of the softening zone",
+                enter_set=True,
+                auto_set=False)
+
+    E = Float(34000.0,
+              MAT=True,
+              input=True,
+              label="E",
+              desc="Young's modulus",
+              enter_set=True,
+              auto_set=False)
+
+    f_t = Float(4.5,
+                MAT=True,
+                input=True,
+                label="f_t",
+                desc="Tensile strength",
+                enter_set=True,
+                auto_set=False)
+
+    f_t_Em = Array(np.float_, value=None)
+
+    G_f = Float(0.004,
+                MAT=True,
+                input=True,
+                label="G_f",
+                desc="Fracture energy",
+                enter_set=True,
+                auto_set=False)
+
+    eps_0 = Property()
+
+    def _get_eps_0(self):
+        return self.f_t / self.E
+
+    eps_ch = Property()
+
+    def _get_eps_ch(self):
+        return self.G_f / self.f_t
+
+    plot_max = Property(depends_on='G_f,f_t,E')
+
+    def _get_plot_max(self):
+        return self.eps_ch * self.L_s * 3.0
+
+    def get_f_trial(self, eps_eq_Em):
+        f_t = self.f_t
+        if len(self.f_t_Em) > 0:
+            f_t = self.f_t * self.f_t_Em
+        eps_0 = f_t / self.E
+        return np.where(eps_eq_Em - eps_0 > 0)
+
+    def __call__(self, kappa_Em, idx_map=None):
+        L_s = self.L_s
+        f_t = self.f_t
+        G_f = self.G_f
+        E = self.E
+        eps_0 = self.eps_0
+        if idx_map != None:
+            kappa_Em_ = kappa_Em[idx_map]
+            if len(self.f_t_Em) > 0:
+                f_t = self.f_t * self.f_t_Em[idx_map]
+        else:
+            kappa_Em_ = kappa_Em
+        omega_Em_ = (
+            1 - f_t * np.exp(-f_t *
+                             (kappa_Em_ - eps_0) * L_s / G_f)
+            / (E * kappa_Em_)
+        )
+        if idx_map != None:
+            omega_Em = np.zeros_like(kappa_Em)
+            omega_Em[idx_map] = omega_Em_
+        else:
+            omega_Em = omega_Em_
+        return omega_Em
+
+    def diff(self, kappa_Em, idx_map=None):
+        L_s = self.L_s
+        f_t = self.f_t
+        G_f = self.G_f
+        E = self.E
+        eps_0 = self.eps_0
+        if idx_map != None:
+            kappa_Em_ = kappa_Em[idx_map]
+            if len(self.f_t_Em) > 0:
+                f_t = self.f_t * self.f_t_Em[idx_map]
+        else:
+            kappa_Em_ = kappa_Em
+        domega_Em_ = (
+            f_t *
+            np.exp(L_s * (eps_0 - kappa_Em_)
+                   * f_t / G_f)
+            / (E * G_f * kappa_Em_**2) *
+            (G_f + L_s * kappa_Em_ * f_t)
+        )
+        if idx_map != None:
+            domega_Em = np.zeros_like(kappa_Em)
+            domega_Em[idx_map] = domega_Em_
+        else:
+            domega_Em = domega_Em_
+        return domega_Em
+
+    traits_view = View(
+        VGroup(
+            VGroup(
+                Item('s_0', style='readonly',
+                     full_size=True, resizable=True),
+                Item('f_t'),
+                Item('G_f'),
+                Item('E'),
+            ),
+            VGroup(
+                UItem('fn@', height=300)
+            )
+        )
+    )
+
+    tree_view = traits_view
 
 
 class JirasekDamageFn(DamageFn):
@@ -115,6 +245,17 @@ class JirasekDamageFn(DamageFn):
         k = kappa[d_idx]
         omega[d_idx] = 1. - s_0 / k * np.exp(-1 * (k - s_0) / (s_f - s_0))
         return omega
+
+        omega_Em = np.zeros_like(kappa_Em)
+        epsilon_0 = self.epsilon_0
+        epsilon_f = self.epsilon_f
+        kappa_idx = np.where(kappa_Em >= epsilon_0)
+        omega_Em[kappa_idx] = (
+            1.0 - (epsilon_0 / kappa_Em[kappa_idx] *
+                   np.exp(-1.0 * (kappa_Em[kappa_idx] - epsilon_0) /
+                          (epsilon_f - epsilon_0))
+                   ))
+        return omega_Em
 
     def diff(self, kappa):
 

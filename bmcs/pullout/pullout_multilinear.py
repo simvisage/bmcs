@@ -14,11 +14,10 @@ from ibvpy.core.bcond_mngr import BCondMngr
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
-    List, Float, Int, Trait, on_trait_change
+    Trait, on_trait_change
 from traitsui.api import \
-    View, Item, Group
-from view.plot2d import Vis2D, Viz2D
-from view.window import BMCSModel, BMCSWindow, TLine
+    View, Item
+from view.window import BMCSWindow
 
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
@@ -346,5 +345,3 @@ def run_pullout_multi(*args, **kw):
 
 if __name__ == '__main__':
     run_pullout_multilinear()
-    # run_pullout_multi()
-    # test_B()

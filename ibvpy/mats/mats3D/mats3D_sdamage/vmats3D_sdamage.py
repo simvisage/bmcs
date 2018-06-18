@@ -91,7 +91,7 @@ class MATS3DScalarDamage(MATS3DEval, MATS3D):
             'Em,abcd->Emabcd', phi_Em, self.D_abef
         )
         sigma_Emab = np.einsum(
-            'Em,Emabcd,Emcd->Emab', phi_Em, D_Emabcd, eps_Emab_n1
+            'Emabcd,Emcd->Emab', D_Emabcd, eps_Emab_n1
         )
 
         if self.stiffness == "algorithmic":
