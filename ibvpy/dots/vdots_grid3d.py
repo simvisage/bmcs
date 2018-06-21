@@ -149,7 +149,7 @@ class DOTSGrid(tr.HasStrictTraits):
             in self.mats.state_array_shapes.items()
         }
 
-    def get_corr_pred(self, U, dU, t_n, t_n1, update_state):
+    def get_corr_pred(self, U, dU, t_n, t_n1, update_state, algorithmic):
         '''Get the corrector and predictor for the given increment
         of unknown .
         '''
