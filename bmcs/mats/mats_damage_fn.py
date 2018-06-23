@@ -8,7 +8,7 @@ from traits.api import \
     Instance, Str, \
     Float, on_trait_change,\
     Interface, implements, Range, Property, Button, \
-    Array
+    Array, WeakRef
 from traitsui.api import \
     View, Item, UItem, VGroup
 from view.ui import BMCSLeafNode
@@ -46,7 +46,8 @@ class PlottableFn(RInputRecord):
         xdata = np.linspace(self.plot_min, self.plot_max, n_vals)
         ydata = np.zeros_like(xdata)
         f_idx = self.get_f_trial(xdata)
-        ydata[f_idx] = self.__call__(xdata[f_idx])
+        if len(f_idx) > 0:
+            ydata[f_idx] = self.__call__(xdata[f_idx])
         self.fn.set(xdata=xdata, ydata=ydata)
         self.fn.replot()
 
@@ -74,6 +75,7 @@ class IDamageFn(Interface):
 
 class DamageFn(BMCSLeafNode, PlottableFn):
 
+    mats = WeakRef
     s_0 = Float(0.0004,
                 MAT=True,
                 input=True,
@@ -96,6 +98,8 @@ class GfDamageFn(DamageFn):
     '''Class defining the damage function coupled with the fracture 
     energy of a cohesive crack model.
     '''
+    node_name = 'damage function Gf'
+
     L_s = Float(1.0,
                 MAT=True,
                 input=True,
@@ -104,13 +108,21 @@ class GfDamageFn(DamageFn):
                 enter_set=True,
                 auto_set=False)
 
-    E = Float(34000.0,
-              MAT=True,
-              input=True,
-              label="E",
-              desc="Young's modulus",
-              enter_set=True,
-              auto_set=False)
+    E_ = Float(34000.0,
+               MAT=True,
+               input=True,
+               label="E",
+               desc="Young's modulus",
+               enter_set=True,
+               auto_set=False)
+
+    E = Property()
+
+    def _get_E(self):
+        if self.mats:
+            return self.mats.E
+        else:
+            return self.E_
 
     f_t = Float(4.5,
                 MAT=True,
@@ -205,11 +217,12 @@ class GfDamageFn(DamageFn):
     traits_view = View(
         VGroup(
             VGroup(
-                Item('s_0', style='readonly',
-                     full_size=True, resizable=True),
                 Item('f_t'),
                 Item('G_f'),
-                Item('E'),
+                Item('E', style='readonly'),
+                Item('L_s', style='readonly'),
+                Item('s_0', style='readonly',
+                     full_size=True, resizable=True),
             ),
             VGroup(
                 UItem('fn@', height=300)
@@ -331,6 +344,10 @@ class LiDamageFn(DamageFn):
                     auto_set=False)
 
     plot_max = 1e-2
+
+    def get_f_trial(self, eps_eq_Em):
+        eps_0 = self.s_0
+        return np.where(eps_eq_Em - eps_0 > 0)
 
     def __call__(self, kappa):
         alpha_1 = self.alpha_1
@@ -492,6 +509,10 @@ class FRPDamageFn(DamageFn):
             2.0 * self.B * self.Gf / self.E_b
         self.s_0 = newton(f_s, 0.00000001, tol=1e-5, maxiter=20)
 
+    def get_f_trial(self, eps_eq_Em):
+        eps_0 = self.s_0
+        return np.where(eps_eq_Em - eps_0 > 0)
+
     def __call__(self, kappa):
 
         b = self.B
@@ -579,6 +600,10 @@ class MultilinearDamageFn(DamageFn):
                      desc='shear stress values',
                      auto_set=True, enter_set=False)
 
+    def get_f_trial(self, eps_eq_Em):
+        eps_0 = self.damage_law.xdata[1]
+        return np.where(eps_eq_Em - eps_0 > 0)[0]
+
     s_omega_table = Property
 
     def _set_s_omega_table(self, data):
@@ -631,6 +656,7 @@ class MultilinearDamageFn(DamageFn):
 
 if __name__ == '__main__':
     #ld = LiDamageFn()
-    ld = MultilinearDamageFn()
+    ld = GfDamageFn()
+    mld = MultilinearDamageFn()
     #ld = FRPDamageFn()
-    ld.configure_traits()
+    mld.configure_traits()

@@ -21,6 +21,7 @@ import traits.api as tr
 class Vis3DStrainField(Vis3D):
 
     def setup(self, tloop):
+        self.new_dir()
         self.tloop = tloop
         fets = tloop.ts.fets
         ts = self.tloop.ts
@@ -39,9 +40,6 @@ class Vis3DStrainField(Vis3D):
             np.array(fets.vtk_cell, dtype=np.int_)[np.newaxis, :]
         self.ug.set_cells(vtk_cell_type, vtk_cells)
         self.update(U, 0)
-
-    file_list = tr.List(tr.Str,
-                        desc='a list of files belonging to a time series')
 
     def update(self, U, t):
         ts = self.tloop.ts
@@ -65,12 +63,11 @@ class Vis3DStrainField(Vis3D):
         self.ug.point_data.tensors = eps_Encd_tensor_field
         self.ug.point_data.tensors.name = 'strain'
         fname = 'step_%008.4f' % t
-        home = os.path.expanduser('~')
         target_file = os.path.join(
-            home, 'simdb', 'simdata', fname.replace('.', '_')
+            self.dir, fname.replace('.', '_')
         ) + '.vtu'
         write_data(self.ug, target_file)
-        self.file_list.append(target_file)
+        self.add_file(target_file)
 
 
 class Viz3DStrainField(Viz3D):

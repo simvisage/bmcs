@@ -149,7 +149,7 @@ class DOTSGrid(tr.HasStrictTraits):
             in self.mats.state_array_shapes.items()
         }
 
-    def get_corr_pred(self, U, dU, t_n, t_n1, update_state):
+    def get_corr_pred(self, U, dU, t_n, t_n1, update_state, algorithmic):
         '''Get the corrector and predictor for the given increment
         of unknown .
         '''
@@ -165,7 +165,7 @@ class DOTSGrid(tr.HasStrictTraits):
             'Eimabc,Eic->Emab', self.B_Eimabc, dU_Eia
         )
         D_Emabef, sig_Emab = self.mats.get_corr_pred(
-            eps_Emab, deps_Emab, t_n, t_n1, update_state,
+            eps_Emab, deps_Emab, t_n, t_n1, update_state, algorithmic,
             **self.state_arrays
         )
         K_Eicjd = self.integ_factor * np.einsum(

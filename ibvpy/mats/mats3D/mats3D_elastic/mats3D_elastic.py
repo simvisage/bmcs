@@ -1,26 +1,21 @@
 
+from ibvpy.mats.mats3D.mats3D_eval import \
+    MATS3DEval
+from ibvpy.mats.mats_eval import \
+    IMATSEval
+from numpy import \
+    zeros, dot, float_, copy
 from traits.api import \
     Array, Bool, Callable, Enum, Float, HasTraits, \
     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
     implements, Dict, Property, cached_property, Delegate
-
 from traitsui.api import \
     Item, View, HSplit, VSplit, VGroup, Group, Spring
 
-from numpy import \
-    zeros, dot, float_, copy
-
-from ibvpy.mats.mats_eval import \
-    IMATSEval
-
-from ibvpy.mats.mats3D.mats3D_eval import \
-    MATS3DEval
 
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
-
-
 class MATS3DElastic(MATS3DEval):
 
     '''
@@ -103,7 +98,8 @@ class MATS3DElastic(MATS3DEval):
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, sctx, eps_app_eng, d_eps, tn, tn1):
+    def get_corr_pred(self, sctx, eps_app_eng, d_eps, tn, tn1,
+                      update_state, algorithmic):
         '''
         Corrector predictor computation.
         @param eps_app_eng input variable - engineering strain

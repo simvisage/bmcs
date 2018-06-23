@@ -14,15 +14,19 @@ import traits.api as tr
 class Vis2DEnergy(Vis2D):
 
     model = tr.WeakRef
-    tloop = tr.WeakRef
+    tloop = tr.Property
 
-    def setup(self, tloop):
-        self.tloop = tloop
+    def _get_tloop(self):
+        return self.model.tloop
 
     U_bar_t = tr.List()
 
+    def setup(self, tl):
+        self.U_bar_t = []
+
     def update(self, U, t):
-        ts = self.tloop.ts
+        tloop = self.model.tloop
+        ts = tloop.ts
         mats = ts.mats
         fets = ts.fets
         n_c = fets.n_nodal_dofs
@@ -94,8 +98,8 @@ class Viz2DEnergyRatesPlot(Viz2D):
     def plot(self, ax, vot, *args, **kw):
         t = self.vis2d.get_t()
         G_t = self.vis2d.get_G_t()
-        ax.plot(t, G_t, color='black', label='G')
-        ax.fill_between(t, 0, G_t, facecolor='orange', alpha=0.2)
+        ax.plot(t, G_t, color='black', linewidth=2, label='G')
+        ax.fill_between(t, 0, G_t, facecolor='gray', alpha=0.5)
         ax.legend()
 #         dG_ax = ax  # ax.twinx()
 #         dG_t = self.vis2d.get_dG_t()

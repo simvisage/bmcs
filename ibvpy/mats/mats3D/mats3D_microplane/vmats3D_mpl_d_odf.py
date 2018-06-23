@@ -7,6 +7,7 @@ Microplane damage model 2D - ODFS (Wu [2009])
 '''
 
 from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
+from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 from ibvpy.mats.mats_eval import \
     IMATSEval
 from numpy import \
@@ -15,7 +16,6 @@ from traits.api import \
     Constant, implements,\
     Float, Property, cached_property
 
-from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 import numpy as np
 import traits.api as tr
 
@@ -457,7 +457,8 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1, update_state, kappa, omega):
+    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1,
+                      update_state, algorithmic, kappa, omega):
 
         if update_state:
 

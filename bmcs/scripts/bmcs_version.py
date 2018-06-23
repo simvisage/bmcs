@@ -4,4 +4,4 @@ Created on Jul 11, 2017
 @author: rch
 '''
 
-CURRENT_VERSION = '0.0.1a72'
+CURRENT_VERSION = '0.0.1a74'

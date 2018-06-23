@@ -71,7 +71,7 @@ class MATS3DScalarDamage(MATS3DEval, MATS3D):
         omega[...] = 0
 
     def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1,
-                      update_state, kappa, omega):
+                      update_state, algorithmic, kappa, omega):
         r'''
         Corrector predictor computation.
         @param eps_app_eng input variable - engineering strain
@@ -94,7 +94,9 @@ class MATS3DScalarDamage(MATS3DEval, MATS3D):
             'Emabcd,Emcd->Emab', D_Emabcd, eps_Emab_n1
         )
 
-        if self.stiffness == "algorithmic":
+        # algorithmic switched off - because the derivative
+        # of the strain norm is still not available
+        if False:  # algorithmic:
             D_Emabcd_red = self._get_D_abcd_alg_reduction(
                 kappa_Em[f_idx], eps_Emab_n1[f_idx])
             D_Emabcd[f_idx] -= D_Emabcd_red
@@ -151,7 +153,7 @@ class MATS3DScalarDamage(MATS3DEval, MATS3D):
         domega_Em = self._get_domega(kappa_Em)
         deps_eq_Emcd = self.strain_norm.get_deps_eq(eps_Emab_n1)
         return np.einsum('...,...cd,abcd,...cd->...abcd',
-                         domega_Em, deps_eq_Emcd, self.D_abcd, eps_Emab_n1)
+                         domega_Em, deps_eq_Emcd, self.D_abef, eps_Emab_n1)
 
     view_traits = View(VSplit(Group(Item('E'),
                                     Item('nu'),

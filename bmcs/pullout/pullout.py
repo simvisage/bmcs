@@ -342,18 +342,21 @@ class PullOutModelBase(BMCSModel, Vis2D):
     fixed_boundary = Enum('non-loaded end (matrix)',
                           'loaded end (matrix)',
                           'non-loaded end (reinf)',
+                          'clamped left',
                           BC=True,
                           desc='which side of the specimen is fixed [non-loaded end [matrix], loaded end [matrix], non-loaded end [reinf]]')
 
-    fixed_dof = Property
+    fixed_dofs = Property
 
-    def _get_fixed_dof(self):
+    def _get_fixed_dofs(self):
         if self.fixed_boundary == 'non-loaded end (matrix)':
-            return 0
+            return [0]
         elif self.fixed_boundary == 'non-loaded end (reinf)':
-            return 1
+            return [1]
         elif self.fixed_boundary == 'loaded end (matrix)':
-            return self.controlled_dof - 1
+            return [self.controlled_dof - 1]
+        elif self.fixed_boundary == 'clamped left':
+            return [0, 1]
 
     controlled_dof = Property
 
@@ -413,8 +416,8 @@ class PullOutModelBase(BMCSModel, Vis2D):
         A_m = self.cross_section.A_m
         A_f = self.cross_section.A_f
         L = self.geometry.L_x
-        F_m = A_m * sig_C[0]
-        F_f = A_f * sig_C[1]
+        F_m = sig_C[0]
+        F_f = sig_C[1]
         ax.plot(X_M, F_m, linewidth=2, color='blue', )
         ax.fill_between(X_M, 0, F_m, facecolor='blue', alpha=0.2)
         ax.plot(X_M, F_f, linewidth=2, color='orange')

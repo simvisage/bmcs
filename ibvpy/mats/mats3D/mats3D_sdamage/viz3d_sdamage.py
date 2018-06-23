@@ -22,6 +22,7 @@ import traits.api as tr
 class Vis3DSDamage(Vis3D):
 
     def setup(self, tloop):
+        self.new_dir()
         self.tloop = tloop
         fets = tloop.ts.fets
         ts = self.tloop.ts
@@ -60,12 +61,11 @@ class Vis3DSDamage(Vis3D):
         self.ug.point_data.scalars = omega_field.flatten()
         self.ug.point_data.scalars.name = 'damage'
         fname = 'omega_step_%008.4f' % t
-        home = os.path.expanduser('~')
         target_file = os.path.join(
-            home, 'simdb', 'simdata', fname.replace('.', '_')
+            self.dir, fname.replace('.', '_')
         ) + '.vtu'
         write_data(self.ug, target_file)
-        self.file_list.append(target_file)
+        self.add_file(target_file)
 
 
 class Viz3DSDamage(Viz3D):

@@ -79,6 +79,8 @@ class TimeLoop(tr.HasStrictTraits):
         for rt in self.response_traces:
             rt.setup(self)
 
+    algorithmic = tr.Bool(True)
+
     def eval(self):
         update_state = False
         K = SysMtxAssembly()
@@ -87,7 +89,7 @@ class TimeLoop(tr.HasStrictTraits):
         dU = np.copy(U_n)
         U_k = np.copy(U_n)
         F_ext = np.zeros_like(U_n)
-        algorithmic = True
+        algorithmic = self.algorithmic
         pos_def = True
 
         while (self.t_n1 - self.tline.max) <= self.step_tolerance:

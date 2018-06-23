@@ -1,5 +1,8 @@
 
 from traits.api import HasTraits
+from traitsui.api import View
+from view.ui.bmcs_tree_node import BMCSTreeNode
+
 import numpy as np
 
 
@@ -12,10 +15,11 @@ class IStrainNorm2D(HasTraits):
         raise NotImplementedError
 
 
-class Rankine(IStrainNorm2D):
+class Rankine(IStrainNorm2D, BMCSTreeNode):
     '''
     Computes principal strains and makes a norm of their positive part
     '''
+    node_name = 'Rankine strain norm'
 
     def get_eps_eq(self, eps_Emef, kappa_Em):
 
@@ -48,6 +52,8 @@ class Rankine(IStrainNorm2D):
                                        [4.0 * eps12, eps22 - eps11]])
         return (np.einsum('ab...->...ab', df_trial1) +
                 0.5 * np.identity(2)[None, :, :])
+
+    traits_view = View()
 
 
 if __name__ == '__main__':

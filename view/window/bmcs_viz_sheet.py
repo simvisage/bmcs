@@ -59,7 +59,7 @@ class Viz2DAdapter(TabularAdapter):
     # List of (Column labels, Column ID).
     columns = [
         ('Label',    'label'),
-        ('Visible', 'visible')
+        ('Visible', 'visible'),
     ]
 
 
@@ -190,7 +190,6 @@ class BMCSVizSheet(ROutputSection):
 
     def run_finished(self):
         self.skipped_steps = self.monitor_chunk_size
-        self.replot()
         # self.update_pipeline(1.0)
         self.offline = True
         self.running = False
@@ -340,6 +339,7 @@ class BMCSVizSheet(ROutputSection):
     def _reference_viz2d_name_changed(self):
         self.replot()
 
+    reference_viz2d_cumulate = Bool(False, label='cumulate')
     reference_viz2d = Property(Instance(Viz2D),
                                depends_on='reference_viz2d_name')
     '''Visualization of a graph showing the time context of the

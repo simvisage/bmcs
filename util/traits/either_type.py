@@ -12,7 +12,6 @@
 #
 # Created on Aug 7, 2009 by: rchx
 
-print 'importing either_type'
 from traits.api import TraitType, HasTraits, TraitError
 from traits.trait_base import ClassTypes
 from traitsui.api import View, Item, InstanceEditor

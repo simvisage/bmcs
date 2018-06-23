@@ -58,12 +58,12 @@ class PullOutModel(PullOutModelBase):
                                    P_b=self.cross_section.P_b,
                                    A_f=self.cross_section.A_f)
 
-    fixed_bc = Property(depends_on='BC,MESH')
+    fixed_bcs = Property(depends_on='BC,MESH')
     '''Foxed boundary condition'''
     @cached_property
-    def _get_fixed_bc(self):
-        return BCDof(node_name='fixed left end', var='u',
-                     dof=self.fixed_dof, value=0.0)
+    def _get_fixed_bcs(self):
+        return [BCDof(node_name='fixed left end', var='u',
+                      dof=fd, value=0.0) for fd in self.fixed_dofs]
 
     control_bc = Property(depends_on='BC,MESH')
     '''Control boundary condition - make it accessible directly
@@ -81,8 +81,7 @@ class PullOutModel(PullOutModelBase):
     '''
     @cached_property
     def _get_bcond_mngr(self):
-        bc_list = [self.fixed_bc,
-                   self.control_bc]
+        bc_list = self.fixed_bcs + [self.control_bc]
         return BCondMngr(bcond_list=bc_list)
 
     tstepper = Property(Instance(TStepper),
@@ -289,29 +288,16 @@ class PullOutModel(PullOutModelBase):
 
 
 def run_pullout_frp_damage(*args, **kw):
-    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=0.5)
     po.tline.step = 0.01
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
     po.cross_section.set(A_f=16.67, P_b=1.0, A_m=1540.0)
-    # po.mats_eval.set()
-
-#     po.w_max = 7.0
-#     po.tline.step = 0.01
-#     po.geometry.L_x = 10000.0
-#     po.n_e_x = 200
-#     po.mats_eval.omega_fn.set(plot_max=0.5)
-    po.run()
-
-    U_bar_t = po.get_U_bar_t()
-    W_t = po.get_W_t()
-    G_t = W_t - U_bar_t
-    print 'Fracture energy', G_t
 
     w = BMCSWindow(model=po)
     po.add_viz2d('load function', 'load-time')
     po.add_viz2d('F-w', 'load-displacement')
-    po.add_viz2d('field', 'omega', plot_fn='u_C')
+    po.add_viz2d('field', 'u_C', plot_fn='u_C')
     po.add_viz2d('field', 'damage', plot_fn='omega')
     po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
     po.add_viz2d('field', 's', plot_fn='s')
@@ -320,6 +306,14 @@ def run_pullout_frp_damage(*args, **kw):
     po.add_viz2d('dissipation', 'dissipation')
     po.add_viz2d('dissipation rate', 'dissipation rate')
 
+    w.viz_sheet.viz2d_dict['u_C'].visible = False
+    w.viz_sheet.viz2d_dict['load-time'].visible = False
+    w.viz_sheet.viz2d_dict['dissipation rate'].visible = False
+
+    w.viz_sheet.monitor_chunk_size = 10
+    w.viz_sheet.reference_viz2d_name = 'load-displacement'
+
+    w.run()
     w.offline = False
     w.finish_event = True
     w.configure_traits(*args, **kw)

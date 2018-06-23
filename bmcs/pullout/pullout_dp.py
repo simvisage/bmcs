@@ -60,12 +60,12 @@ class PullOutModel(PullOutModelBase):
                                    P_b=self.cross_section.P_b,
                                    A_f=self.cross_section.A_f)
 
-    fixed_bc = Property(depends_on='BC,MESH')
+    fixed_bcs = Property(depends_on='BC,MESH')
     '''Foxed boundary condition'''
     @cached_property
-    def _get_fixed_bc(self):
-        return BCDof(node_name='fixed left end', var='u',
-                     dof=self.fixed_dof, value=0.0)
+    def _get_fixed_bcs(self):
+        return [BCDof(node_name='fixed left end', var='u',
+                      dof=fd, value=0.0) for fd in self.fixed_dofs]
 
     control_bc = Property(depends_on='BC,MESH')
     '''Control boundary condition - make it accessible directly
@@ -84,8 +84,7 @@ class PullOutModel(PullOutModelBase):
     '''
     @cached_property
     def _get_bcond_mngr(self):
-        bc_list = [self.fixed_bc,
-                   self.control_bc]
+        bc_list = self.fixed_bcs + [self.control_bc]
         return BCondMngr(bcond_list=bc_list)
 
     tstepper = Property(Instance(TStepper),
@@ -297,10 +296,10 @@ def run_pullout_dp(*args, **kw):
     po.geometry.L_x = 200.0
     po.loading_scenario.trait_set(loading_type='monotonic')
     po.cross_section.trait_set(A_f=16.67, P_b=1.0, A_m=1540.0)
+    po.trait_set(mats_eval_type='damage-plasticity')
     po.mats_eval.trait_set(gamma=0.0, K=15.0, tau_bar=45.0)
-    po.mats_eval.omega_fn_type = 'li'
+    po.mats_eval.trait_set(omega_fn_type='li')
     po.mats_eval.omega_fn.trait_set(alpha_2=1.0, plot_max=10.0)
-    po.run()
 
     w = BMCSWindow(model=po)
     po.add_viz2d('load function', 'load-time')
@@ -314,6 +313,14 @@ def run_pullout_dp(*args, **kw):
     po.add_viz2d('dissipation', 'dissipation')
     po.add_viz2d('dissipation rate', 'dissipation rate')
 
+    w.viz_sheet.viz2d_dict['u_C'].visible = False
+    w.viz_sheet.viz2d_dict['load-time'].visible = False
+    w.viz_sheet.viz2d_dict['load-displacement'].visible = False
+    w.viz_sheet.viz2d_dict['dissipation rate'].visible = False
+    w.viz_sheet.monitor_chunk_size = 10
+    w.viz_sheet.reference_viz2d_name = 'load-displacement'
+
+    w.run()
     w.offline = False
     w.finish_event = True
     w.configure_traits(*args, **kw)

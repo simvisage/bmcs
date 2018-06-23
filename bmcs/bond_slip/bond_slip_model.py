@@ -349,7 +349,7 @@ def run_bond_slip_model_d(*args, **kw):
                                    unloading_ratio=0.5)
     bsm.material.omega_fn_type = 'jirasek'
     bsm.material.omega_fn.s_f = 0.003
-    bsm.run()
+    w.run()
     w.configure_traits(*args, **kw)
 
 
@@ -393,7 +393,7 @@ def run_bond_slip_model_dp(*args, **kw):
     bsm.material.omega_fn_type = 'li'
     bsm.material.trait_set(gamma=0, K=1000)
     bsm.material.omega_fn.trait_set(alpha_1=1.0, alpha_2=2000)
-    bsm.run()
+    w.run()
     w.configure_traits(*args, **kw)
 
 

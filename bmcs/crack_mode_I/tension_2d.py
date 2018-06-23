@@ -29,7 +29,7 @@ from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
 
 from bending3pt_2d import \
-    Viz2DForceDeflection, Vis2DCrackBand
+    Viz2DForceDeflection, Vis2DCrackBand, CrossSection
 from ibvpy.mats.mats3D.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
 from ibvpy.mats.mats3D.viz3d_stress_field import \
@@ -40,7 +40,7 @@ import traits.api as tr
 from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyRatesPlot
 
 
-class CrossSection(BMCSLeafNode):
+class XCrossSection(BMCSLeafNode):
 
     '''Parameters of the pull-out cross section
     '''
@@ -51,11 +51,14 @@ class CrossSection(BMCSLeafNode):
               auto_set=False, enter_set=True,
               desc='cross-section width [mm2]')
 
-    view = View(
-        Item('h'),
+    traits_view = View(
+        VGroup(
+            Item('h', full_size=True, resizable=True),
+            label='Cross section'
+        )
     )
 
-    tree_view = view
+    tree_view = traits_view
 
 
 class Geometry(BMCSLeafNode):
@@ -79,8 +82,10 @@ class Geometry(BMCSLeafNode):
 
     traits_view = View(
         VGroup(
+            Item('H'),
             Item('L'),
             Item('L_c'),
+            label='Mesh geometry'
         )
     )
 
@@ -101,7 +106,6 @@ class TensileTestModel(BMCSModel, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.control_bc
         ]
 
     def _update_node_list(self):
@@ -110,7 +114,6 @@ class TensileTestModel(BMCSModel, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.control_bc
         ]
 
     #=========================================================================
@@ -153,7 +156,7 @@ class TensileTestModel(BMCSModel, Vis2D):
 
     n_e_y = Int(1, MESH=True, auto_set=False, enter_set=True)
 
-    w_max = Float(4, BC=True, auto_set=False, enter_set=True)
+    w_max = Float(4, MESH=True, BC=True, auto_set=False, enter_set=True)
 
     controlled_elem = Property
 
@@ -188,10 +191,13 @@ class TensileTestModel(BMCSModel, Vis2D):
     def _mats_eval_default(self):
         return self.mats_eval_type_()
 
-    material = Property
+    regularization_on = tr.Bool(True, MAT=True, MESH=True,
+                                auto_set=False, enter_set=True)
 
-    def _get_material(self):
-        return self.mats_eval
+    @on_trait_change('L_cb')
+    def broadcast_cb(self):
+        if self.regularization_on:
+            self.mats_eval.omega_fn.L_s = self.L_cb
 
     #=========================================================================
     # Finite element type
@@ -205,7 +211,7 @@ class TensileTestModel(BMCSModel, Vis2D):
         return FETS2D4Q()
 
     bcond_mngr = Property(Instance(BCondMngr),
-                          depends_on='GEO,CS,BC,MESH')
+                          depends_on='GEO,CS,MAT,BC,MESH')
     '''Boundary condition manager
     '''
     @cached_property
@@ -215,21 +221,21 @@ class TensileTestModel(BMCSModel, Vis2D):
                    self.control_bc]
         return BCondMngr(bcond_list=bc_list)
 
-    fixed_y = Property(depends_on='CS,BC,GEO,MESH')
+    fixed_y = Property(depends_on='CS,BC,MAT,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
     def _get_fixed_y(self):
         return BCSlice(slice=self.fe_grid[0, 0, 0, 0],
                        var='u', dims=[1], value=0)
 
-    fixed_x = Property(depends_on='CS,BC,GEO,MESH')
+    fixed_x = Property(depends_on='CS,BC,MAT,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
     def _get_fixed_x(self):
         return BCSlice(slice=self.fe_grid[0, :, 0, :],
                        var='u', dims=[0], value=0)
 
-    control_bc = Property(depends_on='CS,BC,GEO,MESH')
+    control_bc = Property(depends_on='CS,BC,MAT,GEO,MESH')
     '''Control boundary condition - make it accessible directly
     for the visualization adapter as property
     '''
@@ -250,7 +256,7 @@ class TensileTestModel(BMCSModel, Vis2D):
                          fets=self.fets_eval, mats=self.mats_eval)
 
         L = self.geometry.L
-        L_c = self.geometry.L_c
+        L_c = self.L_cb
         x_x, x_y = dgrid.mesh.geo_grid.point_x_grid
         L_1 = x_x[1, 0]
         d_L = L_c - L_1
@@ -271,6 +277,11 @@ class TensileTestModel(BMCSModel, Vis2D):
                      time_change_notifier=self.time_changed,
                      )
 
+    L_cb = Float(5.0, label='crack band width',
+                 MAT=True,
+                 MESH=True,
+                 auto_set=False, enter_set=True)
+
     k_max = Int(200,
                 ALG=True)
     tolerance = Float(1e-4,
@@ -285,12 +296,18 @@ class TensileTestModel(BMCSModel, Vis2D):
         tolerance = self.tolerance
         return TimeLoop(ts=self.dots_grid, k_max=k_max,
                         tolerance=tolerance,
+                        algorithmic=False,
                         tline=self.tline,
-                        bc_mngr=self.bcond_mngr)
+                        bc_mngr=self.bcond_mngr,
+                        response_traces=self.response_traces.values())
 
-    n_a = Int(0)
-    '''Notch offset index
+    response_traces = tr.Dict
+    '''Response traces.
     '''
+
+    def _response_traces_default(self):
+        return {'energy': Vis2DEnergy(model=self),
+                }
 
     t = Property
 
@@ -314,23 +331,28 @@ class TensileTestModel(BMCSModel, Vis2D):
                      'load function': Viz2DLoadControlFunction,
                      }
 
-    traits_view = View(Item('mats_eval_type'),
-                       # UItem('geometry@')
-                       )
+    traits_view = View(
+        Item('w_max'),
+        VGroup(
+            Item('n_e_x', full_size=True, resizable=True),
+            Item('n_e_y'),
+            Item('L_cb'),
+            label='Numerical parameters'
+        ),
+        Item('regularization_on'),
+        # UItem('geometry@')
+    )
 
     tree_view = traits_view
 
 
-def run_bending3pt_sdamage(*args, **kw):
-    bt = TensileTestModel(n_e_x=2, n_e_y=1, k_max=500,
+def run_tensile_test_sdamage(*args, **kw):
+    bt = TensileTestModel(n_e_x=20, n_e_y=1, k_max=500,
                           mats_eval_type='scalar damage'
-                          #mats_eval_type='microplane damage (eeq)'
-                          #mats_eval_type='microplane CSD (eeq)'
-                          #mats_eval_type='microplane CSD (odf)'
                           )
-    L = 20.
-    L_c = L / 10.0
-    E = 20000.0
+    L = 200.
+    L_cb = 5.0
+    E = 30000.0
     f_t = 2.4
     G_f = 0.09
     bt.mats_eval.trait_set(
@@ -342,47 +364,37 @@ def run_bending3pt_sdamage(*args, **kw):
     l_f_t_Em = len(f_t_Em)
     f_t_Em[0, ...] = 1.0
     bt.mats_eval.omega_fn.trait_set(
-        E=E,
         f_t=f_t,
         f_t_Em=f_t_Em,
         G_f=G_f,
-        L_s=L_c
+        L_s=L_cb
     )
 
-    bt.w_max = 0.5
-    bt.tline.step = 0.05
+    bt.w_max = 0.15
+    bt.tline.step = 0.01
     bt.cross_section.b = 1
     bt.geometry.trait_set(
         L=L,
         H=1,
-        L_c=L_c
+        L_c=L_cb
     )
     bt.loading_scenario.trait_set(loading_type='monotonic')
     w = BMCSWindow(model=bt)
-#    bt.add_viz2d('load function', 'load-time')
     bt.add_viz2d('F-w', 'load-displacement')
 
-    vis2d_energy = Vis2DEnergy(model=bt)
-    viz2d_energy = Viz2DEnergy(name='dissipation', vis2d=vis2d_energy)
-    viz2d_energy_rates = Viz2DEnergyRatesPlot(
-        name='dissipation rate', vis2d=vis2d_energy)
-    vis2d_crack_band = Vis2DCrackBand(model=bt)
+    vis2d_energy = bt.response_traces['energy']
+    viz2d_energy = Viz2DEnergy(name='dissipation',
+                               vis2d=vis2d_energy)
+    viz2d_energy_rates = Viz2DEnergyRatesPlot(name='dissipation rate',
+                                              vis2d=vis2d_energy)
     w.viz_sheet.viz2d_list.append(viz2d_energy)
     w.viz_sheet.viz2d_list.append(viz2d_energy_rates)
-
-    vis3d = Vis3DStressField()
-    bt.tloop.response_traces.append(vis3d)
-    bt.tloop.response_traces.append(vis2d_energy)
-    bt.tloop.response_traces.append(vis2d_crack_band)
-    viz3d = Viz3DStressField(vis3d=vis3d)
-    w.viz_sheet.add_viz3d(viz3d)
-    w.viz_sheet.monitor_chunk_size = 1
-
+    w.viz_sheet.monitor_chunk_size = 10
+    w.viz_sheet.reference_viz2d_name = 'load-displacement'
     w.run()
     w.offline = True
-#    w.finish_event = True
     w.configure_traits(*args, **kw)
 
 
 if __name__ == '__main__':
-    run_bending3pt_sdamage()
+    run_tensile_test_sdamage()

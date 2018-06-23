@@ -445,7 +445,6 @@ def run_pullout_const_shear(*args, **kw):
 #     po.material.trait_set(E_f=9 * 180000.0, tau_pi_bar=2.77 * 9)
     po.tline.step = 0.01
 
-    po.run()
     w = BMCSWindow(model=po)
     # po.add_viz2d('load function')
     po.add_viz2d('F-w', 'load-displacement')
@@ -453,9 +452,10 @@ def run_pullout_const_shear(*args, **kw):
     po.add_viz2d('field', 'displacement', plot_fn='u')
     po.add_viz2d('field', 'strain', plot_fn='eps')
 #    po.add_viz2d('field', 'sig', plot_fn='sig')
+    w.viz_sheet.monitor_chunk_size = 2
 
+    w.run()
     w.offline = False
-    w.finish_event = True
     w.configure_traits(*args, **kw)
 
 

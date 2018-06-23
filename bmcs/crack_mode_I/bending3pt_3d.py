@@ -22,9 +22,12 @@ from traits.api import \
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
-from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
+from ibvpy.mats.mats3D.viz3d_strain_field import \
+    Vis3DStrainField, Viz3DStrainField
+from ibvpy.mats.mats3D.viz3d_stress_field import \
+    Vis3DStressField, Viz3DStressField
 
 import numpy as np
 import traits.api as tr
@@ -197,6 +200,7 @@ class BendingTestModel(BMCSModel, Vis2D):
                            {'elastic': MATS3DElastic,
                             'microplane damage (eeq)': MATS3DMplDamageEEQ,
                             'microplane damage (odf)': MATS3DMplDamageODF,
+                            'scalar damage': MATS3DScalarDamage,
                             },
                            MAT=True
                            )
@@ -345,7 +349,8 @@ def run_bending3pt_mic_odf(*args, **kw):
 
     bt = BendingTestModel(n_e_x=21, n_e_y=5, n_e_z=1,
                           k_max=500,
-                          mats_eval_type='microplane damage (eeq)'
+                          mats_eval_type='scalar damage'
+                          #mats_eval_type='microplane damage (eeq)'
                           #mats_eval_type='microplane damage (odf)'
                           )
     bt.mats_eval.trait_set(
@@ -365,13 +370,13 @@ def run_bending3pt_mic_odf(*args, **kw):
     bt.add_viz2d('load function', 'load-time')
     bt.add_viz2d('F-w', 'load-displacement')
 
-    vis3d = Vis3DPoll()
+    vis3d = Vis3DStrainField()
     bt.tloop.response_traces.append(vis3d)
-    viz3d = Viz3DPoll(vis3d=vis3d)
+    viz3d = Viz3DStrainField(vis3d=vis3d)
     w.viz_sheet.add_viz3d(viz3d)
     w.viz_sheet.monitor_chunk_size = 1
 
-#    w.run()
+    w.run()
     w.offline = False
 #    w.finish_event = True
     w.configure_traits()

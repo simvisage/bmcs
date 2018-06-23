@@ -29,12 +29,14 @@ class MATS2D(BMCSTreeNode):
     E = tr.Float(34e+3,
                  label="E",
                  desc="Young's Modulus",
+                 MAT=True,
                  auto_set=False,
                  input=True)
 
     nu = tr.Float(0.2,
                   label='nu',
                   desc="Poison ratio",
+                  MAT=True,
                   auto_set=False,
                   input=True)
 

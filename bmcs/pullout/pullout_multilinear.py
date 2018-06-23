@@ -64,12 +64,12 @@ class PullOutModel(PullOutModelBase):
                                    P_b=self.cross_section.P_b,
                                    A_f=self.cross_section.A_f)
 
-    fixed_bc = Property(depends_on='BC,MESH')
+    fixed_bcs = Property(depends_on='BC,MESH')
     '''Foxed boundary condition'''
     @cached_property
-    def _get_fixed_bc(self):
-        return BCDof(node_name='fixed left end', var='u',
-                     dof=self.fixed_dof, value=0.0)
+    def _get_fixed_bcs(self):
+        return [BCDof(node_name='fixed left end', var='u',
+                      dof=fd, value=0.0) for fd in self.fixed_dofs]
 
     control_bc = Property(depends_on='BC,MESH')
     '''Control boundary condition - make it accessible directly
@@ -87,8 +87,7 @@ class PullOutModel(PullOutModelBase):
     '''
     @cached_property
     def _get_bcond_mngr(self):
-        bc_list = [self.fixed_bc,
-                   self.control_bc]
+        bc_list = self.fixed_bcs + [self.control_bc]
         return BCondMngr(bcond_list=bc_list)
 
     tstepper = Property(Instance(TStepper),
@@ -289,7 +288,7 @@ class PullOutModel(PullOutModelBase):
 def run_pullout_multilinear(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
                       title='Multi-linear bond slip law',
-                      n_e_x=20, k_max=1000, w_max=1.75)
+                      n_e_x=20, k_max=1000, w_max=1.5)
     po.tline.step = 0.05
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
@@ -297,7 +296,6 @@ def run_pullout_multilinear(*args, **kw):
     po.mats_eval.set(s_data='0, 0.1, 0.4, 1.7',
                      tau_data='0, 70, 0, 0')
     po.mats_eval.update_bs_law = True
-    po.run()
 
     w = BMCSWindow(model=po)
     po.add_viz2d('load function', 'load-time')
@@ -310,8 +308,14 @@ def run_pullout_multilinear(*args, **kw):
     po.add_viz2d('field', 'sf', plot_fn='sf')
     po.add_viz2d('dissipation rate', 'dissipation rate')
 
-    w.offline = False
-    w.finish_event = True
+    w.viz_sheet.viz2d_dict['u_C'].visible = False
+    w.viz_sheet.viz2d_dict['load-time'].visible = False
+    w.viz_sheet.viz2d_dict['dissipation rate'].visible = False
+    w.viz_sheet.monitor_chunk_size = 10
+    w.viz_sheet.reference_viz2d_name = 'load-displacement'
+
+    w.run()
+    w.offline = True
     w.configure_traits(*args, **kw)
 
 
@@ -339,9 +343,89 @@ def run_pullout_multi(*args, **kw):
     po.add_viz2d('dissipation rate', 'dissipation rate')
 
     w.offline = False
+    #w.finish_event = True
+    w.configure_traits(*args, **kw)
+
+
+def run_cb_multi(*args, **kw):
+    po = PullOutModel(name='t33_pullout_multilinear',
+                      n_e_x=100, k_max=1000, w_max=2.0)
+    po.fixed_boundary = 'clamped left'
+    po.tline.step = 0.02
+    po.geometry.L_x = 200.0
+    po.loading_scenario.set(loading_type='monotonic')
+    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
+    po.mats_eval.set(s_data='0, 0.1, 0.4, 4.0',
+                     tau_data='0, 70.0, 80, 90')
+    po.mats_eval.update_bs_law = True
+    po.run()
+
+    w = BMCSWindow(model=po)
+    po.add_viz2d('load function', 'load-time')
+    po.add_viz2d('F-w', 'load-displacement')
+    po.add_viz2d('field', 'u_C', plot_fn='u_C')
+    po.add_viz2d('dissipation', 'dissipation')
+    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
+    po.add_viz2d('field', 's', plot_fn='s')
+    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+    po.add_viz2d('field', 'sf', plot_fn='sf')
+    po.add_viz2d('dissipation rate', 'dissipation rate')
+
+    w.offline = False
+    w.finish_event = True
+    w.configure_traits(*args, **kw)
+
+
+def run_po_paper2_4layers(*args, **kw):
+
+    A_roving = 0.49
+    h_section = 20.0
+    b_section = 100.0
+    n_roving = 11.0
+    tt4_n_layers = 6
+    A_f4 = n_roving * tt4_n_layers * A_roving
+    A_c4 = h_section * b_section
+    A_m4 = A_c4 - A_f4
+    P_b4 = tt4_n_layers
+    E_f = 180000.0
+    E_m = 30000.0
+    s_arr = np.array([0., 0.004,  0.0063,  0.0165,  0.0266,  0.0367,  0.0468,  0.057,
+                      0.0671,  0.3,
+                      1.0], dtype=np.float_)
+    tau_arr = 0.7 * np.array([0., 40,  62.763,  79.7754,  63.3328,  53.0229,  42.1918,
+                              28.6376,  17,   3,
+                              1], dtype=np.float)
+    po = PullOutModel(name='t33_pullout_multilinear',
+                      n_e_x=100, k_max=1000, w_max=2.0)
+    po.fixed_boundary = 'clamped left'
+    po.loading_scenario.set(loading_type='monotonic')
+    po.mats_eval.trait_set(E_f=E_f, E_m=E_m)
+    po.mats_eval.s_tau_table = [
+        s_arr, tau_arr
+    ]
+    po.cross_section.trait_set(A_f=A_f4, A_m=A_m4, P_b=P_b4)
+    po.geometry.trait_set(L_x=500)
+    po.trait_set(w_max=0.95, n_e_x=100)
+    po.tline.trait_set(step=0.005)
+
+    po.run()
+
+    w = BMCSWindow(model=po)
+    po.add_viz2d('load function', 'load-time')
+    po.add_viz2d('F-w', 'load-displacement')
+    po.add_viz2d('field', 'u_C', plot_fn='u_C')
+    po.add_viz2d('dissipation', 'dissipation')
+    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
+    po.add_viz2d('field', 's', plot_fn='s')
+    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+    po.add_viz2d('field', 'sf', plot_fn='sf')
+    po.add_viz2d('dissipation rate', 'dissipation rate')
+
+    w.offline = False
     w.finish_event = True
     w.configure_traits(*args, **kw)
 
 
 if __name__ == '__main__':
     run_pullout_multilinear()
+    # run_po_paper2_4layers()

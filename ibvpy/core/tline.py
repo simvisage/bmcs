@@ -1,5 +1,5 @@
 
-from traits.api import Float, Callable
+from traits.api import Float, Callable, on_trait_change
 from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
 
@@ -34,7 +34,14 @@ class TLine(BMCSLeafNode):
         if self.time_change_notifier:
             self.time_change_notifier(self.val)
 
+    @on_trait_change('min,max')
+    def _time_range_changed(self):
+        print 'time range changed'
+        if self.time_range_change_notifier:
+            self.time_range_change_notifier(self.max)
+
     time_change_notifier = Callable
+    time_range_change_notifier = Callable
 
     tree_view = View(
         Item('min', full_size=True),

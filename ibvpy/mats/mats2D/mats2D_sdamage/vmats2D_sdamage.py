@@ -5,7 +5,7 @@ from bmcs.mats.mats_damage_fn import \
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.mats2D.vmats2D_eval import MATS2D
 from ibvpy.mats.mats_eval import IMATSEval
-from traits.api import Float, Property, Array
+from traits.api import Float, on_trait_change, Property, Array
 from traitsui.api import VGroup, UItem, \
     Item, View, VSplit, Group, Spring
 from util.traits.either_type import EitherType
@@ -28,17 +28,23 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
 
     tr.implements(IMATSEval)
 
+    node_name = 'isotropic damage model'
+
+    tree_node_list = tr.List([])
+
+    def _tree_node_list_default(self):
+        return [self.strain_norm, self.omega_fn, ]
+
     omega_fn = tr.Instance(GfDamageFn)
 
     def _omega_fn_default(self):
-        return GfDamageFn()
+        return GfDamageFn(mats=self)
 
     stiffness = tr.Enum("secant", "algorithmic",
                         input=True)
     r'''Selector of the stiffness calculation.
     '''
-    strain_norm = EitherType(klasses=[Rankine,
-                                      ], input=True)
+    strain_norm = EitherType(klasses=[Rankine], input=True)
     r'''Selector of the strain norm defining the load surface.
     '''
 
@@ -117,17 +123,6 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
         @param kappa_Em: maximum strain norm achieved so far
         '''
         return self.omega_fn.diff(kappa_Em, idx_map)
-        epsilon_0 = self.epsilon_0
-        epsilon_f = self.epsilon_f
-        domega_Em = np.zeros_like(kappa_Em)
-        kappa_idx = np.where(kappa_Em >= epsilon_0)
-        factor_1 = epsilon_0 / (kappa_Em[kappa_idx] * kappa_Em[kappa_idx])
-        factor_2 = epsilon_0 / (kappa_Em[kappa_idx] * (epsilon_f - epsilon_0))
-        domega_Em[kappa_idx] = (
-            (factor_1 + factor_2) * np.exp(-(kappa_Em[kappa_idx] - epsilon_0) /
-                                           (epsilon_f - epsilon_0))
-        )
-        return domega_Em
 
     def _get_D_abcd_alg_reduction(self, kappa_Em, eps_Emab_n1, f_idx):
         '''Calculate the stiffness term to be subtracted
@@ -138,23 +133,16 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
         return np.einsum('...,...cd,abcd,...cd->...abcd',
                          domega_Em, deps_eq_Emcd, self.D_abcd, eps_Emab_n1)
 
-    def get_G_f(self):
-        eps_t = np.linspace(0, 01, 1000)
-        omega_t = self._get_omega(eps_t)
-        sig_t = (1 - omega_t) * self.E * eps_t
-        return np.trapz(sig_t, eps_t)
-
-    tree_view = View(
-        Item('E')
-    )
-
-    trait_view = View(
-        VSplit(
+    traits_view = View(
+        Group(
             Group(
                 Item('E'),
                 Item('nu'),
                 Item('strain_norm@'),
-                Item('omega_fn@')
+                Group(
+                    UItem('omega_fn@', full_size=True),
+                    label='Damage function'
+                )
             ),
             Group(
                 Item('stress_state', style='custom'),
@@ -167,6 +155,8 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
         resizable=True
     )
 
+    tree_view = traits_view
+
 
 if __name__ == '__main__':
 
@@ -177,14 +167,13 @@ if __name__ == '__main__':
     f_t = 2.4
     G_f = 0.090
     E = 20000.0
-    omega_fn_gf = GfDamageFn(G_f=G_f, f_t=f_t, E=E, L_s=22.5)
+    omega_fn_gf = GfDamageFn(G_f=G_f, f_t=f_t, L_s=22.5)
     print omega_fn_gf.eps_0
     print omega_fn_gf(0.000148148)
 
-#
-#     mats = MATS2DScalarDamage(E=30000,
-#                               stiffness='algorithmic',
-#                               nu=0.0,
-#                               )
-#
-#     tv = mats.trait_view('trait_view')
+    mats = MATS2DScalarDamage(E=30000,
+                              stiffness='algorithmic',
+                              nu=0.0,
+                              )
+    print mats.strain_norm
+    mats.configure_traits()

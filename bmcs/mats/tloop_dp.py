@@ -65,7 +65,6 @@ class TLoop(HasStrictTraits):
         if self.paused:
             self.paused = False
         if self.restart:
-            print 'RESET TIME'
             self.tline.val = 0
             self.reset_sv_hist()
 
@@ -107,7 +106,7 @@ class TLoop(HasStrictTraits):
                     step_flag, U_k, d_U_k, eps, sig, t_n, t_n1, xs_pi, alpha, z, kappa, omega)
 
                 K.apply_constraints(R)
-                d_U_k = K.solve()
+                d_U_k, pos_def = K.solve()
                 d_U += d_U_k
                 if np.linalg.norm(R) < self.tolerance:
                     self.F_record = np.vstack((self.F_record, F_int))

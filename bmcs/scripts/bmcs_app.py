@@ -15,7 +15,9 @@ from bmcs.bond_slip import \
     run_bond_slip_model_dp
 from bmcs.crack_mode_I import \
     run_bending3pt_mic_odf, \
-    run_bending3pt_sdamage
+    run_bending3pt_sdamage_viz2d, \
+    run_bending3pt_sdamage_viz3d, \
+    run_tensile_test_sdamage
 from bmcs.pullout import \
     run_pullout_const_shear, \
     run_pullout_dp, \
@@ -89,16 +91,28 @@ class BMCSLauncher(HasTraits):
     #=========================================================================
     # Lecture #8
     #=========================================================================
+
+    tensile_test_2d_sdamage = Button(label='Tensile test - isotropic damage')
+
+    def _tensile_test_2d_sdamage_fired(self):
+        run_tensile_test_sdamage(kind='live')
+
     bending3pt_3d = Button(label='Bending test (3D)')
 
     def _bending3pt_3d_fired(self):
         run_bending3pt_mic_odf(kind='live')
 
-    bending3pt_2d_sdamage = Button(
-        label='Bending test - isotropic damage (2D)')
+    bending3pt_2d_sdamage_viz2d = Button(
+        label='bending test 3Pt - isotropic damage (2D-light)')
 
-    def _bending3pt_2d_sdamage_fired(self):
-        run_bending3pt_sdamage(kind='live')
+    def _bending3pt_2d_sdamage_viz2d_fired(self):
+        run_bending3pt_sdamage_viz2d(kind='live')
+
+    bending3pt_2d_sdamage_viz3d = Button(
+        label='Bending test 3Pt - isotropic damage (2D-heavy)')
+
+    def _bending3pt_2d_sdamage_viz3d_fired(self):
+        run_bending3pt_sdamage_viz3d(kind='live')
 
     view = View(
         VGroup(
@@ -127,14 +141,18 @@ class BMCSLauncher(HasTraits):
                       full_size=True, resizable=True),
                 UItem('pullout_model_dp',
                       full_size=True, resizable=True),
-                label='Pull-out models, lecture #3-4'
+                label='Pull-out models, lecture #3-6'
             ),
             Group(
-                UItem('bending3pt_2d_sdamage',
+                UItem('tensile_test_2d_sdamage',
+                      full_size=True, resizable=True),
+                UItem('bending3pt_2d_sdamage_viz2d',
+                      full_size=True, resizable=True),
+                UItem('bending3pt_2d_sdamage_viz3d',
                       full_size=True, resizable=True),
                 UItem('bending3pt_3d',
                       full_size=True, resizable=True),
-                label='Bending, crack propagation, lecture #7'
+                label='Bending, crack propagation, lecture #7-9'
             ),
         ),
         title='BMCS application launcher',
