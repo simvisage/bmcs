@@ -21,7 +21,7 @@ from view.window import BMCSWindow
 
 import numpy as np
 from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
-    Viz2DEnergyPlot, Viz2DEnergyRatesPlot, \
+    Viz2DEnergyPlot, Viz2DEnergyReleasePlot, \
     PullOutModelBase
 
 
@@ -281,7 +281,7 @@ class PullOutModel(PullOutModelBase):
                      'F-w': Viz2DPullOutFW,
                      'load function': Viz2DLoadControlFunction,
                      'dissipation': Viz2DEnergyPlot,
-                     'dissipation rate': Viz2DEnergyRatesPlot
+                     'dissipation rate': Viz2DEnergyReleasePlot
                      }
 
 

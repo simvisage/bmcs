@@ -18,6 +18,10 @@ from ibvpy.mats.mats2D import \
     MATS2DElastic, MATS2DMplDamageEEQ, MATS2DScalarDamage, MATS2DMplCSDEEQ  # , MATS2DMplCSDODF
 from ibvpy.mats.mats3D.mats3D_sdamage.viz3d_sdamage import Vis3DSDamage,\
     Viz3DSDamage
+from ibvpy.mats.mats3D.viz3d_strain_field import \
+    Vis3DStrainField, Viz3DStrainField
+from ibvpy.mats.mats3D.viz3d_stress_field import \
+    Vis3DStressField, Viz3DStressField
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
@@ -28,13 +32,9 @@ from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
 
-from ibvpy.mats.mats3D.viz3d_strain_field import \
-    Vis3DStrainField, Viz3DStrainField
-from ibvpy.mats.mats3D.viz3d_stress_field import \
-    Vis3DStressField, Viz3DStressField
 import numpy as np
 import traits.api as tr
-from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyRatesPlot
+from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
 class Viz2DForceDeflection(Viz2D):
@@ -676,15 +676,13 @@ def run_bending3pt_sdamage(*args, **kw):
     )
     bt.loading_scenario.trait_set(loading_type='monotonic')
     w = BMCSWindow(model=bt)
-#    bt.add_viz2d('load function', 'load-time')
     bt.add_viz2d('F-w', 'load-displacement')
-
     vis2d_energy = bt.response_traces['energy']
     vis2d_crack_band = bt.response_traces['crack band']
     viz2d_energy = Viz2DEnergy(name='dissipation',
                                vis2d=vis2d_energy)
-    viz2d_energy_rates = Viz2DEnergyRatesPlot(name='dissipation rate',
-                                              vis2d=vis2d_energy)
+    viz2d_energy_rates = Viz2DEnergyReleasePlot(name='dissipated energy',
+                                                vis2d=vis2d_energy)
     viz2d_cb_strain = Viz2DStrainInCrack(name='strain in crack',
                                          vis2d=vis2d_crack_band)
     viz2d_cb_a = Viz2DTA(name='crack length',

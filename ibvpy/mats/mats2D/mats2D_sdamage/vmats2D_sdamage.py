@@ -8,11 +8,11 @@ from ibvpy.mats.mats_eval import IMATSEval
 from traits.api import Float, on_trait_change, Property, Array
 from traitsui.api import VGroup, UItem, \
     Item, View, VSplit, Group, Spring
-from util.traits.either_type import EitherType
+
 
 import numpy as np
 import traits.api as tr
-from vstrain_norm2d import Rankine
+from vstrain_norm2d import StrainNorm2D, SN2DRankine
 
 
 # from scipy.linalg import eig, inv
@@ -30,23 +30,46 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
 
     node_name = 'isotropic damage model'
 
-    tree_node_list = tr.List([])
+    tree_node_list = tr.List
 
     def _tree_node_list_default(self):
         return [self.strain_norm, self.omega_fn, ]
 
-    omega_fn = tr.Instance(GfDamageFn)
-
-    def _omega_fn_default(self):
-        return GfDamageFn(mats=self)
+    def _update_node_list(self):
+        self.tree_node_list = [
+            self.strain_norm,
+            self.omega_fn,
+        ]
 
     stiffness = tr.Enum("secant", "algorithmic",
                         input=True)
     r'''Selector of the stiffness calculation.
     '''
-    strain_norm = EitherType(klasses=[Rankine], input=True)
-    r'''Selector of the strain norm defining the load surface.
-    '''
+    #=========================================================================
+    # Material model
+    #=========================================================================
+    strain_norm_type = tr.Trait('Rankine',
+                                {'Rankine': SN2DRankine,
+                                 },
+                                MAT=True
+                                )
+
+    @on_trait_change('strain_norm_type')
+    def _set_strain_norm(self):
+        self.strain_norm = self.strain_norm_type_(mats=self)
+        self._update_node_list()
+
+    strain_norm = tr.Instance(StrainNorm2D,
+                              report=True)
+    '''Material model'''
+
+    def _strain_norm_default(self):
+        return self.strain_norm_type_(mats=self)
+
+    omega_fn = tr.Instance(GfDamageFn)
+
+    def _omega_fn_default(self):
+        return GfDamageFn(mats=self)
 
     changed = tr.Event
     r'''This event can be used by the clients to trigger 
@@ -136,9 +159,9 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
     traits_view = View(
         Group(
             Group(
-                Item('E'),
-                Item('nu'),
-                Item('strain_norm@'),
+                Item('E', resizable=True),
+                Item('nu', resizable=True),
+                Item('strain_norm_type', resizable=True),
                 Group(
                     UItem('omega_fn@', full_size=True),
                     label='Damage function'

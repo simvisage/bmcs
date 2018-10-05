@@ -36,7 +36,6 @@ class TLine(BMCSLeafNode):
 
     @on_trait_change('min,max')
     def _time_range_changed(self):
-        print 'time range changed'
         if self.time_range_change_notifier:
             self.time_range_change_notifier(self.max)
 

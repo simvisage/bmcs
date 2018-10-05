@@ -12,12 +12,15 @@ from bmcs.time_functions import \
 from reporter import RInputRecord
 from traits.api import \
     Property, Instance, cached_property, \
-    Bool, List, Float, Trait, Int, Enum
+    HasStrictTraits, Bool, List, Float, Trait, Int, Enum, \
+    Array, Button
 from traitsui.api import \
     View, Item, Group
+from traitsui.ui_editors.array_view_editor import ArrayViewEditor
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, TLine
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -76,6 +79,26 @@ class Geometry(BMCSLeafNode, RInputRecord):
     tree_view = view
 
 
+class DataSheet(HasStrictTraits):
+
+    data = Array(np.float_)
+
+    view = View(
+        Item('data',
+             show_label=False,
+             resizable=True,
+             editor=ArrayViewEditor(titles=['x', 'y', 'z'],
+                                    format='%.4f',
+                                    # Font fails with wx in OSX;
+                                    #   see traitsui issue #13:
+                                    # font   = 'Arial 8'
+                                    )
+             ),
+        width=0.5,
+        height=0.6
+    )
+
+
 class Viz2DPullOutFW(Viz2D):
     '''Plot adaptor for the pull-out simulator.
     '''
@@ -115,12 +138,22 @@ class Viz2DPullOutFW(Viz2D):
         P, w = P_t[idx], w_0[idx]
         ax.plot([w], [P], 'o', color='magenta', markersize=10)
 
+    show_data = Button()
+
+    def _show_data_fired(self):
+        P_t = self.vis2d.get_P_t()
+        w_0, w_L = self.vis2d.get_w_t()
+        data = np.vstack([w_0, w_L, P_t]).T
+        show_data = DataSheet(data=data)
+        show_data.edit_traits()
+
     def plot_tex(self, ax, vot, *args, **kw):
         self.plot(ax, vot, *args, **kw)
 
     traits_view = View(
         Item('name', style='readonly'),
         Item('show_legend'),
+        Item('show_data')
     )
 
 
@@ -175,9 +208,10 @@ class Viz2DPullOutField(Viz2D):
     initial_plot = Bool(True)
 
     traits_view = View(
-        Item('plot_fn'),
+        Item('plot_fn', resizable=True, full_size=True),
         Item('y_min', ),
-        Item('y_max', )
+        Item('y_max', ),
+        Item('adaptive_y_range')
     )
 
 
@@ -201,7 +235,7 @@ class Viz2DEnergyPlot(Viz2D):
         ax.legend()
 
 
-class Viz2DEnergyRatesPlot(Viz2D):
+class Viz2DEnergyReleasePlot(Viz2D):
     '''Plot adaptor for the pull-out simulator.
     '''
     label = 'line plot'
@@ -423,10 +457,10 @@ class PullOutModelBase(BMCSModel, Vis2D):
         ax.plot(X_M, F_f, linewidth=2, color='orange')
         ax.fill_between(X_M, 0, F_f, facecolor='orange', alpha=0.2)
         ax.plot([0, L], [0, 0], color='black')
-        ax.set_ylabel('force flow')
+        ax.set_ylabel('stress [MPa]')
         ax.set_xlabel('bond length')
         F_min = min(np.min(F_m), np.min(F_f))
-        F_max = min(np.max(F_m), np.max(F_f))
+        F_max = max(np.max(F_m), np.max(F_f))
         return F_min, F_max
 
     def plot_s(self, ax, vot):

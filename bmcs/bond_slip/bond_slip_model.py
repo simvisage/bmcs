@@ -237,7 +237,8 @@ class BondSlipModel(BMCSModel, Vis2D):
     def _get_material(self):
         return self.mats_eval
 
-    sv_names = Property(List(Str), depends_on='material_model')
+    sv_names = Property(List(Str),
+                        depends_on='material_model')
     '''Names of state variables of the current material model.
     '''
     @cached_property
@@ -320,14 +321,18 @@ class BondSlipModel(BMCSModel, Vis2D):
         self.tline.val = min(t, self.tline.max)
 
     def get_sv_hist(self, sv_name):
-        return np.vstack(self.sv_hist[sv_name])
+        if len(self.sv_hist[sv_name]):
+            return np.vstack(self.sv_hist[sv_name])
+        else:
+            return []
 
     viz2d_classes = {'bond history': Viz2DBondHistory,
                      'load function': Viz2DLoadControlFunction,
                      }
 
-    tree_view = View(Item('material_model'),
-                     Item('interaction_type'))
+    tree_view = View(UItem('loading_scenario@'))
+    # Item('material_model'),
+    #                 Item('interaction_type'))
 
 
 def run_bond_slip_model_d(*args, **kw):
@@ -349,7 +354,11 @@ def run_bond_slip_model_d(*args, **kw):
                                    unloading_ratio=0.5)
     bsm.material.omega_fn_type = 'jirasek'
     bsm.material.omega_fn.s_f = 0.003
+
     w.run()
+    w.join()
+    w.viz_sheet.offline = False
+    w.viz_sheet.replot()
     w.configure_traits(*args, **kw)
 
 
@@ -370,7 +379,10 @@ def run_bond_slip_model_p(*args, **kw):
     bsm.loading_scenario.trait_set(number_of_cycles=1,
                                    maximum_loading=0.005)
     bsm.material.trait_set(gamma=0, K=-0)
-    bsm.run()
+    w.run()
+    w.join()
+    w.viz_sheet.offline = False
+    w.viz_sheet.replot()
     w.configure_traits(*args, **kw)
 
 
@@ -394,6 +406,9 @@ def run_bond_slip_model_dp(*args, **kw):
     bsm.material.trait_set(gamma=0, K=1000)
     bsm.material.omega_fn.trait_set(alpha_1=1.0, alpha_2=2000)
     w.run()
+    w.join()
+    w.viz_sheet.offline = False
+    w.viz_sheet.replot()
     w.configure_traits(*args, **kw)
 
 
@@ -443,8 +458,8 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_bond_slip_model_dp()
     # run_predefined_load_test(
-    # run_bond_slip_model_d()
-    from IPython.display import Latex
-    import IPython as ip
-    bsm = BondSlipModel()
-    print(bsm._repr_latex_())
+    run_bond_slip_model_dp()
+#     from IPython.display import Latex
+#     import IPython as ip
+#     bsm = BondSlipModel()
+#     print(bsm._repr_latex_())

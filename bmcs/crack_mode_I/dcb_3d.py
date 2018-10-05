@@ -30,7 +30,7 @@ from view.window import BMCSModel, BMCSWindow
 
 import numpy as np
 import traits.api as tr
-from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyRatesPlot
+from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
 class Viz2DForceDeflectionX(Viz2D):
@@ -403,7 +403,7 @@ def run_bending3pt_mic_odf(*args, **kw):
 
     vis2d_energy = Vis2DEnergy(model=bt)
     viz2d_energy = Viz2DEnergy(name='dissipation', vis2d=vis2d_energy)
-    viz2d_energy_rates = Viz2DEnergyRatesPlot(
+    viz2d_energy_rates = Viz2DEnergyReleasePlot(
         name='dissipation rate', vis2d=vis2d_energy)
     w.viz_sheet.viz2d_list.append(viz2d_energy)
     w.viz_sheet.viz2d_list.append(viz2d_energy_rates)

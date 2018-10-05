@@ -23,6 +23,7 @@ from bmcs.pullout import \
     run_pullout_dp, \
     run_pullout_multilinear, \
     run_pullout_frp_damage
+from ibvpy.mats.mats3D.mats3D_plastic.yield_face3D_explorer import run_explorer
 from traits.api import HasTraits, Button, Str, Constant
 from traitsui.api import \
     View, Item, UItem, VGroup, Group, Spring, HGroup
@@ -81,14 +82,6 @@ class BMCSLauncher(HasTraits):
         run_pullout_dp(kind='live')
 
     #=========================================================================
-    # Lecture #6
-    #=========================================================================
-    yield_face_explorer = Button(label='Yield conditions for concrete')
-
-    def _yield_face_explorer_fired(self):
-        run_explorer(kind='live')
-
-    #=========================================================================
     # Lecture #8
     #=========================================================================
 
@@ -114,6 +107,15 @@ class BMCSLauncher(HasTraits):
     def _bending3pt_2d_sdamage_viz3d_fired(self):
         run_bending3pt_sdamage_viz3d(kind='live')
 
+    #=========================================================================
+    # Lecture #6
+    #=========================================================================
+    yc_explorer = Button(
+        label='Yield conditions for concrete')
+
+    def _yc_explorer_fired(self):
+        run_explorer(kind='live')
+
     view = View(
         VGroup(
             HGroup(
@@ -128,8 +130,6 @@ class BMCSLauncher(HasTraits):
                       full_size=True, resizable=True),
                 UItem('bond_slip_model_dp',
                       full_size=True, resizable=True),
-                UItem('yield_face_explorer',
-                      full_size=True, resizable=True),
                 label='Bond-slip models, lecture #1-2'
             ),
             Group(
@@ -137,8 +137,8 @@ class BMCSLauncher(HasTraits):
                       full_size=True, resizable=True),
                 UItem('pullout_model_multilinear',
                       full_size=True, resizable=True),
-                UItem('pullout_model_frp_damage',
-                      full_size=True, resizable=True),
+                #                 UItem('pullout_model_frp_damage',
+                #                       full_size=True, resizable=True),
                 UItem('pullout_model_dp',
                       full_size=True, resizable=True),
                 label='Pull-out models, lecture #3-6'
@@ -153,6 +153,11 @@ class BMCSLauncher(HasTraits):
                 UItem('bending3pt_3d',
                       full_size=True, resizable=True),
                 label='Bending, crack propagation, lecture #7-9'
+            ),
+            Group(
+                UItem('yc_explorer',
+                      full_size=True, resizable=True),
+                label='Yield surface explorer #10'
             ),
         ),
         title='BMCS application launcher',

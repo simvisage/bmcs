@@ -287,6 +287,7 @@ class MATSBondSlipDP(MATSBondSlipBase):
 
     @on_trait_change('omega_fn_type')
     def _reset_omega_fn(self):
+        print 'resetting damage function to', self.omega_fn_type
         self.omega_fn = self.omega_fn_type_()
 
     omega_fn = Instance(IDamageFn,

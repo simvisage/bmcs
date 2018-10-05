@@ -548,8 +548,10 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
         tau += d_tau
         s = s[:, :, 1]
         shape = s.shape
-        tau[:, :, 1] = self.bs_law(s.flatten()).reshape(*shape)
-        D_tau = self.bs_law.diff(s.flatten()).reshape(*shape)
+        signs = np.sign(s.flatten())
+        s_pos = np.fabs(s.flatten())
+        tau[:, :, 1] = (signs * self.bs_law(s_pos)).reshape(*shape)
+        D_tau = self.bs_law.diff(s_pos).reshape(*shape)
         D[:, :, 1, 1] = D_tau
 
         return tau, D, s_p, alpha, z, kappa, omega
@@ -710,9 +712,9 @@ class MATSBondSlipFRPDamage(MATSEval, BMCSTreeNode):
 
 
 if __name__ == '__main__':
-    #m = MATSBondSlipMultiLinear()
+    m = MATSBondSlipMultiLinear()
     #m = MATSBondSlipDP()
-    m = MATSBondSlipFRPDamage()
+    #m = MATSBondSlipFRPDamage()
     # m.configure_traits()
     import matplotlib.pyplot as p
     m.plot(p.axes())
