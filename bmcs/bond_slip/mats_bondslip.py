@@ -121,7 +121,7 @@ class MATSBondSlipEP(MATSBondSlipBase):
 
         Z = self.K * z_n
 
-        # for handeling the negative values of isotropic hardening
+        # for handling the negative values of isotropic hardening
         h_1 = self.tau_bar + Z
         pos_iso = h_1 > 1e-6
 
@@ -146,6 +146,20 @@ class MATSBondSlipEP(MATSBondSlipBase):
         tau = self.E_b * (s - s_p_n1)
 
         ax.plot(s, tau, **kw)
+
+    traits_view = View(
+        VGroup(
+            Item('E_b', resizable=True),
+            Item('tau_bar'),
+            Item('gamma'),
+            Item('K'),
+            label='Material parameters'
+        ),
+        height=0.8,
+        width=0.3
+    )
+
+    tree_view = traits_view
 
 
 class MATSBondSlipD(MATSBondSlipBase):
@@ -404,5 +418,6 @@ class MATSBondSlipDP(MATSBondSlipBase):
 
 
 if __name__ == '__main__':
-    m = MATSBondSlipDP()
+    m = MATSBondSlipEP()
+    print m.E_b
     m.configure_traits()

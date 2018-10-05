@@ -330,7 +330,8 @@ class BondSlipModel(BMCSModel, Vis2D):
                      'load function': Viz2DLoadControlFunction,
                      }
 
-    tree_view = View(UItem('loading_scenario@'))
+    tree_view = View(
+        UItem('loading_scenario@'))
     # Item('material_model'),
     #                 Item('interaction_type'))
 
@@ -458,7 +459,7 @@ def run_predefined_load_test():
 if __name__ == '__main__':
     # run_bond_slip_model_dp()
     # run_predefined_load_test(
-    run_bond_slip_model_dp()
+    run_bond_slip_model_p()
 #     from IPython.display import Latex
 #     import IPython as ip
 #     bsm = BondSlipModel()
