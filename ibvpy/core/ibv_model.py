@@ -1,16 +1,14 @@
 
-from traits.api import \
-    HasTraits, Instance, DelegatesTo, HasStrictTraits, Directory, \
-    on_trait_change
-
-from tloop import TLoop
-
-from ibv_resource import IBVResource
-
 import os
 
+from traits.api import \
+    Instance, DelegatesTo, Directory, \
+    on_trait_change
 from traits.util.home_directory import \
     get_home_directory
+
+from ibv_resource import IBVResource
+from tloop import TLoop
 
 
 class IBVModel(IBVResource):
@@ -85,6 +83,7 @@ class IBVModel(IBVResource):
 
     def _create_rtrace(self):
         pass
+
 
 if __name__ == '__main__':
     ibvmodel = IBVModel()

@@ -1,21 +1,5 @@
 
 
-from mayavi.filters.api import PolyDataNormals
-from mayavi.filters.api import WarpScalar
-from mayavi.modules.api import Surface
-from mayavi.sources.api import VTKDataSource
-from numpy import ndarray, max, zeros, array
-from traits.api import \
-    HasTraits, Instance
-from traitsui.api \
-    import View, Item, \
-    TreeEditor, TreeNode, Handler
-from traitsui.menu \
-    import Menu, Action, Separator
-from traitsui.wx.tree_editor \
-    import NewAction
-from tvtk.api import tvtk
-
 from ibvpy.core.tstepper import TStepper
 from ibvpy.mesh.fe_grid import FEGrid
 from ibvpy.mesh.fe_ls_domain import FELSDomain
@@ -25,6 +9,22 @@ from ibvpy.plugins.mayavi_engine import get_engine
 from mathkit.matrix_la.dense_mtx import DenseMtx
 from mathkit.matrix_la.sys_mtx_array import SysMtxArray
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
+from mayavi.filters.api import PolyDataNormals
+from mayavi.filters.api import WarpScalar
+from mayavi.modules.api import Surface
+from mayavi.sources.api import VTKDataSource
+from numpy import ndarray, max, zeros, array
+from traits.api import \
+    HasTraits, Instance
+from tvtk.api import tvtk
+
+from traitsui.api \
+    import View, Item, \
+    TreeEditor, TreeNode, Handler
+from traitsui.menu \
+    import Menu, Action, Separator
+# from traitsui.wx.tree_editor \
+#     import NewAction
 
 
 draw_action = Action(
@@ -118,12 +118,13 @@ class TreeHandler (Handler):
 
         return K
 
-domain_menu = Menu(NewAction,
-                   Separator(),
-                   draw_action,
-                   Separator(),
-                   show_stiffness_action,
-                   plot_stiffness_action)
+
+domain_menu = Menu(  # NewAction,
+    Separator(),
+    draw_action,
+    Separator(),
+    show_stiffness_action,
+    plot_stiffness_action)
 
 fe_domain_tree_editor = TreeEditor(
     nodes=[
@@ -216,6 +217,7 @@ class TStepperService(HasTraits):
             resizable=True,
             scrollable=True)
         return view
+
 
 if __name__ == '__main__':
     tstepper_service = TStepperService()

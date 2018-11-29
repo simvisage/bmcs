@@ -1,22 +1,22 @@
 
-from traits.api import \
-    Callable, Float
-from traitsui.api import \
-    Item, View
-
 from ibvpy.core.ibv_model import IBVModel
 from ibvpy.core.scontext import SContext
 from ibvpy.core.tloop import TLoop, TLine
 from ibvpy.core.tstepper import TStepper
 from ibvpy.mats.mats_eval import IMATSEval
 from ibvpy.mesh.fe_domain import FEDomain
+from traits.api import \
+    Callable, Float
+from traitsui.api import \
+    Item, View
+from util.traits.either_type import \
+    EitherType
+
 from mats1D.mats1D_explore import MATS1DExplore
 from mats1D5.mats1D5_explore import MATS1D5Explore
 from mats2D.mats2D_explore import MATS2DExplore
 from mats3D.mats3D_explore import MATS3DExplore
 import numpy as np
-from util.traits.either_type import \
-    EitherType
 
 
 class FEUnitElem(FEDomain):
@@ -95,6 +95,7 @@ class MATSExplore(IBVModel):
         scrollable=True,
     )
 
+
 if __name__ == '__main__':
     from ibvpy.mats.mats2D.mats2D_cmdm.mats2D_cmdm import \
         MATS2DMicroplaneDamage
@@ -106,8 +107,8 @@ if __name__ == '__main__':
 #     from ibvpy.mats.mats2D5.mats2D5_cmdm.mats2D5_cmdm import \
 #         MATS2D5MicroplaneDamage
 #
-#     from ibvpy.mats.mats3D.mats3D_elastic.mats3D_elastic import \
-#         MATS3DElastic
+    from ibvpy.mats.mats3D.mats3D_elastic.mats3D_elastic import \
+        MATS3DElastic
 #
 #     from ibvpy.mats.matsXD.matsXD_cmdm.matsXD_cmdm_phi_fn import \
 #         PhiFnStrainHardeningLinear
@@ -119,8 +120,8 @@ if __name__ == '__main__':
 #     phi_fn = PhiFnStrainHardeningLinear(alpha=0.5, beta=0.7)
 #     phi_fn = PhiFnStrainHardening(Epp=1e-4, Efp=2e-4, Dfp=0.1, Elimit=8e-2)
     phi_fn = PhiFnStrainSoftening(Epp=1e-4, Efp=2e-4, h=1.0)
-    mats_eval = MATS2DMicroplaneDamage(nu=0.3,
-                                       n_mp=30, phi_fn=phi_fn)
+    mats_eval = MATS2DMicroplaneDamage(nu=0.3, n_mp=30,
+                                       phi_fn=phi_fn)
 
     explorer = MATSExplore(dim=MATS2DExplore(mats_eval=mats_eval),
                            n_steps=10)

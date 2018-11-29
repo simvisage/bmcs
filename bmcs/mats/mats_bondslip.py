@@ -146,25 +146,33 @@ class MATSBondSlipFatigue(MATSEval, BMCSTreeNode, RInputRecord):
         sig += d_sig
 
         # Return mapping
-        delta_lamda = f / (self.E_b / (1 - w) + self.gamma + self.K) * plas
+        delta_lamda = f[plas] / \
+            (self.E_b / (1 - w[plas]) + self.gamma + self.K)
         # update all the state variables
 
-        xs_pi = xs_pi + delta_lamda * np.sign(sig_pi_trial - X) / (1 - w)
-        Y = 0.5 * self.E_b * (eps[:, :, 1] - xs_pi) ** 2
+        xs_plas = xs_pi[plas]
 
-        w = w + (1 - w) ** self.c * (delta_lamda * (Y / self.S) ** self.r)
+        xs_pi[plas] += (delta_lamda[plas] *
+                        np.sign(sig_pi_trial[plas] - X[plas]) / (1 - w[plas]))
+        Y = 0.5 * self.E_b * (eps[:, :, 1][plas] - xs_pi[plas]) ** 2
 
-        sig[:, :, 1] = (1 - w) * self.E_b * (eps[:, :, 1] - xs_pi)
+        w += (1 - w[plas]) ** self.c * \
+            (delta_lamda[plas] * (Y[plas] / self.S) ** self.r)
+
+        sig[:, :, 1][plas] = (1 - w[plas]) * self.E_b * \
+            (eps[:, :, 1][plas] - xs_pi[plas])
         #X = X + self.gamma * delta_lamda * np.sign(sig_pi_trial - X)
-        alpha = alpha + delta_lamda * np.sign(sig_pi_trial - X)
-        z = z + delta_lamda
+        alpha[plas] += delta_lamda[plas] * \
+            np.sign(sig_pi_trial[plas] - X[plas])
+        z[plas] += delta_lamda[plas]
 
         # Consistent tangent operator
-        D_ed = self.E_b * (1 - w) - ((1 - w) * self.E_b ** 2) / (self.E_b + (self.gamma + self.K) * (1 - w))\
-            - ((1 - w) ** self.c * (self.E_b ** 2) * ((Y / self.S) ** self.r)
-               * np.sign(sig_pi_trial - X) * (eps[:, :, 1] - xs_pi)) / ((self.E_b / (1 - w)) + self.gamma + self.K)
-
-        D[:, :, 1, 1] = (1 - w) * self.E_b * elas + D_ed * plas
+        D_ed = (self.E_b * (1 - w) - ((1 - w) * self.E_b ** 2) / (self.E_b + (self.gamma + self.K) * (1 - w))
+                - ((1 - w) ** self.c * (self.E_b ** 2) * ((Y / self.S) ** self.r)
+                   * np.sign(sig_pi_trial - X) * (eps[:, :, 1] - xs_pi)) / ((self.E_b / (1 - w)) + self.gamma + self.K)
+                )
+        D[:, :, 1, 1][elas] = (1 - w[elas]) * self.E_b
+        D[:, :, 1, 1][plas] = D_ed[plas]
 
         return sig, D, xs_pi, alpha, z, kappa, w
 

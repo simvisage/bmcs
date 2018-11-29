@@ -6,13 +6,14 @@
 
 # Standard library imports.
 import logging
-from mayavi.core.customize import get_custom_plugins
-from mayavi.preferences.api import preference_manager
 import sys
 
+from mayavi.core.customize import get_custom_plugins
+from mayavi.preferences.api import preference_manager
 from traits.api import \
     HasTraits, Instance, Int, \
     on_trait_change
+
 from ibv_model_plugin import IBVModelPlugin
 from ibv_model_ui_plugin import IBVModelUIPlugin
 from ibvpy_workbench_application import IBVPyWorkbenchApplication
@@ -173,7 +174,6 @@ class IBVPyApp(HasTraits):
             window = app.workbench.active_window
             e = window.get_service(ETS_BASENAME +
                                    'mayavi.core.engine.Engine')
-            print 'e', e
             set_engine(e)
             self.ibv_resource.bind_services(window)
             self.ibv_resource.register_mv_pipelines(e)
@@ -203,6 +203,7 @@ def main(argv=None):
     m = IBVPyApp()
     m.main(argv)
     return m
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
