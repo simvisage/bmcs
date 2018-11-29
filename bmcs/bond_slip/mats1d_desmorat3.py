@@ -156,7 +156,7 @@ class MATS1DDesmorat(MATSBondSlipBase):
                 Y[i + 1] = 0.5 * self.E_m * s[i + 1]**2. + 0.5 * \
                     self.E_b * (s[i + 1] - s_p[i + 1])**2.
                 D_trial = D[i] + (Y[i + 1] / self.S) * \
-                    delta_pi  # * (1. - D[i])**7
+                    delta_pi * (1. - D[i])**7
                 N[i] = i + 1
                 if D[i] > 0.5:
                     # print ' ----------> No Convergence any more'
