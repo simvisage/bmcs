@@ -50,12 +50,16 @@ class Vis2DEnergy(Vis2D):
     def get_t(self):
         return np.array(self.tloop.t_record, dtype=np.float_)
 
+    def get_w(self):
+        _, w = self.model.get_PW()
+        return w
+
     def get_W_t(self):
-        P, W = self.model.get_PW()
-        W_t = []
-        for i, w in enumerate(W):
-            W_t.append(np.trapz(P[:i + 1], W[:i + 1]))
-        return W_t
+        P, w = self.model.get_PW()
+        w_t = []
+        for i, _ in enumerate(w):
+            w_t.append(np.trapz(P[:i + 1], w[:i + 1]))
+        return w_t
 
     def get_G_t(self):
         U_bar_t = np.array(self.U_bar_t, dtype=np.float_)
@@ -86,20 +90,20 @@ class Viz2DEnergy(Viz2D):
         ax.fill_between(t, W_t, U_bar_t, facecolor='gray', alpha=0.5,
                         label='G(t)')
         ax.set_ylabel('energy [Nmm]')
-        ax.set_xlabel('time [-]')
+        ax.set_xlabel('control displacement [mm]')
         ax.legend()
 
 
-class Viz2DEnergyRatesPlot(Viz2D):
+class Viz2DEnergyReleasePlot(Viz2D):
     '''Plot adaptor for the pull-out simulator.
     '''
-    label = 'line plot'
+    label = 'released energy'
 
     def plot(self, ax, vot, *args, **kw):
-        t = self.vis2d.get_t()
+        w = self.vis2d.get_w()
         G_t = self.vis2d.get_G_t()
-        ax.plot(t, G_t, color='black', linewidth=2, label='G')
-        ax.fill_between(t, 0, G_t, facecolor='gray', alpha=0.5)
+        ax.plot(w, G_t, color='black', linewidth=2, label='G')
+        ax.fill_between(w, 0, G_t, facecolor='gray', alpha=0.5)
         ax.legend()
 #         dG_ax = ax  # ax.twinx()
 #         dG_t = self.vis2d.get_dG_t()

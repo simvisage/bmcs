@@ -7,7 +7,6 @@ Created on Feb 8, 2018
 from ibvpy.api import \
     IFETSEval, FEGrid
 from ibvpy.core.i_tstepper_eval import ITStepperEval
-from ibvpy.mats.mats3D import MATS3D
 from ibvpy.mats.mats_eval import IMATSEval
 from mathkit.matrix_la import \
     SysMtxArray

@@ -18,6 +18,10 @@ from ibvpy.mats.mats2D import \
     MATS2DElastic, MATS2DMplDamageEEQ, MATS2DScalarDamage, MATS2DMplCSDEEQ  # , MATS2DMplCSDODF
 from ibvpy.mats.mats3D.mats3D_sdamage.viz3d_sdamage import Vis3DSDamage,\
     Viz3DSDamage
+from ibvpy.mats.mats3D.viz3d_strain_field import \
+    Vis3DStrainField, Viz3DStrainField
+from ibvpy.mats.mats3D.viz3d_stress_field import \
+    Vis3DStressField, Viz3DStressField
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
@@ -30,14 +34,10 @@ from view.window import BMCSModel, BMCSWindow
 
 from bending3pt_2d import \
     Viz2DForceDeflection, Vis2DCrackBand, CrossSection
-from ibvpy.mats.mats3D.viz3d_strain_field import \
-    Vis3DStrainField, Viz3DStrainField
-from ibvpy.mats.mats3D.viz3d_stress_field import \
-    Vis3DStressField, Viz3DStressField
 import numpy as np
 import numpy as np
 import traits.api as tr
-from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyRatesPlot
+from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
 class XCrossSection(BMCSLeafNode):
@@ -385,8 +385,8 @@ def run_tensile_test_sdamage(*args, **kw):
     vis2d_energy = bt.response_traces['energy']
     viz2d_energy = Viz2DEnergy(name='dissipation',
                                vis2d=vis2d_energy)
-    viz2d_energy_rates = Viz2DEnergyRatesPlot(name='dissipation rate',
-                                              vis2d=vis2d_energy)
+    viz2d_energy_rates = Viz2DEnergyReleasePlot(name='dissipation rate',
+                                                vis2d=vis2d_energy)
     w.viz_sheet.viz2d_list.append(viz2d_energy)
     w.viz_sheet.viz2d_list.append(viz2d_energy_rates)
     w.viz_sheet.monitor_chunk_size = 10

@@ -1,12 +1,14 @@
 
-from traits.api import HasTraits
+from traits.api import HasTraits, WeakRef
 from traitsui.api import View
 from view.ui.bmcs_tree_node import BMCSTreeNode
 
 import numpy as np
 
 
-class IStrainNorm2D(HasTraits):
+class StrainNorm2D(HasTraits):
+
+    mats = WeakRef
 
     def get_eps_eq(self, eps_Emef, kappa_Em):
         raise NotImplementedError
@@ -15,7 +17,7 @@ class IStrainNorm2D(HasTraits):
         raise NotImplementedError
 
 
-class Rankine(IStrainNorm2D, BMCSTreeNode):
+class SN2DRankine(StrainNorm2D, BMCSTreeNode):
     '''
     Computes principal strains and makes a norm of their positive part
     '''
@@ -46,8 +48,6 @@ class Rankine(IStrainNorm2D, BMCSTreeNode):
         factor = np.zeros_like(denom)
         nz_idx = np.where(denom != 0.0)
         factor[nz_idx] = 1. / denom[nz_idx]
-#         factor = 1. / (2. * np.sqrt(eps_11_22 * eps_11_22 +
-#                                     4.0 * eps12 * eps12))
         df_trial1 = factor * np.array([[eps11 - eps22, 4.0 * eps12],
                                        [4.0 * eps12, eps22 - eps11]])
         return (np.einsum('ab...->...ab', df_trial1) +

@@ -250,12 +250,16 @@ class JirasekDamageFn(DamageFn):
 
     plot_max = 1e-2
 
-    def __call__(self, kappa):
+    def get_f_trial(self, eps_eq_Em):
+        eps_0 = self.s_0
+        return np.where(eps_eq_Em - eps_0 > 0)
+
+    def __call__(self, kappa_Em):
         s_0 = self.s_0
         s_f = self.s_f
-        omega = np.zeros_like(kappa, dtype=np.float_)
-        d_idx = np.where(kappa >= s_0)[0]
-        k = kappa[d_idx]
+        omega = np.zeros_like(kappa_Em, dtype=np.float_)
+        d_idx = np.where(kappa_Em >= s_0)[0]
+        k = kappa_Em[d_idx]
         omega[d_idx] = 1. - s_0 / k * np.exp(-1 * (k - s_0) / (s_f - s_0))
         return omega
 

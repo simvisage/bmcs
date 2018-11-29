@@ -17,8 +17,7 @@ EPS[(2, 1, 0), (1, 0, 2), (0, 2, 1)] = -1
 
 
 class YieldConditionJ2(HasStrictTraits):
-
-    '''
+    '''J2-plasticity
     '''
     n_D = Int(3)
     sig_y = Float(2.0)
@@ -38,8 +37,7 @@ class YieldConditionJ2(HasStrictTraits):
 
 
 class YieldConditionDruckerPrager(HasStrictTraits):
-
-    '''
+    '''Drucker-Prager yield condition
     '''
     n_D = Int(3)
     alpha_F = Float(0.24)
@@ -64,12 +62,15 @@ class YieldConditionDruckerPrager(HasStrictTraits):
     def get_df_dsig(self):
         pass
 
+    view = View(Item('alpha_F', full_size=True, resizable=True),
+                Item('tau2_y'))
+
 
 class YieldConditionVonMises(HasStrictTraits):
 
     '''
     '''
-    k = Float(10)
+    k = Float(3)
 
     def f(self, sig_ij):
         I1 = np.einsum('...ii,...ii', sig_ij, DELTA)
@@ -77,6 +78,9 @@ class YieldConditionVonMises(HasStrictTraits):
         J2 = np.einsum('...ij,...ij', s_ij, s_ij) / 2.0
 
         return J2 - self.k ** 2
+
+    view = View(Item('k', full_size=True, resizable=True),
+                )
 
 
 class YieldConditionWillamWarnke(HasStrictTraits):
@@ -117,6 +121,26 @@ class YieldConditionWillamWarnke(HasStrictTraits):
         return (1. / (3. * z) * I1 / self.sig_c + np.sqrt(0.4) /
                 r * np.sqrt(J2) / self.sig_c - 1.)
 
+    view = View(Item('sig_c', full_size=True, resizable=True),
+                Item('sig_t'),
+                Item('sig_b'))
+
+
+class YieldConditionRankine(HasStrictTraits):
+
+    '''single-parameter Rankine failure surface
+    '''
+    sig_t = Float(3.)  # the uniaxial tensile strength
+
+    def f(self, sig_ij):
+        sig_evals, sig_evects = np.linalg.eigh(sig_ij)
+        max_sig = np.max(sig_evals, axis=-1)
+        f = max_sig - self.sig_t
+        return f
+
+    view = View(Item('sig_t', full_size=True, resizable=True),
+                )
+
 
 class YieldConditionAbaqus(HasStrictTraits):
 
@@ -144,7 +168,7 @@ class YieldConditionAbaqus(HasStrictTraits):
 
         return F - c
 
-    view = View(Item('sig_c'),
+    view = View(Item('sig_c', full_size=True, resizable=True),
                 Item('sig_t'),
                 Item('sig_b'))
 
@@ -172,7 +196,7 @@ class YieldConditionExtendedLeonModel(HasStrictTraits):
 
         return z, r, theta
 
-    view = View(Item('sig_c'),
+    view = View(Item('sig_c', full_size=True, resizable=True),
                 Item('sig_t'),
                 Item('sig_b'))
 

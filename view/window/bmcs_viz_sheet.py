@@ -191,8 +191,10 @@ class BMCSVizSheet(ROutputSection):
     def run_finished(self):
         self.skipped_steps = self.monitor_chunk_size
         # self.update_pipeline(1.0)
-        self.offline = True
         self.running = False
+        print 'RUN finshed'
+        self.replot()
+        self.offline = True
 
     monitor_chunk_size = Int(10, label='Monitor each # steps')
 

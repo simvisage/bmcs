@@ -68,7 +68,7 @@ and in boundary conditions.
 '''
 
 
-from bmcs.mats.mats_bondslip import MATSEvalFatigue
+from bmcs.mats.mats_bondslip import MATSBondSlipFatigue
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from ibvpy.api import \
     FEGrid, FETSEval, IFETSEval, \
@@ -273,7 +273,7 @@ class PullOutModelLin(BMCSModel, Vis2D):
     fets = Instance(FETSEval)
 
     def _fets_default(self):
-        return FETS1D52L4ULRH(mats_eval=MATSEvalFatigue())
+        return FETS1D52L4ULRH(mats_eval=MATSBondSlipFatigue())
 
     sdomain = Property(Instance(IFEUniformDomain), depends_on='+input')
 
