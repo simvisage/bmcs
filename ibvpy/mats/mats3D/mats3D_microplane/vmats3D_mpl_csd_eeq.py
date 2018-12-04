@@ -58,23 +58,23 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
                 enter_set=True,
                 auto_set=False)
 
-    S = Float(0.00001,
-              label="S",
-              desc="Damage strength",
-              enter_set=True,
-              auto_set=False)
+    S_T = Float(0.00001,
+                label="S",
+                desc="Damage strength",
+                enter_set=True,
+                auto_set=False)
 
-    r = Float(1.2,
-              label="r",
-              desc="Damage cumulation parameter",
-              enter_set=True,
-              auto_set=False)
+    r_T = Float(1.2,
+                label="r",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
 
-    c = Float(1.0,
-              label="c",
-              desc="Damage cumulation parameter",
-              enter_set=True,
-              auto_set=False)
+    c_T = Float(1.0,
+                label="c",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
 
     tau_pi_bar = Float(2.0,
                        label="Tau_bar",
@@ -89,7 +89,7 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
               auto_set=False)
 
     #-------------------------------------------
-    # Normal_Tension constitutive law parameters
+    # Normal_Tension constitutive law parameters (without cumulative normal strain)
     #-------------------------------------------
     Ad = Float(10000.0,
                label="a",
@@ -97,38 +97,77 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
                enter_set=True,
                auto_set=False)
 
-    eps_0 = Float(56e-6,
+    eps_0 = Float(0.0000002,
                   label="a",
                   desc="threshold strain",
                   enter_set=True,
                   auto_set=False)
 
-    eps_f = Float(250e-6,
+    eps_f = Float(0.000002,
                   label="a",
                   desc="threshold strain",
                   enter_set=True,
                   auto_set=False)
+
+    #-------------------------------------------
+    # Normal_Tension constitutive law parameters (using cumulative normal plastic strain)
+    #-------------------------------------------
+    gamma_N_pos = Float(5000.,
+                        label="Gamma",
+                        desc=" Tangential Kinematic hardening modulus",
+                        enter_set=True,
+                        auto_set=False)
+
+    K_N_pos = Float(0.0,
+                    label="K",
+                    desc="Tangential Isotropic harening",
+                    enter_set=True,
+                    auto_set=False)
+
+    S_N = Float(0.005,
+                label="S",
+                desc="Damage strength",
+                enter_set=True,
+                auto_set=False)
+
+    r_N = Float(1.0,
+                label="r",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
+
+    c_N = Float(1.0,
+                label="c",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
+
+    sigma_0_pos = Float(2.0,
+                        label="Tau_bar",
+                        desc="Reversibility limit",
+                        enter_set=True,
+                        auto_set=False)
 
     #-----------------------------------------------
     # Normal_Compression constitutive law parameters
     #-----------------------------------------------
-    K_N = Float(10000.,
-                label="K_N",
-                desc=" Normal isotropic harening",
-                enter_set=True,
-                auto_set=False)
-
-    gamma_N = Float(15000.,
-                    label="gamma_N",
-                    desc="Normal kinematic hardening",
+    K_N_neg = Float(10000.,
+                    label="K_N",
+                    desc=" Normal isotropic harening",
                     enter_set=True,
                     auto_set=False)
 
-    sigma_0 = Float(20.,
-                    label="sigma_0",
-                    desc="Yielding stress",
-                    enter_set=True,
-                    auto_set=False)
+    gamma_N_neg = Float(15000.,
+                        label="gamma_N",
+                        desc="Normal kinematic hardening",
+                        enter_set=True,
+                        auto_set=False)
+
+    sigma_0_neg = Float(20.,
+                        label="sigma_0",
+                        desc="Yielding stress",
+                        enter_set=True,
+                        auto_set=False)
 
     state_array_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
@@ -147,9 +186,9 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
                 'eps_T_pi_Emna': (self.n_mp, 3), }
 
     #--------------------------------------------------------------
-    # microplane constitutive law (normal behavior CP + TD)
+    # microplane constitutive law (normal behavior CP + TD) (without cumulative normal strain)
     #--------------------------------------------------------------
-    def get_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
+    def xget_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
 
         E_N = self.E / (1.0 - 2.0 * self.nu)
 
@@ -157,21 +196,22 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
         H = 1.0 * pos
 
         sigma_n_trial = (1.0 - H * w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
-        Z = self.K_N * r_N_Emn
-        X = self.gamma_N * alpha_N_Emn
+        Z = self.K_N_neg * r_N_Emn
+        X = self.gamma_N_neg * alpha_N_Emn
 
-        h = self.sigma_0 + Z
+        h = self.sigma_0_neg + Z
         pos_iso = h > 1e-6
         f_trial = abs(sigma_n_trial - X) - h * pos_iso
 
         thres_1 = f_trial > 1e-6
 
         delta_lamda = f_trial / \
-            (E_N + abs(self.K_N) + self.gamma_N) * thres_1
+            (E_N + abs(self.K_N_neg) + self.gamma_N_neg) * thres_1
         eps_N_p_Emn = eps_N_p_Emn + delta_lamda * sign(sigma_n_trial - X)
         r_N_Emn = r_N_Emn + delta_lamda
         alpha_N_Emn = alpha_N_Emn + delta_lamda * sign(sigma_n_trial - X)
 
+    # using the thermodynamic formulated tensile damage law
 #         def Z_N(z_N_Emn): return 1.0 / self.Ad * (-z_N_Emn) / (1.0 + z_N_Emn)
 #         Y_N = 0.5 * H * E_N * eps_N_Emn ** 2.0
 #         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
@@ -183,6 +223,7 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
 #         w_N_Emn = f_w(Y_N) * thres_2
 #         z_N_Emn = - w_N_Emn * thres_2
 
+    # using Jirasek damage function
         f_trial_Emn = eps_N_Emn - self.eps_0
         f_idx = np.where(f_trial_Emn > 0)
         z_N_Emn[f_idx] = eps_N_Emn[f_idx]
@@ -190,6 +231,52 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
                           (self.eps_0 / z_N_Emn[f_idx]) * np.exp(- (z_N_Emn[f_idx] - self.eps_0) / (self.eps_f - self.eps_0)))
 
         sigma_N_Emn = (1.0 - H * w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
+
+        # print 'w_N', w_N_Emn[f_idx]
+
+        return w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn
+
+    #--------------------------------------------------------------
+    # microplane constitutive law (normal behavior CP + TD) (using cumulative normal strain for fatigue under tension)
+    #--------------------------------------------------------------
+    def get_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
+
+        E_N = self.E / (1.0 - 2.0 * self.nu)
+
+        ten = eps_N_Emn > 0.0
+        comp = eps_N_Emn <= 0.0
+
+        sigma_n_trial = (E_N * (eps_N_Emn - eps_N_p_Emn)) * \
+            ten + (E_N * (eps_N_Emn - eps_N_p_Emn)) * comp
+
+        Z = (self.K_N_pos * r_N_Emn) * ten + (self.K_N_neg * r_N_Emn) * comp
+        X = (self.gamma_N_pos * alpha_N_Emn) * ten + \
+            (self.gamma_N_neg * alpha_N_Emn) * comp
+
+        h = self.sigma_0_pos * ten + self.sigma_0_neg * comp + Z
+        pos_iso = h > 1e-6
+        f_trial = abs(sigma_n_trial - X) - h * pos_iso
+
+        thres_1 = f_trial > 1e-6
+
+        delta_lamda = f_trial / \
+            (E_N / (1. - w_N_Emn) + abs(self.K_N_pos * ten + self.K_N_neg * comp) +
+             (self.gamma_N_pos * ten + self.gamma_N_neg * comp)) * thres_1
+
+        eps_N_p_Emn = eps_N_p_Emn + delta_lamda * \
+            sign(sigma_n_trial - X) / (1.0 - w_N_Emn)
+
+        Y = 0.5 * E_N * ((eps_N_Emn - eps_N_p_Emn) * ten) ** 2.0
+
+        w_N_Emn += ((1. - w_N_Emn) ** self.c_N) * \
+            (delta_lamda * (Y / self.S_N) ** self.r_N)
+
+        # print 'w_N', w_N_Emn
+
+        r_N_Emn = r_N_Emn + delta_lamda
+        alpha_N_Emn = alpha_N_Emn + delta_lamda * sign(sigma_n_trial - X)
+
+        sigma_N_Emn = (1.0 - w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
 
         return w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn
 
@@ -237,8 +324,8 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
             einsum('Emna,Emna -> Emn', (eps_T_Emna - eps_T_pi_Emna),
                    (eps_T_Emna - eps_T_pi_Emna))
 
-        w_T_Emn += ((1.0 - w_T_Emn) ** self.c) * \
-            (delta_lamda * (Y / self.S) ** self.r)  # * \
+        w_T_Emn += ((1.0 - w_T_Emn) ** self.c_T) * \
+            (delta_lamda * (Y / self.S_T) ** self.r_T)  # * \
         #(self.tau_pi_bar / (self.tau_pi_bar - self.a * sigma_kk / 3.0))
 
         alpha_T_Emna[..., 0] = alpha_T_Emna[..., 0] + plas_1 * delta_lamda *\
@@ -318,7 +405,7 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
 
         sctx_arr = zeros_like(sctx)
 
-        sctx_N = self.get_normal_law(e_N_arr, sctx)
+        sctx_N = self.get_normal_law_2(e_N_arr, sctx)
         sctx_arr[:, 0:5] = sctx_N
 
         sctx_tangential = self.get_tangential_law(e_T_vct_arr, sctx, sigma_kk)
@@ -383,6 +470,8 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
         w_Emn[idx_2] = w_T_Emn[idx_2]
 
         phi_Emn = sqrt(1.0 - w_Emn)
+
+        #phi_Emn = sqrt(1.0 - w_N_Emn)
 
         return phi_Emn
 

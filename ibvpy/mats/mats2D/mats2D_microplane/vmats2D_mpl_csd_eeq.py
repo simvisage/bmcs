@@ -12,6 +12,7 @@ Using Jirasek homogenization approach [1999]
 '''
 
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
+from ibvpy.mats.mats2D.vmats2D_eval import MATS2D
 from ibvpy.mats.mats_eval import IMATSEval
 from numpy import array, zeros, trace,\
     einsum, zeros_like, identity, sign,\
@@ -20,7 +21,6 @@ from scipy.linalg import eigh
 from traits.api import Constant, implements,\
     Float, HasTraits, Property, cached_property
 
-from ibvpy.mats.mats2D.vmats2D_eval import MATS2D
 import matplotlib.pyplot as plt
 import numpy as np
 import traits.api as tr
@@ -58,23 +58,23 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
                 enter_set=True,
                 auto_set=False)
 
-    S = Float(0.00001,
-              label="S",
-              desc="Damage strength",
-              enter_set=True,
-              auto_set=False)
+    S_T = Float(0.00001,
+                label="S",
+                desc="Damage strength",
+                enter_set=True,
+                auto_set=False)
 
-    r = Float(1.2,
-              label="r",
-              desc="Damage cumulation parameter",
-              enter_set=True,
-              auto_set=False)
+    r_T = Float(1.2,
+                label="r",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
 
-    c = Float(1.0,
-              label="c",
-              desc="Damage cumulation parameter",
-              enter_set=True,
-              auto_set=False)
+    c_T = Float(1.0,
+                label="c",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
 
     tau_pi_bar = Float(2.0,
                        label="Tau_bar",
@@ -89,7 +89,7 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
               auto_set=False)
 
     #-------------------------------------------
-    # Normal_Tension constitutive law parameters
+    # Normal_Tension constitutive law parameters (without cumulative normal strain)
     #-------------------------------------------
     Ad = Float(10000.0,
                label="a",
@@ -97,52 +97,99 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
                enter_set=True,
                auto_set=False)
 
-    eps_0 = Float(0.5e-4,
+    eps_0 = Float(0.002,
                   label="a",
                   desc="threshold strain",
                   enter_set=True,
                   auto_set=False)
 
-    #-----------------------------------------------
-    # Normal_Compression constitutive law parameters
-    #-----------------------------------------------
-    K_N = Float(10000.,
-                label="K_N",
-                desc=" Normal isotropic harening",
+    eps_f = Float(0.02,
+                  label="a",
+                  desc="threshold strain",
+                  enter_set=True,
+                  auto_set=False)
+
+    #-------------------------------------------
+    # Normal_Tension constitutive law parameters (using cumulative normal plastic strain)
+    #-------------------------------------------
+    gamma_N_pos = Float(5000.,
+                        label="Gamma",
+                        desc=" Tangential Kinematic hardening modulus",
+                        enter_set=True,
+                        auto_set=False)
+
+    K_N_pos = Float(0.0,
+                    label="K",
+                    desc="Tangential Isotropic harening",
+                    enter_set=True,
+                    auto_set=False)
+
+    S_N = Float(0.0005,
+                label="S",
+                desc="Damage strength",
                 enter_set=True,
                 auto_set=False)
 
-    gamma_N = Float(15000.,
-                    label="gamma_N",
-                    desc="Normal kinematic hardening",
+    r_N = Float(1.0,
+                label="r",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
+
+    c_N = Float(1.0,
+                label="c",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
+
+    sigma_0_pos = Float(2.0,
+                        label="Tau_bar",
+                        desc="Reversibility limit",
+                        enter_set=True,
+                        auto_set=False)
+
+    #-----------------------------------------------
+    # Normal_Compression constitutive law parameters
+    #-----------------------------------------------
+    K_N_neg = Float(10000.,
+                    label="K_N",
+                    desc=" Normal isotropic harening",
                     enter_set=True,
                     auto_set=False)
 
-    sigma_0 = Float(20.,
-                    label="sigma_0",
-                    desc="Yielding stress",
-                    enter_set=True,
-                    auto_set=False)
+    gamma_N_neg = Float(15000.,
+                        label="gamma_N",
+                        desc="Normal kinematic hardening",
+                        enter_set=True,
+                        auto_set=False)
+
+    sigma_0_neg = Float(20.,
+                        label="sigma_0",
+                        desc="Yielding stress",
+                        enter_set=True,
+                        auto_set=False)
 
     state_array_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
     '''
     @cached_property
     def _get_state_array_shapes(self):
-        return {'omega_N': (self.n_mp,),
-                'z_N': (self.n_mp,),
-                'alpha_N': (self.n_mp,),
-                'r_N': (self.n_mp,),
-                'eps_N_p': (self.n_mp,),
-                'omega_T': (self.n_mp,),
-                'z_T': (self.n_mp,),
-                'alpha_T': (self.n_mp, 2),
-                'eps_T_pi': (self.n_mp, 2), }
+        return {'w_N_Emn': (self.n_mp,),
+                'z_N_Emn': (self.n_mp,),
+                'alpha_N_Emn': (self.n_mp,),
+                'r_N_Emn': (self.n_mp,),
+                'eps_N_p_Emn': (self.n_mp,),
+                'sigma_N_Emn': (self.n_mp,),
+                'w_T_Emn': (self.n_mp,),
+                'z_T_Emn': (self.n_mp,),
+                'alpha_T_Emna': (self.n_mp, 2),
+                'eps_T_pi_Emna': (self.n_mp, 2),
+                }
 
     #--------------------------------------------------------------
-    # microplane constitutive law (normal behavior CP + TD)
+    # microplane constitutive law (normal behavior CP + TD) (without cumulative normal strain for fatigue under tension)
     #--------------------------------------------------------------
-    def get_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
+    def xget_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn):
 
         E_N = self.E / (1.0 - 2.0 * self.nu)
 
@@ -150,17 +197,17 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
         H = 1.0 * pos
 
         sigma_n_trial = (1.0 - H * w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
-        Z = self.K_N * r_N_Emn
-        X = self.gamma_N * alpha_N_Emn
+        Z = self.K_N_neg * r_N_Emn
+        X = self.gamma_N_neg * alpha_N_Emn
 
-        h = self.sigma_0 + Z
+        h = self.sigma_0_neg + Z
         pos_iso = h > 1e-6
         f_trial = abs(sigma_n_trial - X) - h * pos_iso
 
         thres_1 = f_trial > 1e-6
 
         delta_lamda = f_trial / \
-            (E_N + abs(self.K_N) + self.gamma_N) * thres_1
+            (E_N + abs(self.K_N_neg) + self.gamma_N_neg) * thres_1
         eps_N_p_Emn = eps_N_p_Emn + delta_lamda * sign(sigma_n_trial - X)
         r_N_Emn = r_N_Emn + delta_lamda
         alpha_N_Emn = alpha_N_Emn + delta_lamda * sign(sigma_n_trial - X)
@@ -176,12 +223,58 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
         w_N_Emn = f_w(Y_N) * thres_2
         z_N_Emn = - w_N_Emn * thres_2
 
-        return w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn
+        sigma_N_Emn = (1.0 - H * w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
+
+        return w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn
+
+    #--------------------------------------------------------------
+    # microplane constitutive law (normal behavior CP + TD) (using cumulative normal strain for fatigue under tension)
+    #--------------------------------------------------------------
+    def get_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn):
+
+        E_N = self.E / (1.0 - 2.0 * self.nu)
+
+        ten = eps_N_Emn > 0.0
+        comp = eps_N_Emn <= 0.0
+
+        sigma_n_trial = (E_N * (eps_N_Emn - eps_N_p_Emn)) * \
+            ten + (E_N * (eps_N_Emn - eps_N_p_Emn)) * comp
+
+        Z = (self.K_N_pos * r_N_Emn) * ten + (self.K_N_neg * r_N_Emn) * comp
+        X = (self.gamma_N_pos * alpha_N_Emn) * ten + \
+            (self.gamma_N_neg * alpha_N_Emn) * comp
+
+        h = self.sigma_0_pos * ten + self.sigma_0_neg * comp + Z
+        pos_iso = h > 1e-6
+        f_trial = abs(sigma_n_trial - X) - h * pos_iso
+
+        thres_1 = f_trial > 1e-6
+
+        delta_lamda = f_trial / \
+            (E_N / (1. - w_N_Emn) + abs(self.K_N_pos * ten + self.K_N_neg * comp) +
+             (self.gamma_N_pos * ten + self.gamma_N_neg * comp)) * thres_1
+
+        eps_N_p_Emn = eps_N_p_Emn + delta_lamda * \
+            sign(sigma_n_trial - X) / (1.0 - w_N_Emn)
+
+        Y = 0.5 * E_N * ((eps_N_Emn - eps_N_p_Emn) * ten) ** 2.0
+
+        w_N_Emn += ((1. - w_N_Emn) ** self.c_N) * \
+            (delta_lamda * (Y / self.S_N) ** self.r_N)
+
+        # print 'w_N', w_N_Emn
+
+        r_N_Emn = r_N_Emn + delta_lamda
+        alpha_N_Emn = alpha_N_Emn + delta_lamda * sign(sigma_n_trial - X)
+
+        sigma_N_Emn = (1.0 - w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
+
+        return w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn
 
     #-------------------------------------------------------------------------
     # microplane constitutive law (Tangential CSD)-(Pressure sensitive cumulative damage)
     #-------------------------------------------------------------------------
-    def get_tangential_law(self, eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk):
+    def get_tangential_law(self, eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
 
         E_T = self.E / (1.0 + self.nu)
 
@@ -189,10 +282,10 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
         Z = self.K_T * z_T_Emn
         X = self.gamma_T * alpha_T_Emna
         norm_1 = sqrt(
-            einsum('nj,nj -> n', (sig_pi_trial - X), (sig_pi_trial - X)))
+            einsum('Emna,Emna -> Emn', (sig_pi_trial - X), (sig_pi_trial - X)))
 
         f = norm_1 - self.tau_pi_bar - \
-            Z + self.a * sigma_kk / 3.0
+            Z + self.a * sigma_N_Emn / 3.0
 
         plas_1 = f > 1e-6
         elas_1 = f < 1e-6
@@ -201,25 +294,38 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
             (E_T / (1.0 - w_T_Emn) + self.gamma_T + self.K_T) * plas_1
 
         norm_2 = 1.0 * elas_1 + sqrt(
-            einsum('nj,nj -> n', (sig_pi_trial - X), (sig_pi_trial - X))) * plas_1
+            einsum('Emna,Emna -> Emn', (sig_pi_trial - X), (sig_pi_trial - X))) * plas_1
+
+#         eps_T_pi_Emna[..., 0] = eps_T_pi_Emna[..., 0] + plas_1 * delta_lamda * \
+#             ((sig_pi_trial[:, 0] - X[:, 0]) / (1.0 - w_T_Emn)) / norm_2
+#         eps_T_pi_Emna[..., 1] = eps_T_pi_Emna[..., 1] + plas_1 * delta_lamda * \
+#             ((sig_pi_trial[:, 1] - X[:, 1]) / (1.0 - w_T_Emn)) / norm_2
 
         eps_T_pi_Emna[..., 0] = eps_T_pi_Emna[..., 0] + plas_1 * delta_lamda * \
-            ((sig_pi_trial[:, 0] - X[:, 0]) / (1.0 - w_T_Emn)) / norm_2
+            ((sig_pi_trial[..., 0] - X[..., 0]) /
+             (1.0 - w_T_Emn)) / norm_2
         eps_T_pi_Emna[..., 1] = eps_T_pi_Emna[..., 1] + plas_1 * delta_lamda * \
-            ((sig_pi_trial[:, 1] - X[:, 1]) / (1.0 - w_T_Emn)) / norm_2
+            ((sig_pi_trial[..., 1] - X[..., 1]) /
+             (1.0 - w_T_Emn)) / norm_2
 
         Y = 0.5 * E_T * \
-            einsum('nj,nj -> n', (eps_T_Emna - eps_T_pi_Emna),
+            einsum('Emna,Emna-> Emn', (eps_T_Emna - eps_T_pi_Emna),
                    (eps_T_Emna - eps_T_pi_Emna))
 
-        w_T_Emn += ((1 - w_T_Emn) ** self.c) * \
-            (delta_lamda * (Y / self.S) ** self.r) * \
-            (self.tau_pi_bar / (self.tau_pi_bar - self.a * sigma_kk / 3.0))
+        w_T_Emn += ((1 - w_T_Emn) ** self.c_T) * \
+            (delta_lamda * (Y / self.S_T) ** self.r_T) * \
+            (self.tau_pi_bar / (self.tau_pi_bar - self.a * sigma_N_Emn / 3.0))
 
-        alpha_T_Emna[:, 0] = alpha_T_Emna[:, 0] + plas_1 * delta_lamda *\
-            (sig_pi_trial[:, 0] - X[:, 0]) / norm_2
-        alpha_T_Emna[:, 1] = alpha_T_Emna[:, 1] + plas_1 * delta_lamda *\
-            (sig_pi_trial[:, 1] - X[:, 1]) / norm_2
+#         alpha_T_Emna[:, 0] = alpha_T_Emna[:, 0] + plas_1 * delta_lamda *\
+#             (sig_pi_trial[:, 0] - X[:, 0]) / norm_2
+#         alpha_T_Emna[:, 1] = alpha_T_Emna[:, 1] + plas_1 * delta_lamda *\
+#             (sig_pi_trial[:, 1] - X[:, 1]) / norm_2
+
+        alpha_T_Emna[..., 0] = alpha_T_Emna[..., 0] + plas_1 * delta_lamda *\
+            (sig_pi_trial[..., 0] - X[..., 0]) / norm_2
+        alpha_T_Emna[..., 1] = alpha_T_Emna[..., 1] + plas_1 * delta_lamda *\
+            (sig_pi_trial[..., 1] - X[..., 1]) / norm_2
+
         z_T_Emn = z_T_Emn + delta_lamda
 
         return w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna
@@ -282,7 +388,7 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
     #--------------------------------------------------------
     # return the state variables (Damage , inelastic strains)
     #--------------------------------------------------------
-    def _get_state_variables(self, sctx, eps_app_eng, sigma_kk):
+    def _get_state_variables(self, sctx, eps_app_eng):
 
         e_N_arr = self._get_e_N_arr_2(eps_app_eng)
         e_T_vct_arr = self._get_e_T_vct_arr_2(eps_app_eng)
@@ -290,30 +396,30 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
         sctx_arr = zeros_like(sctx)
 
         sctx_N = self.get_normal_law(e_N_arr, sctx)
-        sctx_arr[:, 0:5] = sctx_N
+        sctx_arr[:, 0:6] = sctx_N
 
-        sctx_tangential = self.get_tangential_law(e_T_vct_arr, sctx, sigma_kk)
-        sctx_arr[:, 5:11] = sctx_tangential
+        sctx_tangential = self.get_tangential_law(e_T_vct_arr, sctx)
+        sctx_arr[:, 6:12] = sctx_tangential
 
         return sctx_arr
 
     #-----------------------------------------------------------------
     # Returns a list of the plastic normal strain  for all microplanes.
     #-----------------------------------------------------------------
-    def _get_eps_N_p_Emn(self, eps_Emab, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
+    def _get_eps_N_p_Emn(self, eps_Emab, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn):
         eps_N_Emn = self._get_e_N_Emn_2(eps_Emab)
         eps_N_p_Emn = self.get_normal_law(
-            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn)[4]
+            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn)[4]
         return eps_N_p_Emn
 
     #----------------------------------------------------------------
     # Returns a list of the sliding strain vector for all microplanes.
     #----------------------------------------------------------------
-    def _get_eps_T_pi_arr(self, eps_Emab, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em):
+    def _get_eps_T_pi_arr(self, eps_Emab, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
 
-        eps_T_Emna = self._get_e_T_Emna_2(eps_Emab)
+        eps_T_Emna = self._get_e_T_Emnar_2(eps_Emab)
         eps_N_T_pi_Emna = self.get_tangential_law(
-            eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em)[4]
+            eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)[3]
 
         return eps_N_T_pi_Emna
 
@@ -322,15 +428,15 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
     #-------------------------------------------------------------
     def _get_phi_Emn(self, eps_Emab, w_N_Emn, z_N_Emn,
                      alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                     w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em):
+                     w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
 
         eps_N_Emn = self._get_e_N_Emn_2(eps_Emab)
-        eps_T_Emna = self._get_e_T_Emna_2(eps_Emab)
+        eps_T_Emna = self._get_e_T_Emnar_2(eps_Emab)
 
         w_N_Emn = self.get_normal_law(
-            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn)[0]
+            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn)[0]
         w_T_Emn = self.get_tangential_law(
-            eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em)[0]
+            eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)[0]
 
         w_Emn = zeros_like(w_N_Emn)
 
@@ -358,12 +464,12 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
     #----------------------------------------------
     def _get_phi_Emab(self, eps_Emab, w_N_Emn, z_N_Emn,
                       alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                      w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em):
+                      w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
 
         # scalar integrity factor for each microplane
         phi_Emn = self._get_phi_Emn(eps_Emab, w_N_Emn, z_N_Emn,
                                     alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                                    w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em)
+                                    w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
         # integration terms for each microplanes
         phi_Emab = einsum('Emn,n,nab->Emab', phi_Emn, self._MPW, self._MPNN)
@@ -376,13 +482,13 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
     #----------------------------------------------------------------------
     def _get_beta_Emabcd(self, eps_Emab, w_N_Emn, z_N_Emn,
                          alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                         w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em):
+                         w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
 
         delta = identity(2)
 
         phi_Emab = self._get_phi_Emab(eps_Emab, w_N_Emn, z_N_Emn,
                                       alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                                      w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em)
+                                      w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
         # use numpy functionality (einsum) to evaluate [Jir99], Eq.(21)
         beta_Emabcd = 0.25 * (einsum('Emik,jl->Emijkl', phi_Emab, delta) +
@@ -426,18 +532,18 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
     #-----------------------------------------------------------
     def _get_eps_p_Emab(self, eps_Emab, w_N_Emn, z_N_Emn,
                         alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                        w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em):
+                        w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
 
         eps_N_Emn = self._get_e_N_Emn_2(eps_Emab)
-        eps_T_Emna = self._get_e_T_Emna_2(eps_Emab)
+        eps_T_Emna = self._get_e_T_Emnar_2(eps_Emab)
 
         # plastic normal strains
         eps_N_p_Emn = self.get_normal_law(
-            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn)[5]
+            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn)[4]
 
         # sliding tangential strains
         eps_T_pi_Emna = self.get_tangential_law(
-            eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em)[4]
+            eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)[3]
 
         delta = identity(2)
 
@@ -452,9 +558,9 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, eps_Emab, w_N_Emn, z_N_Emn,
+    def get_corr_pred(self, eps_Emab, deps_Emab, t_n, t_n1, update_state, algorithmic, w_N_Emn, z_N_Emn,
                       alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                      w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em):
+                      w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
 
         # Corrector predictor computation.
 
@@ -463,7 +569,7 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
         #------------------------------------------------------------------
         beta_Emabcd = self._get_beta_Emabcd(eps_Emab, w_N_Emn, z_N_Emn,
                                             alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                                            w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em)
+                                            w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
         #------------------------------------------------------------------
         # Damaged stiffness tensor calculated based on the damage tensor beta4:
@@ -476,7 +582,7 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
         # plastic strain tensor
         eps_p_Emab = self._get_eps_p_Emab(eps_Emab, w_N_Emn, z_N_Emn,
                                           alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                                          w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk_Em)
+                                          w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
         # elastic strain tensor
         eps_e_Emab = eps_Emab - eps_p_Emab
@@ -484,7 +590,7 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
         # calculation of the stress tensor
         sig_Emab = einsum('Emabcd,Emcd -> Emab', D_Emabcd, eps_e_Emab)
 
-        return sig_Emab, D_Emabcd
+        return D_Emabcd, sig_Emab
 
 
 class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
@@ -531,7 +637,7 @@ class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
     # Material parameters
     #-------------------------------------------------------------------------
 
-    E = tr.Float(34e+3,
+    E = tr.Float(34.e+3,
                  label="E",
                  desc="Young's Modulus",
                  auto_set=False,
@@ -609,147 +715,3 @@ class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
     @tr.cached_property
     def _get_D_abef(self):
         return self.D_ab[self.map2d_ijkl2a, self.map2d_ijkl2b]
-
-
-# if __name__ == '__main__':
-#
-#     #=========================
-#     # model behavior
-#     #=========================
-#     n = 100
-#     s_levels = linspace(0, -0.02, 2)
-#     s_levels[0] = 0
-#     s_levels.reshape(-1, 2)[:, 0] *= -1
-#     s_history_1 = s_levels.flatten()
-#
-#     # cyclic loading
-#
-#     s_history_2 = [-0, -0.001, -0.00032, -
-#                    0.0015, -0.00065, -0.0020, -0.00095,
-#                    -0.0027, -0.0014, -0.004, -0.0022, -0.0055,
-#                    -0.0031, -0.007, -0.004, -0.008, -0.0045, -.009,
-#                    -0.0052, -0.01, -0.0058, -0.012, -0.0068, -0.015]
-#
-#     s_history_2 = [0, 0.01]
-#
-#     s_arr_1 = hstack([linspace(s_history_1[i], s_history_1[i + 1], n)
-#                       for i in range(len(s_levels) - 1)])
-#
-#     s_arr_2 = hstack([linspace(s_history_2[i], s_history_2[i + 1], 200)
-#                       for i in range(len(s_history_2) - 1)])
-#
-#     p = 1.0  # ratio of strain eps_11 (for bi-axial loading)
-#     m = 0.0  # ratio of strain eps_22 (for bi-axial loading)
-#
-#     eps_1 = array([array([[p * s_arr_1[i], 0],
-#                           [0, m * s_arr_1[i]]]) for i in range(0, len(s_arr_1))])
-#
-#     eps_2 = array([array([[p * s_arr_2[i], 0],
-#                           [0, m * s_arr_2[i]]]) for i in range(0, len(s_arr_2))])
-#
-#     m2 = MATS2DMicroplaneDamageJir()
-#     n_mp = m2.n_mp
-#     sigma_1 = zeros_like(eps_1)
-#     sigma_kk_1 = zeros(len(s_arr_1) + 1)
-#     w_1_N = zeros((len(eps_1[:, 0, 0]), n_mp))
-#     w_1_T = zeros((len(eps_1[:, 0, 0]), n_mp))
-#     eps_P_N_1 = zeros((len(eps_1[:, 0, 0]), n_mp))
-#     eps_Pi_T_1 = zeros((len(eps_1[:, 0, 0]), n_mp, 2))
-#     e_1 = zeros((len(eps_1[:, 0, 0]), n_mp, 2))
-#     e_T_1 = zeros((len(eps_1[:, 0, 0]), n_mp, 2))
-#     e_N_1 = zeros((len(eps_1[:, 0, 0]), n_mp))
-#     sctx_1 = zeros((len(eps_1[:, 0, 0]) + 1, n_mp, 11))
-#
-#     sigma_2 = zeros_like(eps_2)
-#     sigma_kk_2 = zeros(len(s_arr_2) + 1)
-#     w_2_N = zeros((len(eps_2[:, 0, 0]), n_mp))
-#     w_2_T = zeros((len(eps_2[:, 0, 0]), n_mp))
-#     eps_P_N_2 = zeros((len(eps_2[:, 0, 0]), n_mp))
-#     eps_Pi_T_2 = zeros((len(eps_2[:, 0, 0]), n_mp, 2))
-#     e_2 = zeros((len(eps_2[:, 0, 0]), n_mp, 2))
-#     e_T_2 = zeros((len(eps_2[:, 0, 0]), n_mp, 2))
-#     e_N_2 = zeros((len(eps_2[:, 0, 0]), n_mp))
-#     sctx_2 = zeros((len(eps_2[:, 0, 0]) + 1, n_mp, 11))
-#
-#     for i in range(0, len(eps_1[:, 0, 0])):
-#
-#         sigma_1[i, :] = m2.get_corr_pred(
-#             sctx_1[i, :], eps_1[i, :], sigma_kk_1[i])[0]
-#         sigma_kk_1[i + 1] = trace(sigma_1[i, :])
-#         sctx_1[
-#             i + 1] = m2._get_state_variables(sctx_1[i, :], eps_1[i, :], sigma_kk_1[i])
-#         w_1_N[i, :] = sctx_1[i, :, 0]
-#         w_1_T[i, :] = sctx_1[i, :, 5]
-#         eps_P_N_1[i, :] = sctx_1[i, :, 4]
-#         eps_Pi_T_1[i, :, :] = sctx_1[i, :, 9:11]
-#         #e_1[i, :] = m2._get_e_vct_arr(eps_1[i, :])
-#         #e_T_1[i, :] = m2._get_e_T_vct_arr_2(eps_1[i, :])
-#         #e_N_1[i, :] = m2._get_e_N_arr(e_1[i, :])
-#
-#     for i in range(0, len(eps_2[:, 0, 0])):
-#
-#         sigma_2[i, :] = m2.get_corr_pred(
-#             sctx_2[i, :], eps_2[i, :], sigma_kk_2[i])[0]
-#         sigma_kk_2[i + 1] = trace(sigma_2[i, :])
-#         sctx_2[
-#             i + 1] = m2._get_state_variables(sctx_2[i, :], eps_2[i, :], sigma_kk_2[i])
-#         w_2_N[i, :] = sctx_2[i, :, 0]
-#         w_2_T[i, :] = sctx_2[i, :, 5]
-#         eps_P_N_2[i, :] = sctx_2[i, :, 4]
-#         eps_Pi_T_2[i, :, :] = sctx_2[i, :, 9:11]
-#         #e_2[i, :] = m2._get_e_vct_arr(eps_2[i, :])
-#         #e_T_2[i, :] = m2._get_e_T_vct_arr_2(eps_2[i, :])
-#         #e_N_2[i, :] = m2._get_e_N_arr(e_2[i, :])
-#
-#     # stress -strain
-#     plt.subplot(221)
-#     plt.plot(eps_1[:, 0, 0], sigma_1[:, 0, 0],
-#              linewidth=1, label='sigma_11_(monotonic)')
-#     plt.plot(eps_1[:, 0, 0], sigma_1[:, 1, 1], linewidth=1, label='sigma_22')
-#     #plt.plot(eps[:, 0, 0], sigma[:, 0, 1], linewidth=1, label='sigma_12')
-#     plt.plot(eps_2[:, 0, 0], sigma_2[:, 0, 0],
-#              linewidth=1, label='sigma_11_(cyclic)')
-#     plt.title('$\sigma - \epsilon$')
-#     plt.xlabel('Strain')
-#     plt.ylabel('Stress(MPa)')
-#     plt.axhline(y=0, color='k', linewidth=1, alpha=0.5)
-#     plt.axvline(x=0, color='k', linewidth=1, alpha=0.5)
-#     plt.legend()
-#
-#     # normal damage at the microplanes (TD)
-#     plt.subplot(222)
-#     for i in range(0, 28):
-#         plt.plot(
-#             eps_1[:, 0, 0], w_1_N[:, i], linewidth=1.0, label='cyclic', alpha=1)
-#         plt.plot(
-#             eps_2[:, 0, 0], w_2_N[:, i], linewidth=1.0, label='monotonic', alpha=1)
-#
-#         plt.xlabel('Strain')
-#         plt.ylabel('Damage')
-#         plt.title(' normal damage for all microplanes')
-#
-#     # tangential damage at the microplanes (CSD)
-#     plt.subplot(223)
-#     for i in range(0, 28):
-#         plt.plot(
-#             eps_1[:, 0, 0], w_1_T[:, i], linewidth=1.0, label='cyclic', alpha=1)
-#         plt.plot(
-#             eps_2[:, 0, 0], w_2_T[:, i], linewidth=1.0, label='monotonic', alpha=1)
-#
-#         plt.xlabel('Strain')
-#         plt.ylabel('Damage')
-#         plt.title(' tangential damage for all microplanes')
-#
-#     # tangential sliding strains at the microplanes (CSD)
-#     plt.subplot(224)
-#     for i in range(0, 28):
-#         plt.plot(
-#             eps_1[:, 0, 0], eps_P_N_1[:, i], linewidth=1, label='plastic strain')
-#
-#         plt.plot(
-#             eps_2[:, 0, 0], eps_P_N_2[:, i], linewidth=1, label='plastic strain')
-#
-#         plt.xlabel('Strain')
-#         plt.ylabel('sliding_strain')
-#
-#     plt.show()
