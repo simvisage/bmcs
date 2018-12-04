@@ -54,6 +54,7 @@ class BCondMngr(BMCSTreeNode):
 #                        kind='subpanel',
 #                        )
 
+
 if __name__ == '__main__':
     from ibvpy.api import BCDof
     bc = BCondMngr(bcond_list=[BCDof(), BCDof()])

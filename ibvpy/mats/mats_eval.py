@@ -11,6 +11,7 @@ from traits.api import \
     Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
     on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property, \
     Dict, Constant
+from view.ui import BMCSLeafNode
 
 
 #-------------------------------------------------------------------
@@ -33,7 +34,7 @@ class IMATSEval(ITStepperEval):
 #-------------------------------------------------------------------
 
 
-class MATSEval(HasStrictTraits, TStepperEval):
+class MATSEval(BMCSLeafNode, TStepperEval):
 
     implements(IMATSEval)
 

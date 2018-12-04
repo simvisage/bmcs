@@ -21,6 +21,7 @@ class MATS3DScalarDamage(MATS3DEval, MATS3D):
     r'''
     Isotropic damage model.
     '''
+    node_name = 'Scalar damage'
 
     tr.implements(IMATSEval)
 
@@ -155,20 +156,35 @@ class MATS3DScalarDamage(MATS3DEval, MATS3D):
         return np.einsum('...,...cd,abcd,...cd->...abcd',
                          domega_Em, deps_eq_Emcd, self.D_abef, eps_Emab_n1)
 
-    view_traits = View(VSplit(Group(Item('E'),
-                                    Item('nu'),
-                                    Item('epsilon_0'),
-                                    Item('epsilon_f'),
-                                    Item('strain_norm')),
-                              Group(Item('stress_state', style='custom'),
-                                    Item('stiffness', style='custom'),
-                                    Spring(resizable=True),
-                                    label='Configuration parameters',
-                                    show_border=True,
-                                    ),
-                              ),
-                       resizable=True
-                       )
+    traits_view = View(
+        VSplit(
+            Group(
+                Item('E'),
+                Item('nu'),
+                Item('epsilon_0'),
+                Item('epsilon_f'),
+                Item('strain_norm')
+            ),
+            Group(
+                Item('stress_state', style='custom'),
+                Item('stiffness', style='custom'),
+                Spring(resizable=True),
+                label='Configuration parameters',
+                show_border=True,
+            ),
+        ),
+        resizable=True
+    )
+
+    tree_view = View(
+        Group(
+            Item('E', full_size=True, resizable=True),
+            Item('nu'),
+            Item('epsilon_0'),
+            Item('epsilon_f'),
+            Item('strain_norm')
+        ),
+    )
 
     # Declare and fill-in the rte_dict - it is used by the clients to
     # assemble all the available time-steppers.

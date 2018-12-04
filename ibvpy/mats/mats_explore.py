@@ -1,21 +1,25 @@
 
-from ibvpy.core.ibv_model import IBVModel
+from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
+from ibvpy.bcond import BCDof
 from ibvpy.core.scontext import SContext
-from ibvpy.core.tloop import TLoop, TLine
-from ibvpy.core.tstepper import TStepper
+from ibvpy.core.tloop import TLine
 from ibvpy.mats.mats_eval import IMATSEval
 from ibvpy.mesh.fe_domain import FEDomain
 from traits.api import \
-    Callable, Float
+    Callable, Float, List, Property, cached_property,\
+    Instance
 from traitsui.api import \
-    Item, View
+    Item, View, VGroup
 from util.traits.either_type import \
     EitherType
+from view.plot2d import Viz2D, Vis2D
+from view.window import BMCSModel, BMCSWindow
 
 from mats1D.mats1D_explore import MATS1DExplore
 from mats1D5.mats1D5_explore import MATS1D5Explore
 from mats2D.mats2D_explore import MATS2DExplore
 from mats3D.mats3D_explore import MATS3DExplore
+from mats_tloop import TLoop
 import numpy as np
 
 
@@ -37,18 +41,38 @@ class FEUnitElem(FEDomain):
         return sctx
 
 
-class MATSExplore(IBVModel):
-
+class MATSExplore(BMCSModel, Vis2D):
     '''
     Simulate the loading histories of a material point in 2D space.
     '''
+
+    node_name = 'Composite tensile test'
+
+    tree_node_list = List([])
+
+    def _tree_node_list_default(self):
+        return [
+            self.dim
+        ]
+
+    def _update_node_list(self):
+        self.tree_node_list = [
+            self.dim
+        ]
 
     dim = EitherType(names=['1D', '1D5', '2D', '3D'],
                      klasses=[MATS1DExplore,
                               MATS1D5Explore,
                               MATS2DExplore,
                               MATS3DExplore
-                              ])
+                              ],
+                     MAT=True)
+
+    dimx = Property(depends_on='dim')
+
+    @cached_property
+    def _get_dimx(self):
+        return self.dim
 
     max_load = Float(5.0, enter_set=True, auto_set=False)
 
@@ -69,63 +93,35 @@ class MATSExplore(IBVModel):
         self.dim.explorer = self
         self.dim._mats_eval_changed()
 
-    def _tloop_default(self):
+    tloop = Property(Instance(TLoop), depends_on='dim')
 
-        self.ts = TStepper(
-            tse=self.dim.mats_eval,
-            sdomain=FEUnitElem(mats_eval=self.dim.mats_eval)
-        )
+    @cached_property
+    def _get_tloop(self):
 
-        # Put the time-stepper into the time-loop
-        #
         n_steps = self.n_steps
 
-        tloop = TLoop(tstepper=self.ts,
+        tloop = TLoop(tstepper=self.dim,
                       KMAX=100, RESETMAX=self.n_restarts,
                       tolerance=1e-7,
                       tline=TLine(min=0.0, step=1.0 / n_steps, max=1.0))
 
         return tloop
 
+    def eval(self):
+        self.tloop.eval()
+
     traits_view = View(
-        Item('dim@', show_label=False),
         resizable=True,
         width=1.0,
         height=1.0,
         scrollable=True,
     )
 
+    tree_view = traits_view
+
 
 if __name__ == '__main__':
-    from ibvpy.mats.mats2D.mats2D_cmdm.mats2D_cmdm import \
-        MATS2DMicroplaneDamage
-
-    from ibvpy.mats.matsXD.matsXD_cmdm import \
-        PhiFnStrainHardeningLinear, PhiFnStrainSoftening, \
-        PhiFnStrainHardening
-
-#     from ibvpy.mats.mats2D5.mats2D5_cmdm.mats2D5_cmdm import \
-#         MATS2D5MicroplaneDamage
-#
-    from ibvpy.mats.mats3D.mats3D_elastic.mats3D_elastic import \
-        MATS3DElastic
-#
-#     from ibvpy.mats.matsXD.matsXD_cmdm.matsXD_cmdm_phi_fn import \
-#         PhiFnStrainHardeningLinear
-#
-#     phi_fn = PhiFnStrainHardeningLinear(alpha=0.5, beta=0.7)
-#     explorer = MATSExplore(
-#         dim=MATS3DExplore(mats_eval=MATS3DElastic(E=30000., nu=0.2)))
-
-#     phi_fn = PhiFnStrainHardeningLinear(alpha=0.5, beta=0.7)
-#     phi_fn = PhiFnStrainHardening(Epp=1e-4, Efp=2e-4, Dfp=0.1, Elimit=8e-2)
-    phi_fn = PhiFnStrainSoftening(Epp=1e-4, Efp=2e-4, h=1.0)
-    mats_eval = MATS2DMicroplaneDamage(nu=0.3, n_mp=30,
-                                       phi_fn=phi_fn)
-
-    explorer = MATSExplore(dim=MATS2DExplore(mats_eval=mats_eval),
-                           n_steps=10)
-
-    from ibvpy.plugins.ibvpy_app import IBVPyApp
-    ibvpy_app = IBVPyApp(ibv_resource=explorer)
-    ibvpy_app.main()
+    explorer = MATSExplore(
+        dim=MATS3DExplore())
+    w = BMCSWindow(model=explorer)
+    w.configure_traits()
