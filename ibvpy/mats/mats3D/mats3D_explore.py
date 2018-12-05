@@ -20,4 +20,4 @@ class MATS3DExplore(MATSXDExplore):
                                     MATS3DScalarDamage])
 
     def _mats_eval_default(self):
-        return MATS3DElastic()
+        return MATS3DScalarDamage()
