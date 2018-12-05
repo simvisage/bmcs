@@ -20,25 +20,7 @@ from mats1D5.mats1D5_explore import MATS1D5Explore
 from mats2D.mats2D_explore import MATS2DExplore
 from mats3D.mats3D_explore import MATS3DExplore
 from mats_tloop import TLoop
-import numpy as np
-
-
-class FEUnitElem(FEDomain):
-
-    '''Unit volume for non-local or regularized material models.
-    '''
-    mats_eval = IMATSEval
-
-    def new_scontext(self):
-        '''Spatial context factory'''
-        sctx = SContext()
-        nd = self.mats_eval.n_dims
-        x, y = np.mgrid[0:nd + 1, 0:nd + 1]
-        sctx.X_reg = np.c_[x.flatten(), y.flatten()]
-
-        state_arr_size = self.mats_eval.get_state_array_size()
-        sctx.mats_state_array = np.zeros(state_arr_size, 'float_')
-        return sctx
+from mats_viz2d import Viz2DSigEps
 
 
 class MATSExplore(BMCSModel, Vis2D):
@@ -52,12 +34,14 @@ class MATSExplore(BMCSModel, Vis2D):
 
     def _tree_node_list_default(self):
         return [
-            self.dim
+            self.dim,
+            self.bc
         ]
 
     def _update_node_list(self):
         self.tree_node_list = [
-            self.dim
+            self.dim,
+            self.bc
         ]
 
     dim = EitherType(names=['1D', '1D5', '2D', '3D'],
@@ -74,6 +58,11 @@ class MATSExplore(BMCSModel, Vis2D):
     def _get_dimx(self):
         return self.dim
 
+    bc = Instance(BCDof)
+
+    def _bc_default(self):
+        return BCDof(var='f', dof=0, value=1.0)
+
     max_load = Float(5.0, enter_set=True, auto_set=False)
 
     time_function = Callable(lambda t: t)
@@ -84,13 +73,14 @@ class MATSExplore(BMCSModel, Vis2D):
 
     n_iterations = Float(10, enter_set=True, auto_set=False)
 
-    n_restarts = Float(5, enter_set=True, auto_set=False)
-
     def _dim_default(self):
-        return MATS2DExplore(explorer=self)
+        dim = MATS3DExplore(explorer=self)
+        dim.bcond_mngr.bcond_list = [self.bc]
+        return dim
 
     def _dim_changed(self):
         self.dim.explorer = self
+        self.dim.bcond_mngr.bcond_list = [self.bc]
         self.dim._mats_eval_changed()
 
     tloop = Property(Instance(TLoop), depends_on='dim')
@@ -100,12 +90,15 @@ class MATSExplore(BMCSModel, Vis2D):
 
         n_steps = self.n_steps
 
-        tloop = TLoop(tstepper=self.dim,
-                      KMAX=100, RESETMAX=self.n_restarts,
+        tloop = TLoop(ts=self.dim,
+                      k_max=100,
                       tolerance=1e-7,
                       tline=TLine(min=0.0, step=1.0 / n_steps, max=1.0))
 
         return tloop
+
+    def init(self):
+        self.tloop.init()
 
     def eval(self):
         self.tloop.eval()
@@ -123,5 +116,14 @@ class MATSExplore(BMCSModel, Vis2D):
 if __name__ == '__main__':
     explorer = MATSExplore(
         dim=MATS3DExplore())
+    viz2d_sig_eps = Viz2DSigEps(name='stress-strain',
+                                vis2d=explorer)
+
     w = BMCSWindow(model=explorer)
+
+    w.viz_sheet.viz2d_list.append(viz2d_sig_eps)
+    w.viz_sheet.n_cols = 1
+    w.viz_sheet.monitor_chunk_size = 1
+    w.offline = False
+
     w.configure_traits()

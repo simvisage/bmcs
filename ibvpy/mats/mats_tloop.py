@@ -166,7 +166,7 @@ if __name__ == '__main__':
     from ibvpy.mats.mats3D.mats3D_plastic.mats3D_desmorat import \
         MATS3DDesmorat
     ts = MATS3DExplore(
-        mats_eval=MATS3DDesmorat()
+        mats_eval=MATS3DElastic()
     )
 
     ts.bcond_mngr.bcond_list = [BCDof(var='f', dof=0, value=1.0)]
@@ -176,3 +176,6 @@ if __name__ == '__main__':
     U_k = tl.eval()
 
     print U_k
+
+    print 'U', tl.U_record
+    print 'F', tl.F_record
