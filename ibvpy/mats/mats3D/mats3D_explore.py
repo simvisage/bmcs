@@ -6,6 +6,8 @@ from ibvpy.mats.matsXD.matsXD_explore import MATSXDExplore
 from util.traits.either_type import \
     EitherType
 
+from ibvpy.mats.mats3D.mats3D_plastic.mats3D_desmorat import MATS3DDesmorat
+
 
 class MATS3DExplore(MATSXDExplore):
     '''
@@ -13,8 +15,9 @@ class MATS3DExplore(MATSXDExplore):
     '''
 
     mats_eval = EitherType(klasses=[MATS3DElastic,
+                                    MATS3DDesmorat,
                                     MATS3DMicroplaneDamage,
                                     MATS3DScalarDamage])
 
     def _mats_eval_default(self):
-        return MATS3DScalarDamage()
+        return MATS3DElastic()

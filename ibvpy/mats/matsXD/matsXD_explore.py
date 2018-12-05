@@ -15,9 +15,11 @@
 from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.core.tstepper import TStepper
 from ibvpy.mats.mats_eval import IMATSEval
+from pyglet.media.drivers.alsa.asound import u_int16_t
 from traits.api import \
     Instance, \
-    Dict,  WeakRef, List, implements
+    Dict,  WeakRef, List, implements, \
+    DelegatesTo, Bool
 from traitsui.api import \
     Item, View
 from view.ui import BMCSTreeNode
@@ -45,6 +47,11 @@ class MATSXDExplore(TStepper):
         self.tree_node_list = [
             self.mats_eval
         ]
+
+    algorithmic_stiffness = Bool(
+        True, ALG=True, auto_set=False, enter_set=True)
+
+    state_array_shapes = DelegatesTo('mats_eval')
 
     explorer = WeakRef
 
@@ -90,6 +97,20 @@ class MATSXDExplore(TStepper):
         Return control response array
         '''
         return np.zeros(6, np.float_)
+
+    def get_corr_pred(self, U, dU, t_n, t_n1, update_state,
+                      **state_vars):
+
+        eps_Emab = self.mats_eval.map_eps_eng_to_mtx(U)[np.newaxis, ...]
+        deps_Emab = self.mats_eval.map_eps_eng_to_mtx(dU)[np.newaxis, ...]
+        D_Emabef, sig_Emab = self.mats_eval.get_corr_pred(
+            eps_Emab, deps_Emab, t_n, t_n1,
+            update_state, self.algorithmic_stiffness,
+            **state_vars
+        )
+        K = self.mats_eval.map_tns4_to_tns2(D_Emabef[0])
+        F_int = self.mats_eval.map_sig_mtx_to_eng(sig_Emab[0])
+        return K, F_int
 
     traits_view = View(Item('mats_eval', show_label=False),
                        resizable=True,

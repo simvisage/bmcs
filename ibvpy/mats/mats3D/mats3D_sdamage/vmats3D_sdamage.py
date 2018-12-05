@@ -75,7 +75,6 @@ class MATS3DScalarDamage(MATS3DEval, MATS3D):
                       update_state, algorithmic, kappa, omega):
         r'''
         Corrector predictor computation.
-        @param eps_app_eng input variable - engineering strain
         '''
         if update_state:
             eps_Emab_n = eps_Emab_n1 - deps_Emab
@@ -89,10 +88,10 @@ class MATS3DScalarDamage(MATS3DEval, MATS3D):
         )
         phi_Em = (1.0 - omega_Em)
         D_Emabcd = np.einsum(
-            'Em,abcd->Emabcd', phi_Em, self.D_abef
+            '...,abcd->...abcd', phi_Em, self.D_abef
         )
         sigma_Emab = np.einsum(
-            'Emabcd,Emcd->Emab', D_Emabcd, eps_Emab_n1
+            '...abcd,...cd->...ab', D_Emabcd, eps_Emab_n1
         )
 
         # algorithmic switched off - because the derivative

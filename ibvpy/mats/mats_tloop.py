@@ -4,107 +4,139 @@ Created on 12.01.2016
 @author: Yingxiong
 '''
 from ibvpy.core.tline import TLine
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 from traits.api import Int, HasStrictTraits, Instance, \
-    Float, on_trait_change, Callable, \
+    Float, Event, \
     Array, List, Bool, Property, cached_property, Str, Dict
 from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
 
 from mats3D.mats3D_explore import MATS3DExplore
-#from matsXD.matsXD_explore import MATSXDExplore
 import numpy as np
 
 
+#from matsXD.matsXD_explore import MATSXDExplore
 class TLoop(HasStrictTraits):
 
     ts = Instance(MATS3DExplore)
 
-    tline = Instance(TLine)
+    tline = Instance(TLine, ())
     d_t = Float(0.005)
     t_max = Float(1.0)
-    k_max = Int(1000)
+    k_max = Int(2)
     tolerance = Float(1e-4)
-    # Tolerance in the time variable to end the iteration.
     step_tolerance = Float(1e-8)
 
     t_record = List
-    U = Array(dtype=np.float_)
-    F = Array(dtype=np.float_)
+    U_n = Array(dtype=np.float_)
     K = Array(dtype=np.float_)
     state = Array(dtype=np.float_)
     F_record = List
     U_record = List
     state_record = List
-    K_record = List
+
+    K = Instance(SysMtxAssembly)
 
     paused = Bool(False)
     restart = Bool(True)
 
-    def reset_sv_hist(self):
+    def setup(self):
         n_comps = 6
         n_dofs = n_comps
-        sa_shape = self.ts.state_array_shapes
-        self.state = np.zeros(sa_shape)
-        self.U = np.zeros((n_dofs,))
-        self.F = np.zeros((n_dofs,))
+        self.U_n = np.zeros((n_dofs,))
         t_n = self.tline.val
         self.t_record = [t_n]
-        self.U_record = [np.zeros_like(self.eps)]
-        self.F_record = [np.copy(self.sig)]
+        self.U_record = [np.zeros_like(self.U_n)]
+        self.F_record = [np.copy(self.U_n)]
         self.state_record = [np.copy(self.state)]
-        self.K = np.zeros((n_dofs, n_dofs))
-        self.K_record = [np.zeros_like(self.K)]
+        # Set up the system matrix
+        #
+        self.K = SysMtxAssembly()
+        self.ts.bcond_mngr.apply_essential(self.K)
+
+    state_changed = Event
+    state_arrays = Property(Dict(Str, Array),
+                            depends_on='state_changed')
+    '''Dictionary of state arrays.
+    The entry names and shapes are defined by the material
+    model.
+    '''
+    @cached_property
+    def _get_state_arrays(self):
+        sa_shapes = self.ts.state_array_shapes
+        return {
+            name: np.zeros(mats_sa_shape, dtype=np.float_)[np.newaxis, ...]
+            for name, mats_sa_shape
+            in sa_shapes.items()
+        }
 
     def init(self):
-        print 'INIT'
         if self.paused:
             self.paused = False
         if self.restart:
-            print 'RESET TIME'
             self.tline.val = 0
-            self.reset_sv_hist()
+            self.state_changed = True
+            self.setup()
             self.restart = False
 
     def eval(self):
-
-        self.ts.bcond_mngr.apply_essential(self.K)
-
+        # Reset the system matrix (constraints are preserved)
+        #
         self.d_t = self.tline.step
+        F_ext = np.zeros_like(self.U_n)
         t_n = self.tline.val
         t_n1 = t_n
-
-        U_k = self.U_k
-
+        U_n = self.U_n
         while (t_n1 - self.tline.max) <= self.step_tolerance and \
                 not (self.restart or self.paused):
-
             k = 0
+            print 'load factor', t_n1
             step_flag = 'predictor'
-            d_U = np.zeros_like(U_k)
+            U_k = np.copy(U_n)
             d_U_k = np.zeros_like(U_k)
             while k <= self.k_max and \
                     not (self.restart or self.paused):
 
-                R, F_int, K = self.ts.get_corr_pred(
-                    step_flag, U_k, d_U_k, t_n, t_n1, self.state
+                print 'iteration', k
+                self.K.reset_mtx()
+
+                K_mtx, F_int = self.ts.get_corr_pred(
+                    U_k, d_U_k, t_n, t_n1,
+                    step_flag,
+                    **self.state_arrays
                 )
 
-                K.apply_constraints(R)
-                d_U_k = K.solve()
-                d_U += d_U_k
+                self.K.add_mtx(K_mtx)
+
+                # Prepare F_ext by zeroing it
+                #
+                F_ext[:] = 0.0
+
+                # Assemble boundary conditions in K and self.F_ext
+                #
+                self.ts.bcond_mngr.apply(
+                    step_flag, None, self.K, F_ext, t_n, t_n1)
+
+                # Return the system matrix assembly K and the residuum
+                #
+                R = F_ext - F_int
+
+                self.K.apply_constraints(R)
+                d_U_k, pos_def = self.K.solve()
+                U_k += d_U_k
                 if np.linalg.norm(R) < self.tolerance:
-                    U_k += d_U
+                    U_n[:] = U_k[:]
                     self.t_record.append(t_n1)
                     self.U_record.append(U_k)
                     self.F_record.append(F_int)
                     self.state_record.append(np.copy(self.state))
-                    self.K_record.append(np.copy(K))
                     break
                 k += 1
                 step_flag = 'corrector'
 
             if k >= self.k_max:
-                print ' ----------> No Convergence any more'
+                print ' ----------> no convergence'
                 break
             if self.restart or self.paused:
                 print 'interrupted iteration'
@@ -112,7 +144,6 @@ class TLoop(HasStrictTraits):
             t_n = t_n1
             t_n1 = t_n + self.d_t
             self.tline.val = min(t_n, self.tline.max)
-
         return U_k
 
     def get_time_idx_arr(self, vot):
@@ -130,11 +161,18 @@ class TLoop(HasStrictTraits):
 if __name__ == '__main__':
 
     from ibvpy.api import BCDof
-
-    ts = MATS3DExplore()
+    from ibvpy.mats.mats3D.mats3D_elastic.mats3D_elastic import \
+        MATS3DElastic
+    from ibvpy.mats.mats3D.mats3D_plastic.mats3D_desmorat import \
+        MATS3DDesmorat
+    ts = MATS3DExplore(
+        mats_eval=MATS3DDesmorat()
+    )
 
     ts.bcond_mngr.bcond_list = [BCDof(var='f', dof=0, value=1.0)]
 
-    tl = TLoop(ts=ts)
-
+    tl = TLoop(ts=ts, tline=TLine(step=0.1))
+    tl.init()
     U_k = tl.eval()
+
+    print U_k

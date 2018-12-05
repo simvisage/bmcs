@@ -32,12 +32,12 @@ class Rankine(IStrainNorm3D):
 #         )
 
         eps_eq_Eme = np.linalg.eig(eps_Emef)[0]
-        eps_eq_Em = np.ndarray.max(eps_eq_Eme, axis=2)
+        eps_eq_Em = np.ndarray.max(eps_eq_Eme, axis=-1)
 
         e_Em = np.concatenate(
-            (eps_eq_Em[:, :, None], kappa_Em[:, :, None]), axis=2
+            (eps_eq_Em[..., None], kappa_Em[..., None]), axis=-1
         )
-        eps_eq = np.max(e_Em, axis=2)
+        eps_eq = np.max(e_Em, axis=-1)
 
         return eps_eq
 
