@@ -4,6 +4,7 @@ from ibvpy.mats.mats3D.mats3D_elastic.mats3D_elastic import MATS3DElastic
 from ibvpy.mats.mats3D.mats3D_microplane import MATS3DMplCSDEEQ
 from ibvpy.mats.mats3D.mats3D_sdamage.vmats3D_sdamage import MATS3DScalarDamage
 from ibvpy.mats.matsXD.matsXD_explore import MATSXDExplore
+from traits.api import Trait
 from util.traits.either_type import \
     EitherType
 

@@ -1,4 +1,6 @@
 
+from bmcs.time_functions import \
+    LoadingScenario
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from ibvpy.bcond import BCDof
 from ibvpy.core.scontext import SContext
@@ -34,12 +36,17 @@ class MATSExplore(BMCSModel, Vis2D):
 
     def _tree_node_list_default(self):
         return [
+            self.tline,
+            self.loading_scenario,
             self.dim,
             self.bc
         ]
 
     def _update_node_list(self):
+        print 'updating MATS explore', self.dim
         self.tree_node_list = [
+            self.tline,
+            self.loading_scenario,
             self.dim,
             self.bc
         ]
@@ -61,13 +68,20 @@ class MATSExplore(BMCSModel, Vis2D):
     bc = Instance(BCDof)
 
     def _bc_default(self):
-        return BCDof(var='u', dof=0, value=-0.001)
+        return BCDof(
+            var='u', dof=0, value=-0.001,
+            time_function=self.loading_scenario
+        )
 
-    max_load = Float(5.0, enter_set=True, auto_set=False)
+    #=========================================================================
+    # Test setup parameters
+    #=========================================================================
+    loading_scenario = Instance(LoadingScenario,
+                                report=True,
+                                desc='object defining the loading scenario')
 
-    time_function = Callable(lambda t: t)
-
-    n_steps = Float(30, enter_set=True, auto_set=False)
+    def _loading_scenario_default(self):
+        return LoadingScenario()
 
     tolerance = Float(1e-5, enter_set=True, auto_set=False)
 
@@ -83,17 +97,26 @@ class MATSExplore(BMCSModel, Vis2D):
         self.dim.bcond_mngr.bcond_list = [self.bc]
         self.dim._mats_eval_changed()
 
-    tloop = Property(Instance(TLoop), depends_on='dim')
+    tline = Instance(TLine)
+
+    def _tline_default(self):
+        # assign the parameters for solver and loading_scenario
+        t_max = 1.0  # self.loading_scenario.t_max
+        d_t = 0.05  # self.loading_scenario.d_t
+        return TLine(min=0.0, step=d_t, max=t_max,
+                     time_change_notifier=self.time_changed,
+                     )
+
+    tloop = Property(Instance(TLoop),
+                     depends_on='dim,MAT,GEO,MESH,CS,TIME,ALG,BC'
+                     )
 
     @cached_property
     def _get_tloop(self):
-
-        n_steps = self.n_steps
-
         tloop = TLoop(ts=self.dim,
                       k_max=1000,
                       tolerance=1e-7,
-                      tline=TLine(min=0.0, step=1.0 / n_steps, max=1.0))
+                      tline=self.tline)
 
         return tloop
 
@@ -129,5 +152,4 @@ if __name__ == '__main__':
     w.viz_sheet.n_cols = 1
     w.viz_sheet.monitor_chunk_size = 1
     w.offline = False
-    w.run()
     w.configure_traits()

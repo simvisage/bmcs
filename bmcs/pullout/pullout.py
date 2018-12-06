@@ -300,23 +300,29 @@ class PullOutModelBase(BMCSModel, Vis2D):
     #=========================================================================
     # Test setup parameters
     #=========================================================================
-    loading_scenario = Instance(LoadingScenario,
-                                report=True,
-                                desc='object defining the loading scenario')
+    loading_scenario = Instance(
+        LoadingScenario,
+        report=True,
+        desc='object defining the loading scenario'
+    )
 
     def _loading_scenario_default(self):
         return LoadingScenario()
 
-    cross_section = Instance(CrossSection,
-                             report=True,
-                             desc='cross section parameters')
+    cross_section = Instance(
+        CrossSection,
+        report=True,
+        desc='cross section parameters'
+    )
 
     def _cross_section_default(self):
         return CrossSection()
 
-    geometry = Instance(Geometry,
-                        report=True,
-                        desc='geometry parameters of the boundary value problem')
+    geometry = Instance(
+        Geometry,
+        report=True,
+        desc='geometry parameters of the boundary value problem'
+    )
 
     def _geometry_default(self):
         return Geometry()

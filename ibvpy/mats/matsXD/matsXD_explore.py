@@ -44,6 +44,7 @@ class MATSXDExplore(TStepper):
         ]
 
     def _update_node_list(self):
+        print 'updating Stress space', self.mats_eval
         self.tree_node_list = [
             self.mats_eval
         ]
