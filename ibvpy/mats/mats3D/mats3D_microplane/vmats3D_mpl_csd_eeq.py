@@ -58,7 +58,7 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
                 enter_set=True,
                 auto_set=False)
 
-    S_T = Float(0.00001,
+    S_T = Float(0.0001,
                 label="S",
                 desc="Damage strength",
                 enter_set=True,

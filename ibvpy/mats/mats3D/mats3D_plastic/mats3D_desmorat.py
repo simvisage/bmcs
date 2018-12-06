@@ -36,12 +36,12 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
     # Material parameters
     #-------------------------------------------------------------------------
 
-    E_1 = tr.Float(15e+3,
+    E_1 = tr.Float(16.0e+3,
                    label="E_1",
                    desc="first Young's Modulus",
                    auto_set=False,
                    input=True)
-    E_2 = tr.Float(19e+3,
+    E_2 = tr.Float(19.0e+3,
                    label="E_2",
                    desc="second Young's Modulus",
                    auto_set=False,
@@ -93,7 +93,7 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
 
     tree_node_list = List([])
 
-    gamma = Float(110,
+    gamma = Float(110.0,
                   label="Gamma",
                   desc="kinematic hardening modulus",
                   MAT=True,
@@ -102,7 +102,7 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
                   enter_set=True,
                   auto_set=False)
 
-    K = Float(130,
+    K = Float(130.0,
               label="K",
               desc="isotropic hardening modulus",
               MAT=True,
@@ -111,7 +111,7 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
               enter_set=True,
               auto_set=False)
 
-    S = Float(476e-6,
+    S = Float(476.0e-6,
               label="S",
               desc="damage strength",
               MAT=True,
@@ -120,7 +120,7 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
               enter_set=True,
               auto_set=False)
 
-    tau_bar = Float(9,
+    tau_bar = Float(6.0,
                     label="Tau_0 ",
                     desc="yield stress",
                     symbol=r'\bar{\tau}',
@@ -132,20 +132,63 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
     state_array_shapes = {'sigma_Emab': (3, 3),
                           'sigma_pi_Emab': (3, 3),
                           'eps_pi_Emab': (3, 3),
-                          'X_Emab': (3, 3),
+                          'alpha_Emab': (3, 3),
                           'z_Ema': (),
-                          'omega_Ema': (),
-                          'Y_Ema': ()}
+                          'omega_Ema': ()}
     r'''
     Shapes of the state variables
     to be stored in the global array at the level 
     of the domain.
     '''
 
+    def _get_state_variables(self, eps_Emab, eps_pi_Emab, alpha_Emab, z_Ema, omega_Ema):
+
+        D_1_abef = self.D_1_abef
+        D_2_abef = self.D_2_abef
+
+        sigma_pi_Emab_trial = (
+            np.einsum('...ijkl,...kl->...ij', D_2_abef, eps_Emab))
+
+        norm = sigma_pi_Emab_trial - self.gamma * alpha_Emab,
+        f = np.sqrt(np.einsum('Emnj,Emnj', norm, norm)
+                    ) - self.tau_bar - self.K * z_Ema
+
+        plas_1 = f > 1e-6
+        elas_1 = f < 1e-6
+
+        delta_pi = f / \
+            (self.E_2 + (self.K + self.gamma) * (1. - omega_Ema)) * plas_1
+
+        norm2 = sigma_pi_Emab_trial - self.gamma * alpha_Emab
+
+        norm3 = 1.0 * elas_1 + \
+            np.sqrt(np.einsum('...ab,...ab', norm, norm)) * plas_1
+
+        eps_pi_Emab = eps_pi_Emab + plas_1 * (norm2 * delta_pi / norm3)
+
+        eps_diff_Emab = eps_Emab - eps_pi_Emab
+
+        Y_Ema = 0.5 * (np.einsum('...ij,...ijkl,...kl',
+                                 eps_Emab, D_1_abef, eps_Emab)) + \
+            0.5 * (np.einsum('...ij,...ijkl,...kl',
+                             eps_diff_Emab, D_2_abef, eps_diff_Emab))
+
+        omega_Ema = omega_Ema + (Y_Ema / self.S) * delta_pi
+
+        if omega_Ema >= 0.99:
+            omega_Ema = 0.99
+
+        alpha_Emab = alpha_Emab + plas_1 * \
+            (norm2 * delta_pi / norm3) * (1.0 - omega_Ema)
+
+        z_Ema = z_Ema + delta_pi
+
+        return eps_pi_Emab, alpha_Emab, z_Ema, omega_Ema
+
     def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1,
                       update_state, algorithmic,
                       sigma_Emab, sigma_pi_Emab, eps_pi_Emab,
-                      X_Emab, z_Ema, omega_Ema, Y_Ema):
+                      alpha_Emab, z_Ema, omega_Ema):
         r'''
         Corrector predictor computation.
         '''
@@ -157,46 +200,17 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
             D_1_abef = self.D_1_abef.reshape(*new_shape)
             D_2_abef = self.D_2_abef.reshape(*new_shape)
 
-            D_m = self.D_1_abef
-            D_b = self.D_2_abef
-
-            sigma_pi_Emab_trial = (
-                np.einsum('...ijkl,...kl->...ij', D_2_abef, eps_Emab_n))
-
-            norm = sigma_pi_Emab_trial - X_Emab,
-            f = np.sqrt(np.einsum('Emnj,Emnj', norm, norm)
-                        ) - self.tau_bar - self.K * z_Ema
-
-            plas_1 = f > 1e-6
-            elas_1 = f < 1e-6
-
-            delta_pi = f / \
-                (self.E_2 + (self.K + self.gamma) * (1. - omega_Ema)) * plas_1
-
-            norm2 = sigma_pi_Emab_trial - X_Emab
-            norm3 = 1.0 * elas_1 + \
-                np.sqrt(np.einsum('...ab,...ab', norm, norm)) * plas_1
-
-            eps_pi_Emab = eps_pi_Emab + plas_1 * (norm2 * delta_pi / norm3)
-
-            eps_diff_Emab = eps_Emab_n - eps_pi_Emab
-
-            Y_Ema = 0.5 * (np.einsum('...ij,...ijkl,...kl',
-                                     eps_Emab_n, D_m, eps_Emab_n)) + \
-                0.5 * (np.einsum('...ij,...ijkl,...kl',
-                                 eps_diff_Emab, D_b, eps_diff_Emab))
-
-            omega_Ema = omega_Ema + (Y_Ema / self.S) * delta_pi
-
-            sigma_Emab = ((1.0 - omega_Ema) * np.einsum('...ijkl,...kl->...ij',
-                                                        D_1_abef, eps_Emab_n) +
-                          (1.0 - omega_Ema) * np.einsum('...ijkl,...kl->...ij',
-                                                        D_2_abef, eps_Emab_n))
+            eps_pi_Emab, alpha_Emab, z_Ema, omega_Ema = self._get_state_variables(
+                eps_Emab_n, eps_pi_Emab, alpha_Emab, z_Ema, omega_Ema)
 
             phi_Emn = 1.0 - omega_Ema
 
-            D_abef = (D_1_abef + D_2_abef)
-            D_abef = np.einsum('...a, ...ijkl->...ijkl',
-                               phi_Emn,  D_1_abef + D_2_abef)
+            sigma_Emab = phi_Emn * (np.einsum('...ijkl,...kl->...ij',
+                                              D_1_abef, eps_Emab_n) +
+                                    np.einsum('...ijkl,...kl->...ij',
+                                              D_2_abef, eps_Emab_n - eps_pi_Emab))
+
+            D_abef = phi_Emn * np.einsum(' ...ijkl->...ijkl',
+                                         D_1_abef + D_2_abef)
 
         return D_abef, sigma_Emab
