@@ -100,7 +100,6 @@ class MATSXDExplore(TStepper):
 
     def get_corr_pred(self, U, dU, t_n, t_n1, update_state,
                       **state_vars):
-
         eps_Emab = self.mats_eval.map_eps_eng_to_mtx(U)[np.newaxis, ...]
         deps_Emab = self.mats_eval.map_eps_eng_to_mtx(dU)[np.newaxis, ...]
         D_Emabef, sig_Emab = self.mats_eval.get_corr_pred(

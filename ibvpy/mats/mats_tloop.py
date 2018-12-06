@@ -65,6 +65,7 @@ class TLoop(HasStrictTraits):
     @cached_property
     def _get_state_arrays(self):
         sa_shapes = self.ts.state_array_shapes
+        print 'state array generated', sa_shapes
         return {
             name: np.zeros(mats_sa_shape, dtype=np.float_)[np.newaxis, ...]
             for name, mats_sa_shape
@@ -91,14 +92,13 @@ class TLoop(HasStrictTraits):
         while (t_n1 - self.tline.max) <= self.step_tolerance and \
                 not (self.restart or self.paused):
             k = 0
-            print 'load factor', t_n1
+            print 'load factor', t_n1,
             step_flag = 'predictor'
             U_k = np.copy(U_n)
             d_U_k = np.zeros_like(U_k)
             while k <= self.k_max and \
                     not (self.restart or self.paused):
 
-                print 'iteration', k
                 self.K.reset_mtx()
 
                 K_mtx, F_int = self.ts.get_corr_pred(
@@ -138,9 +138,12 @@ class TLoop(HasStrictTraits):
             if k >= self.k_max:
                 print ' ----------> no convergence'
                 break
+            else:
+                print '(', k, ')'
             if self.restart or self.paused:
                 print 'interrupted iteration'
                 break
+
             t_n = t_n1
             t_n1 = t_n + self.d_t
             self.tline.val = min(t_n, self.tline.max)
@@ -165,11 +168,13 @@ if __name__ == '__main__':
         MATS3DElastic
     from ibvpy.mats.mats3D.mats3D_plastic.mats3D_desmorat import \
         MATS3DDesmorat
+    from ibvpy.mats.mats3D import \
+        MATS3DMplCSDEEQ
     ts = MATS3DExplore(
-        mats_eval=MATS3DElastic()
+        mats_eval=MATS3DDesmorat()
     )
 
-    ts.bcond_mngr.bcond_list = [BCDof(var='f', dof=0, value=1.0)]
+    ts.bcond_mngr.bcond_list = [BCDof(var='u', dof=0, value=3)]
 
     tl = TLoop(ts=ts, tline=TLine(step=0.1))
     tl.init()

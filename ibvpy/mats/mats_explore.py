@@ -61,7 +61,7 @@ class MATSExplore(BMCSModel, Vis2D):
     bc = Instance(BCDof)
 
     def _bc_default(self):
-        return BCDof(var='f', dof=0, value=1.0)
+        return BCDof(var='u', dof=0, value=-0.001)
 
     max_load = Float(5.0, enter_set=True, auto_set=False)
 
@@ -91,7 +91,7 @@ class MATSExplore(BMCSModel, Vis2D):
         n_steps = self.n_steps
 
         tloop = TLoop(ts=self.dim,
-                      k_max=100,
+                      k_max=1000,
                       tolerance=1e-7,
                       tline=TLine(min=0.0, step=1.0 / n_steps, max=1.0))
 
@@ -114,8 +114,12 @@ class MATSExplore(BMCSModel, Vis2D):
 
 
 if __name__ == '__main__':
+    from ibvpy.mats.mats3D import MATS3DMplCSDEEQ
     explorer = MATSExplore(
-        dim=MATS3DExplore())
+        dim=MATS3DExplore(
+            mats_eval=MATS3DMplCSDEEQ()
+        )
+    )
     viz2d_sig_eps = Viz2DSigEps(name='stress-strain',
                                 vis2d=explorer)
 
@@ -125,5 +129,5 @@ if __name__ == '__main__':
     w.viz_sheet.n_cols = 1
     w.viz_sheet.monitor_chunk_size = 1
     w.offline = False
-
+    w.run()
     w.configure_traits()

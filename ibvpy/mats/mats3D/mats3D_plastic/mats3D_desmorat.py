@@ -144,7 +144,8 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
 
     def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1,
                       update_state, algorithmic,
-                      sigma_Emab, sigma_pi_Emab, eps_pi_Emab, X_Emab, z_Ema, omega_Ema, Y_Ema):
+                      sigma_Emab, sigma_pi_Emab, eps_pi_Emab,
+                      X_Emab, z_Ema, omega_Ema, Y_Ema):
         r'''
         Corrector predictor computation.
         '''
@@ -155,8 +156,6 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
             new_shape = tuple([1 for i in range(Em_len)]) + self.D_abef.shape
             D_1_abef = self.D_1_abef.reshape(*new_shape)
             D_2_abef = self.D_2_abef.reshape(*new_shape)
-
-            print D_2_abef
 
             D_m = self.D_1_abef
             D_b = self.D_2_abef
@@ -182,14 +181,17 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
 
             eps_diff_Emab = eps_Emab_n - eps_pi_Emab
 
-            Y_Ema = 0.5 * (np.einsum('...ij,...ijkl,...kl', eps_Emab_n, D_m, eps_Emab_n)) + \
+            Y_Ema = 0.5 * (np.einsum('...ij,...ijkl,...kl',
+                                     eps_Emab_n, D_m, eps_Emab_n)) + \
                 0.5 * (np.einsum('...ij,...ijkl,...kl',
                                  eps_diff_Emab, D_b, eps_diff_Emab))
 
             omega_Ema = omega_Ema + (Y_Ema / self.S) * delta_pi
 
-            sigma_Emab = ((1.0 - omega_Ema) * np.einsum('...ijkl,...kl->...ij', D_1_abef, eps_Emab_n) +
-                          (1.0 - omega_Ema) * np.einsum('...ijkl,...kl->...ij', D_2_abef, eps_Emab_n))
+            sigma_Emab = ((1.0 - omega_Ema) * np.einsum('...ijkl,...kl->...ij',
+                                                        D_1_abef, eps_Emab_n) +
+                          (1.0 - omega_Ema) * np.einsum('...ijkl,...kl->...ij',
+                                                        D_2_abef, eps_Emab_n))
 
             phi_Emn = 1.0 - omega_Ema
 
