@@ -24,11 +24,10 @@ import traits.api as tr
 
 
 class MATS3DDesmorat(MATS3DEval, MATS3D):
-
-    node_name = 'bond model: damage-plasticity'
-
-    '''Damage - plasticity model of bond.
+    '''Damage - plasticity model by Desmorat.
     '''
+
+    node_name = 'Desmorat model'
 
     tr.implements(IMATSEval)
 
@@ -217,3 +216,20 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
                                          D_1_abef + D_2_abef)
 
         return D_abef, sigma_Emab
+
+    traits_view = View(
+        VGroup(
+            Item('E_1', full_size=True, resizable=True),
+            Item('E_2'),
+            Item('nu'),
+            label='Elastic parameters'
+        ),
+        VGroup(
+            Item('gamma', full_size=True, resizable=True),
+            Item('K'),
+            Item("S"),
+            Item("Tau_0 "),
+            label='Inelastic parameters'
+        )
+    )
+    tree_view = traits_view

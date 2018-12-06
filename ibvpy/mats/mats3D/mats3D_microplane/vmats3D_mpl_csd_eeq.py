@@ -19,6 +19,8 @@ from numpy import array,\
     sqrt
 from traits.api import Constant, implements,\
     Float, Property, cached_property, Dict
+from traitsui.api import \
+    View, VGroup, Item
 
 import numpy as np
 import traits.api as tr
@@ -26,6 +28,7 @@ import traits.api as tr
 
 class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
 
+    node_name = 'Microplane CSD model (EEQ)'
     implements(IMATSEval)
 
     #--------------------------
@@ -92,58 +95,59 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
     # Normal_Tension constitutive law parameters (without cumulative normal strain)
     #-------------------------------------------
     Ad = Float(10000.0,
-               label="a",
-               desc="brittleness coefficient",
+               label="Ad",
+               desc="Brittleness coefficient",
                enter_set=True,
                auto_set=False)
 
     eps_0 = Float(0.0000002,
-                  label="a",
-                  desc="threshold strain",
+                  label="eps_0",
+                  desc="Threshold strain",
                   enter_set=True,
                   auto_set=False)
 
     eps_f = Float(0.000002,
-                  label="a",
-                  desc="threshold strain",
+                  label="eps_f",
+                  desc="Damage function shape",
                   enter_set=True,
                   auto_set=False)
 
     #-------------------------------------------
-    # Normal_Tension constitutive law parameters (using cumulative normal plastic strain)
+    # Normal_Tension constitutive law parameters
+    # (using cumulative normal plastic strain)
     #-------------------------------------------
     gamma_N_pos = Float(5000.,
-                        label="Gamma",
+                        label="Gamma N",
                         desc=" Tangential Kinematic hardening modulus",
                         enter_set=True,
                         auto_set=False)
 
     K_N_pos = Float(0.0,
-                    label="K",
+                    label="K N",
                     desc="Tangential Isotropic harening",
                     enter_set=True,
                     auto_set=False)
 
     S_N = Float(0.005,
-                label="S",
+                label="S N",
                 desc="Damage strength",
                 enter_set=True,
                 auto_set=False)
 
     r_N = Float(1.0,
-                label="r",
+                label="r N",
                 desc="Damage cumulation parameter",
                 enter_set=True,
                 auto_set=False)
 
     c_N = Float(1.0,
-                label="c",
+                label="c N",
                 desc="Damage cumulation parameter",
                 enter_set=True,
                 auto_set=False)
 
     sigma_0_pos = Float(2.0,
-                        label="Tau_bar",
+                        label="sigma_0",
                         desc="Reversibility limit",
                         enter_set=True,
                         auto_set=False)
@@ -152,20 +156,20 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
     # Normal_Compression constitutive law parameters
     #-----------------------------------------------
     K_N_neg = Float(10000.,
-                    label="K_N",
+                    label="K N compression",
                     desc=" Normal isotropic harening",
                     enter_set=True,
                     auto_set=False)
 
     gamma_N_neg = Float(15000.,
-                        label="gamma_N",
+                        label="gamma_compression",
                         desc="Normal kinematic hardening",
                         enter_set=True,
                         auto_set=False)
 
     sigma_0_neg = Float(20.,
-                        label="sigma_0",
-                        desc="Yielding stress",
+                        label="sigma 0 compression",
+                        desc="Yield stress in compression",
                         enter_set=True,
                         auto_set=False)
 
@@ -710,3 +714,45 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
                   einsum(',il,jk->ijkl', mu, delta, delta))
 
         return D_abef
+
+    traits_view = View(
+        VGroup(
+            VGroup(
+                Item('E', full_size=True, resizable=True),
+                Item('nu'),
+                label='Elastic parameters'
+            ),
+            VGroup(
+                Item('gamma_T', full_size=True, resizable=True),
+                Item('K_T'),
+                Item('S_T'),
+                Item('r_T'),
+                Item('c_T'),
+                Item('tau_pi_bar'),
+                Item('a'),
+                label='Tangential properties'
+            ),
+            VGroup(
+                Item('Ad'),
+                Item('eps_0', full_size=True, resizable=True),
+                Item('eps_f'),
+                label='Normal_Tension (no cumulative normal strain)'
+            ),
+            VGroup(
+                Item('gamma_N_pos', full_size=True, resizable=True),
+                Item('K_N_pos'),
+                Item('S_N'),
+                Item('r_N'),
+                Item('c_N'),
+                Item('sigma_0_pos'),
+                label='Normal_Tension (cumulative normal plastic strain)',
+            ),
+            VGroup(
+                Item('K_N_neg', full_size=True, resizable=True),
+                Item('gamma_N_neg'),
+                Item('sigma_0_neg'),
+                label='Normal_compression parameters'
+            )
+        )
+    )
+    tree_view = traits_view
