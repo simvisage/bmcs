@@ -24,7 +24,7 @@ class TLoop(HasStrictTraits):
     tline = Instance(TLine, ())
     d_t = Float(0.005)
     t_max = Float(1.0)
-    k_max = Int(2)
+    k_max = Int(50)
     tolerance = Float(1e-4)
     step_tolerance = Float(1e-8)
 

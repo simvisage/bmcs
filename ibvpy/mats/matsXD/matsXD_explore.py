@@ -15,7 +15,7 @@
 from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.core.tstepper import TStepper
 from ibvpy.mats.mats_eval import IMATSEval
-from pyglet.media.drivers.alsa.asound import u_int16_t
+#from pyglet.media.drivers.alsa.asound import u_int16_t
 from traits.api import \
     Instance, \
     Dict,  WeakRef, List, implements, \
