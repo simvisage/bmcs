@@ -156,15 +156,18 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
         plas_1 = f > 1e-6
         elas_1 = f < 1e-6
 
-        delta_pi = f / \
-            (self.E_2 + (self.K + self.gamma) * (1. - omega_Ema)) * plas_1
-
-        norm2 = sigma_pi_Emab_trial - self.gamma * alpha_Emab
-
+#         delta_pi = f / \
+#             (self.E_2 + (self.K + self.gamma) * (1. - omega_Ema)) * plas_1
+#
         norm3 = 1.0 * elas_1 + \
             np.sqrt(np.einsum('...ab,...ab', norm, norm)) * plas_1
 
-        eps_pi_Emab = eps_pi_Emab + plas_1 * (norm2 * delta_pi / norm3)
+        delta_lamda = f / (np.einsum('...ij,...ijkl,...kl',
+                                     norm, D_1_abef, norm) + self.gamma * np.einsum('...ab,...ab', norm, norm) + self.K)
+
+        delta_pi = delta_lamda / (1.0 - omega_Ema)
+
+        eps_pi_Emab = eps_pi_Emab + plas_1 * (norm * delta_pi / norm3)
 
         eps_diff_Emab = eps_Emab - eps_pi_Emab
 
@@ -179,7 +182,7 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
             omega_Ema = 0.99
 
         alpha_Emab = alpha_Emab + plas_1 * \
-            (norm2 * delta_pi / norm3) * (1.0 - omega_Ema)
+            (norm * delta_pi / norm3) * (1.0 - omega_Ema)
 
         z_Ema = z_Ema + delta_pi
 

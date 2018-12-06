@@ -115,9 +115,11 @@ class MATSExplore(BMCSModel, Vis2D):
 
 if __name__ == '__main__':
     from ibvpy.mats.mats3D import MATS3DMplCSDEEQ
+    from ibvpy.mats.mats3D.mats3D_plastic.mats3D_desmorat import \
+        MATS3DDesmorat
     explorer = MATSExplore(
         dim=MATS3DExplore(
-            mats_eval=MATS3DMplCSDEEQ()
+            mats_eval=MATS3DDesmorat()
         )
     )
     viz2d_sig_eps = Viz2DSigEps(name='stress-strain',
