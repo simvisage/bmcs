@@ -15,7 +15,7 @@ from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.mats_eval import IMATSEval
 import numpy as np
 from util.traits.either_type import EitherType
-from yield_face2D import IYieldFace2D, J2, DruckerPrager, Gurson, CamClay
+from .yield_face2D import IYieldFace2D, J2, DruckerPrager, Gurson, CamClay
 
 
 #---------------------------------------------------------------------------
@@ -26,7 +26,7 @@ class MATS2DPlastic(MATS2DEval):
     Elastic Model.
     '''
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)
@@ -184,7 +184,7 @@ class MATS2DPlastic(MATS2DEval):
         int_count = 1
         while f_trial > self.tolerance or norm(R_k) > self.tolerance:
             if int_count > self.max_iter:
-                print "Maximal number of iteration reached"
+                print("Maximal number of iteration reached")
                 break
             diff1s = self.yf.get_diff1s(
                 eps_app_eng, self.E, self.nu, sctx)
@@ -285,7 +285,7 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------
     from ibvpy.api import RTDofGraph
     from ibvpy.mats.mats2D.mats2D_explore import MATS2DExplore
-    from yield_face2D import J2
+    from .yield_face2D import J2
     mats2D_explore = \
         MATS2DExplore(mats2D_eval=MATS2DPlastic(yf=J2()),
                       rtrace_list=[RTDofGraph(name='strain 0 - stress 0',

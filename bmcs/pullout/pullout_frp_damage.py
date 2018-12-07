@@ -20,7 +20,7 @@ from traitsui.api import \
 from view.window import BMCSWindow
 
 import numpy as np
-from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
+from .pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     PullOutModelBase, Viz2DEnergyPlot, Viz2DEnergyReleasePlot
 
 

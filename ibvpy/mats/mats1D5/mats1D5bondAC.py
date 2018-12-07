@@ -43,7 +43,7 @@ from ibvpy.mats.mats_eval import IMATSEval, MATSEval
 from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
 from mathkit.mfn import MFnLineArray
 
-from mats1D5bond import MATS1D5Bond
+from .mats1D5bond import MATS1D5Bond
 
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
@@ -128,7 +128,7 @@ class MATS1D5BondAC(MATS1D5Bond):
             D_mtx = zeros((4, 4))
             sigma = zeros(4)
         else:
-            print "MATS1D5Bond: Unsupported number of strain components"
+            print("MATS1D5Bond: Unsupported number of strain components")
 
         if omega_l or eps_app_eng[0] > self.s_cr:
             D_mtx[0, 0] = 0

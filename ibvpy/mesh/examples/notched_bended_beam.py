@@ -61,7 +61,7 @@ def notched_bended_beam():
     tloop = TLoop( tstepper = ts,
                    tline  = TLine( min = 0.0,  step = 1, max = 1.0 ))
     
-    print tloop.eval()
+    print(tloop.eval())
 #    from ibvpy.plugins.ibvpy_app import IBVPyApp
 #    ibvpy_app = IBVPyApp( ibv_resource = tloop )
 #    ibvpy_app.main()

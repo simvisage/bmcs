@@ -29,7 +29,7 @@ from ibvpy.mats.mats_eval import \
 
 class MATS3DMicroplaneDamage(MATSXDMicroplaneDamage, MATS3DEval):
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
     # number of spatial dimensions
     #
     n_dim = Constant(3)

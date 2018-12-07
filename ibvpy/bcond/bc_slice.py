@@ -33,7 +33,7 @@ from traitsui.api import \
 from view.plot2d import Vis2D, Viz2DTimeFunction
 from view.ui import BMCSTreeNode
 
-from bc_dof import BCDof
+from .bc_dof import BCDof
 import numpy as np
 from traitsui.table_column \
     import ObjectColumn
@@ -53,7 +53,7 @@ class BCSlice(BMCSTreeNode, Vis2D):
     '''
     Implements the IBC functionality for a constrained dof.
     '''
-    implements(IBCond)
+    #implements(IBCond)
 
     tree_node_list = List
 
@@ -494,7 +494,7 @@ if __name__ == '__main__':
     tloop = TLoop(tstepper=ts,
                   tline=TLine(min=0.0, step=1., max=1.0))
 
-    print 'u', tloop.setup()
+    print('u', tloop.setup())
 
     # print 'F', tloop.tstepper.F_ext
 

@@ -17,8 +17,8 @@ if __name__ == '__main__':
 
     L = po.geometry.L_x
     H = 0.1 * L
-    print 'L', L
-    print 'H', H
+    print('L', L)
+    print('H', H)
     rect = patches.Rectangle(
         (0, 0), L, H, linewidth=1, edgecolor='black',
         facecolor='lightgray')

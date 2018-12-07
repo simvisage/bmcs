@@ -12,8 +12,8 @@ from traits.api import \
     implements, Float, \
     Callable, Str, Enum, on_trait_change, Any, \
     Event
-from fe_grid import MElem
-from fe_subdomain import FESubDomain
+from .fe_grid import MElem
+from .fe_subdomain import FESubDomain
 from ibvpy.dots.xdots_eval import XDOTSEval
 from ibvpy.fets.fets_eval import FETSEval
 from ibvpy.mesh.fe_grid import FEGrid
@@ -68,7 +68,7 @@ def get_intersect_pt(fn, args):
 class FELSDomain(FESubDomain):
     '''Domain defined using a level set function within an FEGrid.
     '''
-    implements(IFEUniformDomain)
+    #implements(IFEUniformDomain)
 
     # Distinguish which part of the level set to take
     #
@@ -87,7 +87,7 @@ class FELSDomain(FESubDomain):
         'reset the domain of this domain'
         if self._domain:
             # unregister in the old domain
-            raise NotImplementedError, 'FESubDomain cannot be relinked to another FEDomain'
+            raise NotImplementedError('FESubDomain cannot be relinked to another FEDomain')
 
         self._domain = value
         # register in the domain as a subdomain
@@ -654,7 +654,7 @@ class FELSDomain(FESubDomain):
                     if r_coord != None:
                         inter_pts.append([r_coord, c_coord])
             elif dim == 3:
-                raise NotImplementedError, 'not available for 3D yet'
+                raise NotImplementedError('not available for 3D yet')
             el_pnts.append(inter_pts)
         return array(el_pnts)
 

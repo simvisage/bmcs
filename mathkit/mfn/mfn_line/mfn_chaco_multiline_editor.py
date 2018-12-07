@@ -38,7 +38,7 @@ from etsproxy.chaco.tools.api import \
 from etsproxy.pyface.api import FileDialog, OK, ImageResource
 from etsproxy.pyface.image_resource import ImageResource
 
-from mfn_plot_adapter import MFnPlotAdapter
+from .mfn_plot_adapter import MFnPlotAdapter
 
 from scipy.special import jn
 import wx, csv #, sys
@@ -157,7 +157,7 @@ class _MFnChacoEditor ( Editor ):
         styles = []
         styles = adapter.line_style #self.line_style_chaco.values()
 
-        s_item = styles.items()
+        s_item = list(styles.items())
         
         color_chaco = []
         style_chaco = []
@@ -267,14 +267,14 @@ class _MFnChacoEditor ( Editor ):
         if dlg.open() == OK:
             path = dlg.path
 
-            print "Saving data to", path, "..."
+            print("Saving data to", path, "...")
             try:
                 vectors = []
                 x_values = self.value.xdata
                 y_values = self.value.ydata
                 #savetxt( path, vstack( (x_values, y_values[:,0], y_values[:,1], y_values[:,2]) ).transpose() )
                 
-                print 'y_values', y_values
+                print('y_values', y_values)
                 y_values_tr = y_values.transpose()
                 for vector in y_values_tr[:]:
                     vectors.append(vector)
@@ -282,9 +282,9 @@ class _MFnChacoEditor ( Editor ):
                 savetxt( path, vstack( (x_values, vectors) ).transpose() )
                     
             except:
-                print "Error saving!"
+                print("Error saving!")
                 raise
-            print "Plot saved."
+            print("Plot saved.")
         return
     
     def on_savefig ( self ):
@@ -299,7 +299,7 @@ class _MFnChacoEditor ( Editor ):
         if dlg.open() == OK:
             path = dlg.path
 
-            print "Saving plot to", path, "..."
+            print("Saving plot to", path, "...")
             try:
                 # Now we create a canvas of the appropriate size and ask it to render
                 # our component.  (If we wanted to display this plot in a window, we
@@ -310,9 +310,9 @@ class _MFnChacoEditor ( Editor ):
                 self.plot_container.draw(gc)
                 gc.save(path)
             except:
-                print "Error saving!"
+                print("Error saving!")
                 raise
-            print "Plot saved."
+            print("Plot saved.")
         return
 
 #-------------------------------------------------------------------------------

@@ -12,7 +12,7 @@
 #
 # Created on Aug 19, 2009 by: rch
 
-from mats3D_elastic import \
+from .mats3D_elastic import \
     MATS3DElastic
 
 from ibvpy.mats.mats3D.__test__ import TestMATS3D

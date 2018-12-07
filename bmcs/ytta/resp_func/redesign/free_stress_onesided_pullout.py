@@ -32,7 +32,7 @@ def H( x ):
 class FreeStressPullout( RF ):
     '''Pullout of fiber from a matrix; stress criterion for debonding, free fiber end'''
 
-    implements( IRF )
+    #implements( IRF )
 
     title = Str( 'one sided pull-out - short fiber with trilinear bond law' )
 

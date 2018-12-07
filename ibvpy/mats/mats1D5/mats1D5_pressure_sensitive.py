@@ -28,7 +28,7 @@ from ibvpy.mats.mats_eval import IMATSEval
 from numpy import zeros, zeros_like, array
 
 class MATS1D5PressureSensitive(MATS1D5Eval):
-    ur'''Bond model for two phases interacting over an interface with zero thickness.
+    r'''Bond model for two phases interacting over an interface with zero thickness.
 The frictional resistance is governed by the current level of pressure 
 using the cohesion :math:`c` and frictional angle :math`\phi`. 
 
@@ -165,7 +165,7 @@ and
 
     '''
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     G_s = Float(1.0, input = True, enter_set = False,
                    label = 'cohesion')
@@ -280,7 +280,7 @@ and
         for name, mats, ix_map, size, offset in \
             zip(self._mats_names, self._mats_list, ix_maps, self._state_sizes,
                  self._state_offsets):
-            for key, v_eval in mats.rte_dict.items():
+            for key, v_eval in list(mats.rte_dict.items()):
 
                 __call_v_eval = RTE1D5Bond(v_eval = v_eval,
                                             name = name + '_' + key,
@@ -344,49 +344,49 @@ def sp_derive():
 
     tau_trial = G_s * (s_n1 - s_p_n)
 
-    print 'diff', sp.diff(tau_trial, ds_n)
+    print('diff', sp.diff(tau_trial, ds_n))
 
-    print tau_trial
+    print(tau_trial)
 
     sig_n1 = G_w * w_n1
 
-    print sig_n1
+    print(sig_n1)
 
     tau_fr = (c + sig_n1 * sp.tan(phi)) * sp.Heaviside(sig_n1 - c / sp.tan(phi))
 
-    print tau_fr
+    print(tau_fr)
 
     d_tau_fr = sp.diff(tau_fr, dw_n)
 
-    print d_tau_fr
+    print(d_tau_fr)
 
     f_trial = sp.abs(tau_trial) - tau_fr
 
-    print f_trial
+    print(f_trial)
 
     d_gamma = f_trial / G_s
 
-    print 'd_gamma'
+    print('d_gamma')
     sp.pretty_print(d_gamma)
 
-    print 'd_gamma_s'
+    print('d_gamma_s')
     sp.pretty_print(sp.diff(d_gamma, ds_n))
 
-    print 'tau_n1'
+    print('tau_n1')
     tau_n1 = sp.simplify(tau_trial - d_gamma * G_s * sp.sign(tau_trial))
     sp.pretty_print(tau_n1)
 
-    print 'dtau_n1_w'
+    print('dtau_n1_w')
     dtau_n1_w = sp.diff(tau_n1, dw_n)
     sp.pretty_print(dtau_n1_w)
 
-    print 'dtau_n1_s'
+    print('dtau_n1_s')
     dtau_n1_s = sp.diff(d_gamma * sp.sign(tau_trial), ds_n)
-    print dtau_n1_s
+    print(dtau_n1_s)
 
     s_p_n1 = s_p_n + d_gamma * sp.sign(tau_trial)
 
-    print s_p_n1
+    print(s_p_n1)
 
 
 if __name__ == '__main__':

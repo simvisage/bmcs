@@ -88,7 +88,7 @@ class TreeHandler (Handler):
             U_k = tstepper.U_k
             d_U = tstepper.d_U
             K, R = tstepper.eval('predictor', U_k, d_U, 0, 0)
-            print 'constraints'
+            print('constraints')
             K.print_constraints()
             K.apply_constraints(R)
         else:

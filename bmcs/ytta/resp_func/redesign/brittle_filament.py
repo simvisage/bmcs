@@ -41,7 +41,7 @@ class Filament( RF ):
     slack and delayed activation.
     '''
 
-    implements( IRF )
+    #implements( IRF )
 
     title = Str( 'brittle filament' )
 
@@ -118,10 +118,10 @@ class Filament( RF ):
 
 if __name__ == '__main__':
     bf = Filament()
-    print 'keys', bf.param_keys
-    print 'values', bf.param_values
+    print('keys', bf.param_keys)
+    print('values', bf.param_values)
 
-    print 'uniform', bf.traits( distr = lambda x: x != None and 'uniform' in x )
+    print('uniform', bf.traits( distr = lambda x: x != None and 'uniform' in x ))
 
     X = linspace( 0, 0.05, 100 )
     Y = []

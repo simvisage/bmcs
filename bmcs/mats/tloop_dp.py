@@ -9,7 +9,7 @@ from traits.api import \
     Float, \
     Array, List, Bool
 import numpy as np
-from tstepper_dp import TStepper
+from .tstepper_dp import TStepper
 
 
 class TLoop(HasStrictTraits):
@@ -128,10 +128,10 @@ class TLoop(HasStrictTraits):
                 step_flag = 'corrector'
 
             if k >= self.k_max:
-                print ' ----------> No convergence for the time step %f', t_n1
+                print(' ----------> No convergence for the time step %f', t_n1)
                 break
             if self.restart or self.paused:
-                print 'interrupted iteration'
+                print('interrupted iteration')
                 break
             t_n = t_n1
             t_n1 = t_n + self.d_t

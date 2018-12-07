@@ -40,7 +40,7 @@ class MATS2D5Bond( MATS2DEval ):
     Elastic Model.
     '''
 
-    implements( IMATSEval )
+    #implements( IMATSEval )
 
     #---------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)

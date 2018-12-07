@@ -22,11 +22,11 @@ if __name__ == '__main__':
                                fets_eval = fets_eval_4u,
                                level = fe_rgrid1 )    
     
-    print fe_grid2[ 1, 0 ].elems
+    print(fe_grid2[ 1, 0 ].elems)
     
     fe_grid2.deactivate( ( 1, 0 ) )
-    print 'activation map'
-    print fe_grid2.activation_map
+    print('activation map')
+    print(fe_grid2.activation_map)
 
     ts = TS( sdomain = fe_domain )
     

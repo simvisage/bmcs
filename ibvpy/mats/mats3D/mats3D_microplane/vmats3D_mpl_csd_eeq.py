@@ -29,7 +29,7 @@ import traits.api as tr
 class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
 
     node_name = 'Microplane CSD model (EEQ)'
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #--------------------------
     # material model parameters

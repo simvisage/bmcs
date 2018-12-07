@@ -86,7 +86,7 @@ class Viz3DSDamage(Viz3D):
         self.surf = m.pipeline.surface(self.warp_vector)
         lut = self.warp_vector.children[0]
         lut.scalar_lut_manager.set(
-            lut_mode=u'Reds',
+            lut_mode='Reds',
             show_scalar_bar=True,
             show_legend=True,
             data_name='damage',

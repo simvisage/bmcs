@@ -5,8 +5,8 @@ Created on May 25, 2009
 '''
 from traits.api import \
     Instance, Array, Int, on_trait_change, Property, cached_property, \
-    List, Button, HasTraits, implements, WeakRef, Float, Delegate, \
-    Callable, Class, This, Str, Tuple
+    List, Button, HasTraits, implements, WeakRef, Float, \
+    Callable, This, Str, Tuple
 
 from numpy import \
     array, frompyfunc, zeros_like, hstack, cos, sin, ndarray, argwhere, c_
@@ -16,12 +16,12 @@ from scipy.optimize import \
 
 from copy import copy
 
-from i_fe_grid_slice import \
+from .i_fe_grid_slice import \
     IFEGridSlice
 
 class FEGridLevelSetSlice( HasTraits ):
 
-    implements( IFEGridSlice )
+    #implements( IFEGridSlice )
 
     # Link to the source grid to slice
     #
@@ -81,7 +81,7 @@ class FEGridLevelSetSlice( HasTraits ):
         for limit in self.ls_lims:
             if eval( limit ):
                 if masked == False:
-                    raise ValueError, 'overlapping level set limits - two level sets defined'
+                    raise ValueError('overlapping level set limits - two level sets defined')
                 masked = False
         return masked
 
@@ -227,7 +227,7 @@ class FEGridLevelSetSlice( HasTraits ):
                     if r_coord != None:
                         inter_pts.append( [r_coord, c_coord] )
             elif dim == 3:
-                raise NotImplementedError, 'not available for 3D yet'
+                raise NotImplementedError('not available for 3D yet')
             el_pnts.append( inter_pts )
         return array( el_pnts )
 
@@ -301,28 +301,28 @@ if __name__ == '__main__':
         #print "ls value ", X - 1.5#
         return X - 1.5 # Y-0.2*X#temp
 
-    print 'fe_grid elemes'
-    print fe_grid1.geo_grid.cell_grid.cell_idx_grid
+    print('fe_grid elemes')
+    print(fe_grid1.geo_grid.cell_grid.cell_idx_grid)
 
-    print 'vertex_X_grid'
-    print fe_grid1.geo_grid.cell_grid.vertex_X_grid
+    print('vertex_X_grid')
+    print(fe_grid1.geo_grid.cell_grid.vertex_X_grid)
 
     fe_slice = fe_grid1[ 'X - 1.5' ]
-    print 'slice '
-    print fe_slice
-    print 'elems'
-    print fe_slice.elems
-    print 'node values'
-    print fe_slice.dof_nodes_values
-    print 'intersecting points'
-    print fe_slice.r_i
-    print 'dofs'
-    print fe_slice.dofs
-    print 'geo coords'
-    print fe_slice.geo_X
-    print 'dof coords'
-    print fe_slice.dof_X
-    print 'neg i dofs'
-    print fe_slice.i_neg_dofs
-    print 'neg dofs'
-    print fe_slice.neg_dofs
+    print('slice ')
+    print(fe_slice)
+    print('elems')
+    print(fe_slice.elems)
+    print('node values')
+    print(fe_slice.dof_nodes_values)
+    print('intersecting points')
+    print(fe_slice.r_i)
+    print('dofs')
+    print(fe_slice.dofs)
+    print('geo coords')
+    print(fe_slice.geo_X)
+    print('dof coords')
+    print(fe_slice.dof_X)
+    print('neg i dofs')
+    print(fe_slice.i_neg_dofs)
+    print('neg dofs')
+    print(fe_slice.neg_dofs)

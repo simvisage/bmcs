@@ -4,9 +4,9 @@ from traits.api import \
      on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property, \
      This, self, TraitError, Dict
 
-from i_fe_parent_domain import IFEParentDomain
-from fe_subdomain import FESubDomain
-from fe_domain import FEDomain
+from .i_fe_parent_domain import IFEParentDomain
+from .fe_subdomain import FESubDomain
+from .fe_domain import FEDomain
 
 class FERefinementLevel( FESubDomain ):
 
@@ -16,7 +16,7 @@ class FERefinementLevel( FESubDomain ):
     def _set_domain( self, value ):
         'reset the domain of this domain'
         if self.parent != None:
-            raise TraitError, 'child FESubDomain cannot be added to FEDomain'
+            raise TraitError('child FESubDomain cannot be added to FEDomain')
         super( FERefinementLevel, self )._set_domain( value )
     def _get_domain( self ):
         if self.parent != None:
@@ -25,7 +25,7 @@ class FERefinementLevel( FESubDomain ):
 
     def validate( self ):
         if self.parent != None:
-            raise ValueError, 'only parentless subdomains can be inserted into domain'
+            raise ValueError('only parentless subdomains can be inserted into domain')
 
     # children domains: list of the instances of the same class
     children = List( This )
@@ -39,7 +39,7 @@ class FERefinementLevel( FESubDomain ):
             # check to see that the changed parent 
             # is within the same domain
             if value.domain != self._parent.domain:
-                raise NotImplementedError, 'Parent change across domains not implemented'
+                raise NotImplementedError('Parent change across domains not implemented')
             # unregister in the old parent
             self._parent.children.remove( self )
         else:
@@ -64,8 +64,8 @@ class FERefinementLevel( FESubDomain ):
     def refine_elem( self, parent_ix, *refinement_args ):
         '''For the specified parent position let the new element decompose.
         '''
-        if self.refinement_dict.has_key( parent_ix ):
-            raise ValueError, 'element %s already refined' % `parent_ix`
+        if parent_ix in self.refinement_dict:
+            raise ValueError('element %s already refined' % repr(parent_ix))
 
         # the element is deactivated in the parent domain
         self.refinement_dict[ parent_ix ] = refinement_args

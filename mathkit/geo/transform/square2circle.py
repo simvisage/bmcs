@@ -105,8 +105,8 @@ class GeoSquare2Circle(HasTraits):
         idx_top = where((fabs(xi) < R) & (fabs(yi) >= R))
 
         xii, yii = xi[ idx_corner], yi[idx_corner ]
-        print R
-        print D
+        print(R)
+        print(D)
         a = 1.0 / (R ** 2 - 2 * D * R + D ** 2)
         b = -D / (R ** 2 - 2 * D * R + D ** 2)
         c = -D / (R ** 2 - 2 * D * R + D ** 2)
@@ -133,4 +133,4 @@ class GeoSquare2Circle(HasTraits):
 if __name__ == '__main__':
 
     s2c = GeoSquare2Circle(circle_center = [0.2, 0.2], circle_radius = 0.4, square_edge = 2.0)
-    print 'result', s2c(array([[ 0.3, 0.5, 0 ]], dtype = float))
+    print('result', s2c(array([[ 0.3, 0.5, 0 ]], dtype = float)))

@@ -5,7 +5,7 @@ from scipy.linalg import \
 from traits.api import \
     Instance, Int, Property, Array, cached_property
 
-from fets3D import FETS3D
+from .fets3D import FETS3D
 
 
 #-------------------------------------------------------------------------

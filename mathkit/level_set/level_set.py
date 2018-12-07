@@ -34,7 +34,7 @@ class ILevelSetFn(Interface):
         raise NotImplementedError
     
 class SinLSF(HasTraits):
-    implements(ILevelSetFn)
+    #implements(ILevelSetFn)
     a = Float(1.5, enter_set = True, auto_set = False )
     b = Float(2.0, enter_set = True, auto_set = False )
     
@@ -44,7 +44,7 @@ class SinLSF(HasTraits):
         return y - ( sin( self.b * x ) + self.a )
     
 class PlaneLSF(HasTraits):
-    implements(ILevelSetFn)
+    #implements(ILevelSetFn)
     a = Float(.5, enter_set = True, auto_set = False )
     b = Float(2.0, enter_set = True, auto_set = False )
     c = Float(-2.5, enter_set = True, auto_set = False )
@@ -56,7 +56,7 @@ class PlaneLSF(HasTraits):
     
     
 class ElipseLSF(HasTraits):
-    implements(ILevelSetFn)
+    #implements(ILevelSetFn)
     a = Float(.5, enter_set = True, auto_set = False )
     b = Float(2.0, enter_set = True, auto_set = False )
     c = Float(-2.5, enter_set = True, auto_set = False )

@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
 #    sig_plot.configure_traits()
 
-    print 'sig_plot.xdata', sig_plot.ydata
+    print('sig_plot.xdata', sig_plot.ydata)
     p.plot(sig_plot.xdata, sig_plot.ydata)
     p.show()
 

@@ -33,7 +33,7 @@ from ibvpy.mats.mats3D.viz3d_stress_field import \
     Vis3DStressField, Viz3DStressField
 import numpy as np
 import traits.api as tr
-from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
+from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
 class Viz2DForceDeflectionX(Viz2D):
@@ -269,7 +269,7 @@ class DCBTestModel(BMCSModel, Vis2D):
         bot = self.fe_grid[-1, 0, -1, 0]
         linked = self.fe_grid[-1, 1:, -1, 0]
 
-        print 'SHAPE', top.dof_X.shape
+        print('SHAPE', top.dof_X.shape)
         Ty = top.dof_X[0, 0, 1]
         By = bot.dof_X[0, 0, 1]
 
@@ -309,7 +309,7 @@ class DCBTestModel(BMCSModel, Vis2D):
     def _get_dots_grid(self):
         cs = self.cross_section
         geo = self.geometry
-        print self.mats_eval
+        print(self.mats_eval)
         return DOTSGrid(
             L_x=cs.h, L_y=geo.L,
             n_x=self.n_e_x, n_y=self.n_e_y,

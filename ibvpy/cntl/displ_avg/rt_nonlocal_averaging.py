@@ -161,8 +161,8 @@ class RTUAvg(RTraceDomain):
                 try:
                     params = linalg.solve(A, b)
                 except linalg.LinAlgError:
-                    print 'x_pnt\n', x_pnt
-                    raise ValueError, 'Integration radius too small for averaging'
+                    print('x_pnt\n', x_pnt)
+                    raise ValueError('Integration radius too small for averaging')
                 #print 'check ',dot(A,params)
                 p0 = params[0]
                 p1 = params[1:]
@@ -254,7 +254,7 @@ class RTNonlocalAvg(RTraceDomainList):
         if self.verbose_time:
             t2 = time()
             diff = t2 - t1
-            print "Averaging Matrix: %8.2f sec" % diff
+            print("Averaging Matrix: %8.2f sec" % diff)
 
         return coo_matrix((data, (row, col)),
                            shape=(n_dofs, n_dofs), dtype=float_).tocsr()

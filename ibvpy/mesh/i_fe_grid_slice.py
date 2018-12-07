@@ -13,7 +13,7 @@
 # Created on Jun 30, 2009 by: rchx
 
 
-from traits.api import Interface, List, Int, Array, Property, Class, Instance
+from traits.api import Interface, Int, Array, Property
 
 class IFEGridSlice( Interface ):
     '''

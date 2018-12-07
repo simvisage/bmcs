@@ -643,7 +643,7 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
 
 class MATS3DMicroplaneDamageWu(MATSXDMicroplaneDamageFatigueWu, MATS3DEval):
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D

@@ -122,9 +122,9 @@ class CompTimer(object):
         self.overall_duration = time.time() - self.start_all
 
     def report(self):
-        print "Timer", self.name
-        print "Computation Time : %8.2f sec" % self.overall_duration
-        print "Elapsed time     : %8.2f sec" % self.duration
+        print("Timer", self.name)
+        print("Computation Time : %8.2f sec" % self.overall_duration)
+        print("Elapsed time     : %8.2f sec" % self.duration)
 
 
 class TLoop(IBVResource):
@@ -346,8 +346,8 @@ class TLoop(IBVResource):
         self.eval_timer.reset()
 
         if self.verbose_load_step:
-            print '======= Time range: %g -> %g =========' % \
-                (self.t_n, self.tline.max)
+            print('======= Time range: %g -> %g =========' % \
+                (self.t_n, self.tline.max))
 
         # Register the list of variables requrired by the adaptive
         # strategy in the time stepper to include their evaluation in
@@ -377,10 +377,10 @@ class TLoop(IBVResource):
                 self.report_iteration()
 
                 if self.debug:
-                    print 'U_k\n', self.U_k
-                    print 'd_U\n', self.d_U
-                    print 't_n\n', self.t_n
-                    print 't_n1\n', self.t_n1
+                    print('U_k\n', self.U_k)
+                    print('d_U\n', self.d_U)
+                    print('t_n\n', self.t_n)
+                    print('t_n1\n', self.t_n1)
 
                 # Extract the matrix representation of the time t_n1
                 # stepper for the given time and control variable u
@@ -393,16 +393,16 @@ class TLoop(IBVResource):
                                                   self.t_n1,
                                                   step_flag,
                                                   )
-                except np.linalg.LinAlgError, e:
+                except np.linalg.LinAlgError as e:
                     # abort computation due to ultimate failure
                     # might be caused by material instability
-                    print 'Exception of equation solver, aborting'
+                    print('Exception of equation solver, aborting')
                     abort_tloop = True
                     break
 
                 if self.debug:
-                    print 'K\n', K
-                    print 'R\n', R
+                    print('K\n', K)
+                    print('R\n', R)
 
                 # self.crpr_timer.record()
                 # self.crpr_timer.report()
@@ -429,8 +429,8 @@ class TLoop(IBVResource):
                 K.apply_constraints(R)
 
                 if self.debug:
-                    print 'constrained K\n', K
-                    print 'constrained R\n', R
+                    print('constrained K\n', K)
+                    print('constrained R\n', R)
 
                 # default set to 2-norm, i.e
                 # "norm = sqrt(sum(x_i**2))
@@ -442,7 +442,7 @@ class TLoop(IBVResource):
                 self.norm = np.linalg.norm(R, ord=self.ord)  # / n_F_int
 
                 if self.debug:
-                    print 'Norm:', self.norm
+                    print('Norm:', self.norm)
 
                 if self.norm < self.tolerance:  # convergence satisfied
                     self.n_reset = 0
@@ -455,7 +455,7 @@ class TLoop(IBVResource):
                 self.d_U = K.solve()  # DG_k * d_U = r
 
                 if self.debug:
-                    print 'd_U\n', self.d_U
+                    print('d_U\n', self.d_U)
 
                 self.solv_timer.record()
                 # self.solv_timer.report()
@@ -507,7 +507,7 @@ class TLoop(IBVResource):
 
             if abort_tloop:
                 # ultimate failure exit the calculation
-                print 'ABORT tloop with exception', e
+                print('ABORT tloop with exception', e)
                 try:
                     self.rtrace_mngr.record(self.tstepper.sctx, self.U_k)
                 except:
@@ -523,7 +523,7 @@ class TLoop(IBVResource):
                 try:
                     self.accept_time_step()
                 except np.linalg.LinAlgError:
-                    print 'Something wrong aborting agoin'
+                    print('Something wrong aborting agoin')
                     pass
                 self.adap.end_time_step(self.t_n1)
 
@@ -600,21 +600,21 @@ class TLoop(IBVResource):
 
     def report_load_step_start(self):
         if self.verbose_load_step:
-            print 'LS:%3d, Time: %.4f' % \
-                (self.ls_counter, self.t_n1),
+            print('LS:%3d, Time: %.4f' % \
+                (self.ls_counter, self.t_n1), end=' ')
             if self.verbose_iteration:
-                print  # just add a new line
+                print()  # just add a new line
 
     def report_load_step_end(self):
         if self.verbose_load_step and not self.verbose_iteration:
             # just a summary of iterations within the load step
-            print ' Iter: %4d' % \
-                (self.k,)
+            print(' Iter: %4d' % \
+                (self.k,))
 
     def report_iteration(self):
         if self.verbose_iteration:
-            print '\tIT: %3d, Norm: %3g' % \
-                (self.k, self.norm)
+            print('\tIT: %3d, Norm: %3g' % \
+                (self.k, self.norm))
 
     calculate = Button
     computation_thread = Instance(Thread)

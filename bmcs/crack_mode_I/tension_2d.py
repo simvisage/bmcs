@@ -32,12 +32,12 @@ from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
 
-from bending3pt_2d import \
+from .bending3pt_2d import \
     Viz2DForceDeflection, Vis2DCrackBand, CrossSection
 import numpy as np
 import numpy as np
 import traits.api as tr
-from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
+from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
 class XCrossSection(BMCSLeafNode):
@@ -299,7 +299,7 @@ class TensileTestModel(BMCSModel, Vis2D):
                         algorithmic=False,
                         tline=self.tline,
                         bc_mngr=self.bcond_mngr,
-                        response_traces=self.response_traces.values())
+                        response_traces=list(self.response_traces.values()))
 
     response_traces = tr.Dict
     '''Response traces.

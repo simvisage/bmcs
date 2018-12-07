@@ -12,7 +12,7 @@
 #
 # Created on Aug 19, 2009 by: rch
     
-from mats2D5_cmdm import \
+from .mats2D5_cmdm import \
     MATS2D5MicroplaneDamage, PhiFnStrainHardening
 
 from ibvpy.mats.mats2D5.__test__ import \

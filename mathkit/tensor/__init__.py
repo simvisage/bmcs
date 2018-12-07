@@ -1,2 +1,2 @@
 
-from tensor_operators import *
+from .tensor_operators import *

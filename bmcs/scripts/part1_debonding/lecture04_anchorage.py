@@ -91,11 +91,11 @@ def e43_study_length_dependence():
     L_array = np.array([100],  # 150, 200, 250, 300, 350],
                        dtype=np.float_)
     L_trait = po.geometry.traits()
-    print L_trait
+    print(L_trait)
     L_trait['L_x'].range = L_array
     P_u_record = []
     for L in L_array:
-        print 'calculating length', L
+        print('calculating length', L)
         po.geometry.L_x = L
         po.run()
         P = po.get_P_t()

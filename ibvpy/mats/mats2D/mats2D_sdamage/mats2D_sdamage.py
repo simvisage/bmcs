@@ -13,7 +13,7 @@ from traitsui.api import \
     Item, View, VSplit, Group, Spring
 from util.traits.either_type import EitherType
 
-from strain_norm2d import Energy, Euclidean, Mises, Rankine, Mazars, \
+from .strain_norm2d import Energy, Euclidean, Mises, Rankine, Mazars, \
     IStrainNorm2D
 
 
@@ -26,7 +26,7 @@ class MATS2DScalarDamage(MATS2DEval):
     Scalar Damage Model.
     '''
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)

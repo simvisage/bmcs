@@ -27,7 +27,7 @@ import traits.api as tr
 
 class MATS3DMplCSDODF(MATS3DEval, MATS3D):
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #--------------------------
     # material model parameters

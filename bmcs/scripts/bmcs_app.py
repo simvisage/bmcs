@@ -28,7 +28,7 @@ from traits.api import HasTraits, Button, Str, Constant
 from traitsui.api import \
     View, Item, UItem, VGroup, Group, Spring, HGroup
 
-from bmcs_version import CURRENT_VERSION
+from .bmcs_version import CURRENT_VERSION
 from ibvpy.mats.mats3D.mats3D_plastic.yield_face3D_explorer \
     import run_explorer
 

@@ -14,7 +14,7 @@ from traits.api import implements,  \
 from traitsui.api import View, VGroup, Item, UItem, Group
 
 import matplotlib.pyplot as plt
-from mats_bondslip import MATSBondSlipBase
+from .mats_bondslip import MATSBondSlipBase
 import numpy as np
 
 

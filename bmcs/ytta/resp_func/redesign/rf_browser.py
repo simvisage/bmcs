@@ -32,8 +32,8 @@ from numpy import \
 
 from stats.spirrid.i_rf import IRF
 from util.traits.either_type import EitherType
-from brittle_filament import Filament
-from free_stress_double_pullout import ConstantFrictionFiniteFiber
+from .brittle_filament import Filament
+from .free_stress_double_pullout import ConstantFrictionFiniteFiber
 
 class RFModelView( ModelView ):
 

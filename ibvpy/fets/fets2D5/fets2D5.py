@@ -397,7 +397,7 @@ if __name__ == '__main__':
     tloop = TLoop( tstepper = ts, KMAX = 4, RESETMAX = 0, tolerance = 1e-3,
          tline = TLine( min = 0.0, step = 1.0, max = 1.0 ) )
 
-    print 'u', tloop.eval()
+    print('u', tloop.eval())
 
     # Put the whole stuff into the simulation-framework to map the
     # individual pieces of definition into the user interface.

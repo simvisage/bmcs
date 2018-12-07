@@ -24,7 +24,7 @@ from traitsui.menu import \
     OKButton
 from util.traits.editors.mpl_figure_editor import MPLFigureEditor
 
-from mats1D_damage import MATS1DDamage
+from .mats1D_damage import MATS1DDamage
 
 
 class MATS1DDamageView(ModelView):

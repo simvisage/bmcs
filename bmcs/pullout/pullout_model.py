@@ -27,7 +27,7 @@ from view.plot2d import Viz2D, Vis2D
 from view.window import BMCSModel, BMCSWindow
 
 import numpy as np
-from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
+from .pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     CrossSection, Geometry, PullOutModelBase
 
 

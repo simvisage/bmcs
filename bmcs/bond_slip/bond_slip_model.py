@@ -30,7 +30,8 @@ from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSTreeNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
 
-from mats_bondslip import MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
+from bmcs.bond_slip.mats_bondslip import \
+    MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 
 
@@ -415,16 +416,16 @@ def run_bond_slip_model_dp(*args, **kw):
 
 def run_interactive_test():
     bsm = BondSlipModel(interaction_type='interactive')
-    print 'set f_val'
+    print('set f_val')
     bsm.loading_scenario.f_value = 0.1
-    print 'eval'
+    print('eval')
     bsm.eval()
-    print 'set f_val'
+    print('set f_val')
     bsm.loading_scenario.f_value = 0.4
-    print 'eval'
+    print('eval')
     bsm.eval()
-    print bsm.sv_hist.keys()
-    print bsm.get_sv_hist('omega')
+    print((list(bsm.sv_hist.keys())))
+    print((bsm.get_sv_hist('omega')))
 
 
 def run_interactive_test_d():
@@ -436,11 +437,11 @@ def run_interactive_test_d():
     bsm.add_viz2d('bond history', 'omega-s', x_sv_name='s', y_sv_name='omega')
     bsm.loading_scenario.f_max = 0.005
     bsm.loading_scenario.f_value = 0.004
-    print '04'
+    print('04')
     bsm.loading_scenario.f_value = 0.001
-    print '01'
+    print('01')
     bsm.loading_scenario.f_value = 0.0045
-    print '02'
+    print('02')
     bsm.loading_scenario.f_value = 0.0015
     # bsm.run()
     w.configure_traits()
@@ -450,10 +451,10 @@ def run_predefined_load_test():
     bsm = BondSlipModel(interaction_type='predefined',
                         material_model='damage-plasticity')
     bsm.eval()
-    print bsm.get_sv_hist('s')
-    print bsm.get_sv_hist('tau')
-    print bsm.get_sv_hist('s_p')
-    print bsm.get_sv_hist('z')
+    print((bsm.get_sv_hist('s')))
+    print((bsm.get_sv_hist('tau')))
+    print((bsm.get_sv_hist('s_p')))
+    print((bsm.get_sv_hist('z')))
 
 
 if __name__ == '__main__':

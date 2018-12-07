@@ -20,7 +20,7 @@ from ibvpy.core.tstepper_eval import \
 
 from ibvpy.core.rtrace_eval import RTraceEval
 from ibvpy.fets.fets_eval import IFETSEval
-from dots_eval import DOTSEval
+from .dots_eval import DOTSEval
 from mathkit.matrix_la.sys_mtx_array import SysMtxArray
 
 from time import time
@@ -36,7 +36,7 @@ class SubDOTSEval(TStepperEval):
     '''
     Domain with uniform FE-time-step-eval.
     '''
-    implements(ITStepperEval)
+    #implements(ITStepperEval)
 
     dots_integ = Instance(ITStepperEval)
 
@@ -95,8 +95,8 @@ class SubDOTSEval(TStepperEval):
             dof_grid = fe_domain.dof_grid
             geo_grid = fe_domain.geo_grid
             if self.debug:
-                print 'parent'
-                print p
+                print('parent')
+                print(p)
 
             # Get the X coordinates from the parent !!!
             #
@@ -105,10 +105,10 @@ class SubDOTSEval(TStepperEval):
             parent_points = parent_domain.fe_subgrids[0][p].dof_X[0]
 
             if self.debug:
-                print 'parent_dofs'
-                print parent_dofs
-                print 'parent_points'
-                print parent_points
+                print('parent_dofs')
+                print(parent_dofs)
+                print('parent_points')
+                print(parent_points)
 
             # Get the geometry approximation used in the super domain
             #
@@ -147,13 +147,13 @@ class SubDOTSEval(TStepperEval):
                     lpos = solution
 
                 if self.debug:
-                    print '\tp', p, '\tdofs', dofs, '\tgpos', gpos, '\tlpos', lpos
+                    print('\tp', p, '\tdofs', dofs, '\tgpos', gpos, '\tlpos', lpos)
 
                 N_mtx = parent_fets_eval.get_N_mtx(lpos)
 
                 if self.debug:
-                    print 'N_mtx'
-                    print N_mtx
+                    print('N_mtx')
+                    print(N_mtx)
 
                 for i, dof in enumerate(dofs):
                     K.register_constraint(

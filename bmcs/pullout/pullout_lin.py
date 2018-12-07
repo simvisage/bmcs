@@ -102,7 +102,7 @@ class FETS1D52L4ULRH(BMCSLeafNode, FETSEval):
     '''Example of a finite element definition.
     '''
 
-    implements(IFETSEval)
+    #implements(IFETSEval)
 
     dim_slice = slice(0, 1)
     n_e_dofs = Int(2 * n_C)

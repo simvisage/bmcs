@@ -27,7 +27,7 @@ class DOTSEval(TStepperEval):
     '''
     Domain with uniform FE-time-step-eval.
     '''
-    implements(ITStepperEval)
+    #implements(ITStepperEval)
 
     sdomain = Instance(IFEUniformDomain)
 
@@ -226,7 +226,7 @@ class DOTSEval(TStepperEval):
                          'eps_m': RTraceEvalUDomainFieldVar(eval=self.get_eps_m, ts=self, u_mapping=self.map_u),
                          'eps_f': RTraceEvalUDomainFieldVar(eval=self.get_eps_f, ts=self, u_mapping=self.map_u),
                          })
-        for key, eval in self.fets_eval.rte_dict.items():
+        for key, eval in list(self.fets_eval.rte_dict.items()):
 
             rte_dict[key] = RTraceEvalUDomainFieldVar(name=key,
                                                       u_mapping=self.map_u,
@@ -274,80 +274,80 @@ class DOTSEval(TStepperEval):
                 self.fets_eval.vtk_ip_cell_data
 
         if self.debug_cell_data:
-            print 'subcell_offsets'
-            print subcell_offsets
-            print 'subcell_lengths'
-            print subcell_lengths
-            print 'subcells'
-            print subcells
-            print 'subcell_types'
-            print subcell_types
+            print('subcell_offsets')
+            print(subcell_offsets)
+            print('subcell_lengths')
+            print(subcell_lengths)
+            print('subcells')
+            print(subcells)
+            print('subcell_types')
+            print(subcell_types)
 
         n_subcells = subcell_types.shape[0]
         n_cell_points = self.n_cell_points
         subcell_size = subcells.shape[0] + n_subcells
 
         if self.debug_cell_data:
-            print 'n_cell_points', n_cell_points
-            print 'n_cells', self.n_cells
+            print('n_cell_points', n_cell_points)
+            print('n_cells', self.n_cells)
 
         vtk_cell_array = zeros((self.n_cells, subcell_size), dtype=int)
 
         idx_cell_pnts = repeat(True, subcell_size)
 
         if self.debug_cell_data:
-            print 'idx_cell_pnts'
-            print idx_cell_pnts
+            print('idx_cell_pnts')
+            print(idx_cell_pnts)
 
         idx_cell_pnts[subcell_offsets] = False
 
         if self.debug_cell_data:
-            print 'idx_cell_pnts'
-            print idx_cell_pnts
+            print('idx_cell_pnts')
+            print(idx_cell_pnts)
 
         idx_lengths = idx_cell_pnts == False
 
         if self.debug_cell_data:
-            print 'idx_lengths'
-            print idx_lengths
+            print('idx_lengths')
+            print(idx_lengths)
 
         point_offsets = arange(self.n_cells) * n_cell_points
         point_offsets += point_offset
 
         if self.debug_cell_data:
-            print 'point_offsets'
-            print point_offsets
+            print('point_offsets')
+            print(point_offsets)
 
         vtk_cell_array[:, idx_cell_pnts] = point_offsets[
             :, None] + subcells[None, :]
         vtk_cell_array[:, idx_lengths] = subcell_lengths[None, :]
 
         if self.debug_cell_data:
-            print 'vtk_cell_array'
-            print vtk_cell_array
+            print('vtk_cell_array')
+            print(vtk_cell_array)
 
         #active_cells = self.sdomain.idx_active_elems
         n_active_cells = self.sdomain.n_active_elems
 
         if self.debug_cell_data:
-            print 'n active cells'
-            print n_active_cells
+            print('n active cells')
+            print(n_active_cells)
 
         cell_offsets = arange(n_active_cells, dtype=int) * subcell_size
         cell_offsets += cell_offset
         vtk_cell_offsets = cell_offsets[:, None] + subcell_offsets[None, :]
 
         if self.debug_cell_data:
-            print 'vtk_cell_offsets'
-            print vtk_cell_offsets
+            print('vtk_cell_offsets')
+            print(vtk_cell_offsets)
 
         vtk_cell_types = zeros(self.n_cells * n_subcells, dtype=int).reshape(self.n_cells,
                                                                              n_subcells)
         vtk_cell_types += subcell_types[None, :]
 
         if self.debug_cell_data:
-            print 'vtk_cell_types'
-            print vtk_cell_types
+            print('vtk_cell_types')
+            print(vtk_cell_types)
 
         return vtk_cell_array.flatten(), vtk_cell_offsets.flatten(), vtk_cell_types.flatten()
 

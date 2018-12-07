@@ -24,7 +24,7 @@ from traitsui.api import \
 from view.plot2d import Vis2D
 from view.ui import BMCSTreeNode
 
-from bc_dof import BCDof
+from .bc_dof import BCDof
 from traitsui.table_column \
     import ObjectColumn
 
@@ -41,7 +41,7 @@ class BCDofList(BMCSTreeNode, Vis2D):
     '''
     Implements the IBC functionality for a constrained dof.
     '''
-    implements(IBCond)
+    #implements(IBCond)
 
     tree_node_list = List
 

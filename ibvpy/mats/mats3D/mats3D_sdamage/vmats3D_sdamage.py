@@ -9,7 +9,7 @@ from util.traits.either_type import \
 
 import numpy as np
 import traits.api as tr
-from vstrain_norm2d import Rankine
+from .vstrain_norm2d import Rankine
 
 
 # from strain_norm3d import Energy, Euclidean, Mises, Rankine, Mazars, \
@@ -23,7 +23,7 @@ class MATS3DScalarDamage(MATS3DEval, MATS3D):
     '''
     node_name = 'Scalar damage'
 
-    tr.implements(IMATSEval)
+    #tr.implements(IMATSEval)
 
     stiffness = tr.Enum("secant", "algorithmic",
                         input=True)

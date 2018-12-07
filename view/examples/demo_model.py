@@ -37,7 +37,7 @@ from view.window.tline import TLine
 
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 import numpy as np
-from response_tracer import ResponseTracer
+from .response_tracer import ResponseTracer
 
 
 class TimeLoop(HasStrictTraits):

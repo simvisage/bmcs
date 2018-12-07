@@ -40,8 +40,8 @@ from ibvpy.core.i_sdomain import \
 from ibvpy.core.sdomain import \
     SDomain
 
-from rt_domain_list import RTraceDomainList
-from rt_domain_integ import RTraceDomainInteg
+from .rt_domain_list import RTraceDomainList
+from .rt_domain_integ import RTraceDomainInteg
 import os
 
 from tvtk.api import tvtk

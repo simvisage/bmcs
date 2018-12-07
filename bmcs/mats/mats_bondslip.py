@@ -15,7 +15,7 @@ from traits.api import  \
 from traitsui.api import View, VGroup, Item, UItem, Group
 from view.ui import BMCSTreeNode
 
-from mats_damage_fn import \
+from .mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
     MultilinearDamageFn, \
     FRPDamageFn
@@ -500,7 +500,7 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
     def _set_s_tau_table(self, data):
         s_data, tau_data = data
         if len(s_data) != len(tau_data):
-            raise ValueError, 's array and tau array must have the same size'
+            raise ValueError('s array and tau array must have the same size')
         self.bs_law.set(xdata=s_data,
                         ydata=tau_data)
 
@@ -510,7 +510,7 @@ class MATSBondSlipMultiLinear(MATSEval, BMCSTreeNode):
         s_data = np.fromstring(self.s_data, dtype=np.float_, sep=',')
         tau_data = np.fromstring(self.tau_data, dtype=np.float_, sep=',')
         if len(s_data) != len(tau_data):
-            raise ValueError, 's array and tau array must have the same size'
+            raise ValueError('s array and tau array must have the same size')
         self.bs_law.set(xdata=s_data,
                         ydata=tau_data)
         self.bs_law.replot()

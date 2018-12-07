@@ -2,7 +2,7 @@
 # weave - C/C++ integration
 #
 
-from inline_tools import inline
+from .inline_tools import inline
 from numpy.testing import Tester
 from scipy.weave import converters
 from scipy.weave.ext_tools import ext_module, ext_function

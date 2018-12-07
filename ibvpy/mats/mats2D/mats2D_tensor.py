@@ -202,17 +202,17 @@ if __name__ == '__main__':
     tn2 = array([[1,4,5],
                  [4,2,6],
                  [5,6,3]])
-    print 'tn2'
-    print tn2
+    print('tn2')
+    print(tn2)
 
     tn4 = map2d_tns2_to_tns4(tn2)
     
-    print 'tns2_to_tns4'
-    print tn4
+    print('tns2_to_tns4')
+    print(tn4)
     
     tn2a = map2d_tns4_to_tns2(tn4)
     
-    print 'back'
-    print 'tns4_to_tns2'
-    print tn2a
+    print('back')
+    print('tns4_to_tns2')
+    print(tn2a)
     

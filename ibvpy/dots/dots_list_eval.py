@@ -19,7 +19,7 @@ from traitsui.api import \
 from traitsui.menu import \
     OKButton, CancelButton
 
-from dots_eval import DOTSEval
+from .dots_eval import DOTSEval
 
 
 #-----------------------------------------------------------------------------
@@ -30,7 +30,7 @@ class DOTSListEval(TStepperEval):
     '''
     Domain with uniform FE-time-step-eval.
     '''
-    implements(ITStepperEval)
+    #implements(ITStepperEval)
 
     sdomain = WeakRef('ibvpy.mesh.fe_domain.FEDomain')
 
@@ -56,7 +56,7 @@ class DOTSListEval(TStepperEval):
         return zeros(n_dofs, 'float_')
 
     def setup(self, sctx):
-        print 'DEPRECATED CALL TO SETUP'
+        print('DEPRECATED CALL TO SETUP')
 
     def get_state_array_size(self):
         return 0
@@ -91,7 +91,7 @@ class DOTSListEval(TStepperEval):
         rte_keys = []
         for dots_eval in self.dots_list:
             dots_rte_dict = {}
-            for key, eval in dots_eval.rte_dict.items():
+            for key, eval in list(dots_eval.rte_dict.items()):
                 # add the mapping here
                 #
                 if key not in rte_keys:

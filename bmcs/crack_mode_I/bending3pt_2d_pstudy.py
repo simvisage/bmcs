@@ -9,10 +9,10 @@ from ibvpy.mats.mats3D.viz3d_stress_field import \
     Vis3DStressField, Viz3DStressField
 from view.window import BMCSModel, BMCSWindow
 
-from bending3pt_2d import BendingTestModel, \
+from .bending3pt_2d import BendingTestModel, \
     Vis2DCrackBand, Viz2DTA, Viz2DStrainInCrack
 import matplotlib.pyplot as plt
-from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
+from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ class MATS2DElastic(MATS2DEval, BMCSLeafNode):
     Elastic Model.
     '''
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)

@@ -24,7 +24,7 @@ class MATS1DElastic(MATS1DEval):
     Elastic Model.
     '''
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     E = Float(1.,  # 34e+3,
               label="E",

@@ -4,7 +4,7 @@ Created on Mar 2, 2017
 @author: rch
 '''
 
-from __builtin__ import len
+from builtins import len
 import os
 import tempfile
 from threading import Thread
@@ -192,7 +192,7 @@ class BMCSVizSheet(ROutputSection):
         self.skipped_steps = self.monitor_chunk_size
         # self.update_pipeline(1.0)
         self.running = False
-        print 'RUN finshed'
+        print('RUN finshed')
         self.replot()
         self.offline = True
 
@@ -237,7 +237,7 @@ class BMCSVizSheet(ROutputSection):
     '''
 
     def _get_viz2d_names(self):
-        return self.viz2d_dict.keys()
+        return list(self.viz2d_dict.keys())
 
     viz2d_list_editor_clicked = Tuple
     viz2d_list_changed = Event
@@ -291,9 +291,9 @@ class BMCSVizSheet(ROutputSection):
         fig.show()
 
     def _export_button_fired(self, vot=0):
-        print 'in export button fired'
+        print('in export button fired')
         Thread(target=self.plot_in_window).start()
-        print 'thread started'
+        print('thread started')
 
     export_path = Directory
     status_message = Str('')
@@ -457,8 +457,8 @@ class BMCSVizSheet(ROutputSection):
                                   str(viz3d.__class__),
                                   vis3d
                                   )
-        if self.viz3d_dict.has_key(label):
-            raise KeyError, 'viz3d object named %s already registered' % label
+        if label in self.viz3d_dict:
+            raise KeyError('viz3d object named %s already registered' % label)
         viz3d.order = order
         self.viz3d_dict[label] = viz3d
 

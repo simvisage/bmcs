@@ -42,7 +42,7 @@ from traitsui.wx.editor import \
 
 from etsproxy.pyface.api \
     import ImageResource
-from mfn_plot_adapter import \
+from .mfn_plot_adapter import \
     MFnPlotAdapter
 import numpy as np
 
@@ -125,7 +125,7 @@ class _MFnChacoEditor (Editor):
         if a.min_size:
             panel.SetMinSize(a.min_size)
 
-        print 'size', panel.GetSize()
+        print('size', panel.GetSize())
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(wx.StaticLine(parent, -1, style=wx.LI_HORIZONTAL), 0,
@@ -139,7 +139,7 @@ class _MFnChacoEditor (Editor):
         panel.SetSizer(sizer)
 
         if a.padding:
-            for side, pad in a.padding.items():
+            for side, pad in list(a.padding.items()):
                 if side == 'right' or side == 'top':
                     padd = int((1 - pad) * 200)
                     setattr(self.plot_container, 'padding_' + side, padd)
@@ -180,7 +180,7 @@ class _MFnChacoEditor (Editor):
         value_range.add(y)
         value_mapper = LinearMapper(range=value_range)
 
-        styles_m = adapter.line_style.values()
+        styles_m = list(adapter.line_style.values())
         line_style = styles_m[0]
         line_color = adapter.line_color[0]
 
@@ -245,7 +245,7 @@ class _MFnChacoEditor (Editor):
         if dlg.open() == OK:
             path = dlg.path
 
-            print "Saving data to", path, "..."
+            print("Saving data to", path, "...")
             try:
 
                 #                factory  = self.factory
@@ -256,9 +256,9 @@ class _MFnChacoEditor (Editor):
                 y_values = self.value.ydata
                 np.savetxt(path, np.vstack((x_values, y_values)).transpose())
             except:
-                print "Error saving!"
+                print("Error saving!")
                 raise
-            print "Plot saved."
+            print("Plot saved.")
         return
 
     def on_savefig(self):
@@ -274,7 +274,7 @@ class _MFnChacoEditor (Editor):
         if dlg.open() == OK:
             path = dlg.path
 
-            print "Saving plot to", path, "..."
+            print("Saving plot to", path, "...")
             try:
 
                 """ Now we create a canvas of the appropriate size and 
@@ -306,9 +306,9 @@ class _MFnChacoEditor (Editor):
                 plot_gc.save(path)
 
             except:
-                print "Error saving!"
+                print("Error saving!")
                 raise
-            print "Plot saved."
+            print("Plot saved.")
         return
 
 #------------------------------------------------------------------------------

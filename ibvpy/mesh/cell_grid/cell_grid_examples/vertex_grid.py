@@ -25,16 +25,16 @@ cell_grid = CellGrid( grid_cell_spec = CellSpec( node_coords = [[-1, -1],
                                                                 ),
                       shape = ( 1, 1 ), coord_max = [ 1., 1. ] )
 
-print 'vertex_idx_grid'
-print cell_grid.vertex_idx_grid
-print 'vertex slices'
-print cell_grid.vertex_slices
-print 'point_x_grid'
-print cell_grid.point_x_grid
-print 'point_x_arr'
-print cell_grid.point_x_arr
-print 'point_X_grid'
-print cell_grid.point_X_grid
-print 'vertex_X_grid',
-print cell_grid.vertex_X_grid
+print('vertex_idx_grid')
+print(cell_grid.vertex_idx_grid)
+print('vertex slices')
+print(cell_grid.vertex_slices)
+print('point_x_grid')
+print(cell_grid.point_x_grid)
+print('point_x_arr')
+print(cell_grid.point_x_arr)
+print('point_X_grid')
+print(cell_grid.point_X_grid)
+print('vertex_X_grid', end=' ')
+print(cell_grid.vertex_X_grid)
 

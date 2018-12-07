@@ -37,7 +37,7 @@ for L, c in zip(L_arr, colors):
     eps_el = [0, f_t / E]
     sig_el = [0, f_t]
     eps_w = 1 / E * f(w, f_t, G_f) + w / L
-    print 'eps_w', eps_w
+    print('eps_w', eps_w)
     sig_w = f(w, f_t, G_f)
 
     W_el = [0, f_t**2 / 2 / E * S * L]
@@ -53,7 +53,7 @@ for L, c in zip(L_arr, colors):
     U = np.hstack([U_el, U_w])
 
     l = E * G_f / f_t**2
-    print 'l', l, L
+    print('l', l, L)
 
     p.subplot(2, 2, 1)
     p.plot(eps * L, sig, lw=3, color=c, label='L=%d' % L)

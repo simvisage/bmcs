@@ -5,7 +5,7 @@ from traits.api import \
 from traits.api import \
     implements
 
-from i_tstepper_eval import ITStepperEval
+from .i_tstepper_eval import ITStepperEval
 
 
 class TStepperEval(HasTraits):
@@ -24,7 +24,7 @@ class TStepperEval(HasTraits):
     evaluated for the provided spatial context and state array
     (rte_dict) attribute.
     """
-    implements(ITStepperEval)
+    #implements(ITStepperEval)
 
     tstepper = WeakRef('ibvpy.core.tstepper.TStepper')
 
@@ -62,7 +62,7 @@ class TStepperEval(HasTraits):
         with a statistical distribution.
         '''
         params = {}
-        for name, trait in self.traits().items():
+        for name, trait in list(self.traits().items()):
             if trait.trait_type.__class__ is Float:
                 params[name] = trait
         return params

@@ -44,7 +44,7 @@ if __name__ == '__main__':
     u_ex = array([0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.],
                  dtype=float)
     difference = sqrt(norm(u - u_ex))
-    print 'difference'
+    print('difference')
     # compare the reaction at the left end
     F = ts.F_int[0]
-    print F
+    print(F)

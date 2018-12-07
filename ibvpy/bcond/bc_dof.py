@@ -48,7 +48,7 @@ class BCDof(BMCSTreeNode):
            link_coeffs = [-sin(alpha)/cos(alpha) ] )
 
     '''
-    implements(IBCond)
+    #implements(IBCond)
 
     node_name = 'boundary condition'
     tree_node_list = List()
@@ -241,4 +241,4 @@ if __name__ == '__main__':
                        BCDof(
                            var='u', dof=5, link_dofs=[16], link_coeffs=[1.], value=0.),
                        BCDof(var='f', dof=21, value=10)])
-    print tloop.eval()
+    print(tloop.eval())

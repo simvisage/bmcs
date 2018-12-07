@@ -216,7 +216,7 @@ class PullOutModel(BMCSModel, Vis2D):
 
     @on_trait_change('MAT,BC')
     def _sv_hist_reset(self):
-        print 'sv_hist_reset'
+        print('sv_hist_reset')
         for sv_name in self.sv_names:
             self.sv_hist[sv_name] = []
 

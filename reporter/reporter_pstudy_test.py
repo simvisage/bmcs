@@ -7,12 +7,12 @@
    package dependency - window depends on reporter
    parametric studies?
 '''
-from reporter import Reporter
+from .reporter import Reporter
 from traits.api import \
     Float,\
     Instance, Int
 
-from report_item import \
+from .report_item import \
     RInputRecord, RInputSection, ROutputSection
 
 
@@ -65,8 +65,8 @@ def generate_report():
                       ]
     rinput_tree = r.yield_rinput_traits()
 
-    for path, trait in rinput_tree.items():
-        print path, trait
+    for path, trait in list(rinput_tree.items()):
+        print(path, trait)
         trait.value_range = [2, 3, 4, 5]
 
     r.write()

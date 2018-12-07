@@ -40,7 +40,7 @@ class FETS1D52ULRHFatigue(FETSEval):
     Fe Bar 2 nodes, deformation
     '''
 
-    implements(IFETSEval)
+    #implements(IFETSEval)
 
     debug_on = True
 
@@ -235,13 +235,13 @@ class FETS1D52ULRHFatigue(FETSEval):
     '''
     @tr.cached_property
     def _get_shape_function_values(self):
-        N_mi = np.array([N_xi_i.subs(zip([xi_1, xi_2, xi_3], xi))
+        N_mi = np.array([N_xi_i.subs(list(zip([xi_1, xi_2, xi_3], xi)))
                          for xi in self.xi_m], dtype=np.float_)
         N_im = np.einsum('mi->im', N_mi)
-        dN_mir_arr = [np.array(dN_xi_ir.subs(zip([xi_1], xi))).astype(np.float_)
+        dN_mir_arr = [np.array(dN_xi_ir.subs(list(zip([xi_1], xi)))).astype(np.float_)
                       for xi in self.xi_m]
         dN_mir = np.array(dN_mir_arr, dtype=np.float)
-        dN_nir_arr = [np.array(dN_xi_ir.subs(zip([xi_1], xi))).astype(np.float_)
+        dN_nir_arr = [np.array(dN_xi_ir.subs(list(zip([xi_1], xi)))).astype(np.float_)
                       for xi in self.vtk_r]
         dN_nir = np.array(dN_nir_arr, dtype=np.float)
         dN_imr = np.einsum('mir->imr', dN_mir)
@@ -279,4 +279,4 @@ class FETS1D52ULRHFatigue(FETSEval):
 
 if __name__ == '__main__':
     fe = FETS1D52ULRHFatigue()
-    print 'dN_imr', fe.dN_imr
+    print('dN_imr', fe.dN_imr)

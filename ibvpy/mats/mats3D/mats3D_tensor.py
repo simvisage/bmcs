@@ -86,7 +86,7 @@ def map3d_ijkl2mn( i,j,k,l ):
     elif (i==0 and j==1) or (i==1 and j==0):
         m = 5
     else:
-        raise IndexError, 'error in the tensor index mapping'
+        raise IndexError('error in the tensor index mapping')
         
     # second two indices (kl)
     if k==0 and l==0:
@@ -102,7 +102,7 @@ def map3d_ijkl2mn( i,j,k,l ):
     elif (k==0 and l==1) or (k==1 and l==0):
         n = 5
     else:
-        raise IndexError, 'error in the tensor index mapping'
+        raise IndexError('error in the tensor index mapping')
 
     return m,n
 

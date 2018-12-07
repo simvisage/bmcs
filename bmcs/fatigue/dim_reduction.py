@@ -90,8 +90,8 @@ for i in range(0, 2):
                 abcd2n[i, j, k, l] = b
                 D_abef[i, j, k, l] = D_ab[map2d_ijkl2mn(i, j, k, l)]
 
-print repr(abcd2m)
-print repr(abcd2n)
+print(repr(abcd2m))
+print(repr(abcd2n))
 
 D_abcd = D_ab[abcd2m, abcd2n]
 
@@ -99,9 +99,9 @@ sig2d = np.zeros((6,), dtype=np.float_)
 map2d_3d = np.array([[0, 0], [1, 1], [2, 2], [0, 1], [1, 2], [2, 0]])
 sig3d = sig2d[map2d_3d]
 
-print 'sig3d', sig3d
-print 'D_ab', D_ab
-print D_abef - D_abcd
+print('sig3d', sig3d)
+print('D_ab', D_ab)
+print(D_abef - D_abcd)
 
 E_, nu_ = sp.symbols('E,nu')
 mu_ = E_ / (2 + 2 * nu_)
@@ -127,7 +127,7 @@ D3D_ab = D_factor * sp.Matrix(
      [0, 0, 0, 0, 0, (1 - 2 * nu_) / (2 * (1 - nu_))]
      ])
 sig3D_ab = sp.Matrix()
-print D3D_ab.subs({"E": E, "nu": nu})
+print(D3D_ab.subs({"E": E, "nu": nu}))
 
 idx_1 = [0, 1, 3]
 idx_2 = [2, 4, 5]
@@ -137,11 +137,11 @@ D3D_21 = D3D_ab[idx_2, idx_1]
 D3D_22 = D3D_ab[idx_2, idx_2]
 inv_D3D_22 = D3D_22.inv()
 D2D_ab = D3D_11 - ((D3D_12 * inv_D3D_22) * D3D_21)
-print D2D_ab.subs({"E": E, "nu": nu})
+print(D2D_ab.subs({"E": E, "nu": nu}))
 D2D_ab2 = E_ / (1 - nu_**2) * sp.Matrix([[1, nu_, 0],
                                          [nu_, 1, 0],
                                          [0, 0, (1 - nu_) / 2]])
-print D2D_ab2.subs({"E": E, "nu": nu})
+print(D2D_ab2.subs({"E": E, "nu": nu}))
 
 idx_1 = [0, 1, 3]
 idx_2 = [2]
@@ -152,4 +152,4 @@ D3D_22 = D3D_ab[idx_2, idx_2]
 inv_D3D_22 = D3D_22.inv()
 D2D_ab3 = D3D_11 - ((D3D_12 * inv_D3D_22) * D3D_21)
 
-print D2D_ab3.subs({"E": E, "nu": nu})
+print(D2D_ab3.subs({"E": E, "nu": nu}))

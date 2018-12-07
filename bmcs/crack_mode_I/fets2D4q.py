@@ -16,7 +16,7 @@ import sympy as sp
 r_, s_ = sp.symbols('r, s')
 
 
-print sys.path
+print(sys.path)
 
 
 #-------------------------------------------------------------------------
@@ -262,7 +262,7 @@ def example_with_new_domain():
     fets_eval = FETS2D4Q(mats_eval=mats_eval)
     #fets_eval = FETS2D4Q(mats_eval = MATS2DScalarDamage())
 
-    print fets_eval.vtk_node_cell_data
+    print(fets_eval.vtk_node_cell_data)
 
     from ibvpy.mesh.fe_grid import FEGrid
     from ibvpy.mesh.fe_refinement_grid import FERefinementGrid
@@ -277,8 +277,8 @@ def example_with_new_domain():
     bcg = BCDofGroup(var='u', value=0., dims=[0],
                      get_dof_method=fe_grid.get_left_dofs)
     bcg.setup(None)
-    print 'labels', bcg._get_labels()
-    print 'points', bcg._get_mvpoints()
+    print('labels', bcg._get_labels())
+    print('points', bcg._get_mvpoints())
 
     mf = MFnLineArray(  # xdata = arange(10),
         ydata=np.array([0, 1, 2, 3]))

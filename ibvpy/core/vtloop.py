@@ -8,9 +8,9 @@ from ibvpy.core.i_tstepper_eval import ITStepperEval
 from mathkit.matrix_la import \
     SysMtxAssembly
 
-from bcond_mngr import BCondMngr
+from .bcond_mngr import BCondMngr
 import numpy as np
-from tline import TLine
+from .tline import TLine
 import traits.api as tr
 
 
@@ -94,7 +94,7 @@ class TimeLoop(tr.HasStrictTraits):
 
         while (self.t_n1 - self.tline.max) <= self.step_tolerance:
 
-            print 'current time %f' % self.t_n1,
+            print('current time %f' % self.t_n1, end=' ')
             self.d_t = self.tline.step
             k = 0
             step_flag = 'predictor'
@@ -123,14 +123,14 @@ class TimeLoop(tr.HasStrictTraits):
                     n_F_int = 1.0
                 norm = np.linalg.norm(R, ord=None)  # / n_F_int
                 if norm < self.tolerance:
-                    print 'converged in %d iterations' % (k + 1)
+                    print('converged in %d iterations' % (k + 1))
                     update_state = True
                     self.record_response(U_k, F_int, self.t_n1)
                     break
                 dU, pos_def = K.solve(check_pos_def=algorithmic)
                 if algorithmic and not pos_def:
                     algorithmic = False
-                    print 'switched to secant'
+                    print('switched to secant')
                     continue
                 U_k += dU
                 k += 1

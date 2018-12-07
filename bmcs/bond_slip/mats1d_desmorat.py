@@ -12,7 +12,7 @@ from traits.api import implements,  \
     Constant, Float, WeakRef, List, Str, Property, cached_property, \
     Trait, on_trait_change, Instance, Callable
 from traitsui.api import View, VGroup, Item, UItem, Group
-from mats_bondslip import MATSBondSlipBase
+from .mats_bondslip import MATSBondSlipBase
 import numpy as np
 
 
@@ -223,14 +223,14 @@ if __name__ == '__main__':
 
     m = MATS1DDesmorat()
     s_levels = np.linspace(0, -0.003, 10)
-    print s_levels
+    print(s_levels)
     s_levels[0] = 0
     s_levels.reshape(-1, 2)[:, 0] *= 0
     #print (s_levels.reshape)
     s_history = s_levels.flatten()
     s = np.hstack([np.linspace(s_history[i], s_history[i + 1], 1)
                    for i in range(len(s_levels) - 1)])
-    print s
+    print(s)
     s_vars = [np.zeros_like(s)
               for sv in m.sv_names]
     s_p, Y, D, z, X, tau_e, tau = m.get_next_state(s, s_vars)

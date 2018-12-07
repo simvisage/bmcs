@@ -16,9 +16,9 @@ from traitsui.menu import \
     Menu, MenuBar, Separator
 from view.ui.bmcs_tree_node import \
     BMCSRootNode, BMCSTreeNode, BMCSLeafNode
-from bmcs_model import BMCSModel
-from bmcs_study import BMCSStudy
-from bmcs_tree_view_handler import \
+from .bmcs_model import BMCSModel
+from .bmcs_study import BMCSStudy
+from .bmcs_tree_view_handler import \
     menu_tools_report_pdf, menu_tools_report_tex, \
     BMCSTreeViewHandler, plot_self, menu_save, \
     menu_open, menu_exit, \
@@ -32,8 +32,8 @@ if ETSConfig.toolkit == 'qt4':
     from traitsui.qt4.tree_editor import \
         DeleteAction
 else:
-    raise ImportError, "tree actions for %s toolkit not available" % \
-        ETSConfig.toolkit
+    raise ImportError("tree actions for %s toolkit not available" % \
+        ETSConfig.toolkit)
 
 
 tree_node = TreeNode(node_for=[BMCSRootNode, BMCSTreeNode],

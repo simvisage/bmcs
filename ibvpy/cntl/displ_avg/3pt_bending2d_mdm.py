@@ -21,7 +21,7 @@ from ibvpy.fets.fets2D.fets2D4q8u import FETS2D4Q8U
 from numpy import array, cos, sin, pi, sqrt, deg2rad, arctan
 from mathkit.mfn import MFnLineArray
 
-from rt_nonlocal_averaging import \
+from .rt_nonlocal_averaging import \
     RTNonlocalAvg, QuarticAF
 
 def app():
@@ -79,7 +79,7 @@ def app():
                                                        correction=True))
 
     loading_dof = fe_grid[n_el_x / 2, -1, 0, -1].dofs.flatten()[1]
-    print 'loading_dof', loading_dof
+    print('loading_dof', loading_dof)
     ts = TS(sdomain=fe_grid,
              u_processor=avg_processor,
              bcond_list=[

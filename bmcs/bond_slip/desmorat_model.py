@@ -30,7 +30,7 @@ from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSTreeNode
 from view.window.bmcs_window import BMCSModel, BMCSWindow
 
-from mats1d_desmorat import MATS1DDesmorat
+from .mats1d_desmorat import MATS1DDesmorat
 import numpy as np
 
 
@@ -330,25 +330,25 @@ def run_bond_slip_model_dp(*args, **kw):
 
 def run_interactive_test():
     bsm = DesmoratModel(interaction_type='interactive')
-    print 'set f_val'
+    print('set f_val')
     bsm.loading_scenario.f_value = 0.1
-    print 'eval'
+    print('eval')
     bsm.eval()
-    print 'set f_val'
+    print('set f_val')
     bsm.loading_scenario.f_value = 0.4
-    print 'eval'
+    print('eval')
     bsm.eval()
-    print bsm.sv_hist.keys()
+    print(list(bsm.sv_hist.keys()))
 
 
 def run_predefined_load_test():
     bsm = DesmoratModel(interaction_type='predefined',
                         material_model='damage-plasticity')
     bsm.eval()
-    print bsm.get_sv_hist('s')
-    print bsm.get_sv_hist('tau')
-    print bsm.get_sv_hist('s_p')
-    print bsm.get_sv_hist('z')
+    print(bsm.get_sv_hist('s'))
+    print(bsm.get_sv_hist('tau'))
+    print(bsm.get_sv_hist('s_p'))
+    print(bsm.get_sv_hist('z'))
 
 
 if __name__ == '__main__':
@@ -358,4 +358,4 @@ if __name__ == '__main__':
     from IPython.display import Latex
     import IPython as ip
     bsm = DesmoratModel()
-    print(bsm._repr_latex_())
+    print((bsm._repr_latex_()))

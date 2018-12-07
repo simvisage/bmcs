@@ -195,7 +195,7 @@ class MATSProxy(MATSEval):
        (the need for change notification mechanism within the
        tstepper hierarchy)
     '''
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
 #    mats_eval_type = Enum('MATS1DElastic',
 #                          'MATS1DDamage',
@@ -226,7 +226,7 @@ class MATSProxy(MATSEval):
         '''
         params = self.mats_eval.identify_parameters()
         varset = {}
-        for key, par in params.items():
+        for key, par in list(params.items()):
             par_val = getattr(self.mats_eval , key)
             varset[key] = VariedParam(mats_eval=self.mats_eval,
                                       varname=key)
@@ -236,7 +236,7 @@ class MATSProxy(MATSEval):
     varpar_list = Property(List(VariedParam), depends_on='varpars')
     @cached_property
     def _get_varpar_list(self):
-        return self.varpars.values()
+        return list(self.varpars.values())
 
     # variable selectable in the table of varied params (just for viewing)
     current_varpar = Instance(VariedParam)
@@ -343,9 +343,9 @@ class MATSProxy(MATSEval):
 from ibvpy.core.tloop import TLoop, TLine
 from ibvpy.api import BCDof
 from ibvpy.core.ibvp_solve import IBVPSolve as IS
-from mats1D.mats1D_elastic.mats1D_elastic import MATS1DElastic
+from .mats1D.mats1D_elastic.mats1D_elastic import MATS1DElastic
 # from mats1D.mats1D_damage.mats_damage1d import MATS1DDamage
-from mats2D.mats2D_sdamage.mats2D_sdamage import MATS2DScalarDamage
+from .mats2D.mats2D_sdamage.mats2D_sdamage import MATS2DScalarDamage
 
 
 if __name__ == '__main__':

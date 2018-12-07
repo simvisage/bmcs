@@ -29,7 +29,7 @@ from traitsui.api import View, Item
 from traits.api import Any, Instance, on_trait_change
 from etsproxy.traits.ui.wx.editor import Editor
 from etsproxy.traits.ui.basic_editor_factory import BasicEditorFactory
-from mfn_plot_adapter import MFnMultiPlotAdapter
+from .mfn_plot_adapter import MFnMultiPlotAdapter
 from matplotlib.ticker import MaxNLocator
 
 class _MFnMatplotlibEditor(Editor):

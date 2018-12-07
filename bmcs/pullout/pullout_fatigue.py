@@ -23,7 +23,7 @@ from view.plot2d import Vis2D, Viz2D
 from view.window import BMCSModel, BMCSWindow, TLine
 
 import numpy as np
-from pullout import Viz2DPullOutFW, Viz2DPullOutField, \
+from .pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     Viz2DEnergyPlot, Viz2DEnergyReleasePlot, \
     CrossSection, Geometry, PullOutModelBase
 

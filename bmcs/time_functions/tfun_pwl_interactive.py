@@ -97,7 +97,7 @@ class TFunPWLInteractive(MFnLineArray, BMCSLeafNode, Vis2D):
         if self.ui:
             self.ui.model.set_tmax(t_value)
             if self.run_eagerly:
-                print 'LS-run', t_value, f_value
+                print('LS-run', t_value, f_value)
                 self.ui.run()
 
     def get_ty_data(self, vot):

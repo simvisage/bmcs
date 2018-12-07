@@ -1,7 +1,7 @@
 
 from traits.api import HasTraits, Instance, Delegate
 from traitsui.api import View, Item, VSplit, Group
-from tloop import TLoop
+from .tloop import TLoop
 
 class IBVPSolve( HasTraits ):
     ''' Manage the installation source tree

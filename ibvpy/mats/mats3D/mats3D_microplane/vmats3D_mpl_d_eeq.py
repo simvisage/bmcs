@@ -22,7 +22,7 @@ import traits.api as tr
 
 class MATS3DMplDamageEEQ(MATS3DEval, MATS3D):
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     epsilon_0 = Float(59.0e-6,
                       label="a",

@@ -190,7 +190,7 @@ class DOTSEvalAvg( DOTSEval ):
                     self.C[ n_nod_i.dofs[i], ix_( ix ) ] += c[i, :]
         t2 = time.time()
         diff = t2 - t1
-        print "Averaging Matrix: %8.2f sec" % diff
+        print("Averaging Matrix: %8.2f sec" % diff)
         #print "C ", self.C
 
     def get_corr_pred( self, sctx, u, du, tn, tn1 ):

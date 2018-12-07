@@ -522,7 +522,7 @@ class MATSXDMicroplaneDamageFatigueJir(MATSEvalMicroplaneFatigue):
 
 class MATS3DMicroplaneDamageJir(MATSXDMicroplaneDamageFatigueJir, MATS3DEval):
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D

@@ -11,8 +11,8 @@ from enthought.traits.ui.api import View, Item, Tabbed, VGroup, HGroup, \
     ModelView, HSplit, VSplit, Group, Include, InstanceEditor
 from enthought.traits.ui.menu import Action, CloseAction, HelpAction, Menu, \
     MenuBar, NoButtons, Separator, ToolBar, OKButton
-from parameters import Geometry
-from parameters import Plot
+from .parameters import Geometry
+from .parameters import Plot
 from numpy import infty, sign, pi, cos
 from util.traits.either_type import EitherType
 
@@ -74,7 +74,7 @@ class InfFreeDbl( BaseBC ):
 
 class InfiniteEmbeddedLength( BaseBC ):
 
-    implements( IBoundary )
+    #implements( IBoundary )
 
     def __init__( self, **kw ):
         super( InfiniteEmbeddedLength, self ).__init__( **kw )
@@ -111,7 +111,7 @@ class FinFreeDbl( BaseBC ):
 
 class FiniteEmbeddedLength( BaseBC ):
 
-    implements( IBoundary )
+    #implements( IBoundary )
 
     type = EitherType( names = ['double sided',
                                  'one sided'],
@@ -152,7 +152,7 @@ class FinClampDbl( BaseBC ):
 
 class ClampedFibre( BaseBC ):
 
-    implements( IBoundary )
+    #implements( IBoundary )
 
     type = EitherType( names = ['one sided',
                                  'double sided'],

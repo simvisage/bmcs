@@ -14,7 +14,7 @@ import traits.api as tr
 
 class MATS2D(BMCSTreeNode):
 
-    tr.implements(IMATSEval)
+    #tr.implements(IMATSEval)
 
     # -----------------------------------------------------------------------------------------------------
     # Construct the fourth order elasticity tensor
@@ -114,7 +114,7 @@ class MATS2D(BMCSTreeNode):
     '''
 
     def _get_state_vars(self):
-        return self.state_array_shapes.keys()
+        return list(self.state_array_shapes.keys())
 
     state_array_shapes = tr.Property(tr.Dict())
 

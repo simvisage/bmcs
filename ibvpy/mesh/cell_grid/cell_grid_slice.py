@@ -73,8 +73,8 @@ class CellGridSlice( HasTraits ):
 
 if __name__ == '__main__':
 
-    from cell_grid import CellGrid
-    from cell_spec import CellSpec
+    from .cell_grid import CellGrid
+    from .cell_spec import CellSpec
 
     cell_grid = CellGrid( shape = ( 2, 8 ),
                     grid_cell_spec = CellSpec( node_coords = [[-1, -1],
@@ -83,38 +83,38 @@ if __name__ == '__main__':
                                                               [1, 1],
                                                               [-1, 1]] ) )
 
-    print 'cell_grid'
-    print cell_grid.cell_idx_grid
+    print('cell_grid')
+    print(cell_grid.cell_idx_grid)
 
-    print 'cell_grid points'
-    print cell_grid.point_idx_grid
+    print('cell_grid points')
+    print(cell_grid.point_idx_grid)
 
-    print 'grid_cell'
-    print cell_grid.grid_cell
+    print('grid_cell')
+    print(cell_grid.grid_cell)
 
-    print 'grid_cell[:,-1]'
-    print cell_grid.grid_cell[:, -1]
+    print('grid_cell[:,-1]')
+    print(cell_grid.grid_cell[:, -1])
 
-    print 'sliced cells'
+    print('sliced cells')
     cell_grid_slice = cell_grid[:, -1, :, -1]
 
-    print 'elemes'
-    print cell_grid_slice.elems
+    print('elemes')
+    print(cell_grid_slice.elems)
 
-    print 'nodes'
-    print cell_grid_slice.nodes
+    print('nodes')
+    print(cell_grid_slice.nodes)
 
-    print 'global coords'
-    print cell_grid_slice.point_X_arr
+    print('global coords')
+    print(cell_grid_slice.point_X_arr)
 
-    print 'local coords'
-    print cell_grid_slice.point_x_arr
+    print('local coords')
+    print(cell_grid_slice.point_x_arr)
 
-    print 'cell grid'
-    print cell_grid_slice.cell_grid
+    print('cell grid')
+    print(cell_grid_slice.cell_grid)
 
-    print 'get a single element - the first one - cell grid[0,0]'
-    print cell_grid[0].elems
+    print('get a single element - the first one - cell grid[0,0]')
+    print(cell_grid[0].elems)
 
-    print 'get all nodes of the boundary elements in second-direction'
-    print cell_grid[:, -1, ...].nodes
+    print('get all nodes of the boundary elements in second-direction')
+    print(cell_grid[:, -1, ...].nodes)

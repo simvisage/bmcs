@@ -6,8 +6,8 @@
 from threading import Thread
 from reporter import Reporter
 from reporter.reporter import ReportStudy
-from bmcs_model import BMCSModel
-from bmcs_viz_sheet import BMCSVizSheet
+from .bmcs_model import BMCSModel
+from .bmcs_viz_sheet import BMCSVizSheet
 import traits.api as tr
 
 

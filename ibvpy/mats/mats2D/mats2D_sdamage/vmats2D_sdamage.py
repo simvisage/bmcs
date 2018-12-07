@@ -12,7 +12,7 @@ from traitsui.api import VGroup, UItem, \
 
 import numpy as np
 import traits.api as tr
-from vstrain_norm2d import StrainNorm2D, SN2DRankine
+from .vstrain_norm2d import StrainNorm2D, SN2DRankine
 
 
 # from scipy.linalg import eig, inv
@@ -26,7 +26,7 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
     Isotropic damage model.
     '''
 
-    tr.implements(IMATSEval)
+    #tr.implements(IMATSEval)
 
     node_name = 'isotropic damage model'
 
@@ -191,12 +191,12 @@ if __name__ == '__main__':
     G_f = 0.090
     E = 20000.0
     omega_fn_gf = GfDamageFn(G_f=G_f, f_t=f_t, L_s=22.5)
-    print omega_fn_gf.eps_0
-    print omega_fn_gf(0.000148148)
+    print(omega_fn_gf.eps_0)
+    print(omega_fn_gf(0.000148148))
 
     mats = MATS2DScalarDamage(E=30000,
                               stiffness='algorithmic',
                               nu=0.0,
                               )
-    print mats.strain_norm
+    print(mats.strain_norm)
     mats.configure_traits()

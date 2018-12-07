@@ -17,12 +17,12 @@ from util.traits.either_type import \
 from view.plot2d import Viz2D, Vis2D
 from view.window import BMCSModel, BMCSWindow
 
-from mats1D.mats1D_explore import MATS1DExplore
-from mats1D5.mats1D5_explore import MATS1D5Explore
-from mats2D.mats2D_explore import MATS2DExplore
-from mats3D.mats3D_explore import MATS3DExplore
-from mats_tloop import TLoop
-from mats_viz2d import Viz2DSigEps
+from .mats1D.mats1D_explore import MATS1DExplore
+from .mats1D5.mats1D5_explore import MATS1D5Explore
+from .mats2D.mats2D_explore import MATS2DExplore
+from .mats3D.mats3D_explore import MATS3DExplore
+from .mats_tloop import TLoop
+from .mats_viz2d import Viz2DSigEps
 
 
 class MATSExplore(BMCSModel, Vis2D):
@@ -43,7 +43,7 @@ class MATSExplore(BMCSModel, Vis2D):
         ]
 
     def _update_node_list(self):
-        print 'updating MATS explore', self.dim
+        print('updating MATS explore', self.dim)
         self.tree_node_list = [
             self.tline,
             self.loading_scenario,

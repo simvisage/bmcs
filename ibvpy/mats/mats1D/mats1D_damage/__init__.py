@@ -1,2 +1,2 @@
 
-from mats1D_damage import MATS1DDamage
+from .mats1D_damage import MATS1DDamage

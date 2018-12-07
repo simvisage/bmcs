@@ -12,7 +12,7 @@ from traits.api import Int, HasStrictTraits, Instance, \
 from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
 
-from mats3D.mats3D_explore import MATS3DExplore
+from .mats3D.mats3D_explore import MATS3DExplore
 import numpy as np
 
 
@@ -65,11 +65,11 @@ class TLoop(HasStrictTraits):
     @cached_property
     def _get_state_arrays(self):
         sa_shapes = self.ts.state_array_shapes
-        print 'state array generated', sa_shapes
+        print('state array generated', sa_shapes)
         return {
             name: np.zeros(mats_sa_shape, dtype=np.float_)[np.newaxis, ...]
             for name, mats_sa_shape
-            in sa_shapes.items()
+            in list(sa_shapes.items())
         }
 
     def init(self):
@@ -92,7 +92,7 @@ class TLoop(HasStrictTraits):
         while (t_n1 - self.tline.max) <= self.step_tolerance and \
                 not (self.restart or self.paused):
             k = 0
-            print 'load factor', t_n1,
+            print('load factor', t_n1, end=' ')
             step_flag = 'predictor'
             U_k = np.copy(U_n)
             d_U_k = np.zeros_like(U_k)
@@ -136,12 +136,12 @@ class TLoop(HasStrictTraits):
                 step_flag = 'corrector'
 
             if k >= self.k_max:
-                print ' ----------> no convergence'
+                print(' ----------> no convergence')
                 break
             else:
-                print '(', k, ')'
+                print('(', k, ')')
             if self.restart or self.paused:
-                print 'interrupted iteration'
+                print('interrupted iteration')
                 break
 
             t_n = t_n1
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     tl.init()
     U_k = tl.eval()
 
-    print U_k
+    print(U_k)
 
-    print 'U', tl.U_record
-    print 'F', tl.F_record
+    print('U', tl.U_record)
+    print('F', tl.F_record)

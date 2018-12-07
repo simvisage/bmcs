@@ -1,8 +1,7 @@
-from enaml.widgets.v_group import VGroup
 from matplotlib.figure import \
     Figure
 from scipy import interpolate as ip
-from traits.api import Array, Float, Event, HasStrictTraits, \
+from traits.api import Array, Float, Event, \
     ToolbarButton, on_trait_change, \
     Property, cached_property, Enum, Instance, Bool
 from traitsui.api import View, VGroup, UItem
@@ -103,8 +102,8 @@ class MFnLineArray(BMCSLeafNode):
 
     @on_trait_change('dump_button')
     def print_data(self, event=None):
-        print 'x = ', repr(self.xdata)
-        print 'y = ', repr(self.ydata)
+        print('x = ', repr(self.xdata))
+        print('y = ', repr(self.ydata))
 
     integ = Property(Float(), depends_on='ydata')
 

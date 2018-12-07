@@ -17,8 +17,8 @@ from traits.api import \
      Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
      on_trait_change, Tuple, WeakRef, DelegatesTo, Property, cached_property, Dict
 
-from fets_eval import FETSEval
-from i_fets_eval import IFETSEval
+from .fets_eval import FETSEval
+from .i_fets_eval import IFETSEval
 
 from ibvpy.core.tstepper_eval import \
      TStepperEval
@@ -33,7 +33,7 @@ class FETSEvalPrototyped( TStepperEval ):
 
     # define all traits and methods as delegated to the prototype.
 
-    implements( IFETSEval )
+    #implements( IFETSEval )
 
     dots_class = DelegatesTo( 'prototype_fets' )
     dof_r = DelegatesTo( 'prototype_fets' )
@@ -100,7 +100,7 @@ class FETSEvalPrototyped( TStepperEval ):
     traits_view = DelegatesTo( 'prototype_fets' )
 
     def adjust_spatial_context_for_point( self, sctx ):
-        print 'YYYYYYYYYYYYYYYYYY'
+        print('YYYYYYYYYYYYYYYYYY')
         self.prototype_fets.adjust_spatial_context_for_point( sctx )
 
     def get_state_array_size( self ):

@@ -595,7 +595,7 @@ class MATSXDMplCDSEEQ(MATS2DEval, MATS2D):
 
 class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D

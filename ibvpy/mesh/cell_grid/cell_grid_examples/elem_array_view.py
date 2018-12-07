@@ -178,7 +178,7 @@ class ElemArrayView ( HasTraits ):
 if __name__ == '__main__':
 
     from traits.api import Button
-    from mdomain import MGridDomain
+    from .mdomain import MGridDomain
 
     rt_domain = MGridDomain( shape = (20,20,1) )
     demo = ElemArrayView( data = rt_domain._get_elnode_map(),

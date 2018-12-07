@@ -52,7 +52,7 @@ class PullOutWithConstantFriction( RF ):
     
     '''
 
-    implements( IRF )
+    #implements( IRF )
 
     title = Str( 'stress profile in a clamped fiber with constant friction to a stiff matrix' )
 
@@ -114,7 +114,7 @@ class PullOutWithConstantFriction( RF ):
 
 class StressInFiberWithConstantFriction( PullOutWithConstantFriction ):
 
-    implements( IRF )
+    #implements( IRF )
 
     # @todo - define them as a range
     # - define embedded loops for compiled eps_loop

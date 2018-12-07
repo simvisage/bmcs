@@ -14,10 +14,11 @@ from traits.api import \
 from traitsui.api import View, Item, HSplit, Group, TabularEditor
 from traitsui.tabular_adapter import TabularAdapter
 
-from fe_grid_activation_map import FEGridActivationMap
-from fe_grid_idx_slice import FEGridIdxSlice
-from fe_grid_ls_slice import FEGridLevelSetSlice
-from i_fe_uniform_domain import IFEUniformDomain
+from .fe_grid_activation_map import FEGridActivationMap
+from .fe_grid_idx_slice import FEGridIdxSlice
+from .fe_grid_ls_slice import FEGridLevelSetSlice
+from .i_fe_uniform_domain import IFEUniformDomain
+from functools import reduce
 
 
 #-----------------------------------------------------------------------------
@@ -117,8 +118,8 @@ class FEGrid(FEGridActivationMap):
        visualization field.(where to specify the topology? - probably in
        the CellSpec?
     '''
-    implements(ICellArraySource)
-    implements(IFEUniformDomain)
+    #implements(ICellArraySource)
+    #implements(IFEUniformDomain)
 
     changed_structure = Event
 
@@ -761,7 +762,7 @@ class FECellView(CellView):
     def _dof_view_default(self):
         return DofCellView()
 
-    implements(ICellView)
+    #implements(ICellView)
 
     @on_trait_change('cell_grid')
     def _reset_view_links(self):
@@ -799,22 +800,22 @@ if __name__ == '__main__':
     fe_domain.configure_traits()
 
     import sys
-    print 'refcount', sys.getrefcount(fe_domain)
+    print('refcount', sys.getrefcount(fe_domain))
     dots = fe_domain.dots
-    print dots.fets_eval
-    print 'refcount', sys.getrefcount(fe_domain)
+    print(dots.fets_eval)
+    print('refcount', sys.getrefcount(fe_domain))
 
-    print 'dof_r'
-    print fe_domain.dof_r
+    print('dof_r')
+    print(fe_domain.dof_r)
 
-    print fe_domain.geo_grid.cell_node_map
-    print fe_domain.dof_grid.cell_dof_map
+    print(fe_domain.geo_grid.cell_node_map)
+    print(fe_domain.dof_grid.cell_dof_map)
 # coord_max = (1.,1.,0.)
 # fe_domain.` (1,1)
 # fe_domain.n_nodal_dofs = 2
 #    print fe_domain.dof_grid.cell_dof_map
-    print fe_domain.elem_dof_map
-    print fe_domain.elem_X_map[0]
+    print(fe_domain.elem_dof_map)
+    print(fe_domain.elem_X_map[0])
 
 #    for e in fe_domain.elements:
 #        print e

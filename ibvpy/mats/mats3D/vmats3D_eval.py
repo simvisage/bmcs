@@ -13,7 +13,7 @@ import traits.api as tr
 
 class MATS3D(BMCSTreeNode):
 
-    tr.implements(IMATSEval)
+    #tr.implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Material parameters

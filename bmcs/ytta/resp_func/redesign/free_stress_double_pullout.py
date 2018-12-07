@@ -32,7 +32,7 @@ def H( x ):
 class ConstantFrictionFiniteFiber( RF ):
     '''Pullout of fiber from a matrix; stress criterion for debonding, free fiber end'''
 
-    implements( IRF )
+    #implements( IRF )
 
     title = Str( 'double sided pull-out - short fiber with constant friction' )
 

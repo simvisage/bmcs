@@ -29,7 +29,7 @@ from traitsui.api import \
 
 from ibvpy.core.rtrace_eval import \
     RTraceEval
-from matsXD_cmdm_polar_discr import \
+from .matsXD_cmdm_polar_discr import \
     PolarDiscr
 import numpy as np
 
@@ -430,7 +430,7 @@ class MATSXDMicroplaneDamage(PolarDiscr):
         elif self.symmetrization == 'sum-type':
             return (self._get_beta_tns_sum_type, self._get_M_tns_sum_type)
         else:
-            raise ValueError, 'Bad symmetrization tag'
+            raise ValueError('Bad symmetrization tag')
 
     #-------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
@@ -555,7 +555,7 @@ class MATSXDMicroplaneDamage(PolarDiscr):
         Update state method is called upon an accepted time-step.
         Here just set the flag on to make the update afterwards in the method itself.
         '''
-        print 'in update-state'
+        print('in update-state')
         # self.update_state_on = True
 
     #-------------------------------------------------------------------------
@@ -887,7 +887,7 @@ class MATSXDMicroplaneDamage(PolarDiscr):
         if self.model_version != 'compliance':
             raise ValueError('only valid for compliance version')
 
-        raise ImportError, 'If this is needed include the import of the scipy package'
+        raise ImportError('If this is needed include the import of the scipy package')
         #e_max_arr_new = brentq(e_max_arr_new, self.get_lack_of_fit_psi_arr(
         #    self, sctx, e_msax_arr_new, eps_app_eng))
 
@@ -1021,7 +1021,7 @@ class MATSXDMicroplaneDamage(PolarDiscr):
         min_phi = np.min(self._get_phi_arr(sctx, eps_app_eng))
         max_omega = 1. - min_phi ** 2
         if max_omega == 1.:
-            print 'max_omega_i2', max_omega
+            print('max_omega_i2', max_omega)
 #            print 'eps_app_eng', eps_app_eng
         return np.array([max_omega])
 
@@ -1032,7 +1032,7 @@ class MATSXDMicroplaneDamage(PolarDiscr):
         min_phi = np.min(self._get_phi_arr(sctx, eps_app_eng))
         max_omega = 1. - min_phi
         if max_omega == 1.:
-            print 'max_omega_i', max_omega
+            print('max_omega_i', max_omega)
 #            print 'eps_app_eng', eps_app_eng
         return np.array([max_omega])
 

@@ -34,7 +34,7 @@ from view.window import BMCSModel, BMCSWindow
 
 import numpy as np
 import traits.api as tr
-from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
+from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
 class Viz2DForceDeflection(Viz2D):
@@ -589,7 +589,7 @@ class BendingTestModel(BMCSModel, Vis2D):
                         tline=self.tline,
                         algorithmic=self.alg_stiff,
                         bc_mngr=self.bcond_mngr,
-                        response_traces=self.response_traces.values())
+                        response_traces=list(self.response_traces.values()))
 
     response_traces = tr.Dict
     '''Response traces.

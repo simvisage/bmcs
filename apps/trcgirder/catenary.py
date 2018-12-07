@@ -19,7 +19,7 @@ def a_fn(a):
 
 # solve the curvature for the given w and h
 a = fsolve(a_fn, 10.0)[0]
-print 'a', a
+print('a', a)
 
 
 def catenary(a, x, x0, y0):

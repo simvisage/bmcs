@@ -151,7 +151,7 @@ class FETSLSEval( FETSEval ):
             if int_order == 1:
                 gps.append( points[0] )
             else:
-                raise TraitError, 'does not make sense'
+                raise TraitError('does not make sense')
         elif triangles.shape[1] == 2:#1D - lines
             if int_order == 1:
                 for id in triangles:
@@ -204,7 +204,7 @@ class FETSLSEval( FETSEval ):
         elif triangles.shape[1] == 4:#3D - tetrahedrons
            raise NotImplementedError
         else:
-            raise TraitError, 'unsupported geometric form with %s nodes ' % triangles.shape[1]
+            raise TraitError('unsupported geometric form with %s nodes ' % triangles.shape[1])
         return array( gps, dtype = 'float_' )
 
     def get_ip_weights( self, int_triangles, int_order ):
@@ -215,7 +215,7 @@ class FETSLSEval( FETSEval ):
             if int_order == 1:
                 gps.append( 1. )
             else:
-                raise TraitError, 'does not make sense'
+                raise TraitError('does not make sense')
         elif triangles.shape[1] == 2:#1D - lines
             if int_order == 1:
                 for id in triangles:
@@ -263,7 +263,7 @@ class FETSLSEval( FETSEval ):
         elif triangles.shape[1] == 4:#3D - tetrahedrons
            raise NotImplementedError
         else:
-            raise TraitError, 'unsupported geometric form with %s nodes ' % triangles.shape[1]
+            raise TraitError('unsupported geometric form with %s nodes ' % triangles.shape[1])
         return array( gps, dtype = 'float_' )
 
     def _get_J_det_ip( self, r_pnt ):
@@ -369,7 +369,7 @@ if __name__ == '__main__':
                 , array( [[10, 0],
                        [10, 10],
                        [0, 10]] )]
-    print 'triangulation'
+    print('triangulation')
     points, triangs = fets_ls_eval.get_triangulation( point_set )
-    print 'points ', points
-    print 'triangles ', triangs
+    print('points ', points)
+    print('triangles ', triangs)

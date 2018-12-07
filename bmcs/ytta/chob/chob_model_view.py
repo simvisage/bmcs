@@ -9,7 +9,7 @@ from traitsui.api import ModelView, View, Item, VSplit, HGroup
 from traitsui.menu import OKButton
 from util.traits.editors.mpl_figure_editor import MPLFigureEditor
 
-from chob import ChainOfBundlesAnalysis as CHOB
+from .chob import ChainOfBundlesAnalysis as CHOB
 
 
 class CHOBModelView(ModelView):

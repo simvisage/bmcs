@@ -38,7 +38,7 @@ class Filament( RF ):
     '''Linear elastic, brittle filament.
     '''
 
-    implements( IRF )
+    #implements( IRF )
 
     title = Str( 'brittle filament' )
 
@@ -114,10 +114,10 @@ if __name__ == '__main__':
     f = Filament()
 
     f.configure_traits()
-    print 'keys', f.param_keys
-    print 'values', f.param_list
+    print('keys', f.param_keys)
+    print('values', f.param_list)
 
-    print 'uniform', f.traits( distr = lambda x: x != None and 'uniform' in x )
+    print('uniform', f.traits( distr = lambda x: x != None and 'uniform' in x ))
 
     X = linspace( 0, 0.05, 100 )
     Y = []

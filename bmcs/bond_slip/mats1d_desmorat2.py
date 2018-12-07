@@ -12,7 +12,7 @@ from traits.api import implements,  \
     Constant, Float, WeakRef, List, Str, Property, cached_property, \
     Trait, on_trait_change, Instance, Callable
 from traitsui.api import View, VGroup, Item, UItem, Group
-from mats_bondslip import MATSBondSlipBase
+from .mats_bondslip import MATSBondSlipBase
 import numpy as np
 
 

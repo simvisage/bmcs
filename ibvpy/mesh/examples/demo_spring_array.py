@@ -71,7 +71,7 @@ if __name__ == '__main__':
                    tline = TLine( min = 0.0, step = 1, max = 1.0 ) )
 
     u = tloop.eval()
-    print u
+    print(u)
 
     import pylab as p
     spring_arr.plot_spring_forces( u, p )

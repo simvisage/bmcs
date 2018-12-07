@@ -4,26 +4,26 @@ Created on Feb 9, 2010
 @author: rostislav
 '''
 
-from boundary_conditions import FiniteEmbeddedLength, InfiniteEmbeddedLength, \
+from .boundary_conditions import FiniteEmbeddedLength, InfiniteEmbeddedLength, \
     ClampedFibre
-from energy_criterion import EnergyCriterion
+from .energy_criterion import EnergyCriterion
 from enthought.traits.api import Instance, Array, Tuple, implements, Enum, Float, \
     Range, Property, cached_property
 from numpy import array, frompyfunc, linspace, tanh, sum, cos, ndarray, sqrt, \
     sign, argmax, hstack, max, infty, ndarray, newaxis
 from scipy.interpolate import interp1d
 from math import pi, e
-from parameters import Geometry, Material, Plot
-from resp_func import ResponseFunctionBase, IResponseFunction
+from .parameters import Geometry, Material, Plot
+from .resp_func import ResponseFunctionBase, IResponseFunction
 from scipy.optimize import brentq, brenth, ridder, fsolve, newton
-from stress_criterion import StressCriterion
+from .stress_criterion import StressCriterion
 from util.traits.either_type import EitherType
 from matplotlib import pyplot as plt
 
 
 class RespFunc( ResponseFunctionBase ):
 
-    implements( IResponseFunction )
+    #implements( IResponseFunction )
 
     listener_string = 'boundary.+modified,'\
                     'approach.+modified,'\

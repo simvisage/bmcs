@@ -83,7 +83,7 @@ class RTraceDomain(HasTraits):
         '''
         # self.mvp_mgrid_geo.redraw()
 
-        print 'REDRAWING', self.sd.name
+        print('REDRAWING', self.sd.name)
 
         self.mvp_mgrid_geo.rebuild_pipeline(self.vtk_node_structure)
 

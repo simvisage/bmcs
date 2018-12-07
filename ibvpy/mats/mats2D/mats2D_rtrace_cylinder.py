@@ -12,7 +12,7 @@ from ibvpy.api import \
     RTrace
 from ibvpy.plugins.mayavi_util.pipelines import \
     MVPolyData, MVPointLabels
-from mats2D_tensor import map2d_eps_eng_to_mtx
+from .mats2D_tensor import map2d_eps_eng_to_mtx
 
 
 class MATS2DRTraceCylinder(RTrace):

@@ -24,7 +24,7 @@ from ibvpy.core.rtrace_eval import RTraceEval
 from ibvpy.fets.i_fets_eval import IFETSEval
 from mathkit.matrix_la.sys_mtx_array import SysMtxArray
 from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
-from dots_eval import DOTSEval
+from .dots_eval import DOTSEval
 from time import time
 
 #-----------------------------------------------------------------------------
@@ -35,7 +35,7 @@ class DOTSUnstructuredEval( DOTSEval ):
     '''
     Domain with uniform FE-time-step-eval.
     '''
-    implements( ITStepperEval )
+    #implements( ITStepperEval )
 
     ip_scheme = Property( Tuple, depends_on = 'sdomain.+structure_changed' )
     @cached_property

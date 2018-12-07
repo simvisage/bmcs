@@ -237,7 +237,7 @@ class JirasekDamageFn(DamageFn):
 
     node_name = 'Jirasek damage function'
 
-    implements(IDamageFn)
+    ##implements(IDamageFn)
 
     s_f = Float(0.001,
                 MAT=True,
@@ -327,7 +327,7 @@ class LiDamageFn(DamageFn):
         in the history of loading.
         ''')
 
-    implements(IDamageFn)
+    ##implements(IDamageFn)
 
     alpha_1 = Range(value=1., low=0.0, high=1.0,
                     MAT=True,
@@ -393,7 +393,7 @@ class AbaqusDamageFn(DamageFn):
 
     node_name = 'Abaqus damage function'
 
-    implements(IDamageFn)
+    ##implements(IDamageFn)
 
     latex_eq = Str(r'''Damage function (Jirasek)
         \begin{align}
@@ -474,7 +474,7 @@ class FRPDamageFn(DamageFn):
 
     node_name = 'FRP damage function'
 
-    implements(IDamageFn)
+    ##implements(IDamageFn)
 
     B = Float(10.4,
               MAT=True,
@@ -592,7 +592,7 @@ class MultilinearDamageFn(DamageFn):
 
     node_name = 'Multilinear damage function'
 
-    implements(IDamageFn)
+    ##implements(IDamageFn)
 
     s_data = Str('0,1', tooltip='Comma-separated list of strain values',
                  MAT=True, unit='mm', symbol='s',
@@ -613,7 +613,7 @@ class MultilinearDamageFn(DamageFn):
     def _set_s_omega_table(self, data):
         s_data, omega_data = data
         if len(s_data) != len(omega_data):
-            raise ValueError, 's array and tau array must have the same size'
+            raise ValueError('s array and tau array must have the same size')
         self.damage_law.set(xdata=s_data,
                             ydata=omega_data)
 
@@ -623,7 +623,7 @@ class MultilinearDamageFn(DamageFn):
         s_data = np.fromstring(self.s_data, dtype=np.float_, sep=',')
         omega_data = np.fromstring(self.omega_data, dtype=np.float_, sep=',')
         if len(s_data) != len(omega_data):
-            raise ValueError, 's array and tau array must have the same size'
+            raise ValueError('s array and tau array must have the same size')
         self.damage_law.set(xdata=s_data,
                             ydata=omega_data)
         self.damage_law.replot()

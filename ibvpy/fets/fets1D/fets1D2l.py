@@ -16,7 +16,7 @@ class FETS1D2L(FETSEval):
     Fe Bar 2 nodes, deformation
     '''
 
-    implements(IFETSEval)
+    #implements(IFETSEval)
 
     debug_on = True
 
@@ -125,10 +125,10 @@ def __demo__():
     tloop = TLoop(tstepper=ts,
                   tline=TLine(min=0.0, step=0.5, max=1.0))
 
-    print '---- result ----'
-    print tloop.eval()
-    print ts.F_int
-    print ts.rtrace_list[0].trace.ydata
+    print('---- result ----')
+    print(tloop.eval())
+    print(ts.F_int)
+    print(ts.rtrace_list[0].trace.ydata)
 
     # Put the whole stuff into the simulation-framework to map the
     # individual pieces of definition into the user interface.

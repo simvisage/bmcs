@@ -10,9 +10,9 @@ from traitsui.api import View, Item, VGroup
 from traitsui.menu import OKButton
 from util.traits.either_type import EitherType
 
-from parameters import Geometry
-from parameters import Material
-from pull_out import PullOut
+from .parameters import Geometry
+from .parameters import Material
+from .pull_out import PullOut
 
 
 #from stress_criterion_bond import StressCriterionBond

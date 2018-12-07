@@ -12,6 +12,7 @@ from traitsui.api import \
     View, Item, Group, HGroup, VGroup, VSplit, HSplit, CheckListEditor, TextEditor
 from tvtk.api import tvtk
 from tvtk.pyface.scene_editor import SceneEditor
+from functools import reduce
 
 # from ibvpy.plugins.mayavi_util.pipelines import \
 #     MVPolyData, MVPointLabels

@@ -11,7 +11,7 @@ from enthought.traits.ui.menu import Action, CloseAction, HelpAction, Menu, \
     MenuBar, NoButtons, Separator, ToolBar, OKButton
 from matplotlib.figure import Figure
 from util.traits.editors.mpl_figure_editor import MPLFigureEditor
-from resp_func_model import RespFunc
+from .resp_func_model import RespFunc
 import pickle
 
 
@@ -38,7 +38,7 @@ class RespFuncView( ModelView ):
     
     def _redraw( self ):
         self.count += 1
-        print 'redraw', self.count
+        print('redraw', self.count)
         
         # data post-processing
         #
@@ -118,7 +118,7 @@ class RespFuncView( ModelView ):
         if file_name == '':
             return
 
-        print 'writing into', file_name
+        print('writing into', file_name)
         file = open( file_name, 'w' )
         pickle.dump( self.model, file )
         file.close()

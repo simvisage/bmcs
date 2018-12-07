@@ -62,19 +62,19 @@ if __name__ == '__main__':
     eps_0, eps_f, kappa = sp.symbols(
         '\\varepsilon_0, \\varepsilon_\\mathrm{f}, \\kappa')
     f = 1 - (eps_0 / kappa) * sp.exp(- (kappa - eps_0) / (eps_f - eps_0))
-    print f
-    print sp.diff(f, kappa)
+    print(f)
+    print(sp.diff(f, kappa))
 
     s_11, s_22, s_12 = sp.symbols(
         '\\varepsilon_{11},\\varepsilon_{22},\\varepsilon_{12}')
     sig = sp.Matrix([[s_11, s_12],
                      [s_12, s_22]])
     sig_12 = sig.eigenvals()
-    for sig_principal, item in sig_12.items():
-        print sig_principal
+    for sig_principal, item in list(sig_12.items()):
+        print(sig_principal)
         sig_diff_11 = sp.diff(sig_principal, s_11)
         sig_diff_12 = sp.diff(sig_principal, s_12)
         sig_diff_22 = sp.diff(sig_principal, s_22)
-        print '11', sig_diff_11
-        print '12', sig_diff_12
-        print '22', sig_diff_22
+        print('11', sig_diff_11)
+        print('12', sig_diff_12)
+        print('22', sig_diff_22)

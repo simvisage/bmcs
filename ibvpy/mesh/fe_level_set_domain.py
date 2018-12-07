@@ -6,11 +6,11 @@ from traits.api import \
 from traitsui.api import View, Item, HSplit, Group, TabularEditor
 from etsproxy.traits.ui.tabular_adapter import TabularAdapter
 
-from cell_grid.dof_grid import DofCellGrid, DofCellView
-from cell_grid.geo_grid import GeoCellGrid, GeoCellView
-from cell_grid.cell_grid import CellGrid
-from cell_grid.cell_spec import CellSpec
-from cell_grid.cell_array import ICellView, CellView, CellArray, ICellArraySource
+from .cell_grid.dof_grid import DofCellGrid, DofCellView
+from .cell_grid.geo_grid import GeoCellGrid, GeoCellView
+from .cell_grid.cell_grid import CellGrid
+from .cell_grid.cell_spec import CellSpec
+from .cell_grid.cell_array import ICellView, CellView, CellArray, ICellArraySource
 
 from numpy import \
     array, unique, min, max, mgrid, ogrid, c_, alltrue, repeat, ix_, \
@@ -21,7 +21,7 @@ from ibvpy.core.sdomain import \
 
 from mathkit.level_set.level_set import ILevelSetFn, SinLSF
 
-from fe_grid import FEGrid, MElem
+from .fe_grid import FEGrid, MElem
 
 from ibvpy.plugins.mayavi_util.pipelines import \
     MVPolyData, MVPointLabels, MVStructuredGrid

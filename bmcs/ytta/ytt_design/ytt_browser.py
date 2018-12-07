@@ -111,7 +111,7 @@ class ExRun( HasTraits ):
 
     def _get_file_name( self ):
         fname = eval( self.exdesign_reader.exdesign_spec.data_file_name )
-        print 'fname', fname
+        print('fname', fname)
         return fname
 
     _arr = Property( Array( float ), depends_on = 'data_file' )
@@ -231,7 +231,7 @@ class EXDesignReader( HasTraits ):
 
     exdesign_spec_file = File
     def _exdesign_spec_file_changed( self ):
-        print 'changed file'
+        print('changed file')
         f = file( self.exdesign_spec_file )
         str = f.read()
         self.exdesign_spec = eval( 'ExDesignSpec( %s )' % str )
@@ -308,18 +308,18 @@ class EXDesignReader( HasTraits ):
         '''
         '''
         runs, xlabels, ylabels, ylabels_fitted = self._generate_data_labels()
-        for name in self.plot.plots.keys():
+        for name in list(self.plot.plots.keys()):
             self.plot.delplot( name )
 
         for idx, exrun in enumerate( self.selected_exruns ):
-            if not self.plot.datasources.has_key( xlabels[idx] ):
+            if xlabels[idx] not in self.plot.datasources:
                 self.plot.datasources[ xlabels[idx] ] = ArrayDataSource( exrun.xdata,
                                                                          sort_order = 'none' )
-            if not self.plot.datasources.has_key( ylabels[idx] ):
+            if ylabels[idx] not in self.plot.datasources:
                 self.plot.datasources[ ylabels[idx] ] = ArrayDataSource( exrun.ydata,
                                                                          sort_order = 'none' )
 
-            if not self.plot.datasources.has_key( ylabels_fitted[idx] ):
+            if ylabels_fitted[idx] not in self.plot.datasources:
                 self.plot.datasources[ ylabels_fitted[idx] ] = ArrayDataSource( exrun.polyfit,
                                                                          sort_order = 'none' )
 
@@ -330,10 +330,10 @@ class EXDesignReader( HasTraits ):
     def _generate_data_labels( self ):
         ''' Generate the labels consisting of the axis and run-number.
         '''
-        return ( map( lambda e: e.std_num, self.selected_exruns ),
-                 map( lambda e: 'x-%d' % e.std_num, self.selected_exruns ),
-                 map( lambda e: 'y-%d' % e.std_num, self.selected_exruns ),
-                 map( lambda e: 'y-%d-fitted' % e.std_num, self.selected_exruns ) )
+        return ( [e.std_num for e in self.selected_exruns],
+                 ['x-%d' % e.std_num for e in self.selected_exruns],
+                 ['y-%d' % e.std_num for e in self.selected_exruns],
+                 ['y-%d-fitted' % e.std_num for e in self.selected_exruns] )
 
 
     plot = Instance( Plot )

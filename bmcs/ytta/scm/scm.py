@@ -25,7 +25,7 @@ from traitsui.api import View, Item, Tabbed, VGroup, \
 from traitsui.menu import OKButton
 from util.traits.either_type import EitherType
 
-from reinf_cross_section import SimplyRatio, GridReinforcement
+from .reinf_cross_section import SimplyRatio, GridReinforcement
 
 
 class SCM(HasTraits):
@@ -149,14 +149,14 @@ class SCM(HasTraits):
     def eps_c(self, sigma_c):
         cs = self._get_cs(sigma_c)
         delta = self._get_delta(sigma_c)
-        print 'delta'
-        print delta
+        print('delta')
+        print(delta)
         if cs > 2 * delta:
-            print sigma_c / self.E_c * (1 + self.alpha * delta / cs)
+            print(sigma_c / self.E_c * (1 + self.alpha * delta / cs))
             return sigma_c / self.E_c * (1 + self.alpha * delta / cs)
         else:
-            print sigma_c * (1. / (self.E_f * self.V_f) -
-                             (self.alpha * cs) / (4. * delta * self.E_c))
+            print(sigma_c * (1. / (self.E_f * self.V_f) -
+                             (self.alpha * cs) / (4. * delta * self.E_c)))
 
             return sigma_c * (1. / (self.E_f * self.V_f) -
                               (self.alpha * cs) / (4. * delta * self.E_c))
@@ -209,7 +209,7 @@ class SCM(HasTraits):
     @cached_property
     def _get_sig_eps_fn(self):
         '''Get the stress and strain arrays'''
-        print 'update'
+        print('update')
         n_points = 100
         sigma_c_arr = linspace(0, self.sigma_cu, n_points)
         if self.sigma_cu == self.sigma_fu * self.V_f * cos(self.orientation):
@@ -223,7 +223,7 @@ class SCM(HasTraits):
         # stress of reinforcement with no matrix interaction
         sigma_fiber = epsilon_c_arr[[0, -1]] * self.E_f * self.rho
 
-        print epsilon_c_arr
+        print(epsilon_c_arr)
 
         return epsilon_c_arr, sigma_c_arr, sigma_f_arr, sigma_fiber
 
@@ -296,16 +296,16 @@ def run():
     '''Test w/o the user interface'''
     s = SCM()
     eps = s._get_epsilon_c(2.0)
-    print 'epsilon (should be ... 5.49622857811e-05 )', eps
+    print('epsilon (should be ... 5.49622857811e-05 )', eps)
     s.E_f *= 0.9
     eps = s._get_epsilon_c(2.0)
-    print 'epsilon (should be ... 5.5626562923e-05 )', eps
+    print('epsilon (should be ... 5.5626562923e-05 )', eps)
     s.reinf_ratio.h = 20
     eps = s._get_epsilon_c(2.0)
-    print 'epsilon (should be ... 5.3617517588e-05 )', eps
+    print('epsilon (should be ... 5.3617517588e-05 )', eps)
     s.orientation = 1.56
     eps = s._get_epsilon_c(2.0)
-    print 'epsilon (should be ... 0.000112774785042 )', eps
+    print('epsilon (should be ... 0.000112774785042 )', eps)
     # further dependency tests for changing the inputs and recalculation of results.
     # ....
     s = SCM()

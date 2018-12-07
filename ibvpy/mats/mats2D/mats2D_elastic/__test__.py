@@ -12,7 +12,7 @@
 #
 # Created on Aug 18, 2009 by: rch
 
-from mats2D_elastic import \
+from .mats2D_elastic import \
     MATS2DElastic
 
 from ibvpy.mats.mats2D.__test__ import TestMATS2D

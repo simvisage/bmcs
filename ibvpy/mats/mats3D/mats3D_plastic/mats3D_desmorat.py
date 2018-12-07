@@ -29,7 +29,7 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
 
     node_name = 'Desmorat model'
 
-    tr.implements(IMATSEval)
+    #tr.implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Material parameters

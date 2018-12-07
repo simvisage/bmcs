@@ -42,7 +42,7 @@ class MATS1D5Bond(MATS1D5Eval):
     Both phases can be associated with arbitrary 1D mats model.
     Interface behavior can be defined for both sliding and opening using 1D mats models.
     '''
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Submodels constituting the interface behavior
@@ -184,7 +184,7 @@ class MATS1D5Bond(MATS1D5Eval):
         for name, mats, ix_map, size, offset in \
             zip(self._mats_names, self._mats_list, ix_maps, self._state_sizes,
                 self._state_offsets):
-            for key, v_eval in mats.rte_dict.items():
+            for key, v_eval in list(mats.rte_dict.items()):
 
                 __call_v_eval = RTE1D5Bond(v_eval=v_eval,
                                            name=name + '_' + key,

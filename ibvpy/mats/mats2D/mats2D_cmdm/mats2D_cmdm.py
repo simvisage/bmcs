@@ -30,7 +30,7 @@ from numpy import \
     array,  ones,  outer,   \
     identity
 from traits.api import \
-    Enum, Property, cached_property,  Constant, Class, implements, \
+    Enum, Property, cached_property,  Constant, Type, implements, \
     Int
 from traitsui.api import \
     View, Include
@@ -41,7 +41,7 @@ import numpy as np
 # @todo parameterize - should be specialized in the dimensional subclasses
 class MATS2DMicroplaneDamage(MATSXDMicroplaneDamage, MATS2DEval):
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     # number of spatial dimensions
     #
@@ -55,7 +55,7 @@ class MATS2DMicroplaneDamage(MATSXDMicroplaneDamage, MATS2DEval):
     stress_state = Enum("plane_strain", "plane_stress")
 
     # Specify the class to use for directional dependence
-    mfn_class = Class(MFnPolar)
+    mfn_class = Type(MFnPolar)
 
     # get the normal vectors of the microplanes
     _MPN = Property(depends_on='n_mp')
@@ -217,6 +217,6 @@ class MATS1DMicroplaneDamage(MATS2DMicroplaneDamage):
 if __name__ == '__main__':
     m = MATS2DMicroplaneDamage()
     D4 = m._get_elasticity_tensors()
-    print 'D4', D4[2]
+    print('D4', D4[2])
 
     # m.configure_traits(view='traits_view')

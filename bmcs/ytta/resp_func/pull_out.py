@@ -16,7 +16,7 @@ from traits.api import Float, implements, Instance, DelegatesTo, \
 from traitsui.api import View, Item, VGroup
 from util.traits.either_type import EitherType
 
-from parameters import Geometry, Material, Plot
+from .parameters import Geometry, Material, Plot
 
 
 def Heaviside(x):

@@ -20,7 +20,7 @@ import numpy as np
 
 class MATSBondSlipBase(MATSEval, BMCSTreeNode):
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     ZERO_THRESHOLD = Constant(1e-8)
 
@@ -301,7 +301,7 @@ class MATSBondSlipDP(MATSBondSlipBase):
 
     @on_trait_change('omega_fn_type')
     def _reset_omega_fn(self):
-        print 'resetting damage function to', self.omega_fn_type
+        print('resetting damage function to', self.omega_fn_type)
         self.omega_fn = self.omega_fn_type_()
 
     omega_fn = Instance(IDamageFn,
@@ -419,5 +419,5 @@ class MATSBondSlipDP(MATSBondSlipBase):
 
 if __name__ == '__main__':
     m = MATSBondSlipEP()
-    print m.E_b
+    print(m.E_b)
     m.configure_traits()

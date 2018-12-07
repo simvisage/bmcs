@@ -23,7 +23,7 @@ class MATS3DElastic(MATS3DEval, MATS3D):
     Elastic Model.
     '''
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     state_array_shapes = {}
 

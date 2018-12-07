@@ -11,17 +11,17 @@ from traits.api import \
     Event
 from traitsui.api import View, Item, Include
 
-from fe_grid import FEGrid, MElem
-from fe_refinement_level import FERefinementLevel
-from i_fe_uniform_domain import IFEUniformDomain
+from .fe_grid import FEGrid, MElem
+from .fe_refinement_level import FERefinementLevel
+from .i_fe_uniform_domain import IFEUniformDomain
 
 
 class FERefinementGrid(FERefinementLevel):
 
     '''Subgrid derived from another grid domain.
     '''
-    implements(ICellArraySource)
-    implements(IFEUniformDomain)
+    #implements(ICellArraySource)
+    #implements(IFEUniformDomain)
 
     changed_structure = Event
 
@@ -120,7 +120,7 @@ class FERefinementGrid(FERefinementLevel):
         # FEPatchedGrid
         #
         pgrid = self.parent.fe_subgrids[0].geo_grid.point_x_grid
-        print 'shape', pgrid.shape
+        print('shape', pgrid.shape)
         coarse_ix = array(list(coarse_ix), dtype=int)
         coord_min = pgrid[(slice(0, pgrid.shape[0]),) + tuple(coarse_ix)]
         coord_max = pgrid[(slice(0, pgrid.shape[0]),) + tuple(coarse_ix + 1)]
@@ -302,7 +302,7 @@ class FERefinementGrid(FERefinementLevel):
 
     def subgrids(self):
         #no_parents = [ None for i in range( len( self._fe_subgrids ) ) ]
-        return zip(self.refinement_dict.keys(), self.fe_subgrids)
+        return list(zip(list(self.refinement_dict.keys()), self.fe_subgrids))
 
     elem_dof_enumeration = Property(
         depends_on='changed_structure,+changed_geometry')
@@ -312,7 +312,7 @@ class FERefinementGrid(FERefinementLevel):
         '''Array with the dof enumeration
         '''
         #p_list, args_list, fe_domain_list = [], [], []
-        for p, refinement_args in self.refinement_dict.items():
+        for p, refinement_args in list(self.refinement_dict.items()):
 
             fe_domain = self.get_fine_fe_domain(p)
             #fe_domain_list.append( fe_domain )
@@ -463,11 +463,11 @@ if __name__ == '__main__':
                          inactive_elems=[1],
                          fets_eval=fets_sample)
 
-        print 'elem_dof_map'
-        print fe_domain.elem_dof_map
+        print('elem_dof_map')
+        print(fe_domain.elem_dof_map)
 
-        print 'elem_X_map'
-        print fe_domain.elem_X_map
+        print('elem_X_map')
+        print(fe_domain.elem_X_map)
 
         fe_child_domain = FERefinementGrid(parent=fe_pgrid,
                                            fets_eval=fets_sample,
@@ -476,14 +476,14 @@ if __name__ == '__main__':
         fe_child_domain.refine_elem((1, 1))
         fe_child_domain.refine_elem((0, 1))
 
-        print fe_child_domain.elem_dof_map
-        print fe_child_domain.elem_X_map
+        print(fe_child_domain.elem_dof_map)
+        print(fe_child_domain.elem_X_map)
 
-        print 'n_dofs', fe_child_domain.n_dofs
+        print('n_dofs', fe_child_domain.n_dofs)
 
         for e_id, e in enumerate(fe_child_domain.elements):
-            print 'idx', e_id
-            print e
+            print('idx', e_id)
+            print(e)
 
         from ibvpy.plugins.ibvpy_app import IBVPyApp
         ibvpy_app = IBVPyApp(ibv_resource=fe_domain)
@@ -518,7 +518,7 @@ if __name__ == '__main__':
         tloop = TLoop(tstepper=ts, debug=True,
                       tline=TLine(min=0.0, step=1, max=1.0))
 
-        print tloop.eval()
+        print(tloop.eval())
     #    print ts.F_int
     #    print ts.rtrace_list[0].trace.ydata
 
@@ -570,7 +570,7 @@ if __name__ == '__main__':
         tloop = TLoop(tstepper=ts,
                       tline=TLine(min=0.0, step=1, max=1.0))
 
-        print tloop.eval()
+        print(tloop.eval())
         from ibvpy.plugins.ibvpy_app import IBVPyApp
         ibvpy_app = IBVPyApp(ibv_resource=tloop)
         ibvpy_app.main()

@@ -5,7 +5,7 @@ from traits.api import Array, Bool, Callable, Enum, Float, HasTraits, \
 from traitsui.api import Item, View, HGroup, ListEditor, VGroup, VSplit, Group, HSplit
 
 #from etsproxy.pyface.tvtk.actor_editor import ActorEditor
-from i_tstepper_eval import ITStepperEval
+from .i_tstepper_eval import ITStepperEval
 
 
 class RTraceEval(HasTraits):
@@ -36,15 +36,15 @@ class RTraceEval(HasTraits):
                            for u_value in args]
 
             kw_mapped = {}
-            for u_name, u_value in kw.items():
+            for u_name, u_value in list(kw.items()):
                 kw_mapped[u_name] = self.u_mapping(sctx, u_value)
 
         # Invoke the tracer evaluation.
         #
         try:
             val = self.eval(sctx, u, *args_mapped, **kw_mapped)
-        except TypeError, e:
-            raise TypeError, 'tracer name %s: %s %s' % (
-                self.name, e, self.eval)
+        except TypeError as e:
+            raise TypeError('tracer name %s: %s %s' % (
+                self.name, e, self.eval))
 
         return val

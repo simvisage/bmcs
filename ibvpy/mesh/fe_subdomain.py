@@ -5,8 +5,8 @@ from traits.api import \
      This, self, TraitError
 
 from traitsui.api import View, Item, Group, Include
-from i_fe_subdomain import IFESubDomain
-from fe_domain import FEDomain
+from .i_fe_subdomain import IFESubDomain
+from .fe_domain import FEDomain
 
 _subdomain_counter = 0
 
@@ -29,7 +29,7 @@ class FESubDomain(HasTraits):
         'reset the domain of this domain'
         if self._domain:
             # unregister in the old domain
-            raise NotImplementedError, 'FESubDomain cannot be relinked to another FEDomain'
+            raise NotImplementedError('FESubDomain cannot be relinked to another FEDomain')
 
         self._domain = value
         # register in the domain as a sub domain
@@ -41,7 +41,7 @@ class FESubDomain(HasTraits):
     def validate(self):
         pass
 
-    implements(IFESubDomain)
+    #implements(IFESubDomain)
 
     name = Property(Str)
     def _get_name(self):
@@ -81,14 +81,14 @@ class FESubDomain(HasTraits):
     @on_trait_change('previous_domain')
     def _validate_previous_domain(self):
         if self.previous_domain == self:
-            raise TraitError, 'cyclic reference for ' + self.name
+            raise TraitError('cyclic reference for ' + self.name)
 
     # dependency link for sequential enumeration
     next_domain = Instance(IFESubDomain, domain_changed=True)
     @on_trait_change('next_domain')
     def _validate_next_domain(self):
         if self.next_domain == self:
-            raise TraitError, 'cyclic reference for ' + self.name
+            raise TraitError('cyclic reference for ' + self.name)
 
     subdomain_group = Group(Item('n_dofs'),
                         Item('dof_offset'),

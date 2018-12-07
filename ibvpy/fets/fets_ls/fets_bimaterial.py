@@ -23,7 +23,7 @@ from ibvpy.fets.fets2D.fets2D4q8u import FETS2D4Q8U
 from ibvpy.fets.fets2D.fets2D4q9u import FETS2D4Q9U
 from ibvpy.fets.fets2D.fets2D9q import FETS2D9Q
 
-from fets_ls_eval import FETSLSEval
+from .fets_ls_eval import FETSLSEval
 
 class FETSBimaterial(FETSLSEval):
        
@@ -64,18 +64,18 @@ class FETSBimaterial(FETSLSEval):
         '''
         Return the derivatives of the shape functions
         '''
-        print "in dN ",r_pnt
+        print("in dN ",r_pnt)
         p_N_mtx = self.parent_fets.get_N_mtx(r_pnt)
         p_dNr_mtx = self.get_parent_dNr_mtx(r_pnt)
         sh = p_dNr_mtx.shape
         p_N_red = ((sum(p_N_mtx,0)).reshape(sh[1],sh[0])).transpose()
                         
         first_mtx = p_N_red * self._get_dPsir( node_ls_values,p_N_mtx, p_dNr_mtx)
-        print "first_mtx ",first_mtx
+        print("first_mtx ",first_mtx)
         second_mtx = p_dNr_mtx * self._get_Psi( node_ls_values, p_N_mtx)#??
         
         dNr_e_mtx = first_mtx + second_mtx
-        print "dNr_e_mtx ",dNr_e_mtx
+        print("dNr_e_mtx ",dNr_e_mtx)
         return dNr_e_mtx
         
     def _get_Psi(self, node_ls_values, p_N_mtx):
@@ -220,24 +220,24 @@ if __name__ == '__main__':
             #print "elements ",fe_xdomain.elements[0]
             if enr:
                 fe_xdomain.deactivate_sliced_elems()
-                print 'parent elems ',fe_xdomain.fe_grid_slice.elems
-                print 'parent dofs ',fe_xdomain.fe_grid_slice.dofs
-                print "dofmap ",fe_xdomain.elem_dof_map
-                print "ls_values ", fe_xdomain.dots.dof_node_ls_values
-                print 'intersection points ',fe_xdomain.fe_grid_slice.r_i#
-                print "triangles ", fe_xdomain.dots.int_division
-                print 'ip_coords', fe_xdomain.dots.ip_coords
-                print 'ip_weigths', fe_xdomain.dots.ip_weights
-                print 'ip_offset ',fe_xdomain.dots.ip_offset
-                print 'ip_X_coords', fe_xdomain.dots.ip_X
-                print 'ip_ls', fe_xdomain.dots.ip_ls_values
-                print 'vtk_X ', fe_xdomain.dots.vtk_X
-                print 'vtk triangles ', fe_xdomain.dots.rt_triangles
-                print "vtk data ", fe_xdomain.dots.get_vtk_cell_data('blabla',0,0)
-                print 'vtk_ls', fe_xdomain.dots.vtk_ls_values
-                print 'J_det ',fe_xdomain.dots.J_det_grid
+                print('parent elems ',fe_xdomain.fe_grid_slice.elems)
+                print('parent dofs ',fe_xdomain.fe_grid_slice.dofs)
+                print("dofmap ",fe_xdomain.elem_dof_map)
+                print("ls_values ", fe_xdomain.dots.dof_node_ls_values)
+                print('intersection points ',fe_xdomain.fe_grid_slice.r_i)#
+                print("triangles ", fe_xdomain.dots.int_division)
+                print('ip_coords', fe_xdomain.dots.ip_coords)
+                print('ip_weigths', fe_xdomain.dots.ip_weights)
+                print('ip_offset ',fe_xdomain.dots.ip_offset)
+                print('ip_X_coords', fe_xdomain.dots.ip_X)
+                print('ip_ls', fe_xdomain.dots.ip_ls_values)
+                print('vtk_X ', fe_xdomain.dots.vtk_X)
+                print('vtk triangles ', fe_xdomain.dots.rt_triangles)
+                print("vtk data ", fe_xdomain.dots.get_vtk_cell_data('blabla',0,0))
+                print('vtk_ls', fe_xdomain.dots.vtk_ls_values)
+                print('J_det ',fe_xdomain.dots.J_det_grid)
             
-            print tloop.eval()
+            print(tloop.eval())
     #        #ts.setup()
             from ibvpy.plugins.ibvpy_app import IBVPyApp
             ibvpy_app = IBVPyApp( ibv_resource = ts )
@@ -304,24 +304,24 @@ if __name__ == '__main__':
             
             #print "elements ",fe_xdomain.elements[0]
             fe_xdomain.deactivate_sliced_elems()
-            print 'parent elems ',fe_xdomain.fe_grid_slice.elems
-            print 'parent dofs ',fe_xdomain.fe_grid_slice.dofs
-            print "dofmap ",fe_xdomain.elem_dof_map
-            print "ls_values ", fe_xdomain.dots.dof_node_ls_values
-            print 'intersection points ',fe_xdomain.fe_grid_slice.r_i
-            print "triangles ", fe_xdomain.dots.rt_triangles
-            print "vtk points ", fe_xdomain.dots.vtk_X
-            print "vtk data ", fe_xdomain.dots.get_vtk_cell_data('blabla',0,0)
-            print 'ip_triangles', fe_xdomain.dots.int_division
-            print 'ip_coords', fe_xdomain.dots.ip_coords
-            print 'ip_weigths', fe_xdomain.dots.ip_weights
-            print 'ip_offset', fe_xdomain.dots.ip_offset
-            print 'ip_X_coords', fe_xdomain.dots.ip_X
-            print 'ip_ls', fe_xdomain.dots.ip_ls_values
-            print 'vtk_ls', fe_xdomain.dots.vtk_ls_values
-            print 'J_det ',fe_xdomain.dots.J_det_grid
+            print('parent elems ',fe_xdomain.fe_grid_slice.elems)
+            print('parent dofs ',fe_xdomain.fe_grid_slice.dofs)
+            print("dofmap ",fe_xdomain.elem_dof_map)
+            print("ls_values ", fe_xdomain.dots.dof_node_ls_values)
+            print('intersection points ',fe_xdomain.fe_grid_slice.r_i)
+            print("triangles ", fe_xdomain.dots.rt_triangles)
+            print("vtk points ", fe_xdomain.dots.vtk_X)
+            print("vtk data ", fe_xdomain.dots.get_vtk_cell_data('blabla',0,0))
+            print('ip_triangles', fe_xdomain.dots.int_division)
+            print('ip_coords', fe_xdomain.dots.ip_coords)
+            print('ip_weigths', fe_xdomain.dots.ip_weights)
+            print('ip_offset', fe_xdomain.dots.ip_offset)
+            print('ip_X_coords', fe_xdomain.dots.ip_X)
+            print('ip_ls', fe_xdomain.dots.ip_ls_values)
+            print('vtk_ls', fe_xdomain.dots.vtk_ls_values)
+            print('J_det ',fe_xdomain.dots.J_det_grid)
             
-            print tloop.eval()
+            print(tloop.eval())
     #        #ts.setup()
             from ibvpy.plugins.ibvpy_app import IBVPyApp
             ibvpy_app = IBVPyApp( ibv_resource = ts )

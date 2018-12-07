@@ -1,5 +1,5 @@
-from file_handler import \
+from .file_handler import \
     get_outfile
 
-from keyref import \
+from .keyref import \
     KeyRef

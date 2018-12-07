@@ -4,8 +4,8 @@ from traits.api import \
      on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property, \
      This, self, TraitError, Dict
 
-from i_fe_parent_domain import IFEParentDomain
-from fe_domain import FEDomain
+from .i_fe_parent_domain import IFEParentDomain
+from .fe_domain import FEDomain
 from numpy import repeat, arange
 
 class FEGridActivationMap( HasTraits ):
@@ -13,7 +13,7 @@ class FEGridActivationMap( HasTraits ):
     #---------------------------------------------------------------------------------------
     # Implement the parent interface
     #---------------------------------------------------------------------------------------
-    implements( IFEParentDomain )
+    #implements( IFEParentDomain )
 
     # @todo: separate piece of functionality - does not use any parent-child link
     # should be captured in a separate piece of code.

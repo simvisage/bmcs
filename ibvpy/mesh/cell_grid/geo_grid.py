@@ -24,9 +24,9 @@ from traitsui.api import \
 from traitsui.tabular_adapter import \
     TabularAdapter
 
-from cell_array import CellView, ICellView, CellArray, ICellArraySource
-from cell_grid import CellGrid
-from cell_grid_slice import CellGridSlice
+from .cell_array import CellView, ICellView, CellArray, ICellArraySource
+from .cell_grid import CellGrid
+from .cell_grid_slice import CellGridSlice
 
 
 #--------------------------------------------------------------------------
@@ -37,7 +37,7 @@ class GeoCellGrid(SDomain):
     '''
     Get an array with element node coordinates
     '''
-    implements(ICellArraySource)
+    #implements(ICellArraySource)
     cell_grid = Instance(CellGrid)
 
     #-------------------------------------------------------------------------
@@ -321,7 +321,7 @@ class GeoCellView(CellView):
 
     '''View a single cell instance.
     '''
-    implements(ICellView)
+    #implements(ICellView)
 
     cell_X_arr = Array
 
@@ -382,7 +382,7 @@ class GeoCellView(CellView):
 
 if __name__ == '__main__':
 
-    from cell_spec import CellSpec, GridCell
+    from .cell_spec import CellSpec, GridCell
 
     def demo_1d():
 
@@ -396,15 +396,15 @@ if __name__ == '__main__':
 
         def ls_function(x): return x - 0.5
 
-        print 'vertex grid'
-        print cell_grid.vertex_X_grid
-        print 'cell_grid'
-        print cell_grid.cell_idx_grid
+        print('vertex grid')
+        print(cell_grid.vertex_X_grid)
+        print('cell_grid')
+        print(cell_grid.cell_idx_grid)
 
-        print 'intersected'
-        print geo_grid.get_intersected_cells(ls_function)
-        print 'negative'
-        print geo_grid.get_negative_cells(ls_function)
+        print('intersected')
+        print(geo_grid.get_intersected_cells(ls_function))
+        print('negative')
+        print(geo_grid.get_negative_cells(ls_function))
 
     def demo_2d():
 
@@ -419,48 +419,48 @@ if __name__ == '__main__':
                              shape=(5, 2), coord_max=[1., 1.])
         geo_grid = GeoCellGrid(cell_grid=cell_grid)
 
-        print 'vertex_X_grid',
-        print geo_grid.cell_grid.vertex_X_grid
+        print('vertex_X_grid', end=' ')
+        print(geo_grid.cell_grid.vertex_X_grid)
 
         def ls_function(x, y): return x - 0.5
 
         def ls_mask_function(x, y): return y <= 0.75
 
-        print 'cell_grid'
-        print cell_grid.cell_idx_grid
+        print('cell_grid')
+        print(cell_grid.cell_idx_grid)
 
-        print 'intersected'
-        print geo_grid.get_intersected_cells(ls_function, ls_mask_function)
-        print 'negative'
-        print geo_grid.get_negative_cells(ls_function)
+        print('intersected')
+        print(geo_grid.get_intersected_cells(ls_function, ls_mask_function))
+        print('negative')
+        print(geo_grid.get_negative_cells(ls_function))
 
     def demo_3d():
 
         geo_grid = GeoCellGrid(cell_grid=CellGrid(shape=(2, 1, 1),
                                                   coord_max=[3., 3., 3.]))
 
-        print 'elem_X_map'
-        print geo_grid.elem_X_map
-        print 'cell_grid_shape'
-        print geo_grid.cell_grid.cell_idx_grid.shape
-        print 'index'
-        print geo_grid.cell_grid.cell_idx_grid[0, 0, 0]
-        print 'first element - direct access'
-        print geo_grid.elem_X_map[0]
-        print 'first element - mapped access'
-        print geo_grid[0, 0, 0]
+        print('elem_X_map')
+        print(geo_grid.elem_X_map)
+        print('cell_grid_shape')
+        print(geo_grid.cell_grid.cell_idx_grid.shape)
+        print('index')
+        print(geo_grid.cell_grid.cell_idx_grid[0, 0, 0])
+        print('first element - direct access')
+        print(geo_grid.elem_X_map[0])
+        print('first element - mapped access')
+        print(geo_grid[0, 0, 0])
 
-        print 'x_max dofs'
-        print geo_grid[:, -1, :, -1].elems
+        print('x_max dofs')
+        print(geo_grid[:, -1, :, -1].elems)
 
-        print 'X_grid'
-        print geo_grid[:, -1, :, -1].point_x_arr
+        print('X_grid')
+        print(geo_grid[:, -1, :, -1].point_x_arr)
 
-        print 'X_arr'
-        print geo_grid[:, -1, :, -1].point_X_arr
+        print('X_arr')
+        print(geo_grid[:, -1, :, -1].point_X_arr)
 
-        print 'point_grid'
-        print geo_grid.point_X_grid
+        print('point_grid')
+        print(geo_grid.point_X_grid)
 
     demo_1d()
     demo_2d()

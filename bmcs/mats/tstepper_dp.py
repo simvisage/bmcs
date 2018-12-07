@@ -9,8 +9,8 @@ from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 from traits.api import HasTraits, Instance, \
     Property, cached_property, Float, List
 
-from fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from mats_bondslip import MATSBondSlipDP
+from .fets1d52ulrhfatigue import FETS1D52ULRHFatigue
+from .mats_bondslip import MATSBondSlipDP
 import numpy as np
 
 n_C = 2

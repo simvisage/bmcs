@@ -218,7 +218,7 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
 
 class MATS2DMplDamageEEQ(MATSXDMicroplaneDamageJir, MATS2DEval):
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D

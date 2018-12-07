@@ -16,9 +16,10 @@ from traits.api import \
 from traitsui.api import \
     View, Item
 
-from cell_array import CellView, ICellView, CellArray, ICellArraySource
-from cell_grid_slice import CellGridSlice
-from cell_spec import CellSpec, GridCell
+from .cell_array import CellView, ICellView, CellArray, ICellArraySource
+from .cell_grid_slice import CellGridSlice
+from .cell_spec import CellSpec, GridCell
+from functools import reduce
 
 
 #--------------------------------------------------------------------------
@@ -49,7 +50,7 @@ class CellGrid(SDomain):
                       representing a node of the cell
 
     '''
-    implements(ICellArraySource)
+    #implements(ICellArraySource)
 
     # Everything depends on the grid_cell_specification
     # defining the distribution of nodes within the cell.
@@ -574,64 +575,64 @@ if __name__ == '__main__':
                                                         [1, 1],
                                                         [-1, 1]]))
 
-    print '--------- Point index grid specification -------'
+    print('--------- Point index grid specification -------')
 
-    print 'point grid shape'
-    print mgd._get_point_grid_shape()
-    print 'point grid size'
-    print mgd.point_grid_size
-    print 'point idx grid'
-    print mgd.point_idx_grid
+    print('point grid shape')
+    print(mgd._get_point_grid_shape())
+    print('point grid size')
+    print(mgd.point_grid_size)
+    print('point idx grid')
+    print(mgd.point_idx_grid)
 
-    print '--------- Point coordinates --------------'
+    print('--------- Point coordinates --------------')
 
-    print 'point x grid'
-    print mgd.point_x_grid
-    print 'point X grid'
-    print mgd.point_X_grid
-    print 'point x arr'
-    print mgd.point_x_arr
-    print 'point X arr'
-    print mgd.point_X_arr
+    print('point x grid')
+    print(mgd.point_x_grid)
+    print('point X grid')
+    print(mgd.point_X_grid)
+    print('point x arr')
+    print(mgd.point_x_arr)
+    print('point X arr')
+    print(mgd.point_X_arr)
 
-    print '--------- Vertex index grid specification --------------'
+    print('--------- Vertex index grid specification --------------')
 
-    print 'vertex nodes'
-    print mgd.vertex_idx_arr
-    print 'vertex_idx_grid'
-    print mgd.vertex_idx_grid
+    print('vertex nodes')
+    print(mgd.vertex_idx_arr)
+    print('vertex_idx_grid')
+    print(mgd.vertex_idx_grid)
 
-    print '--------- Vertex coordinates --------------'
+    print('--------- Vertex coordinates --------------')
 
-    print 'vertex_x_grid'
-    print mgd.vertex_x_grid
-    print 'vertex_X_grid'
-    print mgd.vertex_X_grid
-    print 'vertex_x_arr'
-    print mgd.vertex_x_arr
-    print 'vertex_X_arr'
-    print mgd.vertex_X_arr
+    print('vertex_x_grid')
+    print(mgd.vertex_x_grid)
+    print('vertex_X_grid')
+    print(mgd.vertex_X_grid)
+    print('vertex_x_arr')
+    print(mgd.vertex_x_arr)
+    print('vertex_X_arr')
+    print(mgd.vertex_X_arr)
 
-    print '--------- Cell node mapping   --------------'
+    print('--------- Cell node mapping   --------------')
 
-    print 'cell node map'
-    print mgd.cell_node_map
+    print('cell node map')
+    print(mgd.cell_node_map)
 
-    print '--------- Index transformations ------------'
+    print('--------- Index transformations ------------')
 
-    print 'cell offset for ( 1, 0  )'
+    print('cell offset for ( 1, 0  )')
     offset = mgd.get_cell_offset((1, 0))
-    print offset
+    print(offset)
 
-    print 'cell idx - should be ( 1, 0 )'
+    print('cell idx - should be ( 1, 0 )')
     idx = mgd.get_cell_idx(offset)
-    print idx
+    print(idx)
 
-    print '--------- Vertex idx array -----------------'
+    print('--------- Vertex idx array -----------------')
 
-    print 'get the geometry for visualization'
-    print mgd._get_mvpoints()
-    print mgd._get_mvpoints_grid_shape()
+    print('get the geometry for visualization')
+    print(mgd._get_mvpoints())
+    print(mgd._get_mvpoints_grid_shape())
 
-    print 'base nodes'
-    print mgd.base_nodes
+    print('base nodes')
+    print(mgd.base_nodes)

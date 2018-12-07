@@ -14,7 +14,7 @@ from traits.api import implements,  \
 from traitsui.api import View, VGroup, Item, UItem, Group
 from view.ui import BMCSTreeNode
 
-from mats_bondslip import MATSBondSlipBase
+from .mats_bondslip import MATSBondSlipBase
 import numpy as np
 import traits.api as tr
 
@@ -26,7 +26,7 @@ class MATS3DDesmorat(MATSBondSlipBase):
     '''Damage - plasticity model of bond.
     '''
 
-    tr.implements(IMATSEval)
+    tr.#implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Material parameters

@@ -14,7 +14,7 @@ if __name__ == '__main__':
     po = PullOutModel()
 
     for L in [10, 20, 30, 40]:
-        print ''
+        print('')
         po.geometry.L_x = L
         po.run()
 
@@ -25,6 +25,6 @@ if __name__ == '__main__':
         P_max = P_t[m_idx]
         w_at_max = w_L[m_idx]
 
-        print P_max, w_at_max
+        print(P_max, w_at_max)
         p.plot(w_L, P_t)
     p.show()

@@ -64,7 +64,7 @@ def test_bar2( ):
     tloop = TLoop( tstepper = ts,
                         tline  = TLine( min = 0.0,  step = 1, max = 1.0 ))    
     u = tloop.eval()
-    print 'u', u
+    print('u', u)
     #
     # '---------------------------------------------------------------'
     # 'Clamped bar composed of two linked bars control displ at right'
@@ -78,7 +78,7 @@ def test_bar2( ):
                             BCDof(var='u', dof = 21, value = 1. ) ]
     # system solver
     u = tloop.eval()
-    print 'u',u
+    print('u',u)
 
 def test_bar4( ):
     '''Clamped bar 3 domains, each with 2 elems (displ at right end)
@@ -128,7 +128,7 @@ def test_bar4( ):
                         tline  = TLine( min = 0.0,  step = 1, max = 1.0 ))
     
 
-    print tloop.eval()
+    print(tloop.eval())
     from ibvpy.plugins.ibvpy_app import IBVPyApp
     app = IBVPyApp( ibv_resource = tloop )
     app.main()      

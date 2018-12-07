@@ -1,14 +1,14 @@
 
 from traits.api import HasTraits, implements, List, Any, WeakRef
 from traitsui.api import View, Item
-from i_sdomain import ISDomain
-from scontext import SContext
-from ibv_resource import IBVResource
-from i_tstepper_eval import ITStepperEval 
+from .i_sdomain import ISDomain
+from .scontext import SContext
+from .ibv_resource import IBVResource
+from .i_tstepper_eval import ITStepperEval 
 
 class SDomain( IBVResource ):
 
-    implements(ISDomain)
+    #implements(ISDomain)
     
     # service specifiers - used to link the service to this object
     service_class = 'ibvpy.plugins.sdomain_service.SDomainService'

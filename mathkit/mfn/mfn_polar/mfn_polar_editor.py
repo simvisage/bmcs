@@ -170,8 +170,8 @@ class MFnPolarPlotEditor (Editor):
 
     def validate(self, plotrange_min, plotrange_max):
         if plotrange_min >= plotrange_max:
-            print "### Error ###: invalid plot ranges. plotrange_max must be \
-                   greater than plotrange_min."
+            print("### Error ###: invalid plot ranges. plotrange_max must be \
+                   greater than plotrange_min.")
             return False
         else:
             return True
@@ -215,7 +215,7 @@ class MFnPolarPlotEditor (Editor):
         # inferring the calling convention based on introspecting the argument
         # list.
         for name in [plotitem.index] + plotitem.value_list:
-            print "setting on trait change for ", name
+            print("setting on trait change for ", name)
             object.on_trait_change(self._update_data, name)
         object.on_trait_change(self.update_editor, plotitem.type_trait)
 
@@ -260,7 +260,7 @@ class MFnPolarPlotEditor (Editor):
         if dlg.open() == OK:
             path = dlg.path
 
-            print "Saving data to", path, "..."
+            print("Saving data to", path, "...")
             try:
 
                 factory = self.factory
@@ -269,9 +269,9 @@ class MFnPolarPlotEditor (Editor):
                 y_values = getattr(self.object, plotitem.value_list)
 
             except:
-                print "Error saving!"
+                print("Error saving!")
                 raise
-            print "Plot saved."
+            print("Plot saved.")
         return
 
     def on_savefig(self):
@@ -287,7 +287,7 @@ class MFnPolarPlotEditor (Editor):
         if dlg.open() == OK:
             path = dlg.path
 
-            print "Saving plot to", path, "..."
+            print("Saving plot to", path, "...")
             try:
 
                 # Now we create a canvas of the appropriate size and
@@ -298,7 +298,7 @@ class MFnPolarPlotEditor (Editor):
                 self._plot.bounds = [500, 300]
                 self._plot.padding = 50
                 plot_gc = PlotGraphicsContext(self._plot.outer_bounds)
-                print self._plot.outer_bounds
+                print(self._plot.outer_bounds)
                 plot_gc.render_component(self._plot)
 
                 # Finally, we tell the graphics context to save itself to
@@ -306,9 +306,9 @@ class MFnPolarPlotEditor (Editor):
                 plot_gc.save(path)
 
             except:
-                print "Error saving!"
+                print("Error saving!")
                 raise
-            print "Plot saved."
+            print("Plot saved.")
         return
 
     #-------------------------------------------------------------------------
@@ -364,8 +364,8 @@ class MFnPolarPlotEditor (Editor):
         # check plausibility
         if not ((array([plotrange_min]) <= radius_arr).all() and
                 (radius_arr <= array([plotrange_max])).all()):
-            print "Note: some value out of range! Compare plotranges with \
-                   indicated values for Radius_min and Radius_max "
+            print("Note: some value out of range! Compare plotranges with \
+                   indicated values for Radius_min and Radius_max ")
 
         if self.validate(plotrange_min, plotrange_max):
             # plot unitcircle if zero is in plotrange
@@ -399,9 +399,9 @@ class MFnPolarPlotEditor (Editor):
                 self._container.add(plot_unitcircle)
                 self._container.request_redraw()
 
-                print 'container', self._container.get_preferred_size()
+                print('container', self._container.get_preferred_size())
 
-                print 'width for Unitcircle', plot_unitcircle.width
+                print('width for Unitcircle', plot_unitcircle.width)
 
             # plot a single point at the position of 'plotrange_min'
             radius_axeslabels = array([frac_noplot])
@@ -439,8 +439,8 @@ class MFnPolarPlotEditor (Editor):
             x_center = factory.width / 2.0
             y_center = factory.height / 2.0
 
-            print('factory.width', factory.width)
-            print('factory.height', factory.height)
+            print(('factory.width', factory.width))
+            print(('factory.height', factory.height))
 
             x_frac_min = frac_noplot * factory.height / 2
             x_frac_max = factory.height / 2
@@ -449,14 +449,14 @@ class MFnPolarPlotEditor (Editor):
             x_pnt_max = x_center + x_frac_max
             y_pnt = y_center
 
-            print('x_center=', x_center)
-            print('y_center=', y_center)
+            print(('x_center=', x_center))
+            print(('y_center=', y_center))
 
-            print('x_frac_min=', x_frac_min)
-            print('x_frac_max=', x_frac_max)
+            print(('x_frac_min=', x_frac_min))
+            print(('x_frac_max=', x_frac_max))
 
-            print('x_pnt_min=', x_pnt_min)
-            print('x_pnt_max=', x_pnt_max)
+            print(('x_pnt_min=', x_pnt_min))
+            print(('x_pnt_max=', x_pnt_max))
 
 #            txt_plotrange_min = TextBoxOverlay(text = plotrange_min.__str__(), \
 #                                alternate_position = (x_pnt_min,y_pnt) )
@@ -787,14 +787,14 @@ class MFnPolarLineRenderer(AbstractPlotRenderer):
         x_center = self.x + self.width / 2.0
         y_center = self.y + self.height / 2.0
 
-        print('self.x', self.x)
-        print('self.y', self.y)
+        print(('self.x', self.x))
+        print(('self.y', self.y))
 
-        print('2*****self.width/2.0', self.width / 2.0)
-        print('2****self.height/2.0', self.height / 2.0)
+        print(('2*****self.width/2.0', self.width / 2.0))
+        print(('2****self.height/2.0', self.height / 2.0))
 
-        print('x_center', x_center)
-        print('y_center', y_center)
+        print(('x_center', x_center))
+        print(('y_center', y_center))
 
         rad_one = min(self.width / 2.0, self.height / 2.0)
         rad_unitcircle_plt = 0.3

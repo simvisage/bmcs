@@ -65,7 +65,7 @@ class CellView(HasTraits):
 
     '''Get the element numbers.
     '''
-    implements(ICellView)
+    #implements(ICellView)
 
     cell_idx = Int(-1)
 

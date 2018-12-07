@@ -41,7 +41,7 @@ class MATS1D5Bond(MATSEval):
     '''
     Scalar Damage Model.
     '''
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     Ef = Float(1., #34e+3,
                  label="E",

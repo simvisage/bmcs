@@ -36,7 +36,7 @@ class IMATSEval(ITStepperEval):
 
 class MATSEval(BMCSLeafNode, TStepperEval):
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     # Callable specifying spatial profile of an initial strain field
     # the parameter is X - global coordinates of the material point
@@ -170,7 +170,7 @@ class MATSEval(BMCSLeafNode, TStepperEval):
         # of eigenvectors eigvec
         #
         eps_one = eigvec[:, -1]
-        print X_mtx
+        print(X_mtx)
         # Project the coordinate vectors into the determined direction
         #
         proj = dot(X_mtx, eps_one)

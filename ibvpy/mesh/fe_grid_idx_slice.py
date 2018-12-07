@@ -1,13 +1,13 @@
 
 from traits.api import HasStrictTraits, WeakRef, Any, Property, cached_property, implements
-from i_fe_grid_slice import IFEGridSlice
+from .i_fe_grid_slice import IFEGridSlice
 
 
 class FEGridIdxSlice(HasStrictTraits):
     '''General implementation of a slice within the FEGrid
     '''
 
-    implements(IFEGridSlice)
+    #implements(IFEGridSlice)
     fe_grid = WeakRef('ibvpy.mesh.fe_grid.FEGrid')
 
     grid_slice = Any
@@ -80,17 +80,17 @@ if __name__ == '__main__':
                        fets_eval=fets_sample)
 
     fe_slice = fe_domain[:, -1, :, -1]
-    print 'elems'
-    print fe_slice.elems
-    print 'dof_nodes'
-    print fe_slice.dof_nodes
-    print 'dofs'
-    print fe_slice.dofs
-    print 'dof coords'
-    print fe_slice.dof_X
-    print 'geo_nodes'
-    print fe_slice.geo_nodes
-    print 'geo_X'
-    print fe_slice.geo_X
-    print 'parametric points'
-    print fe_slice.geo_x
+    print('elems')
+    print(fe_slice.elems)
+    print('dof_nodes')
+    print(fe_slice.dof_nodes)
+    print('dofs')
+    print(fe_slice.dofs)
+    print('dof coords')
+    print(fe_slice.dof_X)
+    print('geo_nodes')
+    print(fe_slice.geo_nodes)
+    print('geo_X')
+    print(fe_slice.geo_X)
+    print('parametric points')
+    print(fe_slice.geo_x)

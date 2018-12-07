@@ -11,7 +11,7 @@ from traitsui.api import \
 from traitsui.menu import OKButton
 from util.traits.editors.mpl_figure_editor import MPLFigureEditor
 
-from yse import YSE
+from .yse import YSE
 
 
 class YSEModelView(ModelView):

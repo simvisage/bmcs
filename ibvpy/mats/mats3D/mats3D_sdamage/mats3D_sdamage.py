@@ -15,7 +15,7 @@ from traitsui.api import \
 from util.traits.either_type import \
     EitherType
 
-from strain_norm3d import Energy, Euclidean, Mises, Rankine, Mazars, \
+from .strain_norm3d import Energy, Euclidean, Mises, Rankine, Mazars, \
     IStrainNorm3D
 
 
@@ -28,7 +28,7 @@ class MATS3DScalarDamage(MATS3DEval):
     Scalar Damage Model.
     '''
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)

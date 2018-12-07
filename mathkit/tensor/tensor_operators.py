@@ -29,6 +29,6 @@ DELTA23_ab = np.array([[1, 0, 0],
 
 
 if __name__ == '__main__':
-    print I_sym
+    print(I_sym)
 
-    print np.einsum('pq,pq->pq', EPS2D, EPS2D)
+    print(np.einsum('pq,pq->pq', EPS2D, EPS2D))

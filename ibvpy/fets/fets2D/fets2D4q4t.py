@@ -112,7 +112,7 @@ def run_example():
     from ibvpy.api import BCDofGroup
     fets_eval = FETS2D4Q4T(mats_eval=MATS2DConduction(k=1.))
 
-    print fets_eval.vtk_node_cell_data
+    print(fets_eval.vtk_node_cell_data)
 
     from ibvpy.mesh.fe_grid import FEGrid
     from ibvpy.mesh.fe_refinement_grid import FERefinementGrid

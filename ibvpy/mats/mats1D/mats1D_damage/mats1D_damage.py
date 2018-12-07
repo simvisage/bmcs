@@ -21,7 +21,7 @@ class MATS1DDamage(MATS1DEval):
     Scalar Damage Model.
     '''
 
-    implements(IMATSEval)
+    #implements(IMATSEval)
 
     E = Float(1.,  # 34e+3,
               modified=True,

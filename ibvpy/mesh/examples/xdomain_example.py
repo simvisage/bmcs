@@ -65,22 +65,22 @@ if __name__ == '__main__':
 
         #print "elements ",fe_xdomain.elements[0]
         if enr:
-            print 'parent elems ', fe_xdomain.fe_grid_slice.elems
-            print 'parent dofs ', fe_xdomain.fe_grid_slice.dofs
-            print "dofmap ", fe_xdomain.elem_dof_map
-            print "ls_values ", fe_xdomain.dots.dof_node_ls_values
-            print 'intersection points ', fe_xdomain.fe_grid_slice.r_i#
-            print "triangles ", fe_xdomain.dots.int_division
-            print 'ip_coords', fe_xdomain.dots.ip_coords
-            print 'ip_weigths', fe_xdomain.dots.ip_weights
-            print 'ip_offset ', fe_xdomain.dots.ip_offset
-            print 'ip_X_coords', fe_xdomain.dots.ip_X
-            print 'ip_ls', fe_xdomain.dots.ip_ls_values
-            print 'vtk_X ', fe_xdomain.dots.vtk_X
-            print 'vtk triangles ', fe_xdomain.dots.rt_triangles
-            print "vtk data ", fe_xdomain.dots.get_vtk_cell_data( 'blabla', 0, 0 )
-            print 'vtk_ls', fe_xdomain.dots.vtk_ls_values
-            print 'J_det ', fe_xdomain.dots.J_det_grid
+            print('parent elems ', fe_xdomain.fe_grid_slice.elems)
+            print('parent dofs ', fe_xdomain.fe_grid_slice.dofs)
+            print("dofmap ", fe_xdomain.elem_dof_map)
+            print("ls_values ", fe_xdomain.dots.dof_node_ls_values)
+            print('intersection points ', fe_xdomain.fe_grid_slice.r_i)#
+            print("triangles ", fe_xdomain.dots.int_division)
+            print('ip_coords', fe_xdomain.dots.ip_coords)
+            print('ip_weigths', fe_xdomain.dots.ip_weights)
+            print('ip_offset ', fe_xdomain.dots.ip_offset)
+            print('ip_X_coords', fe_xdomain.dots.ip_X)
+            print('ip_ls', fe_xdomain.dots.ip_ls_values)
+            print('vtk_X ', fe_xdomain.dots.vtk_X)
+            print('vtk triangles ', fe_xdomain.dots.rt_triangles)
+            print("vtk data ", fe_xdomain.dots.get_vtk_cell_data( 'blabla', 0, 0 ))
+            print('vtk_ls', fe_xdomain.dots.vtk_ls_values)
+            print('J_det ', fe_xdomain.dots.J_det_grid)
 
         tloop.eval()
 
@@ -205,94 +205,94 @@ if __name__ == '__main__':
             p = 'state'
 
             if p == 'grids':
-                print 'fe_xdomain.ls mask'
-                print fe_xdomain.ls_mask
-                print 'fe_xdomain.idx mask'
-                print fe_xdomain.idx_mask
-                print 'fe_xdomain.intg mask'
-                print fe_xdomain.intg_mask
-                print 'fe_xdomain.xelems_mask'
-                print fe_xdomain.xelems_mask
-                print 'fe_xdomain.xelems_grid_ix'
-                print fe_xdomain.xelems_grid_ix
-                print 'fe_xdomain.ls_elem_grid'
-                print fe_xdomain.ls_elem_grid
-                print 'fe_xdomain.ls_ielem_grid'
-                print fe_xdomain.ls_ielem_grid
-                print 'fe_xdomain.intg_elem_grid'
-                print fe_xdomain.intg_elem_grid
+                print('fe_xdomain.ls mask')
+                print(fe_xdomain.ls_mask)
+                print('fe_xdomain.idx mask')
+                print(fe_xdomain.idx_mask)
+                print('fe_xdomain.intg mask')
+                print(fe_xdomain.intg_mask)
+                print('fe_xdomain.xelems_mask')
+                print(fe_xdomain.xelems_mask)
+                print('fe_xdomain.xelems_grid_ix')
+                print(fe_xdomain.xelems_grid_ix)
+                print('fe_xdomain.ls_elem_grid')
+                print(fe_xdomain.ls_elem_grid)
+                print('fe_xdomain.ls_ielem_grid')
+                print(fe_xdomain.ls_ielem_grid)
+                print('fe_xdomain.intg_elem_grid')
+                print(fe_xdomain.intg_elem_grid)
 
-                print 'fe_tip_xdomain.ls_mask`'
-                print fe_tip_xdomain.ls_mask
-                print 'fe_tip_xdomain.intg_mask`'
-                print fe_tip_xdomain.intg_mask
-                print 'fe_tip_xdomain.idx_mask`'
-                print fe_tip_xdomain.idx_mask
-                print 'fe_tip_xdomain.xelems_mask'
-                print fe_tip_xdomain.xelems_mask
-                print 'fe_tip_xdomain.xelems_grid_ix'
-                print fe_tip_xdomain.xelems_grid_ix
-                print 'fe_tip_xdomain.ls_elem_grid'
-                print fe_tip_xdomain.ls_elem_grid
-                print 'fe_tip_xdomain.ls_ielems_grid'
-                print fe_tip_xdomain.ls_ielem_grid
-                print 'fe_tip_xdomain.intg_elem_grid'
-                print fe_tip_xdomain.intg_elem_grid
+                print('fe_tip_xdomain.ls_mask`')
+                print(fe_tip_xdomain.ls_mask)
+                print('fe_tip_xdomain.intg_mask`')
+                print(fe_tip_xdomain.intg_mask)
+                print('fe_tip_xdomain.idx_mask`')
+                print(fe_tip_xdomain.idx_mask)
+                print('fe_tip_xdomain.xelems_mask')
+                print(fe_tip_xdomain.xelems_mask)
+                print('fe_tip_xdomain.xelems_grid_ix')
+                print(fe_tip_xdomain.xelems_grid_ix)
+                print('fe_tip_xdomain.ls_elem_grid')
+                print(fe_tip_xdomain.ls_elem_grid)
+                print('fe_tip_xdomain.ls_ielems_grid')
+                print(fe_tip_xdomain.ls_ielem_grid)
+                print('fe_tip_xdomain.intg_elem_grid')
+                print(fe_tip_xdomain.intg_elem_grid)
 
             if p == 'maps':
 
-                print 'fe_xdomain.elem_dof_map'
-                print fe_xdomain.elem_dof_map
-                print 'fe_tip_xdomain.elem_dof_map'
-                print fe_tip_xdomain.elem_dof_map
+                print('fe_xdomain.elem_dof_map')
+                print(fe_xdomain.elem_dof_map)
+                print('fe_tip_xdomain.elem_dof_map')
+                print(fe_tip_xdomain.elem_dof_map)
 
-                print 'fe_xdomain.elems'
-                print fe_xdomain.elems
-                print 'fe_tip_xdomain.elems'
-                print fe_tip_xdomain.elems
+                print('fe_xdomain.elems')
+                print(fe_xdomain.elems)
+                print('fe_tip_xdomain.elems')
+                print(fe_tip_xdomain.elems)
 
-                print 'fe_xdomain.elem_X_map'
-                print fe_xdomain.elem_X_map
-                print 'fe_tip_xdomain.elem_X_map'
-                print fe_tip_xdomain.elem_X_map
+                print('fe_xdomain.elem_X_map')
+                print(fe_xdomain.elem_X_map)
+                print('fe_tip_xdomain.elem_X_map')
+                print(fe_tip_xdomain.elem_X_map)
 
             if p == 'fields':
 
-                print "ls_values ", fe_xdomain.dots.dof_node_ls_values
-                print "tip ls_values ", fe_tip_xdomain.dots.dof_node_ls_values
+                print("ls_values ", fe_xdomain.dots.dof_node_ls_values)
+                print("tip ls_values ", fe_tip_xdomain.dots.dof_node_ls_values)
 
-                print 'intersection points ', fe_xdomain.ls_intersection_r
-                print 'tip intersection points ', fe_tip_xdomain.ls_intersection_r
+                print('intersection points ', fe_xdomain.ls_intersection_r)
+                print('tip intersection points ', fe_tip_xdomain.ls_intersection_r)
 
-                print "triangles ", fe_xdomain.dots.rt_triangles
-                print "vtk points ", fe_xdomain.dots.vtk_X
-                print "vtk data ", fe_xdomain.dots.get_vtk_cell_data( 'blabla', 0, 0 )
+                print("triangles ", fe_xdomain.dots.rt_triangles)
+                print("vtk points ", fe_xdomain.dots.vtk_X)
+                print("vtk data ", fe_xdomain.dots.get_vtk_cell_data( 'blabla', 0, 0 ))
 
-                print 'ip_triangles', fe_xdomain.dots.int_division
-                print 'ip_coords', fe_xdomain.dots.ip_coords
-                print 'ip_weigths', fe_xdomain.dots.ip_weights
-                print 'ip_offset', fe_xdomain.dots.ip_offset
-                print 'ip_X_coords', fe_xdomain.dots.ip_X
-                print 'ip_ls', fe_xdomain.dots.ip_ls_values
-                print 'vtk_ls', fe_xdomain.dots.vtk_ls_values
-                print 'J_det ', fe_xdomain.dots.J_det_grid
+                print('ip_triangles', fe_xdomain.dots.int_division)
+                print('ip_coords', fe_xdomain.dots.ip_coords)
+                print('ip_weigths', fe_xdomain.dots.ip_weights)
+                print('ip_offset', fe_xdomain.dots.ip_offset)
+                print('ip_X_coords', fe_xdomain.dots.ip_X)
+                print('ip_ls', fe_xdomain.dots.ip_ls_values)
+                print('vtk_ls', fe_xdomain.dots.vtk_ls_values)
+                print('J_det ', fe_xdomain.dots.J_det_grid)
 
             if p == 'state':
 
                 # Add the time-loop control
-                print 'STATE: initial'
+                print('STATE: initial')
 
-                print 'fe_xdomain.dots.state_elem grid'
-                print fe_xdomain.dots.state_start_elem_grid
-                print 'fe_tip_xdomain.dots.state_elem grid'
-                print fe_tip_xdomain.dots.state_start_elem_grid
-                print 'fe_xdomain.dots.state_end_elem grid'
-                print fe_xdomain.dots.state_end_elem_grid
-                print 'fe_tip_xdomain.dots.state_end_elem grid'
-                print fe_tip_xdomain.dots.state_end_elem_grid
+                print('fe_xdomain.dots.state_elem grid')
+                print(fe_xdomain.dots.state_start_elem_grid)
+                print('fe_tip_xdomain.dots.state_elem grid')
+                print(fe_tip_xdomain.dots.state_start_elem_grid)
+                print('fe_xdomain.dots.state_end_elem grid')
+                print(fe_xdomain.dots.state_end_elem_grid)
+                print('fe_tip_xdomain.dots.state_end_elem grid')
+                print(fe_tip_xdomain.dots.state_end_elem_grid)
 
                 fe_xdomain.dots.state_array[:] = 25.5
-                print 'state_array 25', fe_xdomain.dots.state_array
+                print('state_array 25', fe_xdomain.dots.state_array)
                 fe_tip_xdomain.dots.state_array[:] = 58
 
                 bls_function3 = lambda X, Y:-( ( X - 0.5 ) ** 2 + ( Y - 0.21 ) ** 2 - 0.58 ** 2 )
@@ -300,20 +300,20 @@ if __name__ == '__main__':
                 fe_xdomain.bls_function = bls_function3
                 fe_tip_xdomain.ls_function = bls_function3
 
-                print 'STATE: changed'
+                print('STATE: changed')
 
-                print 'fe_xdomain.dots.state_elem grid'
-                print fe_xdomain.dots.state_start_elem_grid
-                print 'fe_tip_xdomain.dots.state_elem grid'
-                print fe_tip_xdomain.dots.state_start_elem_grid
-                print 'fe_xdomain.dots.state_end_elem grid'
-                print fe_xdomain.dots.state_end_elem_grid
-                print 'fe_tip_xdomain.dots.state_end_elem grid'
-                print fe_tip_xdomain.dots.state_end_elem_grid
+                print('fe_xdomain.dots.state_elem grid')
+                print(fe_xdomain.dots.state_start_elem_grid)
+                print('fe_tip_xdomain.dots.state_elem grid')
+                print(fe_tip_xdomain.dots.state_start_elem_grid)
+                print('fe_xdomain.dots.state_end_elem grid')
+                print(fe_xdomain.dots.state_end_elem_grid)
+                print('fe_tip_xdomain.dots.state_end_elem grid')
+                print(fe_tip_xdomain.dots.state_end_elem_grid)
 
-                print 'state_array 25', fe_xdomain.dots.state_array.shape
-                print 'state_array 25', fe_xdomain.dots.state_array[570:]
-                print 'state_array 58', fe_tip_xdomain.dots.state_array.shape
+                print('state_array 25', fe_xdomain.dots.state_array.shape)
+                print('state_array 25', fe_xdomain.dots.state_array[570:])
+                print('state_array 58', fe_tip_xdomain.dots.state_array.shape)
 
 
         elif do == 'ui':
