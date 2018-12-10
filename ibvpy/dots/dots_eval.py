@@ -1,4 +1,15 @@
 
+from numpy import \
+    zeros, float_, ix_,  repeat, arange, array, dot
+from traits.api import \
+    Array, Bool, provides, \
+    Instance, Int, \
+    WeakRef, Delegate, Property, cached_property, Dict
+from traitsui.api import \
+    Item, View
+from traitsui.menu import \
+    OKButton, CancelButton
+
 from ibvpy.core.i_tstepper_eval import \
     ITStepperEval
 from ibvpy.core.rtrace_eval import RTraceEval
@@ -7,28 +18,14 @@ from ibvpy.core.tstepper_eval import \
 from ibvpy.fets.i_fets_eval import IFETSEval
 from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
 from mathkit.matrix_la.sys_mtx_array import SysMtxArray
-from numpy import \
-    zeros, float_, ix_,  repeat, arange, array, dot
-from traits.api import \
-    Array, Bool, implements, \
-    Instance, Int, \
-    WeakRef, Delegate, Property, cached_property, Dict
-from traitsui.api import \
-    Item, View
-from traitsui.menu import \
-    OKButton, CancelButton
 
 
-#-----------------------------------------------------------------------------
-# Integrator for a general regular domain.
-#-----------------------------------------------------------------------------
+@provides(ITStepperEval)
 class DOTSEval(TStepperEval):
-
     '''
     Domain with uniform FE-time-step-eval.
+    Integrator for a general regular domain.
     '''
-    #implements(ITStepperEval)
-
     sdomain = Instance(IFEUniformDomain)
 
     fets_eval = Property(Instance(IFETSEval), depends_on='sdomain.fets_eval')

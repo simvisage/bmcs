@@ -4,11 +4,11 @@ Created on 12.01.2016
 @author: Yingxiong
 '''
 
+from traits.api import Int, Array, \
+    Property, cached_property, Float, List, provides
+
 from ibvpy.dots.dots_grid_eval import DOTSGridEval
 from ibvpy.fets.fets_eval import FETSEval, IFETSEval
-from traits.api import implements, Int, Array, \
-    Property, cached_property, Float, List
-
 import numpy as np
 import sympy as sp
 import traits.api as tr
@@ -34,13 +34,12 @@ N_xi_i = sp.Matrix([0.5 - xi_1 / 2., 0.5 + xi_1 / 2.], dtype=np.float_)
 dN_xi_ir = sp.Matrix([[-1. / 2], [1. / 2]], dtype=np.float_)
 
 
+@provides(IFETSEval)
 class FETS1D52ULRHFatigue(FETSEval):
 
     '''
     Fe Bar 2 nodes, deformation
     '''
-
-    #implements(IFETSEval)
 
     debug_on = True
 
@@ -272,6 +271,7 @@ class FETS1D52ULRHFatigue(FETSEval):
     I_sym_abcd = tr.Array(np.float)
 
     def _I_sym_abcd_default(self):
+        delta = np.identity(3)
         return 0.5 * \
             (np.einsum('ac,bd->abcd', delta, delta) +
              np.einsum('ad,bc->abcd', delta, delta))

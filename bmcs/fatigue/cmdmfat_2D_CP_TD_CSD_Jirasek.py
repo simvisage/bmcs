@@ -22,7 +22,7 @@ from numpy import \
 from scipy.linalg import \
     eigh
 from traits.api import \
-    Constant, implements,\
+    Constant, provides,\
     Float, HasTraits, \
     Property, cached_property
 from traitsui.api import \
@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import traits.api as tr
 
-
+@provides(IMATSEval)
 class MATSEvalMicroplaneFatigue(HasTraits):
     #--------------------------
     # material model parameters
@@ -244,6 +244,7 @@ class MATSEvalMicroplaneFatigue(HasTraits):
         return new_sctx
 
 
+@provides(IMATSEval)
 class MATSXDMicroplaneDamageFatigueJir(MATSEvalMicroplaneFatigue):
 
     '''
@@ -481,9 +482,8 @@ class MATSXDMicroplaneDamageFatigueJir(MATSEvalMicroplaneFatigue):
         return sig_eng, D4_mdm_ijmn
 
 
+@provides(IMATSEval)
 class MATS2DMicroplaneDamageJir(MATSXDMicroplaneDamageFatigueJir, MATS3DEval):
-
-    #implements(IMATSEval)
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D

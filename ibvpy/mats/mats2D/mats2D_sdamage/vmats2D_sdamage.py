@@ -1,32 +1,22 @@
 
+from traits.api import on_trait_change
+from traitsui.api import UItem, \
+    Item, View, Group, Spring
 from bmcs.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     PlottableFn, DamageFn, GfDamageFn
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.mats2D.vmats2D_eval import MATS2D
-from ibvpy.mats.mats_eval import IMATSEval
-from traits.api import Float, on_trait_change, Property, Array
-from traitsui.api import VGroup, UItem, \
-    Item, View, VSplit, Group, Spring
-
-
 import numpy as np
 import traits.api as tr
+
 from .vstrain_norm2d import StrainNorm2D, SN2DRankine
-
-
-# from scipy.linalg import eig, inv
-#---------------------------------------------------------------------------
-# Material time-step-evaluator for Scalar-Damage-Model
-#---------------------------------------------------------------------------
 
 
 class MATS2DScalarDamage(MATS2DEval, MATS2D):
     r'''
     Isotropic damage model.
     '''
-
-    #tr.implements(IMATSEval)
 
     node_name = 'isotropic damage model'
 

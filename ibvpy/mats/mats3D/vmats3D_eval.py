@@ -4,16 +4,12 @@ Created on Feb 8, 2018
 @author: rch
 '''
 
-from ibvpy.mats.mats_eval import IMATSEval
-from view.ui import BMCSTreeNode
-
 import numpy as np
 import traits.api as tr
+from view.ui import BMCSTreeNode
 
 
 class MATS3D(BMCSTreeNode):
-
-    #tr.implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Material parameters

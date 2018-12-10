@@ -1,19 +1,19 @@
 
 from os.path import join
 
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from reporter import RInputRecord
 from scipy.optimize import newton
 from traits.api import \
     Instance, Str, \
     Float, on_trait_change,\
-    Interface, implements, Range, Property, Button, \
+    Interface, provides, Range, Property, Button, \
     Array, WeakRef
 from traitsui.api import \
     View, Item, UItem, VGroup
-from view.ui import BMCSLeafNode
 
+from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 import numpy as np
+from reporter import RInputRecord
+from view.ui import BMCSLeafNode
 
 
 class PlottableFn(RInputRecord):
@@ -233,11 +233,10 @@ class GfDamageFn(DamageFn):
     tree_view = traits_view
 
 
+@provides(IDamageFn)
 class JirasekDamageFn(DamageFn):
 
     node_name = 'Jirasek damage function'
-
-    ##implements(IDamageFn)
 
     s_f = Float(0.001,
                 MAT=True,
@@ -314,6 +313,7 @@ class JirasekDamageFn(DamageFn):
     tree_view = traits_view
 
 
+@provides(IDamageFn)
 class LiDamageFn(DamageFn):
 
     node_name = 'Li damage function'
@@ -326,8 +326,6 @@ class LiDamageFn(DamageFn):
         the maximum slip that occurred so far in
         in the history of loading.
         ''')
-
-    ##implements(IDamageFn)
 
     alpha_1 = Range(value=1., low=0.0, high=1.0,
                     MAT=True,
@@ -389,11 +387,10 @@ class LiDamageFn(DamageFn):
     tree_view = traits_view
 
 
+@provides(IDamageFn)
 class AbaqusDamageFn(DamageFn):
 
     node_name = 'Abaqus damage function'
-
-    ##implements(IDamageFn)
 
     latex_eq = Str(r'''Damage function (Jirasek)
         \begin{align}
@@ -470,11 +467,10 @@ class AbaqusDamageFn(DamageFn):
     tree_view = traits_view
 
 
+@provides(IDamageFn)
 class FRPDamageFn(DamageFn):
 
     node_name = 'FRP damage function'
-
-    ##implements(IDamageFn)
 
     B = Float(10.4,
               MAT=True,
@@ -588,11 +584,10 @@ class FRPDamageFn(DamageFn):
     tree_view = traits_view
 
 
+@provides(IDamageFn)
 class MultilinearDamageFn(DamageFn):
 
     node_name = 'Multilinear damage function'
-
-    ##implements(IDamageFn)
 
     s_data = Str('0,1', tooltip='Comma-separated list of strain values',
                  MAT=True, unit='mm', symbol='s',

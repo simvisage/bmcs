@@ -12,12 +12,6 @@
 #
 # Created on May 26, 2009 by: rchx
 
-from ibvpy.core.i_bcond import \
-    IBCond
-from ibvpy.mesh.fe_grid_idx_slice import FEGridIdxSlice
-from ibvpy.plugins.mayavi_util.pipelines import \
-    MVPointLabels
-from mathkit.mfn import MFnLineArray
 from numpy import \
     ix_, dot, repeat, zeros
 from scipy.linalg import \
@@ -26,17 +20,24 @@ from traits.api import Float, \
     Instance, Int, Trait, Str, Enum, \
     List, cached_property, \
     Button, \
-    implements, Property
+    provides, Property
 from traitsui.api import \
     VSplit, \
     View, UItem, Item, TableEditor, VGroup
+
+from ibvpy.core.i_bcond import \
+    IBCond
+from ibvpy.mesh.fe_grid_idx_slice import FEGridIdxSlice
+from ibvpy.plugins.mayavi_util.pipelines import \
+    MVPointLabels
+from mathkit.mfn import MFnLineArray
+import numpy as np
+from traitsui.table_column \
+    import ObjectColumn
 from view.plot2d import Vis2D, Viz2DTimeFunction
 from view.ui import BMCSTreeNode
 
 from .bc_dof import BCDof
-import numpy as np
-from traitsui.table_column \
-    import ObjectColumn
 
 
 # The definition of the demo TableEditor:
@@ -49,12 +50,11 @@ bcond_list_editor = TableEditor(
 )
 
 
+@provides(IBCond)
 class BCSlice(BMCSTreeNode, Vis2D):
     '''
     Implements the IBC functionality for a constrained dof.
     '''
-    #implements(IBCond)
-
     tree_node_list = List
 
     tree_node_list = Property(depends_on='bcdof_list,bcdof_list_items')

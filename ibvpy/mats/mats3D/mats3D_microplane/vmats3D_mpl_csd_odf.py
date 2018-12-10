@@ -11,24 +11,19 @@ Microplane Fatigue model 2D
 Using Jirasek homogenization approach [1999]
 '''
 
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-from ibvpy.mats.mats_eval import IMATSEval
 from numpy import array,\
     einsum, zeros_like, identity, sign,\
     sqrt
-
-from traits.api import Constant, implements,\
+from traits.api import Constant,\
     Float, Property, cached_property
 
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 import numpy as np
 import traits.api as tr
 
 
 class MATS3DMplCSDODF(MATS3DEval, MATS3D):
-
-    #implements(IMATSEval)
-
     #--------------------------
     # material model parameters
     #--------------------------

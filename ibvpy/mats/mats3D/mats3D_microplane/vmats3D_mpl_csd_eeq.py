@@ -11,17 +11,15 @@ Microplane Fatigue model 3D
 Using Jirasek homogenization approach [1999]
 '''
 
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
-from ibvpy.mats.mats_eval import IMATSEval
 from numpy import array,\
     einsum, zeros_like, identity, sign,\
     sqrt
-from traits.api import Constant, implements,\
+from traits.api import Constant,\
     Float, Property, cached_property, Dict
 from traitsui.api import \
     View, VGroup, Item
-
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
+from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 import numpy as np
 import traits.api as tr
 
@@ -29,7 +27,7 @@ import traits.api as tr
 class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
 
     node_name = 'Microplane CSD model (EEQ)'
-    #implements(IMATSEval)
+    # implements(IMATSEval)
 
     #--------------------------
     # material model parameters

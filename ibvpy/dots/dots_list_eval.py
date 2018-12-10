@@ -1,36 +1,28 @@
 
-from time import time
-
+from numpy import \
+    zeros, float_
+from traits.api import \
+    provides, \
+    List, \
+    WeakRef, Property, cached_property, Dict
+from traitsui.api import \
+    View
 from ibvpy.core.i_tstepper_eval import \
     ITStepperEval
-from ibvpy.core.rtrace_eval import RTraceEval
 from ibvpy.core.tstepper_eval import \
     TStepperEval
-from ibvpy.fets.fets_eval import IFETSEval
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
-from numpy import \
-    zeros, float_, ix_, meshgrid
-from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasTraits, Interface, implements, \
-    Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
-    on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property, Dict
-from traitsui.api import \
-    Item, View
-from traitsui.menu import \
-    OKButton, CancelButton
-
-from .dots_eval import DOTSEval
 
 
 #-----------------------------------------------------------------------------
 # Integrator for a simple 1D domain.
 #-----------------------------------------------------------------------------
+@provides(ITStepperEval)
 class DOTSListEval(TStepperEval):
 
     '''
     Domain with uniform FE-time-step-eval.
     '''
-    #implements(ITStepperEval)
 
     sdomain = WeakRef('ibvpy.mesh.fe_domain.FEDomain')
 

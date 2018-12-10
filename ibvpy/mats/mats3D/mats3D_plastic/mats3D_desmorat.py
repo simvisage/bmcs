@@ -3,22 +3,12 @@ Created on 30.10.2018
 
 @author: aguilar
 '''
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
-    FRPDamageFn
+from traits.api import \
+    Float, List
+from traitsui.api import View, VGroup, Item
 from ibvpy.mats.mats3D.mats3D_eval import \
     MATS3DEval
 from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
-from ibvpy.mats.mats_eval import IMATSEval
-from ibvpy.mats.mats_eval import \
-    IMATSEval
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from traits.api import implements,  \
-    Constant, Float, WeakRef, List, Str, Property, cached_property, \
-    Trait, on_trait_change, Instance, Callable
-from traitsui.api import View, VGroup, Item, UItem, Group
-from view.ui import BMCSTreeNode
-
 import numpy as np
 import traits.api as tr
 
@@ -28,8 +18,6 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
     '''
 
     node_name = 'Desmorat model'
-
-    #tr.implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Material parameters

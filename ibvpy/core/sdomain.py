@@ -1,25 +1,26 @@
 
-from traits.api import HasTraits, implements, List, Any, WeakRef
+from traits.api import provides, List, Any, WeakRef
 from traitsui.api import View, Item
+
 from .i_sdomain import ISDomain
-from .scontext import SContext
+from .i_tstepper_eval import ITStepperEval
 from .ibv_resource import IBVResource
-from .i_tstepper_eval import ITStepperEval 
+from .scontext import SContext
 
-class SDomain( IBVResource ):
 
-    #implements(ISDomain)
-    
+@provides(ISDomain)
+class SDomain(IBVResource):
+
     # service specifiers - used to link the service to this object
     service_class = 'ibvpy.plugins.sdomain_service.SDomainService'
     service_attrib = 'sdomain'
-    
+
     subdomains = List([])
-    
+
     xdomains = List([])
 
-    dots = WeakRef( ITStepperEval )
-    
+    dots = WeakRef(ITStepperEval)
+
     def new_scontext(self):
         '''
         Setup a new spatial context.
@@ -28,12 +29,12 @@ class SDomain( IBVResource ):
         sctx.sdomain = self
         return sctx
 
-    def register_mv_pipelines(self,e):
+    def register_mv_pipelines(self, e):
         ''' Register the visualization pipelines in mayavi engine
             (empty by default)
         '''
         pass
-    
-    traits_view = View( Item('dots@', show_label = False ), 
-                        resizable = True, 
-                        scrollable = True )
+
+    traits_view = View(Item('dots@', show_label=False),
+                       resizable=True,
+                       scrollable=True)

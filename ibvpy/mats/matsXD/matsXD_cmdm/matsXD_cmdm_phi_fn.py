@@ -7,12 +7,11 @@ from numpy import \
 from traits.api import \
     Float,  \
     Instance, HasStrictTraits, on_trait_change,  \
-    implements, Button, \
+    provides, Button, \
     Interface, WeakRef
 from traitsui.api import \
     Item, View, VGroup, \
     Group, HGroup
-
 from mathkit.mfn import MFnLineArray
 from mathkit.mfn.mfn_line.mfn_matplotlib_editor import MFnMatplotlibEditor
 from mathkit.mfn.mfn_line.mfn_plot_adapter import MFnPlotAdapter
@@ -54,8 +53,8 @@ class IPhiFn(Interface):
 #-------------------------------------------------------------------------
 
 
+@provides(IPhiFn)
 class PhiFnBase(HasStrictTraits):
-
     '''
     Damage function.
     '''
@@ -112,7 +111,7 @@ class PhiFnBase(HasStrictTraits):
 
 class PhiFnGeneral(PhiFnBase):
 
-    #implements(IPhiFn)
+    # implements(IPhiFn)
 
     def _polar_discr_changed(self):
         self.polar_discr.regularization = False
@@ -191,7 +190,7 @@ class PhiFnGeneral(PhiFnBase):
 #-------------------------------------------------------------------------
 class PhiFnGeneralExtended(PhiFnGeneral):
 
-    #implements(IPhiFn)
+    # implements(IPhiFn)
 
     factor_eps_fail = Float(1.0)
 
@@ -221,7 +220,7 @@ class PhiFnGeneralExtended(PhiFnGeneral):
 
 class PhiFnGeneralExtendedExp(PhiFnGeneral):
 
-    #implements(IPhiFn)
+    # implements(IPhiFn)
 
     Dfp = Float(0.0, desc='residual integrity',
                 enter_set=True, auto_set=False)
@@ -270,7 +269,7 @@ class PhiFnStrainSoftening(PhiFnBase):
     Damage function.
     '''
 
-    #implements(IPhiFn)
+    # implements(IPhiFn)
 
     G_f = Float(0.001117,
                 label='G_f',
@@ -409,7 +408,7 @@ class PhiFnStrainHardeningLinear(PhiFnBase):
     Damage function which leads to a piecewise linear stress strain response.
     '''
 
-    #implements(IPhiFn)
+    # implements(IPhiFn)
 
     E_f = Float(70e+3, desc='E-Modulus of the fibers',
                 enter_set=True, auto_set=False, modified=True)
@@ -516,7 +515,7 @@ class PhiFnStrainHardening(PhiFnBase):
     Damage function.
     '''
 
-    #implements(IPhiFn)
+    # implements(IPhiFn)
 
     Epp = Float(5.9e-05, desc='microplane strain at the onset of damage',
                 enter_set=True, auto_set=False)

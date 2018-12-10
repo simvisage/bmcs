@@ -7,6 +7,7 @@ Created on Feb 8, 2018
 from ibvpy.api import \
     IFETSEval, FEGrid
 from ibvpy.core.i_tstepper_eval import ITStepperEval
+from traits.api import provides
 from ibvpy.mats.mats2D import MATS2D
 from mathkit.matrix_la import \
     SysMtxArray
@@ -21,12 +22,10 @@ I_sym_abcd = 0.5 * \
     (np.einsum('ac,bd->abcd', delta, delta) +
      np.einsum('ad,bc->abcd', delta, delta))
 
-
+@provides(ITStepperEval)
 class DOTSGrid(tr.HasStrictTraits):
     '''Domain time steppsr on a grid mesh
     '''
-    tr.#implements(ITStepperEval)
-
     L_x = tr.Float(200, input=True)
     L_y = tr.Float(100, input=True)
     n_x = tr.Int(100, input=True)

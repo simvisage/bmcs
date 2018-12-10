@@ -6,23 +6,19 @@ Created on 15.02.2018
 Microplane damage model 2D - Jirasek [1999]
 '''
 
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
-from ibvpy.mats.mats_eval import \
-    IMATSEval
 from numpy import \
     array, einsum, identity, sqrt
 from traits.api import \
-    Constant, implements,\
+    Constant,\
     Float, Property, cached_property
 
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
+from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 import numpy as np
 import traits.api as tr
 
 
 class MATS3DMplDamageEEQ(MATS3DEval, MATS3D):
-
-    #implements(IMATSEval)
 
     epsilon_0 = Float(59.0e-6,
                       label="a",

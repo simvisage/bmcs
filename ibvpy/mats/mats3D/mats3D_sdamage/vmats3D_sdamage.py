@@ -1,29 +1,28 @@
 
+from traitsui.api import \
+    Item, View, VSplit, Group, Spring
 from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 from ibvpy.mats.mats_eval import IMATSEval
-from traitsui.api import \
-    Item, View, VSplit, Group, Spring
+import numpy as np
+import traits.api as tr
 from util.traits.either_type import \
     EitherType
 
-import numpy as np
-import traits.api as tr
 from .vstrain_norm2d import Rankine
-
 
 # from strain_norm3d import Energy, Euclidean, Mises, Rankine, Mazars, \
 #     IStrainNorm3D
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
+
+
 class MATS3DScalarDamage(MATS3DEval, MATS3D):
     r'''
     Isotropic damage model.
     '''
     node_name = 'Scalar damage'
-
-    #tr.implements(IMATSEval)
 
     stiffness = tr.Enum("secant", "algorithmic",
                         input=True)

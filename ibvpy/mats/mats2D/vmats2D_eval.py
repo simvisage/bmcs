@@ -4,17 +4,13 @@ Created on Feb 8, 2018
 @author: rch
 '''
 
-from ibvpy.mats.mats_eval import IMATSEval
 from traitsui.api import View
-from view.ui import BMCSTreeNode
-
 import numpy as np
 import traits.api as tr
+from view.ui import BMCSTreeNode
 
 
 class MATS2D(BMCSTreeNode):
-
-    #tr.implements(IMATSEval)
 
     # -----------------------------------------------------------------------------------------------------
     # Construct the fourth order elasticity tensor

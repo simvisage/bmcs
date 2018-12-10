@@ -6,19 +6,20 @@ from numpy import \
     zeros_like
 from scipy.optimize import \
     brentq
-
 from traits.api import \
     Instance, Property, cached_property, \
-    implements, Float, \
+    provides, Float, \
     Callable, Str, Enum, on_trait_change, Any, \
     Event
-from .fe_grid import MElem
-from .fe_subdomain import FESubDomain
+
 from ibvpy.dots.xdots_eval import XDOTSEval
 from ibvpy.fets.fets_eval import FETSEval
 from ibvpy.mesh.fe_grid import FEGrid
 from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
 from ibvpy.rtrace.rt_domain import RTraceDomain
+
+from .fe_grid import MElem
+from .fe_subdomain import FESubDomain
 
 
 #--------------------------------------------------------------------------
@@ -65,10 +66,10 @@ def get_intersect_pt(fn, args):
         return
 
 
+@provides(IFEUniformDomain)
 class FELSDomain(FESubDomain):
     '''Domain defined using a level set function within an FEGrid.
     '''
-    #implements(IFEUniformDomain)
 
     # Distinguish which part of the level set to take
     #
@@ -87,7 +88,8 @@ class FELSDomain(FESubDomain):
         'reset the domain of this domain'
         if self._domain:
             # unregister in the old domain
-            raise NotImplementedError('FESubDomain cannot be relinked to another FEDomain')
+            raise NotImplementedError(
+                'FESubDomain cannot be relinked to another FEDomain')
 
         self._domain = value
         # register in the domain as a subdomain

@@ -1,13 +1,14 @@
 
-from traits.api import HasStrictTraits, WeakRef, Any, Property, cached_property, implements
+from traits.api import \
+    HasStrictTraits, WeakRef, Any, Property, cached_property, provides
 from .i_fe_grid_slice import IFEGridSlice
 
 
+@provides(IFEGridSlice)
 class FEGridIdxSlice(HasStrictTraits):
     '''General implementation of a slice within the FEGrid
     '''
 
-    #implements(IFEGridSlice)
     fe_grid = WeakRef('ibvpy.mesh.fe_grid.FEGrid')
 
     grid_slice = Any

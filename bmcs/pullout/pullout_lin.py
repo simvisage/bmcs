@@ -68,6 +68,13 @@ and in boundary conditions.
 '''
 
 
+from traits.api import \
+    Int, provides, Array,\
+    List, Property, cached_property, Float, \
+    Instance, Trait, Button
+from traitsui.api import \
+    View, Include, Item, UItem, VGroup
+
 from bmcs.mats.mats_bondslip import MATSBondSlipFatigue
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from ibvpy.api import \
@@ -80,17 +87,11 @@ from ibvpy.dots.dots_grid_eval import DOTSGridEval
 from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
 from mathkit.matrix_la import \
     SysMtxAssembly
-from traits.api import \
-    Int, implements, Array,\
-    List, Property, cached_property, Float, \
-    Instance, Trait, Button
-from traitsui.api import \
-    View, Include, Item, UItem, VGroup
+import numpy as np
+import sympy as sp
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSTreeNode, BMCSLeafNode
 from view.window import BMCSModel
-import numpy as np
-import sympy as sp
 
 
 n_C = 2
@@ -98,11 +99,10 @@ n_C = 2
 r_ = sp.symbols('r')
 
 
+@provides(IFETSEval)
 class FETS1D52L4ULRH(BMCSLeafNode, FETSEval):
     '''Example of a finite element definition.
     '''
-
-    #implements(IFETSEval)
 
     dim_slice = slice(0, 1)
     n_e_dofs = Int(2 * n_C)

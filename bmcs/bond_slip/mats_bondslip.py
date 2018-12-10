@@ -9,7 +9,7 @@ from bmcs.mats.mats_damage_fn import \
     FRPDamageFn
 from ibvpy.api import MATSEval, IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from traits.api import implements,  \
+from traits.api import provides,  \
     Constant, Float, WeakRef, List, Str, Property, cached_property, \
     Trait, on_trait_change, Instance, Callable
 from traitsui.api import View, VGroup, Item, UItem, Group
@@ -18,9 +18,8 @@ from view.ui import BMCSTreeNode
 import numpy as np
 
 
+@provides(IMATSEval)
 class MATSBondSlipBase(MATSEval, BMCSTreeNode):
-
-    #implements(IMATSEval)
 
     ZERO_THRESHOLD = Constant(1e-8)
 

@@ -1,13 +1,6 @@
 
 from math import sin
 
-from ibvpy.core.i_sdomain import \
-    ISDomain
-from ibvpy.core.sdomain import \
-    SDomain
-from ibvpy.plugins.mayavi_util.pipelines import \
-    MVPolyData, MVPointLabels, MVStructuredGrid
-from mathkit.level_set.level_set import ILevelSetFn, SinLSF, PlaneLSF, ElipseLSF
 from numpy import \
     array, unique, min, max, mgrid, ogrid, c_, alltrue, repeat, ix_, \
     arange, ones, zeros, multiply, sort, index_exp, frompyfunc, where, \
@@ -15,7 +8,7 @@ from numpy import \
 from traits.api import \
     HasTraits, List, Array, Property, cached_property, \
     Instance, Trait, Button, on_trait_change, Tuple, \
-    Int, Float, implements, WeakRef, Bool, Any, Interface, \
+    Int, Float, provides, WeakRef, Bool, Any, Interface, \
     DelegatesTo, Bool, Callable
 from traitsui.api import \
     TabularEditor
@@ -23,6 +16,14 @@ from traitsui.api import \
     View, Item, Group
 from traitsui.tabular_adapter import \
     TabularAdapter
+
+from ibvpy.core.i_sdomain import \
+    ISDomain
+from ibvpy.core.sdomain import \
+    SDomain
+from ibvpy.plugins.mayavi_util.pipelines import \
+    MVPolyData, MVPointLabels, MVStructuredGrid
+from mathkit.level_set.level_set import ILevelSetFn, SinLSF, PlaneLSF, ElipseLSF
 
 from .cell_array import CellView, ICellView, CellArray, ICellArraySource
 from .cell_grid import CellGrid
@@ -32,12 +33,12 @@ from .cell_grid_slice import CellGridSlice
 #--------------------------------------------------------------------------
 # GeoCellGrid
 #--------------------------------------------------------------------------
+@provides(ICellArraySource)
 class GeoCellGrid(SDomain):
 
     '''
     Get an array with element node coordinates
     '''
-    #implements(ICellArraySource)
     cell_grid = Instance(CellGrid)
 
     #-------------------------------------------------------------------------
@@ -321,7 +322,7 @@ class GeoCellView(CellView):
 
     '''View a single cell instance.
     '''
-    #implements(ICellView)
+    # implements(ICellView)
 
     cell_X_arr = Array
 

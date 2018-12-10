@@ -3,11 +3,12 @@ from traits.api import \
     Float, HasTraits, \
     Trait, WeakRef, Dict
 from traits.api import \
-    implements
+    provides
 
 from .i_tstepper_eval import ITStepperEval
 
 
+@provides(ITStepperEval)
 class TStepperEval(HasTraits):
 
     """
@@ -24,7 +25,6 @@ class TStepperEval(HasTraits):
     evaluated for the provided spatial context and state array
     (rte_dict) attribute.
     """
-    #implements(ITStepperEval)
 
     tstepper = WeakRef('ibvpy.core.tstepper.TStepper')
 

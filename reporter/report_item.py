@@ -7,7 +7,7 @@ Created on Jul 9, 2017
 from io import StringIO
 from traits.api import \
     HasStrictTraits, Interface, Str, \
-    Dict, Property, implements, Missing
+    Dict, Property, provides, Missing
 import numpy as np
 
 
@@ -24,13 +24,12 @@ class RItem(HasStrictTraits):
     '''
 
 
+@provides(IRItem)
 class RInputRecord(RItem):
     '''This class scans the parameters
     that have as metadata one of the input tags and 
     specified in the input tag list.
     '''
-
-    ##implements(IRItem)
 
     name = Str
 
@@ -183,9 +182,8 @@ class ROutputItem(RItem):
         f.write(tag_io.getvalue())
 
 
+@provides(IRItem)
 class ROutputSection(RItem):
-
-    ##implements(IRItem)
 
     def write_records(self, f, rdir=None, rel_study_path=None, itags=None):
         records = self.get_subrecords()

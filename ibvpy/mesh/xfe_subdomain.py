@@ -7,16 +7,17 @@ from scipy.optimize import \
     brentq
 from traits.api import \
     Instance, Property, cached_property, \
-    implements, Float, \
+    provides, Float, \
     Callable, Str, Enum
 
-from .fe_grid import MElem
-from .fe_subdomain import FESubDomain
 from ibvpy.dots.xdots_eval import XDOTSEval
 from ibvpy.fets.fets_eval import FETSEval
 from ibvpy.mesh.i_fe_grid_slice import IFEGridSlice
 from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
 from ibvpy.rtrace.rt_domain import RTraceDomain
+
+from .fe_grid import MElem
+from .fe_subdomain import FESubDomain
 
 
 #--------------------------------------------------------------------------
@@ -63,11 +64,10 @@ def get_intersect_pt(fn, args):
         return
 
 
+@provides(IFEUniformDomain)
 class XFESubDomain(FESubDomain):
     '''Subgrid derived from another grid domain.
     '''
-
-    #implements(IFEUniformDomain)
 
     # Distinguish which part of the level set to take
     #
@@ -85,7 +85,8 @@ class XFESubDomain(FESubDomain):
         'reset the domain of this domain'
         if self._domain:
             # unregister in the old domain
-            raise NotImplementedError('FESubDomain cannot be relinked to another FEDomain')
+            raise NotImplementedError(
+                'FESubDomain cannot be relinked to another FEDomain')
 
         self._domain = value
         # register in the domain as a subdomain

@@ -5,6 +5,13 @@ Created on 12.01.2016
 @todo: derive the size of the state array.
 '''
 
+from scipy import interpolate as ip
+from traits.api import \
+    Property, Instance, cached_property, \
+    List, Float, Trait, Int, on_trait_change
+from traitsui.api import \
+    View, Item, UItem, VGroup
+
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
@@ -22,18 +29,12 @@ from ibvpy.mats.mats3D.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
 from ibvpy.mats.mats3D.viz3d_stress_field import \
     Vis3DStressField, Viz3DStressField
-from scipy import interpolate as ip
-from traits.api import \
-    Property, Instance, cached_property, \
-    List, Float, Trait, Int, on_trait_change
-from traitsui.api import \
-    View, Item, UItem, VGroup
+import numpy as np
+import traits.api as tr
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
 
-import numpy as np
-import traits.api as tr
 from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
@@ -721,4 +722,4 @@ def run_bending3pt_sdamage_viz3d(*args, **kw):
 
 
 if __name__ == '__main__':
-    run_bending3pt_sdamage_viz2d()
+    run_bending3pt_sdamage_viz3d()

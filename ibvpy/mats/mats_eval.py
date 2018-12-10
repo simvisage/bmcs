@@ -7,7 +7,8 @@ from numpy import zeros, linalg, tensordot, dot, min, max, argmax, array, pi, \
     append
 from scipy.linalg import eigh
 from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasStrictTraits, Interface, implements, \
+    provides, Array, Bool, Callable, Enum, Float, \
+    HasStrictTraits, Interface, \
     Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
     on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property, \
     Dict, Constant
@@ -33,10 +34,8 @@ class IMATSEval(ITStepperEval):
 # MATSEval - general implementation of the fe-numerical quadrature
 #-------------------------------------------------------------------
 
-
+@provides(IMATSEval)
 class MATSEval(BMCSLeafNode, TStepperEval):
-
-    #implements(IMATSEval)
 
     # Callable specifying spatial profile of an initial strain field
     # the parameter is X - global coordinates of the material point

@@ -10,19 +10,21 @@ Microplane Fatigue model
 Using the ODFs homogenization approach  [Wu, 2009]
 '''
 
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-from ibvpy.mats.mats_eval import \
-    IMATSEval
 from numpy import \
     array, zeros, trace, einsum, zeros_like,\
     identity, sign, linspace, hstack
-from traits.api import Constant, implements,\
+from traits.api import Constant, provides,\
     Float, HasTraits, Property, cached_property
 from traitsui.api import View, Include
+
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
+from ibvpy.mats.mats_eval import \
+    IMATSEval
 import matplotlib.pyplot as plt
 import numpy as np
 
 
+@provides(IMATSEval)
 class MATSEvalMicroplaneFatigue(HasTraits):
     #--------------------------------
     # Elasticity material parameters
@@ -163,14 +165,15 @@ class MATSEvalMicroplaneFatigue(HasTraits):
         r_N = r_N + delta_lamda
         alpha_N = alpha_N + delta_lamda * sign(sigma_n_trial - X)
 
-        Z_N = lambda z_N: 1. / self.Ad * (-z_N) / (1 + z_N)
+        def Z_N(z_N): return 1. / self.Ad * (-z_N) / (1 + z_N)
         Y_N = 0.5 * H * E_N * eps ** 2
         Y_0 = 0.5 * E_N * self.eps_0 ** 2
         f = Y_N - (Y_0 + Z_N(z_N))
 
         thres_2 = f > 1e-6
         # damage threshold function
-        f_w = lambda Y: 1 - 1. / (1 + self.Ad * (Y - Y_0))
+
+        def f_w(Y): return 1 - 1. / (1 + self.Ad * (Y - Y_0))
         w_N = f_w(Y_N) * thres_2
         z_N = - w_N * thres_2
 
@@ -207,17 +210,17 @@ class MATSEvalMicroplaneFatigue(HasTraits):
         plas_1 = f > 1e-6
         elas_1 = f < 1e-6
 
-        delta_lamda =   f   / \
+        delta_lamda = f / \
             (E_T / (1.0 - w_T) + self.gamma_T + self.K_T) * plas_1
 
         norm_2 = 1.0 * elas_1 + np.sqrt(
             einsum('nj,nj -> n', (sig_pi_trial - X), (sig_pi_trial - X))) * plas_1
 
-        eps_T_pi[:, 0] = eps_T_pi[:, 0] + plas_1 *  delta_lamda * \
+        eps_T_pi[:, 0] = eps_T_pi[:, 0] + plas_1 * delta_lamda * \
             ((sig_pi_trial[:, 0] - X[:, 0]) / (1.0 - w_T)) / norm_2
-        eps_T_pi[:, 1] = eps_T_pi[:, 1] +  plas_1 * delta_lamda * \
+        eps_T_pi[:, 1] = eps_T_pi[:, 1] + plas_1 * delta_lamda * \
             ((sig_pi_trial[:, 1] - X[:, 1]) / (1.0 - w_T)) / norm_2
-        eps_T_pi[:, 2] = eps_T_pi[:, 2] +  plas_1 * delta_lamda * \
+        eps_T_pi[:, 2] = eps_T_pi[:, 2] + plas_1 * delta_lamda * \
             ((sig_pi_trial[:, 2] - X[:, 2]) / (1.0 - w_T)) / norm_2
 
         Y = 0.5 * E_T * \
@@ -227,11 +230,11 @@ class MATSEvalMicroplaneFatigue(HasTraits):
             (delta_lamda * (Y / self.S) ** self.r) * \
             (self.tau_pi_bar / (self.tau_pi_bar - self.a * sigma_kk / 3.0))
 
-        alpha_T[:, 0] = alpha_T[:, 0]   + plas_1 * delta_lamda *\
+        alpha_T[:, 0] = alpha_T[:, 0] + plas_1 * delta_lamda *\
             (sig_pi_trial[:, 0] - X[:, 0]) / norm_2
-        alpha_T[:, 1] = alpha_T[:, 1]   + plas_1 * delta_lamda *\
+        alpha_T[:, 1] = alpha_T[:, 1] + plas_1 * delta_lamda *\
             (sig_pi_trial[:, 1] - X[:, 1]) / norm_2
-        alpha_T[:, 2] = alpha_T[:, 2]   + plas_1 * delta_lamda *\
+        alpha_T[:, 2] = alpha_T[:, 2] + plas_1 * delta_lamda *\
             (sig_pi_trial[:, 2] - X[:, 2]) / norm_2
 
         z_T = z_T + delta_lamda
@@ -244,6 +247,7 @@ class MATSEvalMicroplaneFatigue(HasTraits):
         return new_sctx
 
 
+@provides(IMATSEval)
 class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
     '''
     Microplane Damage Fatigue Model.
@@ -532,7 +536,7 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
         M_vol_ijkl = self._get_M_vol_tns(sctx, eps_app_eng, sigma_kk)
         M_dev_ijkl = self._get_M_dev_tns(phi_mtx)
 
-        S_2_ijkl = K0 * einsum('ijmn,mnrs,rskl -> ijkl', I_vol_ijkl, M_vol_ijkl, I_vol_ijkl ) \
+        S_2_ijkl = K0 * einsum('ijmn,mnrs,rskl -> ijkl', I_vol_ijkl, M_vol_ijkl, I_vol_ijkl) \
             + G0 * einsum('ijmn,mnrs,rskl -> ijkl', I_dev_ijkl, M_dev_ijkl, I_dev_ijkl)\
 
         return S_2_ijkl
@@ -641,9 +645,8 @@ class MATSXDMicroplaneDamageFatigueWu(MATSEvalMicroplaneFatigue):
         return sig_eng, S_ijkl
 
 
+@provides(IMATSEval)
 class MATS3DMicroplaneDamageWu(MATSXDMicroplaneDamageFatigueWu, MATS3DEval):
-
-    #implements(IMATSEval)
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D

@@ -33,7 +33,7 @@ from ibvpy.mats.mats3D.viz3d_stress_field import \
     Vis3DStressField, Viz3DStressField
 import numpy as np
 import traits.api as tr
-from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
+from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
 class Viz2DForceDeflectionX(Viz2D):
@@ -375,10 +375,12 @@ def run_dcb_2d(*args, **kw):
                       )
     bt.mats_eval.trait_set(
         stiffness='algorithmic',
-        epsilon_0=59e-6,
-        epsilon_f=100e-4,
         E=30000.0,
         nu=0.2
+    )
+    bt.mats_eval.omega_fn.trait_set(
+        f_t=3.0,
+        G_f=0.004
     )
 
     bt.w_max = 0.1

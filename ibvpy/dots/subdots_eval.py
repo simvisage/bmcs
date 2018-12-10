@@ -1,43 +1,21 @@
 
-from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasTraits, Interface, implements, \
-    Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
-    on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property, Dict
-
-from traitsui.api import \
-    Item, View
-
-from traitsui.menu import \
-    OKButton, CancelButton
-
 from numpy import \
-    zeros, float_, ix_, meshgrid, array, dot
-
+    zeros, array, dot
+from scipy.optimize import fsolve
+from traits.api import \
+    Bool, provides, \
+    Instance, WeakRef, Delegate
 from ibvpy.core.i_tstepper_eval import \
     ITStepperEval
 from ibvpy.core.tstepper_eval import \
     TStepperEval
 
-from ibvpy.core.rtrace_eval import RTraceEval
-from ibvpy.fets.fets_eval import IFETSEval
-from .dots_eval import DOTSEval
-from mathkit.matrix_la.sys_mtx_array import SysMtxArray
 
-from time import time
-from scipy.optimize import fsolve
-
-#-----------------------------------------------------------------------------
-# Integrator for a subdomain connected with another domain
-#-----------------------------------------------------------------------------
-
-
+@provides(ITStepperEval)
 class SubDOTSEval(TStepperEval):
-
     '''
     Domain with uniform FE-time-step-eval.
     '''
-    #implements(ITStepperEval)
-
     dots_integ = Instance(ITStepperEval)
 
     new_cntl_var = Delegate('dots_integ')
@@ -121,7 +99,7 @@ class SubDOTSEval(TStepperEval):
             # @todo - remove the [0] here - the N_geo_ntx should return an 1d array
             # to deliver simple coordinates instead of array of a single coordinate
             #
-            geo_approx = lambda gpos, lpos: dot(
+            def geo_approx(gpos, lpos): return dot(
                 N_geo_mtx(lpos)[0], parent_points) - gpos
 
             # @todo use get_dNr_geo_mtx as fprime parameter
@@ -147,7 +125,8 @@ class SubDOTSEval(TStepperEval):
                     lpos = solution
 
                 if self.debug:
-                    print('\tp', p, '\tdofs', dofs, '\tgpos', gpos, '\tlpos', lpos)
+                    print('\tp', p, '\tdofs', dofs,
+                          '\tgpos', gpos, '\tlpos', lpos)
 
                 N_mtx = parent_fets_eval.get_N_mtx(lpos)
 

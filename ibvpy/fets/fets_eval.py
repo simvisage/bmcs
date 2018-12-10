@@ -1,5 +1,20 @@
 
+from functools import reduce
 import types
+
+from numpy import \
+    array, zeros, float_, dot, hstack, arange, argmin, broadcast_arrays, c_
+from scipy.linalg import \
+    det
+from scipy.spatial.distance import \
+    cdist
+from traits.api import \
+    Array, Bool, Float, provides, \
+    Instance, Int, Trait, List, Any, \
+    Delegate, Property, cached_property, Dict, \
+    Type
+from traitsui.api import \
+    View, Item, Group
 
 from ibvpy.core.i_tstepper_eval import \
     ITStepperEval
@@ -11,24 +26,10 @@ from ibvpy.dots.dots_eval import \
     DOTSEval
 from ibvpy.mats.mats_eval import \
     IMATSEval
-from numpy import \
-    array, zeros, float_, dot, hstack, arange, argmin, broadcast_arrays, c_
-from scipy.linalg import \
-    det
-from scipy.spatial.distance import \
-    cdist
-from traits.api import \
-    Array, Bool, Float, implements, \
-    Instance, Int, Trait, List, Any, \
-    Delegate, Property, cached_property, Dict, \
-    Type
-from traitsui.api import \
-    View, Item, Group
-
-from .i_fets_eval import IFETSEval
 import numpy as np
 from tvtk.tvtk_classes import tvtk_helper
-from functools import reduce
+
+from .i_fets_eval import IFETSEval
 
 
 #-------------------------------------------------------------------
@@ -53,9 +54,8 @@ def oriented_3d_array(arr, axis):
 #-------------------------------------------------------------------
 
 
+@provides(IFETSEval)
 class FETSEval(TStepperEval):
-
-    #implements(IFETSEval)
 
     dots_class = Type(DOTSEval)
 
@@ -362,7 +362,8 @@ class FETSEval(TStepperEval):
     @cached_property
     def _get_vtk_r_arr(self):
         if len(self.vtk_r) == 0:
-            raise ValueError('Cannot generate plot, no vtk_r specified in fets_eval')
+            raise ValueError(
+                'Cannot generate plot, no vtk_r specified in fets_eval')
         return array(self.vtk_r)
 
     def get_vtk_r_glb_arr(self, X_mtx, r_mtx=None):

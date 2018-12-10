@@ -15,11 +15,10 @@ import numpy as np
 import traits.api as tr
 
 
+@tr.provides(ITStepperEval)
 class DOTSGrid(tr.HasStrictTraits):
     '''Domain time steppsr on a grid mesh
     '''
-    tr.#implements(ITStepperEval)
-
     L_x = tr.Float(200, input=True)
     L_y = tr.Float(100, input=True)
     L_z = tr.Float(100, input=True)

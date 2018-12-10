@@ -8,7 +8,7 @@ from bmcs.mats.mats_damage_fn import \
     FRPDamageFn
 from ibvpy.mats.mats_eval import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from traits.api import implements,  \
+from traits.api import provides,  \
     Constant, Float, WeakRef, List, Str, Property, cached_property, \
     Trait, on_trait_change, Instance, Callable
 from traitsui.api import View, VGroup, Item, UItem, Group
@@ -19,6 +19,7 @@ import numpy as np
 import traits.api as tr
 
 
+@provides(IMATSEval)
 class MATS3DDesmorat(MATSBondSlipBase):
 
     node_name = 'bond model: damage-plasticity'
@@ -26,7 +27,6 @@ class MATS3DDesmorat(MATSBondSlipBase):
     '''Damage - plasticity model of bond.
     '''
 
-    tr.#implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Material parameters

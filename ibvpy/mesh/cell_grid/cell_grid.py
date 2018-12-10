@@ -1,30 +1,31 @@
 
-from ibvpy.core.i_sdomain import \
-    ISDomain
-from ibvpy.core.sdomain import \
-    SDomain
-from ibvpy.plugins.mayavi_util.pipelines import \
-    MVPolyData, MVPointLabels, MVStructuredGrid
+from functools import reduce
+
 from numpy import \
-    array, unique, min, max, mgrid, ogrid, c_, alltrue, repeat, ix_, \
-    arange, ones, zeros, multiply, sort, index_exp, indices, add, hstack, \
+    array, mgrid, c_, \
+    arange, zeros, multiply, sort, index_exp, add, \
     frompyfunc
 from traits.api import \
-    HasTraits, List, Array, Property, cached_property, \
+    Array, Property, cached_property, \
     Instance, Trait, Button, on_trait_change, Tuple, \
-    Int, Float, implements, Delegate, Callable
+    Int, Float, provides, Delegate, Callable
 from traitsui.api import \
     View, Item
 
-from .cell_array import CellView, ICellView, CellArray, ICellArraySource
+from ibvpy.core.sdomain import \
+    SDomain
+from ibvpy.plugins.mayavi_util.pipelines import \
+    MVStructuredGrid
+
+from .cell_array import CellView, CellArray, ICellArraySource
 from .cell_grid_slice import CellGridSlice
 from .cell_spec import CellSpec, GridCell
-from functools import reduce
 
 
 #--------------------------------------------------------------------------
 # CellGrid
 #--------------------------------------------------------------------------
+@provides(ICellArraySource)
 class CellGrid(SDomain):
     '''
     Manage an array of cells defined within a structured grid.
@@ -50,7 +51,6 @@ class CellGrid(SDomain):
                       representing a node of the cell
 
     '''
-    #implements(ICellArraySource)
 
     # Everything depends on the grid_cell_specification
     # defining the distribution of nodes within the cell.
@@ -409,7 +409,7 @@ class CellGrid(SDomain):
         '''
         vertex_idx_grid = self.vertex_idx_grid
         cutoff_last = [slice(0, -1) for i in range(self.n_dims)]
-        base_node_grid = vertex_idx_grid[cutoff_last]
+        base_node_grid = vertex_idx_grid[tuple(cutoff_last)]
         return sort(base_node_grid.flatten())
 
     cell_node_map = Property(depends_on='shape,grid_cell_spec.+')

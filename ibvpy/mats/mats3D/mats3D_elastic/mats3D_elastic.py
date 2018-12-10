@@ -1,29 +1,19 @@
 
+from traits.api import \
+    Trait, Dict
+from traitsui.api import \
+    Item, View, VSplit, Group
 from ibvpy.mats.mats3D.mats3D_eval import \
     MATS3DEval
 from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
-from ibvpy.mats.mats_eval import \
-    IMATSEval
-from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasTraits, \
-    Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-    implements, Dict, Property, cached_property, Delegate
-from traitsui.api import \
-    Item, View, HSplit, VSplit, VGroup, Group, Spring
-
 import numpy as np
 
 
-#---------------------------------------------------------------------------
-# Material time-step-evaluator for Scalar-Damage-Model
-#---------------------------------------------------------------------------
 class MATS3DElastic(MATS3DEval, MATS3D):
-
     '''
     Elastic Model.
+    Material time-step-evaluator for Scalar-Damage-Model
     '''
-
-    #implements(IMATSEval)
 
     state_array_shapes = {}
 

@@ -1,35 +1,28 @@
-from envisage.ui.workbench.api import WorkbenchApplication
+from math import fabs, pi as Pi, sqrt
 
+from numpy import array, zeros, float_
 from traits.api import \
-    Int, implements, List, Array, Property, cached_property, \
+    Array, \
     Float
 
 from ibvpy.api import \
     FETSEval
-
 from ibvpy.fets.fets_eval import \
-    IFETSEval, RTraceEvalElemFieldVar
-
+    RTraceEvalElemFieldVar
 from ibvpy.mats.mats1D import \
     MATS1DDamage, MATS1DPlastic, MATS1DElastic
-
 from ibvpy.mats.mats1D5.mats1D5_bond import \
     MATS1D5Bond
 
-from numpy import array, dot, identity, zeros, float_, ix_
-from math import fabs, pi as Pi, sqrt
+
 #-----------------------------------------------------------------------------
 # FEBond
 #-----------------------------------------------------------------------------
-
-
 class FETS1D52L4ULRH(FETSEval):
 
     '''
     Fe Bar 2 nodes, deformation
     '''
-
-    #implements(IFETSEval)
 
     # Dimensional mapping
     dim_slice = slice(0, 2)
@@ -199,8 +192,8 @@ def example():
 
     fets_eval = FETS1D52L4ULRH(mats_eval=mats_eval)
     domain = FEGrid(coord_max=(1., 0.2),
-                    shape = (16, 1),
-                    fets_eval = fets_eval)
+                    shape=(16, 1),
+                    fets_eval=fets_eval)
 
     end_dof = domain[-1, 0, -1, 0].dofs[0, 0, 0]
     ts = TS(dof_resultants=True,
@@ -216,8 +209,8 @@ def example():
                         slice=domain[-1, 0, -1, 0])
             ],
             rtrace_list=[RTDofGraph(name='Fi,right over u_right (iteration)',
-                                     var_y='F_int', idx_y=end_dof,
-                                     var_x='U_k', idx_x=end_dof),
+                                    var_y='F_int', idx_y=end_dof,
+                                    var_x='U_k', idx_x=end_dof),
                          RTraceDomainListField(name='slip',
                                                var='slip', idx=0),
                          RTraceDomainListField(name='eps1',
@@ -245,6 +238,7 @@ def example():
     from ibvpy.plugins.ibvpy_app import IBVPyApp
     app = IBVPyApp(ibv_resource=tloop)
     app.main()
+
 
 if __name__ == '__main__':
     example()

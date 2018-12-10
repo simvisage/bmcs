@@ -1,4 +1,14 @@
 
+from functools import reduce
+
+from numpy import copy, zeros, array_equal
+from traits.api import \
+    Instance, Array, Int, on_trait_change, Property, cached_property, \
+    List, Button, HasTraits, provides, WeakRef, Float,  \
+    Callable, Str, Event
+from traitsui.api import View, Item, HSplit, Group, TabularEditor
+from traitsui.tabular_adapter import TabularAdapter
+
 from ibvpy.fets.i_fets_eval import IFETSEval
 from ibvpy.mesh.cell_grid.cell_array import ICellView, CellView, CellArray, ICellArraySource
 from ibvpy.mesh.cell_grid.cell_grid import CellGrid
@@ -6,19 +16,11 @@ from ibvpy.mesh.cell_grid.cell_spec import CellSpec
 from ibvpy.mesh.cell_grid.dof_grid import DofCellGrid, DofCellView
 from ibvpy.mesh.cell_grid.geo_grid import GeoCellGrid, GeoCellView
 from ibvpy.rtrace.rt_domain import RTraceDomain
-from numpy import copy, zeros, array_equal
-from traits.api import \
-    Instance, Array, Int, on_trait_change, Property, cached_property, \
-    List, Button, HasTraits, implements, WeakRef, Float,  \
-    Callable, Str, Event
-from traitsui.api import View, Item, HSplit, Group, TabularEditor
-from traitsui.tabular_adapter import TabularAdapter
 
 from .fe_grid_activation_map import FEGridActivationMap
 from .fe_grid_idx_slice import FEGridIdxSlice
 from .fe_grid_ls_slice import FEGridLevelSetSlice
 from .i_fe_uniform_domain import IFEUniformDomain
-from functools import reduce
 
 
 #-----------------------------------------------------------------------------
@@ -88,6 +90,7 @@ class MElem(HasTraits):
         return 'points:\n%s\ndofs %s' % (self.point_X_arr, self.dofs)
 
 
+@provides(ICellArraySource, IFEUniformDomain, ICellView)
 class FEGrid(FEGridActivationMap):
 
     '''Structured FEGrid consisting of potentially independent
@@ -118,8 +121,6 @@ class FEGrid(FEGridActivationMap):
        visualization field.(where to specify the topology? - probably in
        the CellSpec?
     '''
-    #implements(ICellArraySource)
-    #implements(IFEUniformDomain)
 
     changed_structure = Event
 
@@ -761,8 +762,6 @@ class FECellView(CellView):
 
     def _dof_view_default(self):
         return DofCellView()
-
-    #implements(ICellView)
 
     @on_trait_change('cell_grid')
     def _reset_view_links(self):
