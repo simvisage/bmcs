@@ -156,7 +156,7 @@ class MATS1DDesmorat(MATSBondSlipBase):
                 Y[i + 1] = 0.5 * self.E_m * s[i + 1]**2. + 0.5 * \
                     self.E_b * (s[i + 1] - s_p[i + 1])**2.
                 D_trial = D[i] + (Y[i + 1] / self.S) * \
-                    delta_pi * (1. - D[i])**7
+                    delta_pi
                 N[i] = i + 1
                 if D[i] > 0.5:
                     # print ' ----------> No Convergence any more'
@@ -246,13 +246,14 @@ class MATS1DDesmorat(MATSBondSlipBase):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    N_R_1 = np.zeros(20)
-    d = np.zeros(20)
-    s_max_1 = np.zeros(20)
+    points = 20
+    N_R_1 = np.zeros(points)
+    d = np.zeros(points)
+    s_max_1 = np.zeros(points)
     auxN = 0
-    for j in range(20):
+    for j in range(points):
         m = MATS1DDesmorat()
-        s_max_1[j] = 0.0022 - 0.002 * j / (j + 1)
+        s_max_1[j] = 0.0022 - 0.0001 * points * j / (j + 1)
         s_levels_1 = np.linspace(0, s_max_1[j], 1000)
         s_levels_1.reshape(-1, 2)[:, 0] = -s_max_1[j]
         s_levels_1.reshape(-1, 2)[:, 1] = s_max_1[j]
@@ -273,8 +274,8 @@ if __name__ == '__main__':
         if flag == 0:
             N_R_1[j] = 0
             d[j] = 0
-    np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat uniaxial\newD,Nlog,1.9e4,1.6e4,3e7,1e7,1e-7,1.txt', N_R_1, delimiter=" ", fmt="%s")
-    np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat uniaxial\newD,s_max,1.9e4,1.6e4,3e7,1e7,1e-7,1.txt', s_max_1, delimiter=" ", fmt="%s")
+    np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\N_original.txt', N_R_1, delimiter=" ", fmt="%s")
+    np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\epsMin=0_original.txt', s_max_1, delimiter=" ", fmt="%s")
     plt.subplot(121)
     plt.semilogx(N_R_1[:], s_max_1[:], 'k')
     plt.xlabel('Nlog')
