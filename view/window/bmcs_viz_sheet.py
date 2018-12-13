@@ -8,35 +8,37 @@ from builtins import len
 import os
 import tempfile
 from threading import Thread
+
 from matplotlib.figure import \
     Figure
 from mayavi.core.ui.api import \
     MayaviScene, SceneEditor, MlabSceneModel
 from pyface.api import GUI
-from reporter import ROutputSection
 from traits.api import \
     Str, Instance,  Event, Enum, \
     Tuple, List, Range, Int, Float, \
     Property, cached_property, \
-    on_trait_change, Bool, Button, Directory
+    on_trait_change, Bool, Button, Directory, \
+    HasStrictTraits, WeakRef
 from traitsui.api import \
     View, Item, UItem, VGroup, VSplit, \
     HSplit, HGroup, Tabbed, TabularEditor
 from traitsui.tabular_adapter import TabularAdapter
-from util.traits.editors import \
-    MPLFigureEditor
-from view.plot2d.viz2d import Viz2D
-from view.plot3d.viz3d import Viz3D
 
 import matplotlib.pyplot as plt
 import numpy as np
+from reporter import ROutputSection
 import traits.api as tr
 from traitsui.api \
-    import View, Item, TableEditor
+    import TableEditor
 from traitsui.extras.checkbox_column \
     import CheckboxColumn
 from traitsui.table_column \
     import ObjectColumn
+from util.traits.editors import \
+    MPLFigureEditor
+from view.plot2d.viz2d import Viz2D
+from view.plot3d.viz3d import Viz3D
 
 
 class RunThread(Thread):
@@ -86,6 +88,67 @@ viz2d_list_editor = TableEditor(
              ObjectColumn(name='name', editable=False, width=0.24,
                           horizontal_alignment='left'),
              ])
+
+
+class AnimationDialog(HasStrictTraits):
+    '''Animation parameters for a diagram.
+    '''
+    sheet = WeakRef
+
+    export_path = Directory
+    status_message = Str('')
+
+    animate_from = Float(0.0, auto_set=False, enter_set=True)
+    animate_to = Float(1.0, auto_set=False, enter_set=True)
+    animate_steps = Int(30, auto_set=False, enter_set=True)
+
+    animate_button = Button(label='Animate selected diagram')
+
+    def _animate_button_fired(self):
+
+        if self.export_path == '':
+            dir_ = tempfile.mkdtemp()
+        else:
+            dir_ = self.export_path
+        name = self.sheet.selected_viz2d.name
+        path = os.path.join(dir_, name)
+
+        if os.path.exists(path):
+            self.status_message = 'overwriting animation %s' % name
+        else:
+            os.makedirs(path)
+
+        for i, vot in enumerate(np.linspace(self.animate_from,
+                                            self.animate_to,
+                                            self.animate_steps)):
+            fname = os.path.join(path, 'step%03d.jpg' % i)
+            self.sheet.selected_viz2d.savefig_animate(
+                vot, fname,
+                (self.sheet.fig_width,
+                 self.sheet.fig_height)
+            )
+        self.status_message = 'animation stored in %s' % path
+
+    traits_view = View(
+        VGroup(
+            VGroup(
+                HGroup(
+                    UItem('animate_from', full_size=True, springy=True),
+                    UItem('animate_to', springy=True),
+                    UItem('animate_steps', springy=True),
+                ),
+                label='Animation range'
+            ),
+            Item('export_path'),
+            HGroup(
+                UItem('status_message', style='readonly')
+            ),
+            UItem('animate_button',
+                  springy=False, resizable=True),
+        ),
+        buttons=['OK', 'Cancel'],
+        title='Animation dialog'
+    )
 
 
 class BMCSVizSheet(ROutputSection):
@@ -210,10 +273,12 @@ class BMCSVizSheet(ROutputSection):
             return
         for ax, viz2d in zip(self.axes, self.visible_viz2d_list):
             ax.clear()
+            viz2d.clear()
             viz2d.plot(ax, self.vot)
         if self.reference_viz2d:
             ax = self.reference_axes
             ax.clear()
+            viz2d.clear()
             self.reference_viz2d.plot(ax, self.vot)
         self.data_changed = True
         self.skipped_steps = 0
@@ -295,42 +360,17 @@ class BMCSVizSheet(ROutputSection):
         Thread(target=self.plot_in_window).start()
         print('thread started')
 
-    export_path = Directory
-    status_message = Str('')
-
-    animate_button = Button(label='Animate selected diagram')
-
-    def _animate_button_fired(self):
-
-        if self.export_path == '':
-            dir_ = tempfile.mkdtemp()
-        else:
-            dir_ = self.export_path
-        name = self.selected_viz2d.name
-        path = os.path.join(dir_, name)
-
-        if os.path.exists(path):
-            self.status_message = 'overwriting animation %s' % name
-        else:
-            os.makedirs(path)
-
-        for i, vot in enumerate(np.linspace(self.animate_from,
-                                            self.animate_to,
-                                            self.animate_steps)):
-            fname = os.path.join(path, 'step%03d.jpg' % i)
-            self.selected_viz2d.savefig_animate(vot, fname,
-                                                (self.fig_width,
-                                                 self.fig_height))
-        self.status_message = 'animation stored in %s' % path
-
-    animate_from = Float(0.0, auto_set=False, enter_set=True)
-    animate_to = Float(1.0, auto_set=False, enter_set=True)
-    animate_steps = Int(30, auto_set=False, enter_set=True)
     fig_width = Float(8.0, auto_set=False, enter_set=True)
     fig_height = Float(5.0, auto_set=False, enter_set=True)
 
     save_button = Button(label='Save selected diagram')
 
+    animate_button = Button(label='Animate selected diagram')
+
+    def _animate_button_fired(self):
+        ad = AnimationDialog(sheet=self)
+        ad.edit_traits()
+        return
     #=========================================================================
     # Reference figure serving for orientation.
     #=========================================================================
@@ -413,8 +453,9 @@ class BMCSVizSheet(ROutputSection):
         n_cols = self.n_cols
         n_rows = (n_fig + n_cols - 1) / self.n_cols
         self.figure.clear()
-        return [self.figure.add_subplot(n_rows, self.n_cols, i + 1)
+        axes = [self.figure.add_subplot(n_rows, self.n_cols, i + 1)
                 for i in range(n_fig)]
+        return axes
 
     data_changed = Event
 
@@ -534,18 +575,6 @@ class BMCSVizSheet(ROutputSection):
                             #                             ),
                             UItem('animate_button',
                                   springy=False, resizable=True),
-                            VGroup(
-                                HGroup(
-                                    UItem('animate_from', springy=True),
-                                    UItem('animate_to', springy=True),
-                                    UItem('animate_steps', springy=True),
-                                ),
-                                label='Animation range'
-                            ),
-                            Item('export_path'),
-                            HGroup(
-                                UItem('status_message', style='readonly')
-                            ),
                         ),
                         VGroup(
                             UItem('reference_viz2d_name', resizable=True),
