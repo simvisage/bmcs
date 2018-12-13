@@ -11,7 +11,6 @@ from traits.api import \
     List, Float, Trait, Int, on_trait_change
 from traitsui.api import \
     View, Item, UItem, VGroup
-
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
