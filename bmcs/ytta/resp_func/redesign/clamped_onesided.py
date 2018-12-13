@@ -22,10 +22,10 @@ from numpy import \
 
 
 
-from stats.spirrid.i_rf import \
+from stats.spirrid_bak.i_rf import \
     IRF
 
-from stats.spirrid.rf import \
+from stats.spirrid_bak.rf import \
     RF
 
 from matplotlib import pyplot as plt
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
 #    rf.configure_traits()
 
-    from stats.spirrid.spirrid_nd import SPIRRID
+    from stats.spirrid_bak.spirrid_nd import SPIRRID
 
 #    X = linspace( 0, 1.5, 100 )
 #    Y = rf( X, 0.01, 0.8, 0.02, 7e10, 1e-9 )

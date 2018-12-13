@@ -17,12 +17,11 @@ Created on 06.05.2011
 #
 # Created on Jan 11, 2011 by: rch
 
-from enthought.traits.api import HasTraits, Float, Property, cached_property, \
-                                Instance, List, on_trait_change, Int, Tuple, Bool, \
+from etsproxy.traits.api import HasTraits, Float, Instance, on_trait_change, Int, \
                                 Event, Button, Str
 
-from enthought.traits.ui.api import \
-    View, Item, Tabbed, VGroup, HGroup, Group, ModelView, HSplit, VSplit, Spring, OKButton
+from etsproxy.traits.ui.api import \
+    View, Item, Tabbed, VGroup, HGroup, ModelView, HSplit, OKButton
 
 from util.traits.editors.mpl_figure_editor import MPLFigureEditor
 from matplotlib.figure import Figure
@@ -30,32 +29,66 @@ from matplotlib.figure import Figure
 from numpy import \
     linspace, frompyfunc
 
-from stats.spirrid_bak.i_rf import IRF
+from stats.spirrid_bak.old.spirrid import SPIRRID
 from util.traits.either_type import EitherType
-from .brittle_filament import Filament
-from .free_stress_double_pullout import ConstantFrictionFiniteFiber
+
+# IMPORT RESPONSE FUNCTIONS
+from stats.spirrid_bak.i_rf import IRF
+from quaducom.resp_func.brittle_filament import Filament
+from quaducom.resp_func.po_short_fiber import POShortFiber
+from quaducom.resp_func.cb_short_fiber import CBShortFiber
+from quaducom.resp_func.po_clamped_fiber import POClampedFiber
+from quaducom.resp_func.cb_clamped_fiber import CBClampedFiber
+from quaducom.resp_func.po_infinite_fiber import POInfiniteFiber
+from quaducom.resp_func.cb_infinite_fiber import CBInfiniteFiber
+
 
 class RFModelView( ModelView ):
 
-    model = Instance( IRF )
-    def _model_default( self ):
-        return Filament()
+    title = Str( 'RF browser' )
 
-    resp_func = EitherType( names = ['brittle filament',
-                                     'dbl pullout const friction short fiber'],
+    model = Instance( IRF )
+
+    child = Instance( SPIRRID )
+    def _child_default( self ):
+        return SPIRRID()
+
+    rf = EitherType( names = ['brittle filament',
+                              'pullout short fiber',
+                              'crack bridge short fiber',
+                              'pullout clamped fiber',
+                              'crack bridge clamped fiber',
+                              'pullout infinite fiber',
+                              'crack bridge infinite fiber',
+                              ],
 
                             klasses = [Filament,
-                                       ConstantFrictionFiniteFiber],
+                                       POShortFiber,
+                                       CBShortFiber,
+                                       POClampedFiber,
+                                       CBClampedFiber,
+                                       POInfiniteFiber,
+                                       CBInfiniteFiber,
+                                       ],
 
                             config_change = True )
 
+    def _model_default( self ):
+        return self.rf
+
+    def _rf_changed( self ):
+        self.model = self.rf
+        self.child.rf = self.model
+        for name in self.model.param_keys:
+            self.on_trait_change( self._redraw, 'rf.' + name )
+
     def init( self, info ):
         for name in self.model.param_keys:
-            self.on_trait_change( self._redraw, 'model.' + name )
+            self.on_trait_change( self._redraw, 'rf.' + name )
 
     def close( self, info, is_ok ):
         for name in self.model.param_keys:
-            self.on_trait_change( self._redraw, 'model.' + name, remove = True )
+            self.on_trait_change( self._redraw, 'rf.' + name, remove = True )
         return is_ok
 
     figure = Instance( Figure )
@@ -66,22 +99,16 @@ class RFModelView( ModelView ):
 
     data_changed = Event( True )
 
-    max_x = Float( 0.01, enter_set = True, auto_set = False, config_change = True )
-    n_points = Int( 20, enter_set = True, auto_set = False, config_change = True )
+    max_x = Float( 0.04, enter_set = True, auto_set = False, config_change = True )
+    x_points = Int( 80, enter_set = True, auto_set = False, config_change = True )
 
     @on_trait_change( '+config_change' )
     def _redraw( self ):
-
-        self.model = self.resp_func
-        figure = self.figure
-        axes = self.figure.axes[0]
-
-        in_arr = linspace( 0.0, self.max_x, self.n_points )
-
+        in_arr = linspace( 0.0, self.max_x, self.x_points )
+        self.model = self.rf
         args = [ in_arr ] + self.model.param_values
 
         # get the number of parameters of the response function
-
         n_args = len( args )
         fn = frompyfunc( self.model.__call__, n_args, 1 )
 
@@ -89,11 +116,11 @@ class RFModelView( ModelView ):
 
         axes = self.figure.axes[0]
         axes.plot( in_arr, out_arr,
-                   linewidth = 2 )
+                   linewidth = 2, label = self.model.title )
 
         axes.set_xlabel( self.model.x_label )
         axes.set_ylabel( self.model.y_label )
-        axes.legend( loc = 'best' )
+        #axes.legend( loc = 'best' )
 
         self.data_changed = True
     show = Button
@@ -111,21 +138,34 @@ class RFModelView( ModelView ):
         Generates the view from the param items.
         '''
         #rf_param_items = [ Item( 'model.' + name, format_str = '%g' ) for name in self.model.param_keys ]
-        plot_param_items = [ Item( 'max_x' , label = 'max x value' ),
-                            Item( 'n_points', label = 'No of plot points' ) ]
+        D2_plot_param_items = [ VGroup( Item( 'max_x' , label = 'max x value' ),
+                                       Item( 'x_points', label = 'No of plot points' ) ) ]
+
+        if hasattr( self.rf, 'get_q_x' ):
+            D3_plot_param_items = [ VGroup( Item( 'min_x', label = 'min x value' ),
+                                       Item( 'max_x', label = 'max x value' ),
+                                       Item( 'min_y', label = 'min y value' ),
+                                       Item( 'max_y', label = 'max y value' ) )
+                                       ]
+        else:
+            D3_plot_param_items = []
+
         control_items = [
                         Item( 'show', show_label = False ),
                         Item( 'clear', show_label = False ),
                         ]
-        view = View( HSplit( VGroup( Item( '@resp_func', show_label = False ), #*rf_param_items,
-                                     label = 'Function Parameters',
+        view = View( HSplit( VGroup( Item( '@rf', show_label = False ),
+                                     label = 'Function parameters',
                                      id = 'stats.spirrid_bak.rf_model_view.rf_params',
                                      scrollable = True
                                      ),
-                             VGroup( *plot_param_items,
-                                     label = 'Plot Parameters',
-                                     id = 'stats.spirrid_bak.rf_model_view.plot_params'
+                             VGroup( HGroup( *D2_plot_param_items ),
+                                     label = 'plot parameters',
+                                     id = 'stats.spirrid_bak.rf_model_view.2Dplot_params'
                                      ),
+#                            VGroup( HGroup( *D3_plot_param_items ),
+#                                     label = '3D plot parameters',
+#                                     id = 'stats.spirrid_bak.rf_model_view.3Dplot_params' ),
                              VGroup( Item( 'model.comment', show_label = False,
                                            style = 'readonly' ),
                                      label = 'Comment',
@@ -152,8 +192,8 @@ class RFModelView( ModelView ):
 
 def run():
 
-    rf = RFModelView( model = ConstantFrictionFiniteFiber() )
-
+    rf = RFModelView( model = Filament() )
+    rf._redraw()
     rf.configure_traits( kind = 'live' )
 
 if __name__ == '__main__':

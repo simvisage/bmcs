@@ -12,63 +12,46 @@
 #
 # Created on Jun 2, 2010 by: rch
 
-
-
-from enthought.traits.api import \
-    HasTraits, Float, Str, implements
-
-from stats.spirrid_bak.i_rf import \
-    IRF
-
-from stats.spirrid_bak.rf import \
-    RF
-
-import os
-
-from numpy import sign, linspace, array
-
-from scipy.weave import inline, converters
-
-from types import ListType
-
+from etsproxy.traits.api import Float, Str, implements
+from .i_rf import IRF
 from matplotlib import pyplot as plt
+from numpy import sign, linspace
+from .rf import RF
 
-def Heaviside( x ):
-    return ( sign( x ) + 1.0 ) / 2.0
 
-class Filament( RF ):
-    '''Response of an elastic brittle filament with
-    slack and delayed activation.
+def Heaviside(x):
+    return (sign(x) + 1.0) / 2.0
+
+class Filament(RF):
+    '''Linear elastic, brittle filament.
     '''
 
-    #implements( IRF )
+    implements(IRF)
 
-    title = Str( 'brittle filament' )
+    title = Str('brittle filament')
 
-    xi = Float( 0.017857, auto_set = False, enter_set = True,
+    xi = Float(0.017857, auto_set = False, enter_set = True,
                 distr = ['weibull_min', 'uniform'],
-                scale = 0.0178, shape = 4.0 )
+                scale = 0.0178, shape = 4.0,
+                )
 
-    theta = Float( 0.01, auto_set = False, enter_set = True,
+    theta = Float(0.01, auto_set = False, enter_set = True,
                    distr = ['uniform', 'norm'],
-                   loc = 0.01, scale = 0.001 )
+                   loc = 0.01, scale = 0.001)
 
-    lambd = Float( 0.2, auto_set = False, enter_set = True,
+    lambd = Float(0.2, auto_set = False, enter_set = True,
                    distr = ['uniform'],
-                   loc = 0.0, scale = 0.1 )
+                   loc = 0.0, scale = 0.1)
 
-    A = Float( 5.30929158457e-10, auto_set = False, enter_set = True,
+    A = Float(5.30929158457e-10, auto_set = False, enter_set = True,
                distr = ['weibull_min', 'uniform', 'norm'],
-               scale = 5.3e-10, shape = 8 )
+               scale = 5.3e-10, shape = 8)
 
-    E_mod = Float( 70.0e9, auto_set = False, enter_set = True,
+    E_mod = Float(70.0e9, auto_set = False, enter_set = True,
                    distr = ['weibull_min', 'uniform', 'norm'],
-                   scale = 70e9, shape = 8 )
+                   scale = 70e9, shape = 8)
 
-    eps = Float( ctrl_range = ( 0, 0.2, 20 ), auto_set = False, enter_set = True )
-
-    x_label = Str( 'force [N]', enter_set = True, auto_set = False )
-    y_label = Str( 'sigma', enter_set = True, auto_set = False )
+    eps = Float(ctrl_range = (0, 0.1, 100), auto_set = False, enter_set = True)
 
     C_code = '''
             double eps_ = ( eps - theta * ( 1 + lambd ) ) /
@@ -81,12 +64,11 @@ class Filament( RF ):
             }
         '''
 
-    def __call__( self, eps, xi, theta, lambd, A, E_mod ):
+    def __call__(self, eps, xi, theta, lambd, A, E_mod):
         '''
         Implements the response function with arrays as variables.
         first extract the variable discretizations from the orthogonal grid.
         '''
-
         # NOTE: as each variable is an array oriented in different direction
         # the algebraic expressions (-+*/) perform broadcasting,. i.e. performing
         # the operation for all combinations of values. Thus, the resulgin eps
@@ -94,16 +76,16 @@ class Filament( RF ):
         # global strain, xi, theta and lambda 
         #
 
-        eps_ = ( eps - theta * ( 1 + lambd ) ) / ( ( 1 + theta ) * ( 1 + lambd ) )
+        eps_ = (eps - theta * (1 + lambd)) / ((1 + theta) * (1 + lambd))
 
         # cut off all the negative strains due to delayed activation
         # 
-        eps_ *= Heaviside( eps_ )
+        eps_ *= Heaviside(eps_)
 
         # broadcast eps also in the xi - dimension 
         # (by multiplying with array containing ones with the same shape as xi )
         #
-        eps_grid = eps_ * Heaviside( xi - eps_ )
+        eps_grid = eps_ * Heaviside(xi - eps_)
 
         # cut off all the realizations with strain greater than the critical one.
         # 
@@ -117,16 +99,18 @@ class Filament( RF ):
 
 
 if __name__ == '__main__':
-    bf = Filament()
-    print('keys', bf.param_keys)
-    print('values', bf.param_values)
+    f = Filament()
 
-    print('uniform', bf.traits( distr = lambda x: x != None and 'uniform' in x ))
+    f.configure_traits()
+    print(('keys', f.param_keys))
+    print(('values', f.param_list))
 
-    X = linspace( 0, 0.05, 100 )
+    print(('uniform', f.traits(distr = lambda x: x != None and 'uniform' in x)))
+
+    X = linspace(0, 0.05, 100)
     Y = []
     for eps in X:
-        Y.append( bf( eps, .017, .01, .2, 5.30929158457e-10, 70.e9 ) )
-    plt.plot( X, Y, linewidth = 2, color = 'navy' )
+        Y.append(f(eps, .017, .01, .2, 5.30929158457e-10, 70.e9))
+    plt.plot(X, Y, linewidth = 2, color = 'navy')
     plt.show()
 

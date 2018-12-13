@@ -19,7 +19,7 @@ from matplotlib import pyplot as plt
 from numpy import sqrt, linspace, sign, hstack, argmax, where, array, tanh, cos
 from scipy.interpolate import interp1d
 from scipy.optimize import brentq
-from stats.spirrid import IRF, RF
+from stats.spirrid_bak import IRF, RF
 
 
 

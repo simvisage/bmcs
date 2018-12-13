@@ -21,8 +21,8 @@ from enthought.traits.ui.api import \
 
 from math import e, pi
 from numpy import sqrt, linspace, sign, max, abs
-from stats.spirrid.i_rf import IRF
-from stats.spirrid.rf import RF
+from stats.spirrid_bak.i_rf import IRF
+from stats.spirrid_bak.rf import RF
 
 from matplotlib import pyplot as plt
 
