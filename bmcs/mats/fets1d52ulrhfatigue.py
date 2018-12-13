@@ -279,4 +279,4 @@ class FETS1D52ULRHFatigue(FETSEval):
 
 if __name__ == '__main__':
     fe = FETS1D52ULRHFatigue()
-    print 'dN_imr', fe.dN_imr
+    print ('dN_imr'), fe.dN_imr
