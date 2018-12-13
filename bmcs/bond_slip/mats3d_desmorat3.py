@@ -3,20 +3,23 @@ Created on 06.11.2018
 
 @author: aguilar
 '''
+import os.path
+
+from traits.api import provides,  \
+    Constant, Float, WeakRef, List, Str, Property, cached_property, \
+    Trait, on_trait_change, Instance, Callable
+from traitsui.api import View, VGroup, Item, UItem, Group
+
 from bmcs.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     FRPDamageFn
 from ibvpy.mats.mats_eval import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from traits.api import provides,  \
-    Constant, Float, WeakRef, List, Str, Property, cached_property, \
-    Trait, on_trait_change, Instance, Callable
-from traitsui.api import View, VGroup, Item, UItem, Group
+import numpy as np
+import traits.api as tr
 from view.ui import BMCSTreeNode
 
 from .mats_bondslip import MATSBondSlipBase
-import numpy as np
-import traits.api as tr
 
 
 @provides(IMATSEval)
@@ -26,7 +29,6 @@ class MATS3DDesmorat(MATSBondSlipBase):
 
     '''Damage - plasticity model of bond.
     '''
-
 
     #-------------------------------------------------------------------------
     # Material parameters
@@ -220,7 +222,7 @@ class MATS3DDesmorat(MATSBondSlipBase):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     cycles = 5000
-    points = 500
+    points = 50
     eps_max = 0.0035
     eps_max_min = 0.0005
     eps_min = 0
@@ -275,7 +277,7 @@ if __name__ == '__main__':
 # np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\N=0.txt', N_R_1, delimiter=" ", fmt="%s")
 # np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat
 # 3D\Original\epsMin=0.txt', s_max_1, delimiter=" ", fmt="%s")
-    print np.amax(N_R_1)
+    print(np.amax(N_R_1))
     plt.semilogx(N_R_1, s_max_1)
     plt.ylim(0, 0.004)
     plt.show()
