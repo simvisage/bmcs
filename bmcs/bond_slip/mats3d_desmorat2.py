@@ -132,9 +132,10 @@ class MATS3DDesmorat(MATSBondSlipBase):
                 'z',
                 'D',
                 'Y',
+                'eps_cum',
                 ]
 
-    def get_next_state(self, eps, eps_pi, Y, D, z, X, tau_e, tau, g):
+    def get_next_state(self, eps, eps_pi, Y, D, z, X, tau_e, tau, g, eps_cum):
 
         D_m = self.D_m_abef
         D_b = self.D_b_abef
@@ -159,6 +160,7 @@ class MATS3DDesmorat(MATSBondSlipBase):
                 D[i + 1] = D[i]
                 Y[i + 1] = Y[i]
                 g[i + 1] = g[i]
+                eps_cum[i + 1] = eps_cum[i]
 
             # identify values beyond the elastic limit
             else:
@@ -169,18 +171,20 @@ class MATS3DDesmorat(MATSBondSlipBase):
                     (self.E_b + (self.K + self.gamma) * (1. - D[i]))
 
          # return mapping for isotropic and kinematic hardening
-                #grad_f = np.sign(tau_e_trial - X[i])
-                norm2 = tau_e_trial - X[i]
-                norm3 = np.sqrt(np.einsum('nj,nj', norm2, norm2))
-                eps_pi[i + 1] = eps_pi[i] + norm2 * delta_pi / norm3
+                numerador = tau_e_trial - X[i]
+                norm = np.sqrt(np.einsum('nj,nj', numerador, numerador))
+                sign = numerador / norm
+                eps_pi[i + 1] = eps_pi[i] + delta_pi * sign
+                eps_cum[i + 1] = eps_cum[i] + delta_pi * \
+                    np.einsum('ij,lk->ik', sign, sign)
                 Y[i + 1] = 0.5 * (np.einsum('ij,ijkl,lk', eps[i + 1], D_m, eps[i + 1])) + \
                     0.5 * (np.einsum('ij,ijkl,lk', eps_diff, D_b, eps_diff))
-                D_trial = D[i] + (Y[i + 1] / self.S) * delta_pi  # * 1e6
-                if D_trial > 1.0:
-                    D[i + 1] = 1.0
+                D_trial = D[i] + (Y[i + 1] / self.S) * delta_pi
+                if D[i] > 0.9:
+                    break
                 else:
                     D[i + 1] = D_trial
-                g[i + 1] = g[i] + (1. - D[i + 1]) * norm2 * delta_pi / norm3
+                g[i + 1] = g[i] + (1. - D[i + 1]) * delta_pi * sign
                 X[i + 1] = self.gamma * g[i + 1]
                 z[i + 1] = z[i] + delta_pi * (1. - D[i + 1])
 
@@ -189,7 +193,12 @@ class MATS3DDesmorat(MATSBondSlipBase):
                 tau[i + 1] = (np.einsum('ijkl,lk->ij', D_m, eps[i + 1]) * (1. - D[i + 1]) + (np.einsum('ijkl,lk->ij',
                                                                                                        D_b, eps[i + 1])) * (1. - D[i + 1]) - np.einsum('ijkl,lk->ij', D_b, eps_pi[i + 1])) * (1. - D[i + 1])
                 tau_e[i + 1] = (np.einsum('ijkl,lk->ij', D_b, eps_diff))
-        return eps_pi, Y, D, z, X, tau_e, tau, g
+#                 if tau[i, 0, 0] > 0:
+#                     tau[i, 0, 0] = 0
+#                     D[i] = 0
+#                     s_cum = [i, 0, 0]
+#                     break
+        return eps_pi, Y, D, z, X, tau_e, tau, g, eps_cum
 
     traits_view = View(
         Group(
@@ -214,7 +223,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     m = MATS3DDesmorat()
     s_levels_1 = np.linspace(0, -0.0022, 4)
-    s_levels_1.reshape(-1, 2)[:, 0] = -0.00075
+    s_levels_1.reshape(-1, 2)[:, 0] = 0.0
     s_levels_1.reshape(-1, 2)[:, 1] = -0.0022
     s_levels_1[0] = 0
     s_history_1 = s_levels_1.flatten()
@@ -244,9 +253,8 @@ if __name__ == '__main__':
     s_history_4 = s_levels_4.flatten()
     s_4 = np.hstack([np.linspace(s_history_4[i], s_history_4[i + 1], 50, dtype=np.float_)
                      for i in range(len(s_levels_4) - 1)])
-    # print s_2
+
     s = np.hstack((s_1, s_2, s_3, s_4))
-    # print s
 
     eps = np.array([np.zeros((3, 3)) for _ in range(len(s))])
 
@@ -254,6 +262,7 @@ if __name__ == '__main__':
         eps[i][0][0] = s[i]
 
     eps_pi = np.array([np.zeros((3, 3)) for _ in range(len(s))])
+    eps_cum = np.array([np.zeros((3, 3)) for _ in range(len(s))])
     X = np.array([np.zeros((3, 3)) for _ in range(len(s))])
     g = np.array([np.zeros((3, 3)) for _ in range(len(s))])
     tau_e = np.array([np.zeros((3, 3)) for _ in range(len(s))])
@@ -261,9 +270,14 @@ if __name__ == '__main__':
     Y = np.zeros_like(s)
     D = np.zeros_like(s)
     z = np.zeros_like(s)
-    eps_pi, Y, D, z, X, tau_e, tau, g = m.get_next_state(
-        eps, eps_pi, Y, D, z, X, tau_e, tau, g)
-    plt.plot(eps[:, 0, 0], tau[:, 1, 1])
+    eps_pi, Y, D, z, X, tau_e, tau, g, eps_cum = m.get_next_state(
+        eps, eps_pi, Y, D, z, X, tau_e, tau, g, eps_cum)
+    np.save(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\eps_original.npy', eps)
+    np.save(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\sigma_original.npy', tau)
+    np.save(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\eps_cum_original.npy', eps_cum)
+    np.save(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\D_original.npy', D)
+    plt.plot(eps[:, 0, 0], tau[:, 0, 0])
+    print tau
     #plt.plot(eps[:, 0, 0], D)
     plt.show()
 #   m.configure_traits()
