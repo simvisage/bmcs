@@ -7,9 +7,6 @@ Created on 12.01.2016
 @todo: introduce a switch for left and right supports
 '''
 
-from bmcs.time_functions import \
-    LoadingScenario
-from reporter import RInputRecord
 from traits.api import \
     Property, Instance, cached_property, \
     HasStrictTraits, Bool, List, Float, Trait, Int, Enum, \
@@ -17,12 +14,15 @@ from traits.api import \
 from traitsui.api import \
     View, Item, Group
 from traitsui.ui_editors.array_view_editor import ArrayViewEditor
+
+from bmcs.time_functions import \
+    LoadingScenario
+import matplotlib.pyplot as plt
+import numpy as np
+from reporter import RInputRecord
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, TLine
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 
 class CrossSection(BMCSLeafNode, RInputRecord):
@@ -286,16 +286,6 @@ class PullOutModelBase(BMCSModel, Vis2D):
             )
         )
     )
-
-    tline = Instance(TLine)
-
-    def _tline_default(self):
-        # assign the parameters for solver and loading_scenario
-        t_max = 1.0  # self.loading_scenario.t_max
-        d_t = 0.02  # self.loading_scenario.d_t
-        return TLine(min=0.0, step=d_t, max=t_max,
-                     time_change_notifier=self.time_changed,
-                     )
 
     #=========================================================================
     # Test setup parameters

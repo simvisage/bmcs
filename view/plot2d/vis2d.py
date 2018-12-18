@@ -87,7 +87,7 @@ class Vis2D(HasStrictTraits):
 
     def _add_selected_viz2d_fired(self):
         viz2d_class_name = self.selected_viz2d_class
-        self.add_viz2d(viz2d_class_name)
+        self.add_viz2d(viz2d_class_name, '<unnamed>')
 
     def add_viz2d(self, class_name, name, **kw):
         if name == '':

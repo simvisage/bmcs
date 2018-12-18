@@ -119,17 +119,6 @@ class PullOutModel(PullOutModelBase):
                      tolerance=tolerance,
                      tline=self.tline)
 
-    def time_changed(self, time):
-        if self.ui != None:
-            self.ui.viz_sheet.time_changed(time)
-
-    def time_range_changed(self, tmax):
-        self.tline.max = tmax
-        self.ui.viz_sheet.time_range_changed(tmax)
-
-    def set_tmax(self, time):
-        self.time_range_changed(time)
-
     def init(self):
         self.tloop.init()
 

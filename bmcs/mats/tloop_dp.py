@@ -3,12 +3,14 @@ Created on 12.01.2016
 
 @author: Yingxiong
 '''
-from ibvpy.core.tline import TLine
 from traits.api import \
     Int, HasStrictTraits, Instance, \
     Float, \
     Array, List, Bool
+
+from ibvpy.core.tline import TLine
 import numpy as np
+
 from .tstepper_dp import TStepper
 
 
@@ -67,7 +69,6 @@ class TLoop(HasStrictTraits):
         if self.restart:
             self.tline.val = 0
             self.reset_sv_hist()
-
             self.restart = False
 
     def eval(self):
