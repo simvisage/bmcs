@@ -3,21 +3,23 @@
 '''
 
 from traits.api import \
-    Instance, List, Bool, on_trait_change, Str
-from ibvpy.core.tline import TLine
-import numpy as np
+    Instance, on_trait_change, Str, DelegatesTo
+from bmcs.simulator.hist import Hist
 from view.ui.bmcs_tree_node import \
     BMCSRootNode
+from .i_hist import IHist
+from .i_model import IModel
+from .i_tloop import ITLoop
+from .model import Model
+from .tline import TLine
+from .tloop import TLoop
 
 
-class BMCSModel(BMCSRootNode):
-    '''Base class for models included in the iMCS Tool Suite.
-    It implements the state dependencies within the model tree.
-    It handles also the communication between the model and
+class Simulator(BMCSRootNode):
+    '''Base class for simulators included in the BMCS Tool Suite.
+    It implements the state dependencies within the simulation tree.
+    It handles also the communication between the simulation and
     the user interface in several modes of interaction.
-
-    The scenarios of usage are implemented in 
-    bmcs_interaction_patterns
     '''
     title = Str
 
@@ -46,26 +48,43 @@ class BMCSModel(BMCSRootNode):
     def set_tmax(self, time):
         self.time_range_changed(time)
 
+    paused = DelegatesTo('tloop')
+    restart = DelegatesTo('tloop')
+
     def init(self):
-        if self._paused:
-            self._paused = False
-        if self._restart:
+        if self.paused:
+            self.tloop.paused = False
+        if self.restart:
+            self.tloop.restart = False
             self.tline.val = self.tline.min
             self.tline.max = 1
-            self._restart = False
-            self.init_state()
-            self.timesteps = []
+            self.model.init_state()
+            self.hist.timesteps = []
 
-    def paused(self):
+    def pause(self):
         self.paused_state()
-        self._paused = True
+        self.tloop.paused = True
 
     def stop(self):
         self.stop_state()
-        self._restart = True
+        self.tloop.restart = True
 
-    _paused = Bool(False)
-    _restart = Bool(True)
+    tloop = Instance(ITLoop)
+
+    def _tloop_default(self):
+        return TLoop(tline=self.tline,
+                     model=self.model,
+                     hist=self.hist)
+
+    hist = Instance(IHist)
+
+    def _hist_default(self):
+        return Hist()
+
+    model = Instance(IModel)
+
+    def _model_default(self):
+        return Model()
 
     def run(self):
         '''Run starts or resumes the simulation depending on the 
@@ -107,24 +126,7 @@ class BMCSModel(BMCSRootNode):
         '''Method called upon the run event
         must support the resume calculation.
         '''
-        raise NotImplemented
-
-    def add_timestep(self, t):
-        self.tline.val = min(t, self.tline.max)
-        self.timesteps.append(t)
-
-    timesteps = List()
-
-    def get_time_idx_arr(self, vot):
-        '''Get the index corresponding to visual time
-        '''
-        x = np.array(self.timesteps, dtype=np.float_)
-        idx = np.array(np.arange(len(x)), dtype=np.float_)
-        t_idx = np.interp(vot, x, idx)
-        return np.array(t_idx, np.int_)
-
-    def get_time_idx(self, vot):
-        return int(self.get_time_idx_arr(vot))
+        self.tloop.eval()
 
     @on_trait_change('MAT,ALG,CS,GEO,BC,+BC')
     def signal_reset(self):

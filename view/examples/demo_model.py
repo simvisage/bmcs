@@ -27,16 +27,17 @@ Created on Mar 10, 2017
 
 import time
 
-from ibvpy.api import BCDof
 from traits.api import Instance, List,  HasStrictTraits,\
     Property, cached_property, Bool
 from traitsui.api import View, Include, VGroup, UItem
-from view.window import BMCSWindow
-from view.window.bmcs_window import BMCSModel
-from view.window.tline import TLine
 
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
+from ibvpy.api import BCDof
+from ibvpy.core.tline import TLine
 import numpy as np
+from view.window import BMCSWindow
+from view.window.bmcs_window import BMCSModel
+
 from .response_tracer import ResponseTracer
 
 
@@ -103,25 +104,6 @@ class DemoModel(BMCSModel):
     def _tree_node_list_default(self):
         return [self.tline, self.rt, self.bc_dof]
 
-    tline = Instance(TLine)
-    '''Time range.
-    '''
-
-    def _tline_default(self):
-        return TLine(min=0.0, step=0.1, max=0.0,
-                     time_change_notifier=self.time_changed,
-                     )
-
-    def time_changed(self, time):
-        self.ui.viz_sheet.time_changed(time)
-
-    def time_range_changed(self, tmax):
-        self.tline.max = tmax
-        self.ui.viz_sheet.time_range_changed(tmax)
-
-    def set_tmax(self, time):
-        self.time_range_changed(time)
-
     tloop = Property(Instance(TimeLoop))
 
     @cached_property
@@ -148,6 +130,9 @@ class DemoModel(BMCSModel):
 
 if __name__ == '__main__':
     model = DemoModel()
+    model.run()
+
     tv = BMCSWindow(model=model)
     model.rt.add_viz2d('time_profile', 'response tracer #1')
+    tv.finish_event = True
     tv.configure_traits()
