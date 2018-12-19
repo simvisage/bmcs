@@ -40,6 +40,7 @@ class TLine(BMCSLeafNode):
             self.time_range_change_notifier(self.max)
 
     time_change_notifier = Callable
+
     time_range_change_notifier = Callable
 
     tree_view = View(

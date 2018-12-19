@@ -1,18 +1,40 @@
-'''
-@author: rch
-'''
+r'''
 
+Simulator implementation
+========================
+
+'''
+from threading import Thread
 from traits.api import \
-    Instance, on_trait_change, Str, DelegatesTo
+    Instance, on_trait_change, Str, DelegatesTo, \
+    Property, cached_property, Bool
 from bmcs.simulator.hist import Hist
-from view.ui.bmcs_tree_node import \
-    BMCSRootNode
+from view.ui.bmcs_tree_node import BMCSRootNode
 from .i_hist import IHist
 from .i_model import IModel
 from .i_tloop import ITLoop
 from .model import Model
 from .tline import TLine
-from .tloop import TLoop
+
+
+class RunTimeLoopThread(Thread):
+    r'''Thread launcher class used to issue a calculation.
+    in an independent thread.
+    '''
+
+    def __init__(self, simulator, *args, **kw):
+        super(RunTimeLoopThread, self).__init__(*args, **kw)
+        self.daemon = True
+        self.simulator = simulator
+
+    def run(self):
+        try:
+            # start the calculation
+            self.simulator.tloop()
+        except Exception as e:
+            self.simulator.running = False
+            raise e  # re-raise exception
+        self.simulator.running = False
 
 
 class Simulator(BMCSRootNode):
@@ -48,9 +70,6 @@ class Simulator(BMCSRootNode):
     def set_tmax(self, time):
         self.time_range_changed(time)
 
-    paused = DelegatesTo('tloop')
-    restart = DelegatesTo('tloop')
-
     def init(self):
         if self.paused:
             self.tloop.paused = False
@@ -62,71 +81,53 @@ class Simulator(BMCSRootNode):
             self.hist.timesteps = []
 
     def pause(self):
-        self.paused_state()
         self.tloop.paused = True
+        self.join()
 
     def stop(self):
-        self.stop_state()
         self.tloop.restart = True
+        self.join()
 
-    tloop = Instance(ITLoop)
-
-    def _tloop_default(self):
-        return TLoop(tline=self.tline,
-                     model=self.model,
-                     hist=self.hist)
+    tloop = Property(Instance(ITLoop), depends_on='model')
+    r'''Time loop constructed based on the current model.
+    '''
+    @cached_property
+    def _get_tloop(self):
+        return self.model.tloop_type(model=self.model,
+                                     tline=self.tline,
+                                     hist=self.hist)
 
     hist = Instance(IHist)
+    r'''History representation of the model response.
+    '''
 
     def _hist_default(self):
         return Hist()
 
     model = Instance(IModel)
+    r'''Model implementation.
+    '''
 
     def _model_default(self):
         return Model()
 
+    run_thread = Instance(RunTimeLoopThread)
+    running = Bool(False)
+
+    paused = DelegatesTo('tloop')
+    restart = DelegatesTo('tloop')
+
     def run(self):
-        '''Run starts or resumes the simulation depending on the 
-        pause or restart variables.
-        '''
-        self.init()
-        if self.ui:
-            # inform ui that the simulation is running in a thread
-            self.ui.start_event = True
-            self.ui.running = True
-        try:
-            # start the calculation
-            self.eval()
-        except Exception as e:
-            if self.ui:
-                self.ui.running = False
-            raise e  # re-raise exception
-        if self.ui:
-            # cleanup ui and send the finish event
-            self.ui.running = False
-            self.ui.finish_event = True
+        if self.running:
+            return
+        self.running = True
+        self.run_thread = RunTimeLoopThread(self)
+        self.run_thread.start()
 
-    def init_state(self):
-        '''Method called upon start event.
+    def join(self):
+        '''Wait until the thread finishes
         '''
-        pass
-
-    def paused_state(self):
-        '''Method called upon the pause event.
-        '''
-        pass
-
-    def stop_state(self):
-        '''Method called upon the stop event.
-        '''
-        pass
-
-    def eval(self):
-        '''Method called upon the run event
-        must support the resume calculation.
-        '''
-        self.tloop.eval()
+        self.run_thread.join()
 
     @on_trait_change('MAT,ALG,CS,GEO,BC,+BC')
     def signal_reset(self):

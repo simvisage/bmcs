@@ -4,10 +4,12 @@ Created on Dec 17, 2018
 @author: rch
 '''
 
-from traits.api import provides
+from traits.api import \
+    provides, Type
 from view.ui.bmcs_tree_node import \
     BMCSTreeNode
 from .i_model import IModel
+from .tloop import TLoop
 
 
 @provides(IModel)
@@ -30,6 +32,11 @@ class Model(BMCSTreeNode):
     the array of load factors need to induce a crack in 
     a material point. 
     '''
+
+    tloop_type = Type(TLoop)
+    '''Type of time loop to be used with the model
+    '''
+
     # declare the control variables
 
     # declare the response variables
