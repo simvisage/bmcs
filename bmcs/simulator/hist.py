@@ -21,13 +21,12 @@ class Hist(HasStrictTraits):
 
     model = WeakRef(IModel)
 
-    def add_timestep(self, t):
+    def record_timestep(self, t):
         '''Add the time step and record the 
         corresponding state of the model.
         '''
         self.timesteps.append(t)
-        self.model.record_state(t)
-        self.tline.val = min(t, self.tline.max)
+        self.model.record_state()
 
     timesteps = List()
 

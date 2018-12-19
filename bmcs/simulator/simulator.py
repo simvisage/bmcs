@@ -97,12 +97,12 @@ class Simulator(BMCSRootNode):
                                      tline=self.tline,
                                      hist=self.hist)
 
-    hist = Instance(IHist)
+    hist = Property(Instance(IHist), depends_on='model')
     r'''History representation of the model response.
     '''
-
-    def _hist_default(self):
-        return Hist()
+    @cached_property
+    def _get_hist(self):
+        return Hist(model=self.model)
 
     model = Instance(IModel)
     r'''Model implementation.

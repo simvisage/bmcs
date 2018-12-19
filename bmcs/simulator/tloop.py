@@ -49,19 +49,7 @@ class TLoop(HasStrictTraits):
     def eval(self):
         '''This method is called by the tloop_thread.
         '''
-        self.init()
-        t_min = self.tline.val
-        t_max = self.tline.max
-        t_step = self.tline.step
-        n_steps = (t_max - t_min) / t_step
-        tarray = np.linspace(t_min, t_max, n_steps + 1)
-        for t in tarray:
-            print('\ttime %g' % t)
-            if self.restart or self.paused:
-                break
-            time.sleep(1)
-            self.tline.val = t
-        return
+        raise NotImplementedError
 
     def __call__(self):
         return self.eval()

@@ -53,6 +53,6 @@ class Model(BMCSTreeNode):
         '''Initialize state.
         '''
 
-    def record_state(self, u, t):
+    def record_state(self):
         '''Record state in history.
         '''
