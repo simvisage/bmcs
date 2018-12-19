@@ -49,10 +49,14 @@ class Model(BMCSTreeNode):
         '''Get the gradient.
         '''
 
+    def get_corr_pred(self, U_k, t_k):
+        '''Return the value and the derivative of a function
+        '''
+
     def init_state(self):
         '''Initialize state.
         '''
 
-    def record_state(self):
+    def update_state(self, U, t_n):
         '''Record state in history.
         '''
