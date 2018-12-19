@@ -2,7 +2,8 @@
 '''
 
 import time
-from traits.api import Instance,  HasStrictTraits,\
+from traits.api import \
+    HasStrictTraits,\
     Bool, provides, WeakRef
 
 import numpy as np
@@ -28,7 +29,7 @@ class TLoop(HasStrictTraits):
         #calculation
 
     '''
-    tline = Instance(TLine)
+    tline = WeakRef(TLine)
 
     model = WeakRef(IModel)
 
@@ -38,7 +39,7 @@ class TLoop(HasStrictTraits):
 
     restart = Bool(True)
 
-    def init_loop(self):
+    def init(self):
         if self.paused:
             self.paused = False
         if self.restart:
@@ -48,14 +49,14 @@ class TLoop(HasStrictTraits):
     def eval(self):
         '''This method is called by the tloop_thread.
         '''
-        self.init_loop()
+        self.init()
         t_min = self.tline.val
         t_max = self.tline.max
         t_step = self.tline.step
         n_steps = (t_max - t_min) / t_step
         tarray = np.linspace(t_min, t_max, n_steps + 1)
         for t in tarray:
-            print('\ttime', t)
+            print('\ttime %g' % t)
             if self.restart or self.paused:
                 break
             time.sleep(1)
