@@ -44,6 +44,7 @@ class TLoop(HasStrictTraits):
             self.paused = False
         if self.restart:
             self.tline.val = 0
+            self.model.init_state()
             self.restart = False
 
     def eval(self):

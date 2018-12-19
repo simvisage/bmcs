@@ -43,21 +43,24 @@ class IModel(Interface):
     a material point. 
     '''
 
-    def init_state(self, U, t):
+    def get_corr_pred(self, U_k, t_n):
+        '''Return the value and the derivative of a function
+        '''
+
+    def init_state(self):
         '''Initialize state.
         '''
 
-    def record_state(self, U, t):
-        '''Record state in history.
+    def get_state(self):
+        '''Get the current control and primary variables.
         '''
 
-    def get_corr_pred(self, U_k, dU, t_n, t_k,
-                      step_flag='predictor'):
-        '''Standard corrector predictor step returning 
-        the residuum and its derivative. If the step flag is set to 
-        `corrector', the state variables corresponding to the step
-        ``U_n = U_k - dU`` are supposed to be updated and 
-        the state recorded.
+    def update_state(self, U_k, t_n):
+        '''Update the control, primary and state variables..
+        '''
+
+    def record_state(self):
+        '''Provide the current state for history recording.
         '''
 
     def get_R(self, u, t):
