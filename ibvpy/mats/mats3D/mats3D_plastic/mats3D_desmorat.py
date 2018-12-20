@@ -1,7 +1,8 @@
+
 '''
 Created on 30.10.2018
 
-@author: aguilar
+@author: abaktheer
 '''
 from traits.api import \
     Float, List
@@ -41,9 +42,9 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
                   input=True)
 
     def _get_lame_1_params(self):
-        la = self.E_2 * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
+        la = self.E_1 * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
         # second Lame parameter (shear modulus)
-        mu = self.E_2 / (2. + 2. * self.nu)
+        mu = self.E_1 / (2. + 2. * self.nu)
         return la, mu
 
     D_1_abef = tr.Property(tr.Array, depends_on='+input')
@@ -134,27 +135,39 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
         D_2_abef = self.D_2_abef
 
         sigma_pi_Emab_trial = (
-            np.einsum('...ijkl,...kl->...ij', D_2_abef, eps_Emab))
+            np.einsum('...ijkl,...kl->...ij', D_2_abef, eps_Emab - eps_pi_Emab))
 
-        norm = sigma_pi_Emab_trial - self.gamma * alpha_Emab,
-        f = np.sqrt(np.einsum('Emnj,Emnj', norm, norm)
+        #print('eps_Emab', eps_Emab)
+        #print('D_2_abef', D_2_abef)
+        #print('sigma_pi_Emab_trial', sigma_pi_Emab_trial)
+
+        a = sigma_pi_Emab_trial - self.gamma * alpha_Emab
+        #print('a', a)
+
+        norm_a = np.sqrt(np.einsum('...ij,...ij', a, a))
+        #print('norm_a', norm_a)
+
+        n = a / norm_a
+
+        f = np.sqrt(np.einsum('...ij,...ij', a, a)
                     ) - self.tau_bar - self.K * z_Ema
 
         plas_1 = f > 1e-6
         elas_1 = f < 1e-6
 
-#         delta_pi = f / \
-#             (self.E_2 + (self.K + self.gamma) * (1. - omega_Ema)) * plas_1
+        delta_pi = f / \
+            (self.E_2 + (self.K + self.gamma) * (1. - omega_Ema)) * plas_1
+
+        b = 1.0 * elas_1 + norm_a * plas_1
+
+#         delta_lamda = f / (np.einsum('...ij,...ijkl,...kl',
+#                                      n, D_2_abef, n) + self.gamma * np.einsum('...ij,...ij', n, n) + self.K)
 #
-        norm3 = 1.0 * elas_1 + \
-            np.sqrt(np.einsum('...ab,...ab', norm, norm)) * plas_1
+#         delta_pi = delta_lamda / (1.0 - omega_Ema)
 
-        delta_lamda = f / (np.einsum('...ij,...ijkl,...kl',
-                                     norm, D_1_abef, norm) + self.gamma * np.einsum('...ab,...ab', norm, norm) + self.K)
-
-        delta_pi = delta_lamda / (1.0 - omega_Ema)
-
-        eps_pi_Emab = eps_pi_Emab + plas_1 * (norm * delta_pi / norm3)
+        eps_pi_Emab = eps_pi_Emab + (a * delta_pi / b)
+        print('eps_Emab', eps_Emab[..., 0, 0])
+        print('eps_pi_Emab', eps_pi_Emab[..., 0, 0])
 
         eps_diff_Emab = eps_Emab - eps_pi_Emab
 
@@ -169,9 +182,9 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
             omega_Ema = 0.99
 
         alpha_Emab = alpha_Emab + plas_1 * \
-            (norm * delta_pi / norm3) * (1.0 - omega_Ema)
+            (a * delta_pi / b) * (1.0 - omega_Ema)
 
-        z_Ema = z_Ema + delta_pi
+        z_Ema = z_Ema + delta_pi * (1.0 - omega_Ema)
 
         return eps_pi_Emab, alpha_Emab, z_Ema, omega_Ema
 
@@ -183,9 +196,9 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
         Corrector predictor computation.
         '''
         if update_state:
-            eps_Emab_n = eps_Emab_n1 - deps_Emab
+            eps_Emab_n = eps_Emab_n1  # - deps_Emab
 
-            Em_len = len(eps_Emab_n1.shape) - 2
+            Em_len = len(eps_Emab_n.shape) - 2
             new_shape = tuple([1 for i in range(Em_len)]) + self.D_abef.shape
             D_1_abef = self.D_1_abef.reshape(*new_shape)
             D_2_abef = self.D_2_abef.reshape(*new_shape)
