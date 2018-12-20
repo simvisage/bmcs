@@ -1,7 +1,7 @@
 '''
-This script is used to demonstrate the machinery
-of the simulation framework on the example a simple
-quadratic function. 
+The model interface is changed such that it makes the stepping. 
+on its own. The time loop could thus be simplified and generalized.
+As a result applications can only inherit from model.
 
 @author: rch
 '''
@@ -9,7 +9,7 @@ quadratic function.
 import time
 
 from traits.api import \
-    Int, Float
+    Int, Float, Property, cached_property
 import traits.has_traits
 traits.has_traits.CHECK_INTERFACES = 2
 from bmcs.simulator import \
@@ -23,23 +23,21 @@ class DemoNRTLoop(TLoop):
 
     k_max = Int(30, enter_set=True, auto_set=False)
 
+    acc = Float(1e-4, enter_set=True, auto_set=False)
+
     def eval(self):
         t_n = self.tline.val
         t_max = self.tline.max
         dt = self.tline.step
-        U_k, t_nn = self.model.get_state()
-        assert(np.fabs(t_n - t_nn) < 1e-5)  # implementation verification
         while t_n < t_max:
             print('\ttime: %g' % t_n, end='')
             k = 0
             # run the iteration loop
             while (k < self.k_max) and not self.user_wants_abort:
-                R, dR = self.model.get_corr_pred(U_k, t_n)
-                if np.sqrt(R * R) < 1e-5:
+                if self.model.R_norm < self.acc:
                     print('\titer: %g' % k)
                     break
-                dU = R / dR
-                U_k += dU
+                self.model.trial_step()
                 k += 1
             else:  # handle unfinished iteration loop
                 if k >= self.k_max:  # add step size reduction
@@ -48,11 +46,12 @@ class DemoNRTLoop(TLoop):
                     print('Warning: '
                           'convergence not reached in %g iterations', k)
                 return
-            t_n += dt
             # accept the time step
-            self.model.update_state(U_k, t_n)
+            self.model.update_state(t_n)
             self.hist.record_timestep(t_n)
-            # tline launches notifiers to announce a new step to subscribers
+            # time line launches notifiers to announce a new step to
+            # subscribers
+            t_n += dt
             self.tline.val = t_n
         return
 
@@ -60,21 +59,23 @@ class DemoNRTLoop(TLoop):
 class DemoQuadFNModel(Model):
     tloop_type = DemoNRTLoop
 
-    R0 = Float(1.0, auto_set=False, enter_set=True)
+    R_0 = Float(1.0, auto_set=False, enter_set=True)
     '''Target value of a function (load).
     '''
     U_n = Float(0.0, auto_set=False, enter_set=True)
-    '''Current value of the primary variable.
+    '''Current fundamental value of the primary variable.
     '''
-
     t_n = Float(0.0, auto_set=False, enter_set=True)
     '''Current value of the control variable.
+    '''
+    U_k = Float(0.0, auto_set=False, enter_set=True)
+    '''Current trial value of the primary variable.
     '''
 
     def get_corr_pred(self, U_k, t_n):
         '''Return the value and the derivative of a function
         '''
-        R = U_k * U_k - (self.R0 * t_n)
+        R = U_k * U_k - (self.R_0 * t_n)
         dR = 2 * U_k
         # handle the case of zero derivative - return small number
         dR = max(np.fabs(dR), 1e-3)
@@ -88,22 +89,46 @@ class DemoQuadFNModel(Model):
         '''
         self.U_n = 0.0
         self.t_n = 0.0
+        self.U_k = 0.0
 
-    def get_state(self):
-        '''Get the current control and primary variables.
-        '''
-        return self.U_n, self.t_n
-
-    def update_state(self, U_k, t_n):
+    def update_state(self, t_n):
         '''Update the control, primary and state variables..
         '''
         self.t_n = t_n
-        self.U_n = U_k
+        self.U_n = self.U_k
 
     def record_state(self):
         '''Provide the current state for history recording.
         '''
         pass
+
+    _corr_pred = Property(depends_on='U_k,t_n')
+
+    @cached_property
+    def _get__corr_pred(self):
+        return self.get_corr_pred(self.U_k, self.t_n)
+
+    R = Property
+
+    def _get_R(self):
+        R, dR = self._corr_pred
+        return R
+
+    dR = Property
+
+    def _get_dR(self):
+        R, dR = self._corr_pred
+        return dR
+
+    R_norm = Property
+
+    def _get_R_norm(self):
+        R = self.R
+        return np.sqrt(R * R)
+
+    def trial_step(self):
+        d_U = self.R / self.dR
+        self.U_k += d_U
 
 
 # Construct a Simulator
