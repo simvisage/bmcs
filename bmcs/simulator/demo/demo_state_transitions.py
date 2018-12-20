@@ -16,30 +16,34 @@ from bmcs.simulator import \
 import numpy as np
 
 
-class DemoStatesTLoop(TLoop):
-    '''Demonstration loop running with equidistant steps
-    from min to max with a defined step.
+class DemoExplicitTLoop(TLoop):
+    '''Demonstration loop running explicitly evaluating
+    a function and saving the results in the history.
+    This kind of time loop is used e.g. for the explicit
+    calculation of stress strain curve with all components
+    prescribed.
     '''
 
     def eval(self):
-        self.init()
-        t_min = self.tline.val
+        t_n = self.tline.val
         t_max = self.tline.max
-        t_step = self.tline.step
-        n_steps = (t_max - t_min) / t_step
-        tarray = np.linspace(t_min, t_max, n_steps + 1)
-        for t in tarray:
-            print('\ttime %g' % t)
-            if self.restart or self.paused:
+        dt = self.tline.step
+#        U_k, t_nn = self.model.get_state()
+#        assert(np.fabs(t_n - t_nn) < 1e-5)  # implementation verification
+        while t_n < t_max:
+            print('\ttime %g' % t_n)
+            if self.user_wants_abort:
                 break
             time.sleep(1)
-            self.hist.record_timestep(t)
-            self.tline.val = t
+            t_n += dt
+#            self.model.update_state(U_k, t_n)
+            self.hist.record_timestep(t_n)
+            self.tline.val = t_n
         return
 
 
 class DemoStatesModel(Model):
-    tloop_type = DemoStatesTLoop
+    tloop_type = DemoExplicitTLoop
 
 
 # Construct a Simulator

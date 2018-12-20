@@ -4,9 +4,7 @@
 import time
 from traits.api import \
     HasStrictTraits,\
-    Bool, provides, WeakRef
-
-import numpy as np
+    Bool, provides, WeakRef, Property
 
 from .i_hist import IHist
 from .i_model import IModel
@@ -39,6 +37,11 @@ class TLoop(HasStrictTraits):
 
     restart = Bool(True)
 
+    user_wants_abort = Property()
+
+    def _get_user_wants_abort(self):
+        return self.restart or self.paused
+
     def init(self):
         if self.paused:
             self.paused = False
@@ -53,4 +56,5 @@ class TLoop(HasStrictTraits):
         raise NotImplementedError
 
     def __call__(self):
+        self.init()
         return self.eval()

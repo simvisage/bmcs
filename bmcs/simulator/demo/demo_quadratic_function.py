@@ -3,12 +3,6 @@ This script is used to demonstrate the machinery
 of the simulation framework on the example a simple
 quadratic function. 
 
-..todo:: compare with the current ibvpy.core.tloop and generalize the NRTLoop
-
-..todo:: prepare the next example using sympy to allow for general functions
-
-..todo:: make the `boundary condition' time dependent
-
 @author: rch
 '''
 
@@ -28,8 +22,6 @@ class DemoNRTLoop(TLoop):
     k_max = Int(30, enter_set=True, auto_set=False)
 
     def eval(self):
-        self.init()
-        interrupt = False
         t_n = self.tline.val
         t_max = self.tline.max
         dt = self.tline.step
@@ -38,9 +30,8 @@ class DemoNRTLoop(TLoop):
         while t_n < t_max:
             print('\ttime: %g' % t_n, end='')
             k = 0
-            while (k < self.k_max):
-                if self.restart or self.paused:
-                    interrupt = True
+            # run the iteration loop
+            while (k < self.k_max) and not self.user_wants_abort:
                 R, dR = self.model.get_corr_pred(U_k, t_n)
                 if np.sqrt(R * R) < 1e-5:
                     print('\titer: %g' % k)
@@ -48,11 +39,14 @@ class DemoNRTLoop(TLoop):
                 dU = R / dR
                 U_k += dU
                 k += 1
-            if interrupt:
-                break
+            else:  # handle unfinished iteration loop
+                if k >= self.k_max:  # add step size reduction
+                    print('Warning: convergence not reached in %g iterations', k)
+                return
             t_n += dt
             self.model.update_state(U_k, t_n)
             self.hist.record_timestep(t_n)
+            # tline launches notifiers to announce a new step to subscribers
             self.tline.val = t_n
         return
 
