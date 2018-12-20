@@ -5,16 +5,18 @@ Simulator implementation
 
 '''
 from threading import Thread
+
 from traits.api import \
-    Instance, on_trait_change, Str, DelegatesTo, \
+    Instance, on_trait_change, Str, \
     Property, cached_property, Bool
+
 from bmcs.simulator.hist import Hist
 from view.ui.bmcs_tree_node import BMCSRootNode
+
 from .i_hist import IHist
 from .i_model import IModel
-from .i_tloop import ITLoop
-from .model import Model
 from .tline import TLine
+from .tloop import TLoop
 
 
 class RunTimeLoopThread(Thread):
@@ -38,7 +40,7 @@ class RunTimeLoopThread(Thread):
 
 
 class Simulator(BMCSRootNode):
-    '''Base class for simulators included in the BMCS Tool Suite.
+    r'''Base class for simulators included in the BMCS Tool Suite.
     It implements the state dependencies within the simulation tree.
     It handles also the communication between the simulation and
     the user interface in several modes of interaction.
@@ -47,16 +49,25 @@ class Simulator(BMCSRootNode):
 
     desc = Str
 
+    #=========================================================================
+    # MODEL
+    #=========================================================================
+    model = Instance(IModel)
+    r'''Model implementation.
+    '''
+
+    #=========================================================================
+    # TIME LINE
+    #=========================================================================
     tline = Instance(TLine)
+    r'''Time line defining the time range, discretization and state,  
+    '''
 
     def _tline_default(self):
-        # assign the parameters for solver and loading_scenario
-        t_max = 1.0  # self.loading_scenario.t_max
-        d_t = 0.1  # self.loading_scenario.d_t
-        return TLine(min=0.0, step=d_t, max=t_max,
-                     time_change_notifier=self.time_changed,
-                     time_range_change_notifier=self.time_range_changed
-                     )
+        return TLine(
+            time_change_notifier=self.time_changed,
+            time_range_change_notifier=self.time_range_changed
+        )
 
     def time_changed(self, time):
         if self.ui != None:
@@ -70,15 +81,17 @@ class Simulator(BMCSRootNode):
     def set_tmax(self, time):
         self.time_range_changed(time)
 
-    def init(self):
-        if self.paused:
-            self.tloop.paused = False
-        if self.restart:
-            self.tloop.restart = False
-            self.tline.val = self.tline.min
-            self.tline.max = 1
-            self.model.init_state()
-            self.hist.timesteps = []
+    #=========================================================================
+    # TIME LOOP
+    #=========================================================================
+    tloop = Property(Instance(TLoop), depends_on='model')
+    r'''Time loop constructed based on the current model.
+    '''
+    @cached_property
+    def _get_tloop(self):
+        return self.model.tloop_type(model=self.model,
+                                     tline=self.tline,
+                                     hist=self.hist)
 
     def pause(self):
         self.tloop.paused = True
@@ -88,15 +101,9 @@ class Simulator(BMCSRootNode):
         self.tloop.restart = True
         self.join()
 
-    tloop = Property(Instance(ITLoop), depends_on='model')
-    r'''Time loop constructed based on the current model.
-    '''
-    @cached_property
-    def _get_tloop(self):
-        return self.model.tloop_type(model=self.model,
-                                     tline=self.tline,
-                                     hist=self.hist)
-
+    #=========================================================================
+    # HISTORY
+    #=========================================================================
     hist = Property(Instance(IHist), depends_on='model')
     r'''History representation of the model response.
     '''
@@ -104,20 +111,15 @@ class Simulator(BMCSRootNode):
     def _get_hist(self):
         return Hist(model=self.model)
 
-    model = Instance(IModel)
-    r'''Model implementation.
-    '''
-
-    def _model_default(self):
-        return Model()
-
+    #=========================================================================
+    # COMPUTATION THREAD
+    #=========================================================================
     run_thread = Instance(RunTimeLoopThread)
     running = Bool(False)
 
-    paused = DelegatesTo('tloop')
-    restart = DelegatesTo('tloop')
-
     def run(self):
+        r'''Run a thread if it does not exist - do nothing otherwise
+        '''
         if self.running:
             return
         self.running = True
@@ -125,7 +127,7 @@ class Simulator(BMCSRootNode):
         self.run_thread.start()
 
     def join(self):
-        '''Wait until the thread finishes
+        r'''Wait until the thread finishes
         '''
         self.run_thread.join()
 

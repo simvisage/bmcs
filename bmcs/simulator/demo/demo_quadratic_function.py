@@ -7,16 +7,18 @@ quadratic function.
 '''
 
 import time
+
 from traits.api import \
     Int, Float
+import traits.has_traits
+traits.has_traits.CHECK_INTERFACES = 2
 from bmcs.simulator import \
     Simulator, TLoop, Model
 import numpy as np
 
 
 class DemoNRTLoop(TLoop):
-    '''Demonstration loop running with equidistant steps
-    from min to max with a defined step.
+    '''Demonstration loop running from min to max with a defined step.
     '''
 
     k_max = Int(30, enter_set=True, auto_set=False)
@@ -41,9 +43,13 @@ class DemoNRTLoop(TLoop):
                 k += 1
             else:  # handle unfinished iteration loop
                 if k >= self.k_max:  # add step size reduction
-                    print('Warning: convergence not reached in %g iterations', k)
+                    # no success abort the simulation
+                    self.restart = True
+                    print('Warning: '
+                          'convergence not reached in %g iterations', k)
                 return
             t_n += dt
+            # accept the time step
             self.model.update_state(U_k, t_n)
             self.hist.record_timestep(t_n)
             # tline launches notifiers to announce a new step to subscribers

@@ -1,18 +1,15 @@
 '''
 '''
 
-import time
 from traits.api import \
     HasStrictTraits,\
-    Bool, provides, WeakRef, Property
+    Bool, WeakRef, Property
 
 from .i_hist import IHist
 from .i_model import IModel
-from .i_tloop import ITLoop
 from .tline import TLine
 
 
-@provides(ITLoop)
 class TLoop(HasStrictTraits):
     '''Handle the time loop with interactive state management.
 
@@ -46,7 +43,7 @@ class TLoop(HasStrictTraits):
         if self.paused:
             self.paused = False
         if self.restart:
-            self.tline.val = 0
+            self.tline.val = self.tline.min
             self.model.init_state()
             self.restart = False
 

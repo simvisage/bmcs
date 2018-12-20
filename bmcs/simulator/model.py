@@ -37,34 +37,8 @@ class Model(BMCSTreeNode):
     '''Type of time loop to be used with the model
     '''
 
-    # declare the control variables
-
-    # declare the response variables
-
-    def get_R(self, u, t):
-        '''Get the value of the residuum.
-        '''
-
-    def get_dR(self, u, t):
-        '''Get the gradient.
-        '''
-
-    def get_corr_pred(self, U_k, t_n):
-        '''Return the value and the derivative of a function
-        '''
-
     def init_state(self):
-        '''Initialize state.
-        '''
-
-    def get_state(self):
-        '''Get the current control and primary variables.
-        '''
-
-    def update_state(self, U_k, t_n):
-        '''Update the control, primary and state variables..
-        '''
+        pass
 
     def record_state(self):
-        '''Provide the current state for history recording.
-        '''
+        pass

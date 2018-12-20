@@ -10,6 +10,6 @@ class ITLoop(Interface):
     along the specified time line and recording its history.
     '''
 
-    def eval(self):
+    def __call__(self):
         '''Implementation of the loop.
         '''

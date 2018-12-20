@@ -2,18 +2,16 @@
 
 This script is used to demonstrate the states of a model.
 
-...todo:: Handle the END event of the simulator in case 
-that the calculation thread is still running. In such a case,
-the request should be confirmed by the user action.
-
 @author: rch
 '''
 
 import time
 
+import traits.has_traits
+traits.has_traits.CHECK_INTERFACES = 2
+
 from bmcs.simulator import \
     Simulator, TLoop, Model
-import numpy as np
 
 
 class DemoExplicitTLoop(TLoop):
