@@ -3,11 +3,11 @@
 
 from traits.api import \
     HasStrictTraits,\
-    Bool, WeakRef, Property
+    Bool, WeakRef, Property, DelegatesTo, Instance
 
 from .i_hist import IHist
-from .i_model import IModel
 from .tline import TLine
+from .tstep import TStep
 
 
 class TLoop(HasStrictTraits):
@@ -26,7 +26,10 @@ class TLoop(HasStrictTraits):
     '''
     tline = WeakRef(TLine)
 
-    model = WeakRef(IModel)
+    tstep = Instance(TStep)
+
+    def _tstep_default(self):
+        return TStep()
 
     hist = WeakRef(IHist)
 
@@ -36,6 +39,8 @@ class TLoop(HasStrictTraits):
 
     user_wants_abort = Property()
 
+    model = DelegatesTo('tstep')
+
     def _get_user_wants_abort(self):
         return self.restart or self.paused
 
@@ -44,7 +49,7 @@ class TLoop(HasStrictTraits):
             self.paused = False
         if self.restart:
             self.tline.val = self.tline.min
-            self.model.init_state()
+            self.tstep.init_state()
             self.restart = False
 
     def eval(self):
