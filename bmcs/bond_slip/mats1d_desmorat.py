@@ -4,16 +4,18 @@ Created on 10.10.2018
 @author: Mario Aguilar
 '''
 
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
-    FRPDamageFn
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import implements,  \
     Constant, Float, WeakRef, List, Str, Property, cached_property, \
     Trait, on_trait_change, Instance, Callable
 from traitsui.api import View, VGroup, Item, UItem, Group
-from .mats_bondslip import MATSBondSlipBase
+
+from bmcs.mats.mats_damage_fn import \
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
+    FRPDamageFn
+from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 import numpy as np
+
+from .mats_bondslip import MATSBondSlipBase
 
 
 class MATS1DDesmorat(MATSBondSlipBase):
@@ -61,7 +63,7 @@ class MATS1DDesmorat(MATSBondSlipBase):
               enter_set=True,
               auto_set=False)
 
-    S = Float(476,
+    S = Float(476e-6,
               label="S",
               desc="damage strength",
               MAT=True,
@@ -70,7 +72,7 @@ class MATS1DDesmorat(MATSBondSlipBase):
               enter_set=True,
               auto_set=False)
 
-    tau_bar = Float(9,
+    tau_bar = Float(50,
                     label="Tau_0 ",
                     desc="yield stress",
                     symbol=r'\bar{\tau}',
@@ -222,7 +224,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     m = MATS1DDesmorat()
-    s_levels = np.linspace(0, -0.003, 10)
+    s_levels = np.linspace(0, -0.05, 100)
     print(s_levels)
     s_levels[0] = 0
     s_levels.reshape(-1, 2)[:, 0] *= 0

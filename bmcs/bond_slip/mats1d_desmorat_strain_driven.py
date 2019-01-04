@@ -1,8 +1,10 @@
 '''
-Created on 20.10.2018
+Created on 01.03.2019
 
-@author: Mario Aguilar
+@author: Mario Aguilar Rueda
 '''
+
+import os
 
 from traits.api import implements,  \
     Constant, Float, WeakRef, List, Str, Property, cached_property, \
@@ -13,10 +15,8 @@ from bmcs.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     FRPDamageFn
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-import matplotlib.pyplot as plt
+from mats_bondslip import MATSBondSlipBase
 import numpy as np
-
-from .mats_bondslip import MATSBondSlipBase
 
 
 class MATS1DDesmorat(MATSBondSlipBase):
@@ -46,7 +46,7 @@ class MATS1DDesmorat(MATSBondSlipBase):
                 enter_set=True,
                 auto_set=False)
 
-    gamma = Float(3e7,
+    gamma = Float(110,
                   label="Gamma",
                   desc="kinematic hardening modulus",
                   MAT=True,
@@ -55,7 +55,7 @@ class MATS1DDesmorat(MATSBondSlipBase):
                   enter_set=True,
                   auto_set=False)
 
-    K = Float(1e7,
+    K = Float(130,
               label="K",
               desc="isotropic hardening modulus",
               MAT=True,
@@ -64,7 +64,7 @@ class MATS1DDesmorat(MATSBondSlipBase):
               enter_set=True,
               auto_set=False)
 
-    S = Float(1e-7,
+    S = Float(476e-6,
               label="S",
               desc="damage strength",
               MAT=True,
@@ -73,7 +73,7 @@ class MATS1DDesmorat(MATSBondSlipBase):
               enter_set=True,
               auto_set=False)
 
-    tau_bar = Float(1,
+    tau_bar = Float(75,
                     label="Tau_0 ",
                     desc="yield stress",
                     symbol=r'\bar{\tau}',
@@ -82,46 +82,19 @@ class MATS1DDesmorat(MATSBondSlipBase):
                     enter_set=True,
                     auto_set=False)
 
-
-#=========================================================================
-#     omega_fn_type = Trait('li',
-#                           dict(li=LiDamageFn,
-#                                jirasek=JirasekDamageFn,
-#                                abaqus=AbaqusDamageFn,
-#                                FRP=FRPDamageFn,
-#                                ),
-#                           MAT=True,
-#                           )
-#
-#     @on_trait_change('omega_fn_type')
-#     def _reset_omega_fn(self):
-#         #print 'resetting damage function to', self.omega_fn_type
-#         #self.omega_fn = self.omega_fn_type_()
-#
-#     omega_fn = Instance(IDamageFn,
-#                         report=True)
-#
-#     def _omega_fn_default(self):
-#         # return JirasekDamageFn()
-#         return LiDamageFn(alpha_1=1.,
-#                           alpha_2=100.
-#                           )
-#=========================================================================
-
-    sv_names = ['s_p',
-                'Y',
-                'D',
+    sv_names = ['tau_e',
+                'tau',
+                's_p',
                 'z',
                 'X',
-                'tau_e',
-                'tau',
-                'N',
+                'D',
+                'Y',
                 's_cum'
                 ]
 
     def get_next_state(self, s, s_vars):
 
-        s_p, Y, D, z, X, tau_e, tau, N, s_cum = s_vars
+        tau_e, tau, s_p, z, X, D, Y, s_cum, = s_vars
         v = len(s) - 1
         for i in range(v):
 
@@ -140,7 +113,6 @@ class MATS1DDesmorat(MATSBondSlipBase):
                 X[i + 1] = X[i]
                 D[i + 1] = D[i]
                 Y[i + 1] = Y[i]
-                N[i] = i + 1
                 s_cum[i + 1] = s_cum[i]
 
             # identify values beyond the elastic limit
@@ -157,17 +129,11 @@ class MATS1DDesmorat(MATSBondSlipBase):
                 Y[i + 1] = 0.5 * self.E_m * s[i + 1]**2. + 0.5 * \
                     self.E_b * (s[i + 1] - s_p[i + 1])**2.
                 D_trial = D[i] + (Y[i + 1] / self.S) * \
-                    delta_pi
-                N[i] = i + 1
-                if D[i] > 0.5:
-                    # print ' ----------> No Convergence any more'
-                    # print i
-                    # print N_1
-                    flag = 1
-                    break
+                    delta_pi * (1. - D[i])
+                if D_trial > 1.0:
+                    D[i + 1] = 1.0
                 else:
                     D[i + 1] = D_trial
-                # print D
                 z[i + 1] = z[i] + (1. - D[i + 1]) * delta_pi
                 X[i + 1] = X[i] + self.gamma * \
                     (1. - D[i + 1]) * (s_p[i + 1] - s_p[i])
@@ -179,54 +145,112 @@ class MATS1DDesmorat(MATSBondSlipBase):
                     (1. - D[i + 1]) * s[i + 1] - \
                     self.E_b * (1. - D[i + 1]) * s_p[i + 1]
 
-        return s_p, Y, D, z, X, tau_e, tau, N, s_cum
+        return s_p, Y, D, z, X, tau_e, tau, s_cum
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    N_R_1 = np.zeros(20)
-    d = np.zeros(20)
-    s_max_1 = np.zeros(20)
-    auxN = 0
-    for j in range(points):
-        m = MATS1DDesmorat()
-        s_max_1[j] = 0.0022 - 0.002 * j / (j + 1)
-        s_levels_1 = np.linspace(0, s_max_1[j], 1000)
-        s_levels_1.reshape(-1, 2)[:, 0] = -s_max_1[j]
-        s_levels_1.reshape(-1, 2)[:, 1] = s_max_1[j]
-        s_levels_1[0] = 0
-        s_history_1 = s_levels_1.flatten()
-        s = np.hstack([np.linspace(s_history_1[i], s_history_1[i + 1], 1, dtype=np.float_)
-                       for i in range(len(s_levels_1) - 1)])
-        print(s)
-        N = np.zeros(s)
-        s_p, Y, D, z, X, tau_e, tau, N, s_cum = m.get_next_state(s, s_vars)
-        n = np.amax(N) / 2
-        d[j] = np.amax(D)
-        N_R_1[j] = np.floor(n) + 1
-        flag = N_R_1[j] - auxN
-        auxN = N_R_1[j]
-        if flag == 0:
-            N_R_1[j] = 0
-            d[j] = 0
-    np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat uniaxial\newD,Nlog,1.9e4,1.6e4,3e7,1e7,1e-7,1.txt',
-               N_R_1, delimiter=" ", fmt="%s")
-    np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat uniaxial\newD,s_max,1.9e4,1.6e4,3e7,1e7,1e-7,1.txt',
-               s_max_1, delimiter=" ", fmt="%s")
-    plt.subplot(121)
-    plt.semilogx(N_R_1[:], s_max_1[:], 'k')
-    plt.xlabel('Nlog')
-    plt.ylabel('Eps max')
-    plt.ylim(0, 0.004)
 
-    plt.subplot(122)
-    plt.semilogx(N_R_1, d, 'k')
-    plt.xlabel('Nlog')
-    plt.ylabel('Damage')
+    m = MATS1DDesmorat()
 
-#    plt.semilogx(N_R_1, s_max_1)
-#     figure(2)
-#     plt.plot(s_cum, D)
-#     plt.ylim(0, 0.004)
+    # Monotonic
+    s_levels = np.linspace(0, 0.05, 2)
+    s_levels[0] = 0
+    s_levels.reshape(-1, 2)[:, 0] *= 1
+    s_history = s_levels.flatten()
+    s = np.hstack([np.linspace(s_history[i], s_history[i + 1], 200)
+                   for i in range(len(s_levels) - 1)])
+
+    s_vars = [np.zeros_like(s)
+              for sv in m.sv_names]
+    s_p, Y, D, z, X, tau_e, tau, s_cum = m.get_next_state(s, s_vars)
+    plt.plot(s, tau)
+
+    home_dir = os.path.expanduser('~')
+    path = os.path.join(home_dir, 'Uniaxial Desmorat')
+    path = os.path.join(path, 'Parametric reversibility limit')
+    path = os.path.join(path, 'strain driven')
+    if os.path.exists(path) == False:
+        os.makedirs(path)
+
+    np.save(os.path.join(path, 's.npy'), s)
+    np.save(os.path.join(path, 'tau75.npy'), tau)
+
+    #plt.plot(eps_1, sig_arr_1)
+#     # Fatigue
+#
+#     sigma_max = f_max1
+#     print(sigma_max)
+#     sigma_max_min = 0.
+#     cycles = 800
+#     inc = 100
+#     points = 100
+#     N_log = np.zeros(points)
+#     s_max_1 = np.zeros(points)
+#     for j in range(points):
+#         m = MATS1DDesmorat()
+#         s_max_1[j] = sigma_max - (sigma_max - sigma_max_min) * j / points
+#         s_levels_2 = np.linspace(0, 10, cycles * 2)
+#         s_levels_2.reshape(-1, 2)[:, 0] = s_max_1[j]
+#         s_levels_2.reshape(-1, 2)[:, 1] = 0.0
+#         s_levels_2[0] = 0.0
+#         s_history_2 = s_levels_2.flatten()
+#
+#         sig_arr_2 = np.zeros(1)
+#         for i in range(len(s_levels_2) - 1):
+#             sig_part = np.linspace(s_history_2[i], s_history_2[i + 1], inc)
+#             sig_arr_2 = np.hstack((sig_arr_2, sig_part[:-1]))
+#
+#         sigma_pi = np.zeros_like(sig_arr_2)
+#         eps = np.zeros_like(sig_arr_2)
+#         eps_pi = np.zeros_like(sig_arr_2)
+#         gamma = np.zeros_like(sig_arr_2)
+#         r = np.zeros_like(sig_arr_2)
+#         omega = np.zeros_like(sig_arr_2)
+#         eps_cum = np.zeros_like(sig_arr_2)
+#         Y = np.zeros_like(sig_arr_2)
+#         n = np.zeros(1)
+#         f_max2 = np.zeros(1)
+#         flag = 0
+#         sig_max2 = s_max_1[j]
+#
+#         sigma_pi, eps, eps_pi, gamma, r, omega, eps_cum, Y, f_max2, n, sig_max2, flag = m.get_next_state(
+#             sig_arr_2, sigma_pi, eps, eps_pi, gamma, r, omega, eps_cum, Y, f_max2, n, sig_max2, flag)
+#         if flag == 0:
+#             break
+#         N_log[j] = n
+#         s_max_1[j] = s_max_1[j] / f_max1
+#         if N_log[j] == N_log[j - 1]:
+#             s_max_1[j] = s_max_1[j - 1]
+# #     #plt.semilogx(N_log, s_max_1)
+# #     #plt.plot(eps, sig_arr_2)
+#
+#     s_max_1 = s_max_1[np.nonzero(N_log)]
+#     N_log = N_log[np.nonzero(N_log)]
+#
+#     home_dir = os.path.expanduser('~')
+#     path = os.path.join(home_dir, 'Uniaxial Desmorat')
+#     path = os.path.join(path, 'Parametric isotropic')
+#     #path = os.path.join(path, 'S-N curves')
+#     if os.path.exists(path) == False:
+#         os.makedirs(path)
+#
+#     np.save(os.path.join(path, 'N_S_1e2.npy'), N_log)
+#     np.save(os.path.join(path, 'S_max_1e2.npy'), s_max_1)
+#     plt.subplot(111)
+#     axes = plt.gca()
+#     axes.set_ylim([0, 1.2])
+#     plt.semilogx(N_log, s_max_1)
+#
+#
+# #     np.save(os.path.join(path, 'sigma_f.npy'), sig_arr_2)
+# #     np.save(os.path.join(path, 'eps_f.npy'), eps)
+# #     np.save(os.path.join(path, 'eps_cum_f.npy'), eps_cum)
+# #     np.save(os.path.join(path, 'omega_f.npy'), omega)
+# #
+#     np.save(os.path.join(path, 'sigma_m_1e2.npy'), sig_arr_1)
+#     np.save(os.path.join(path, 'eps_m_1e2.npy'), eps_1)
+#     np.save(os.path.join(path, 'fmax_1e2.npy'), f_max1)
+
     plt.show()
-#   m.configure_traits()
+# m.configure_traits()

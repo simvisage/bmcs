@@ -1,63 +1,57 @@
-'''
+''''
 Created on 20.10.2018
 
 @author: Mario Aguilar
 '''
 
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
-    FRPDamageFn
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from traits.api import implements,  \
-    Constant, Float, WeakRef, List, Str, Property, cached_property, \
-    Trait, on_trait_change, Instance, Callable
-from traitsui.api import View, VGroup, Item, UItem, Group
-
 import matplotlib.pyplot as plt
-from mats_bondslip import MATSBondSlipBase
 import numpy as np
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from io import StringIO
+    import os
 
-    N_R_1 = np.loadtxt(fname="C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\N=0.txt")
-    N_R_2 = np.loadtxt(fname="C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\N=-epsMax.txt")
-    s_max_1 = np.loadtxt(fname="C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\epsMin=0.txt")
-    s_max_2 = np.loadtxt(fname="C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\epsMin=-epsMax.txt")
+    home_dir = os.path.expanduser('~')
+    path = os.path.join(home_dir, 'Uniaxial Desmorat')
+    path = os.path.join(path, 'Original parameters')
+    #path = os.path.join(path, 'data')
+    path = os.path.join(path, 'Wohler')
 
-    eps_monotonic = np.load("C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\eps_monotonic.npy")
-    sigma_monotonic = np.load("C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\sigma_monotonic.npy")
+    N_0 = np.load(os.path.join(path, 'N_S0.npy'))
+    S_0 = np.load(os.path.join(path, 'S_maxc0.npy'))
 
-    eps = np.load("C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\eps_original.npy")
-    sigma = np.load("C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\sigma_original.npy")
-    eps_cum = np.load("C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\eps_cum_original.npy")
-    D = np.load("C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\D_original.npy")
+    N_01 = np.load(os.path.join(path, 'N_S0.1.npy'))
+    S_01 = np.load(os.path.join(path, 'S_maxc0.1.npy'))
 
-    plt.subplot(221)
-    plt.plot(eps_monotonic[:, 0, 0], sigma_monotonic[:, 0, 0], 'k')
-    plt.xlabel('strain')
-    plt.ylabel('stress(MPa)')
+    N_02 = np.load(os.path.join(path, 'N_S0.2.npy'))
+    S_02 = np.load(os.path.join(path, 'S_maxc0.2.npy'))
 
-    plt.subplot(222)
-    plt.plot(eps[:, 0, 0], sigma[:, 0, 0], 'k')
-    plt.xlabel('strain')
-    plt.ylabel('stress(MPa)')
+    N_04 = np.load(os.path.join(path, 'N_S0.4.npy'))
+    S_04 = np.load(os.path.join(path, 'S_maxc0.4.npy'))
 
-    plt.subplot(223)
-    plt.plot(eps_cum[:, 0, 0], D[:], 'k')
-    plt.xlabel('cumulative sliding')
-    plt.ylabel('damage')
+#     N_01_ = np.load(os.path.join(path, 'N_S_10.npy'))
+#     S_01_ = np.load(os.path.join(path, 'S_max_10.npy'))
 
-    plt.subplot(224)
-    plt.semilogx(N_R_1[:], s_max_1[:])
-    plt.semilogx(N_R_2[:], s_max_2[:], 'k')
-    plt.xlabel('Nlog')
-    plt.ylabel('Eps max')
-    plt.ylim(0, 0.004)
 
-    plt.subplots_adjust(top=0.92, bottom=0.08, left=0.10,
-                        right=0.95, hspace=0.1, wspace=0.35)
+#     N_02_ = np.load(os.path.join(path, 'eps_m_0.npy'))
+#     S_02_ = np.load(os.path.join(path, 'sigma_m_0.npy'))
+
+#     N_04_ = np.load(os.path.join(path, 'N_Sc-0.4.npy'))
+#     S_04_ = np.load(os.path.join(path, 'S_maxc-0.4.npy'))
+
+    plt.subplot(111)
+    axes = plt.gca()
+    axes.set_ylim([0, 1.2])
+    plt.semilogx(N_0, S_0, 'k')
+    plt.semilogx(N_01, S_01, 'r')
+    plt.semilogx(N_02, S_02, 'b')
+    plt.semilogx(N_04, S_04, 'g')
+#     plt.semilogx(N_01_, S_01_, 'y')
+    #plt.plot(N_02_, S_02_, 'b')
+    #plt.semilogx(N_04_, S_04_, 'y')
+    plt.xlabel('Number of cycles')
+    plt.ylabel('Smax')
 
     plt.show()
