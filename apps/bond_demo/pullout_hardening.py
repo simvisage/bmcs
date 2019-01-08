@@ -1,6 +1,6 @@
 '''
 Created on 12.01.2016
-@author: ABaktheer, RChudoba, Yingxiong
+@author: ABaktheer, RChudoba, Yingxiong - testing
 '''
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
