@@ -2,13 +2,12 @@
 import time
 
 from traits.api import \
-    Float, Bool
+    Float
 import traits.has_traits
 from bmcs.simulator import \
-    Model, Simulator
+    Model, Simulator, TLoopImplicit
 import numpy as np
 
-from .tloop_implicit import TLoopImplicit
 traits.has_traits.CHECK_INTERFACES = 2
 
 

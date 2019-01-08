@@ -7,3 +7,4 @@ from .model import Model
 from .simulator import Simulator
 from .tline import TLine
 from .tloop import TLoop
+from .tloop_implicit import TLoopImplicit

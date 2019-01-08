@@ -11,9 +11,7 @@ from .tstep import TStep
 
 
 class TLoop(HasStrictTraits):
-    '''Handle the time loop with interactive state management.
-
-    The time loop serves as the base class for application time loops.
+    '''The time loop serves as the base class for application time loops.
     That can be interrupted paused, resumed or restarted.
 
     The implementation of the loop must contain the break criterion
