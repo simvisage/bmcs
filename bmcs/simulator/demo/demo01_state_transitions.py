@@ -26,15 +26,12 @@ class DemoExplicitTLoop(TLoop):
         t_n = self.tline.val
         t_max = self.tline.max
         dt = self.tline.step
-#        U_k, t_nn = self.model.get_state()
-#        assert(np.fabs(t_n - t_nn) < 1e-5)  # implementation verification
         while t_n < t_max:
             print('\ttime %g' % t_n)
             if self.user_wants_abort:
                 break
             time.sleep(1)
             t_n += dt
-#            self.model.update_state(U_k, t_n)
             self.hist.record_timestep(t_n)
             self.tline.val = t_n
         return

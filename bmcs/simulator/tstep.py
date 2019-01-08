@@ -30,9 +30,6 @@ class TStep(HasStrictTraits):
     U_k = Float(0.0, auto_set=False, enter_set=True)
     '''Current trial value of the primary variable.
     '''
-    _update_state = Bool(False)
-    '''Tag indicating a step with an update.
-    '''
 
     def init_state(self):
         '''Initialize state.
