@@ -10,6 +10,7 @@ from view.ui.bmcs_tree_node import \
     BMCSTreeNode
 from .i_model import IModel
 from .tloop import TLoop
+from .tstep import TStep
 
 
 @provides(IModel)
@@ -35,6 +36,10 @@ class Model(BMCSTreeNode):
 
     tloop_type = Type(TLoop)
     '''Type of time loop to be used with the model
+    '''
+
+    tstep_type = Type(TStep)
+    '''Type of the time step to be used with the model
     '''
 
     def init_state(self):

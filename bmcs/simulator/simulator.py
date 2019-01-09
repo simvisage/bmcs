@@ -15,6 +15,7 @@ from view.ui.bmcs_tree_node import BMCSRootNode
 
 from .i_hist import IHist
 from .i_model import IModel
+from .i_tstep import ITStep
 from .tline import TLine
 from .tloop import TLoop
 
@@ -89,8 +90,16 @@ class Simulator(BMCSRootNode):
     '''
     @cached_property
     def _get_tloop(self):
-        return self.model.tloop_type(model=self.model,
-                                     tline=self.tline,
+        return self.model.tloop_type(tstep=self.tstep,
+                                     hist=self.hist,
+                                     tline=self.tline)
+
+    tstep = Property(Instance(ITStep), depends_on='model')
+    r'''Class representing the time step and state
+    '''
+    @cached_property
+    def _get_tstep(self):
+        return self.model.tstep_type(model=self.model,
                                      hist=self.hist)
 
     def pause(self):
@@ -104,12 +113,12 @@ class Simulator(BMCSRootNode):
     #=========================================================================
     # HISTORY
     #=========================================================================
-    hist = Property(Instance(IHist), depends_on='model')
+    hist = Instance(IHist)
     r'''History representation of the model response.
     '''
-    @cached_property
-    def _get_hist(self):
-        return Hist(model=self.model)
+
+    def _hist_default(self):
+        return Hist()
 
     #=========================================================================
     # COMPUTATION THREAD

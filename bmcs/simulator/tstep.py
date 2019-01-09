@@ -3,29 +3,29 @@
 
 from traits.api import \
     HasStrictTraits, WeakRef, \
-    Bool, Property, Float, Instance, DelegatesTo, \
-    cached_property
+    Property, Float, Instance, DelegatesTo, \
+    cached_property, provides
 
 import numpy as np
 
 from .i_hist import IHist
 from .i_model import IModel
+from .i_tstep import ITStep
 
 
+@provides(ITStep)
 class TStep(HasStrictTraits):
     '''Manage the data and metadata of a time step within an interation loop.
     '''
-    tloop_type = DelegatesTo('model')
-
     model = Instance(IModel)
 
     hist = WeakRef(IHist)
 
+    t_n1 = Float(0.0, auto_set=False, enter_set=True)
+    '''Target value of the control variable.
+    '''
     U_n = Float(0.0, auto_set=False, enter_set=True)
     '''Current fundamental value of the primary variable.
-    '''
-    t_n = Float(0.0, auto_set=False, enter_set=True)
-    '''Current value of the control variable.
     '''
     U_k = Float(0.0, auto_set=False, enter_set=True)
     '''Current trial value of the primary variable.
@@ -35,7 +35,7 @@ class TStep(HasStrictTraits):
         '''Initialize state.
         '''
         self.U_n = 0.0
-        self.t_n = 0.0
+        self.t_n1 = 0.0
         self.U_k = 0.0
 
     def record_state(self):
@@ -43,11 +43,11 @@ class TStep(HasStrictTraits):
         '''
         pass
 
-    _corr_pred = Property(depends_on='U_k,t_n')
+    _corr_pred = Property(depends_on='U_k,t_n1')
 
     @cached_property
     def _get__corr_pred(self):
-        return self.model.get_corr_pred(self.U_k, self.t_n)
+        return self.model.get_corr_pred(self.U_k, self.t_n1)
 
     R = Property
 
@@ -71,9 +71,8 @@ class TStep(HasStrictTraits):
         d_U = self.R / self.dR
         self.U_k += d_U
 
-    def make_incr(self, t_n):
+    def make_incr(self):
         '''Update the control, primary and state variables..
         '''
-        self.t_n = t_n
         self.U_n = self.U_k
         # self.hist.record_timestep()

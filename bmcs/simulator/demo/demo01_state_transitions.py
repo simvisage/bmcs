@@ -8,10 +8,12 @@ This script is used to demonstrate the states of a model.
 import time
 
 import traits.has_traits
-traits.has_traits.CHECK_INTERFACES = 2
 
 from bmcs.simulator import \
     Simulator, TLoop, Model
+
+from .interaction_scripts import run_rerun_test
+traits.has_traits.CHECK_INTERFACES = 2
 
 
 class DemoExplicitTLoop(TLoop):
@@ -32,7 +34,7 @@ class DemoExplicitTLoop(TLoop):
                 break
             time.sleep(1)
             t_n += dt
-            self.hist.record_timestep(t_n)
+            self.hist.record_timestep(t_n, None)
             self.tline.val = t_n
         return
 
@@ -44,24 +46,4 @@ class DemoStatesModel(Model):
 # Construct a Simulator
 m = DemoStatesModel()
 s = Simulator(model=m)
-print(s.tloop)
-# Start calculation in a thread
-print('RUN the calculation thread from t = 0.0')
-s.run()
-print('WAIT in main thread for 3 secs')
-time.sleep(3)
-print('PAUSE the calculation thread')
-s.pause()
-print('PAUSED wait 1 sec')
-time.sleep(1)
-print('RESUME the calculation thread')
-s.run()
-print('WAIT in the main thread for 3 secs again')
-time.sleep(3)
-print('STOP the calculation thread')
-s.stop()
-print('RUN a new calculation thread from t = 0.0')
-s.run()
-print('JOIN the calculation thread into main thread to end simultaneously')
-s.join()
-print('END all threads')
+run_rerun_test(s)

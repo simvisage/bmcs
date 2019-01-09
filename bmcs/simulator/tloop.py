@@ -3,11 +3,12 @@
 
 from traits.api import \
     HasStrictTraits,\
-    Bool, WeakRef, Property, DelegatesTo, Instance
+    Bool, WeakRef, cached_property,\
+    Property, DelegatesTo, Instance
 
-from .i_hist import IHist
+from .hist import Hist
+from .i_tstep import ITStep
 from .tline import TLine
-from .tstep import TStep
 
 
 class TLoop(HasStrictTraits):
@@ -24,20 +25,21 @@ class TLoop(HasStrictTraits):
     '''
     tline = WeakRef(TLine)
 
-    tstep = Instance(TStep)
+    tstep = WeakRef(ITStep)
 
-    def _tstep_default(self):
-        return TStep()
+    hist = WeakRef(Hist)
 
-    hist = WeakRef(IHist)
+    model = DelegatesTo('tstep')
+
+    @cached_property
+    def _get_hist(self):
+        return Hist()
 
     paused = Bool(False)
 
     restart = Bool(True)
 
     user_wants_abort = Property()
-
-    model = DelegatesTo('tstep')
 
     def _get_user_wants_abort(self):
         return self.restart or self.paused

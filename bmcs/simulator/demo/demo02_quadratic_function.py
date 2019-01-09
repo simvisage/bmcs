@@ -11,10 +11,13 @@ import time
 from traits.api import \
     Int, Float
 import traits.has_traits
-traits.has_traits.CHECK_INTERFACES = 2
+
 from bmcs.simulator import \
     Simulator, TLoop, Model
 import numpy as np
+
+from .interaction_scripts import run_rerun_test
+traits.has_traits.CHECK_INTERFACES = 2
 
 
 class DemoNRTLoop(TLoop):
@@ -24,16 +27,16 @@ class DemoNRTLoop(TLoop):
     k_max = Int(30, enter_set=True, auto_set=False)
 
     def eval(self):
-        t_n = self.tline.val
+        t_n1 = self.tline.val
         t_max = self.tline.max
         dt = self.tline.step
         U_k = self.model.get_state()
-        while t_n < t_max:
-            print('\ttime: %g' % t_n, end='')
+        while t_n1 < t_max:
+            print('\ttime: %g' % t_n1, end='')
             k = 0
             # run the iteration loop
             while (k < self.k_max) and not self.user_wants_abort:
-                R, dR = self.model.get_corr_pred(U_k, t_n)
+                R, dR = self.model.get_corr_pred(U_k, t_n1)
                 if np.sqrt(R * R) < 1e-5:
                     print('\titer: %g' % k)
                     break
@@ -47,12 +50,13 @@ class DemoNRTLoop(TLoop):
                     print('Warning: '
                           'convergence not reached in %g iterations', k)
                 return
-            t_n += dt
             # accept the time step
-            self.model.update_state(U_k, t_n)
-            self.hist.record_timestep(t_n)
+            self.model.update_state(U_k, t_n1)
+            self.hist.record_timestep(t_n1, U_k)
             # tline launches notifiers to announce a new step to subscribers
-            self.tline.val = t_n
+            self.tline.val = t_n1
+            # set a new target time
+            t_n1 += dt
         return
 
 
@@ -109,23 +113,4 @@ class DemoQuadFNModel(Model):
 m = DemoQuadFNModel()
 s = Simulator(model=m)
 print(s.tloop)
-# Start calculation in a thread
-print('\nRUN the calculation thread from t = 0.0')
-s.run()
-print('\nWAIT in main thread for 3 secs')
-time.sleep(3)
-print('\nPAUSE the calculation thread')
-s.pause()
-print('\nPAUSED wait 1 sec')
-time.sleep(1)
-print('\nRESUME the calculation thread')
-s.run()
-print('\nWAIT in the main thread for 3 secs again')
-time.sleep(3)
-print('\nSTOP the calculation thread')
-s.stop()
-print('\nRUN a new calculation thread from t = 0.0')
-s.run()
-print('\nJOIN the calculation thread into main thread to end simultaneously')
-s.join()
-print('END all threads')
+run_rerun_test(s)

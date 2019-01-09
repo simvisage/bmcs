@@ -11,7 +11,7 @@ from traits.api import \
 import numpy as np
 
 from .i_hist import IHist
-from .i_model import IModel
+from .tstep import TStep
 
 
 @provides(IHist)
@@ -19,16 +19,19 @@ class Hist(HasStrictTraits):
     '''Object storing and managing the history of calculation.
     '''
 
-    model = WeakRef(IModel)
+    timesteps = List()
 
-    def record_timestep(self, t):
+    primary_vars = List()
+
+    state_vars = List()
+
+    def record_timestep(self, t, primary_var, state_vars=None):
         '''Add the time step and record the 
         corresponding state of the model.
         '''
         self.timesteps.append(t)
-        self.model.record_state()
-
-    timesteps = List()
+        self.primary_vars.append(primary_var)
+        self.state_vars.append(state_vars)
 
     def get_time_idx_arr(self, vot):
         '''Get the index corresponding to visual time

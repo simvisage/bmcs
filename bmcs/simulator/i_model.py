@@ -4,7 +4,7 @@ Created on Dec 17, 2018
 @author: rch
 '''
 
-from traits.api import Interface
+from traits.api import Interface, Type
 
 
 class IModel(Interface):
@@ -42,6 +42,9 @@ class IModel(Interface):
     the array of load factors need to induce a crack in 
     a material point. 
     '''
+    tloop_type = Type
+
+    tstep_type = Type
 
     def get_corr_pred(self, U_k, t_n):
         '''Return the value and the derivative of a function
