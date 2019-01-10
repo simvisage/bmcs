@@ -50,7 +50,7 @@ class ModelWithState(Model):
                   enter_set=True,
                   auto_set=False)
 
-    def get_corr_pred(self, U_k, t_n1, eps_p_n, q_n, alpha_n):
+    def xget_corr_pred(self, U_k, t_n1, eps_p_n, q_n, alpha_n):
         '''Return the value and the derivative of a function
         '''
         eps_n1 = U_k
@@ -73,6 +73,30 @@ class ModelWithState(Model):
                 (self.E + self.K_bar + self.H_bar)
         return sig_n1, D_n1
 
+    def get_corr_pred(self, U_k, t_n1, eps_p_n, q_n, alpha_n):
+        '''Return the value and the derivative of a function
+        '''
+        eps_n1 = U_k
+        E = self.E
+
+        sig_trial = self.E * (eps_n1 - eps_p_n)
+        xi_trial = sig_trial - q_n
+        f_trial = abs(xi_trial) - (self.sigma_y + self.K_bar * alpha_n)
+
+        D_shape = sig_trial.shape[:-2] + (1, 1)
+        D_k = np.zeros(D_shape, dtype='float_')
+
+        sig_k = sig_trial
+        D_k[...] = E
+        I = np.where(f_trial > 1e-8)
+        d_gamma = f_trial[I] / (self.E + self.K_bar + self.H_bar)
+        sig_k[I] -= self.E * d_gamma * np.sign(xi_trial[I])
+        D_k[I] = (
+            (self.E * (self.K_bar + self.H_bar)) /
+            (self.E + self.K_bar + self.H_bar)
+        )
+        return sig_k, D_k
+
     def update_state(self, U_k, t_n1, eps_p_n, q_n, alpha_n):
         '''In-place update of state variables. 
         '''
@@ -88,6 +112,6 @@ class ModelWithState(Model):
 
 
 # Construct a Simulator
-m = ModelWithState()
+m = ModelWithState(sigma_y=0.5)
 s = Simulator(model=m)
 run_rerun_test(s)

@@ -32,7 +32,7 @@ class SimMATSExplore(Simulator):
 
 
 if __name__ == '__main__':
-    from ibvpy.mats.mats3D.mats3D_plastic.mats3D_desmorat import \
+    from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
         MATS3DDesmorat
 
     s = SimMATSExplore(

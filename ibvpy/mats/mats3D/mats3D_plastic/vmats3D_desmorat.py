@@ -34,8 +34,8 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
                         'sigma_pi_ab': (3, 3),
                         'eps_pi_ab': (3, 3),
                         'alpha_ab': (3, 3),
-                        'z_Ema': (),
-                        'omega_Ema': ()}
+                        'z_a': (),
+                        'omega_a': ()}
     r'''
     Shapes of the state variables
     to be stored in the global array at the level 
@@ -141,19 +141,7 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
                     enter_set=True,
                     auto_set=False)
 
-    state_array_shapes = {'sigma_ab': (3, 3),
-                          'sigma_pi_ab': (3, 3),
-                          'eps_pi_ab': (3, 3),
-                          'alpha_ab': (3, 3),
-                          'z_Ema': (),
-                          'omega_Ema': ()}
-    r'''
-    Shapes of the state variables
-    to be stored in the global array at the level 
-    of the domain.
-    '''
-
-    def _get_state_variables(self, eps_ab, eps_pi_ab, alpha_ab, z_Ema, omega_Ema):
+    def _get_state_variables(self, eps_ab, eps_pi_ab, alpha_ab, z_a, omega_a):
 
         D_1_abef = self.D_1_abef
         D_2_abef = self.D_2_abef
@@ -174,20 +162,20 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
         n = a / norm_a
 
         f = np.sqrt(np.einsum('...ij,...ij', a, a)
-                    ) - self.tau_bar - self.K * z_Ema
+                    ) - self.tau_bar - self.K * z_a
 
         plas_1 = f > 1e-6
         elas_1 = f < 1e-6
 
         delta_pi = f / \
-            (self.E_2 + (self.K + self.gamma) * (1. - omega_Ema)) * plas_1
+            (self.E_2 + (self.K + self.gamma) * (1. - omega_a)) * plas_1
 
         b = 1.0 * elas_1 + norm_a * plas_1
 
 #         delta_lamda = f / (np.einsum('...ij,...ijkl,...kl',
 #                                      n, D_2_abef, n) + self.gamma * np.einsum('...ij,...ij', n, n) + self.K)
 #
-#         delta_pi = delta_lamda / (1.0 - omega_Ema)
+#         delta_pi = delta_lamda / (1.0 - omega_a)
 
         eps_pi_ab = eps_pi_ab + (a * delta_pi / b)
         print('eps_ab', eps_ab[..., 0, 0])
@@ -195,7 +183,7 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
 
         eps_diff_ab = eps_ab - eps_pi_ab
 
-        Y_Ema = 0.5 * (
+        Y_a = 0.5 * (
             (
                 np.einsum('...ij,...ijkl,...kl',
                           eps_ab, D_1_abef, eps_ab)
@@ -205,21 +193,21 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
                           eps_diff_ab, D_2_abef, eps_diff_ab)
             )
         )
-        omega_Ema = omega_Ema + (Y_Ema / self.S) * delta_pi
+        omega_a = omega_a + (Y_a / self.S) * delta_pi
 
-        if omega_Ema >= 0.99:
-            omega_Ema = 0.99
+        if omega_a >= 0.99:
+            omega_a = 0.99
 
         alpha_ab = alpha_ab + plas_1 * \
-            (a * delta_pi / b) * (1.0 - omega_Ema)
+            (a * delta_pi / b) * (1.0 - omega_a)
 
-        z_Ema = z_Ema + delta_pi * (1.0 - omega_Ema)
+        z_a = z_a + delta_pi * (1.0 - omega_a)
 
-        return eps_pi_ab, alpha_ab, z_Ema, omega_Ema
+        return eps_pi_ab, alpha_ab, z_a, omega_a
 
     def get_corr_pred(self, eps_ab_k, tn1,
-                      sigma_ab, sigma_pi_ab, eps_pi_ab,
-                      alpha_ab, z_Ema, omega_Ema):
+                      sigma_ab_n, sigma_pi_ab_n, eps_pi_ab_n,
+                      alpha_ab_n, z_a_n, omega_a_n):
         r'''
         Corrector predictor computation.
         '''
@@ -228,26 +216,28 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
         D_1_abef = self.D_1_abef.reshape(*new_shape)
         D_2_abef = self.D_2_abef.reshape(*new_shape)
 
-        eps_pi_ab, alpha_ab, z_Ema, omega_Ema = self._get_state_variables(
-            eps_ab_k, eps_pi_ab, alpha_ab, z_Ema, omega_Ema)
+        eps_pi_ab_k, alpha_ab_k, z_a_k, omega_a_k = self._get_state_variables(
+            eps_ab_k, eps_pi_ab_n, alpha_ab_n, z_a_n, omega_a_n
+        )
 
-        phi_n = 1.0 - omega_Ema
+        phi_n = 1.0 - omega_a_k
 
         sigma_ab = phi_n * (np.einsum('...ijkl,...kl->...ij',
                                       D_1_abef, eps_ab_k) +
                             np.einsum('...ijkl,...kl->...ij',
-                                      D_2_abef, eps_ab_k - eps_pi_ab))
+                                      D_2_abef, eps_ab_k - eps_pi_ab_k))
 
         D_abef = phi_n * np.einsum(' ...ijkl->...ijkl',
                                    D_1_abef + D_2_abef)
 
         return D_abef, sigma_ab
 
-    def update_state(self, eps_ab_k, tn1,
-                     sigma_ab, sigma_pi_ab, eps_pi_ab,
-                     alpha_ab, z_Ema, omega_Ema):
-        self._get_state_variables(
-            eps_ab_k, eps_pi_ab, alpha_ab, z_Ema, omega_Ema
+    def update_state(self, eps_ab_n1, tn1,
+                     sigma_ab_n, sigma_pi_ab_n, eps_pi_ab_n,
+                     alpha_ab_n, z_a_n, omega_a_n):
+        eps_ab_n1[...], eps_pi_ab_n[...], alpha_ab_n[...], z_a_n[...], omega_a_n[...] = \
+            self._get_state_variables(
+            eps_ab_n1, eps_pi_ab_n, alpha_ab_n, z_a_n, omega_a_n
         )
 
     traits_view = View(

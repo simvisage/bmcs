@@ -74,10 +74,10 @@ class DemoQuadFNModel(Model):
     '''Current value of the control variable.
     '''
 
-    def get_corr_pred(self, U_k, t_n):
+    def get_corr_pred(self, U_k, t_n1):
         '''Return the value and the derivative of a function
         '''
-        R = U_k * U_k - (self.R0 * t_n)
+        R = U_k * U_k - (self.R0 * t_n1)
         dR = 2 * U_k
         # handle the case of zero derivative - return small number
         dR = max(np.fabs(dR), 1e-3)
