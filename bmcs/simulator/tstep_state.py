@@ -32,7 +32,7 @@ class TStepState(HasStrictTraits):
     @cached_property
     def _get_U_n(self):
         U_var_shape = self.model.U_var_shape
-        return np.zeros(U_var_shape, dtype=np.float_)
+        return np.zeros(U_var_shape, dtype=np.float_).flatten()
 
     '''Current fundamental value of the primary variable.
     '''
@@ -42,7 +42,11 @@ class TStepState(HasStrictTraits):
     @cached_property
     def _get_U_k(self):
         U_var_shape = self.model.U_var_shape
-        return np.zeros(U_var_shape, dtype=np.float_)
+        return np.zeros(U_var_shape, dtype=np.float_).flatten()
+
+    F_0 = Float(1.0, auto_set=False, enter_set=True)
+    '''Target value of a function (load).
+    '''
 
     model_structure_changed = Event
 
@@ -57,7 +61,7 @@ class TStepState(HasStrictTraits):
         sa_shapes = self.model.state_var_shapes
         print('state array generated', sa_shapes)
         return {
-            name: np.zeros(mats_sa_shape, dtype=np.float_)
+            name: np.zeros(mats_sa_shape, dtype=np.float_)[np.newaxis, ...]
             for name, mats_sa_shape
             in list(sa_shapes.items())
         }
@@ -77,16 +81,20 @@ class TStepState(HasStrictTraits):
 
     @cached_property
     def _get__corr_pred(self):
-        return self.model.get_corr_pred(
-            self.U_k, self.t_n1,
+        U_k_r = self.U_k.reshape(self.model.U_var_shape)
+        F, dF = self.model.get_corr_pred(
+            U_k_r, self.t_n1,
             **self.state_vars
         )
+        F_t = self.F_0 * self.t_n1
+
+        return F_t - F, dF
 
     R = Property
 
     def _get_R(self):
         R, dR = self._corr_pred
-        return R
+        return R.flatten()
 
     dR = Property
 
@@ -101,6 +109,8 @@ class TStepState(HasStrictTraits):
         return np.sqrt(R * R)
 
     def make_iter(self):
+        '''Perform a single iteration
+        '''
         d_U = self.R / self.dR[:, 0]
         self.U_k[:] += d_U[:]
         self.primary_var_changed = True

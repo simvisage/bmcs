@@ -4,8 +4,6 @@
 
 from traits.api import \
     Int, Float, Bool
-import traits.has_traits
-traits.has_traits.CHECK_INTERFACES = 2
 from bmcs.simulator import \
     TLoop
 

@@ -12,22 +12,23 @@
 #
 # Created on Sep 4, 2009 by: rch
 
-from ibvpy.core.bcond_mngr import BCondMngr
-from ibvpy.core.tstepper import TStepper
-from ibvpy.mats.mats_eval import IMATSEval
-#from pyglet.media.drivers.alsa.asound import u_int16_t
 from traits.api import \
     Instance, \
     Dict,  WeakRef, List, implements, \
     DelegatesTo, Bool
 from traitsui.api import \
     Item, View
+
+from bmcs.simulator.tstep_state import TStepState
+from ibvpy.core.bcond_mngr import BCondMngr
+from ibvpy.core.tstepper import TStepper
+from ibvpy.mats.mats_eval import IMATSEval
+import numpy as np
 from view.ui import BMCSTreeNode
 
-import numpy as np
 
-
-class MATSXDExplore(TStepper):
+#from pyglet.media.drivers.alsa.asound import u_int16_t
+class MATSXDExplore(TStepState):
 
     '''
     Base class for MATSExplorer dimensional to manage dimensionally 
@@ -52,52 +53,12 @@ class MATSXDExplore(TStepper):
     algorithmic_stiffness = Bool(
         True, ALG=True, auto_set=False, enter_set=True)
 
-    state_array_shapes = DelegatesTo('mats_eval')
-
-    explorer = WeakRef
-
-    mats_eval = Instance(IMATSEval)
-
     # Boundary condition manager
     #
     bcond_mngr = Instance(BCondMngr)
 
     def _bcond_mngr_default(self):
         return BCondMngr()
-
-    explorer_config = Dict({})
-
-    def _mats_eval_changed(self):
-        return
-        if self.explorer_config:
-            ec = self.explorer_config
-        else:
-            ec = self.mats_eval.explorer_config
-        mats_eval = ec.get('mats_eval', self.mats_eval)
-        if self.explorer == None:
-            return
-
-        self.explorer.tloop.tstepper.tse = mats_eval
-        self.explorer.tloop.tstepper.sdomain.mats_eval = mats_eval
-
-        tl = self.explorer.tloop
-        tl.bcond_list = ec['bcond_list']
-        tl.rtrace_list = ec['rtrace_list']
-        if 'tline' in ec:
-            tl.tline = ec['tline']
-        tl.reset()
-
-    def new_cntl_var(self):
-        '''
-        Return contoll variable array
-        '''
-        return np.zeros(6, np.float_)
-
-    def new_resp_var(self):
-        '''
-        Return control response array
-        '''
-        return np.zeros(6, np.float_)
 
     def get_corr_pred(self, U, dU, t_n, t_n1, update_state,
                       **state_vars):
