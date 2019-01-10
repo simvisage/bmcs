@@ -137,17 +137,9 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
         sigma_pi_Emab_trial = (
             np.einsum('...ijkl,...kl->...ij', D_2_abef, eps_Emab - eps_pi_Emab))
 
-        #print('eps_Emab', eps_Emab)
-        #print('D_2_abef', D_2_abef)
-        #print('sigma_pi_Emab_trial', sigma_pi_Emab_trial)
-
         a = sigma_pi_Emab_trial - self.gamma * alpha_Emab
-        #print('a', a)
 
         norm_a = np.sqrt(np.einsum('...ij,...ij', a, a))
-        #print('norm_a', norm_a)
-
-        n = a / norm_a
 
         f = np.sqrt(np.einsum('...ij,...ij', a, a)
                     ) - self.tau_bar - self.K * z_Ema
@@ -166,8 +158,8 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
 #         delta_pi = delta_lamda / (1.0 - omega_Ema)
 
         eps_pi_Emab = eps_pi_Emab + (a * delta_pi / b)
-        print('eps_Emab', eps_Emab[..., 0, 0])
-        print('eps_pi_Emab', eps_pi_Emab[..., 0, 0])
+        #print('eps_Emab', eps_Emab[..., 0, 0])
+        #print('eps_pi_Emab', eps_pi_Emab[..., 0, 0])
 
         eps_diff_Emab = eps_Emab - eps_pi_Emab
 
@@ -196,7 +188,7 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
         Corrector predictor computation.
         '''
         if update_state:
-            eps_Emab_n = eps_Emab_n1  # - deps_Emab
+            eps_Emab_n = eps_Emab_n1 - deps_Emab
 
             Em_len = len(eps_Emab_n.shape) - 2
             new_shape = tuple([1 for i in range(Em_len)]) + self.D_abef.shape
@@ -206,15 +198,15 @@ class MATS3DDesmorat(MATS3DEval, MATS3D):
             eps_pi_Emab, alpha_Emab, z_Ema, omega_Ema = self._get_state_variables(
                 eps_Emab_n, eps_pi_Emab, alpha_Emab, z_Ema, omega_Ema)
 
-            phi_Emn = 1.0 - omega_Ema
+        phi_Emn = 1.0 - omega_Ema
 
-            sigma_Emab = phi_Emn * (np.einsum('...ijkl,...kl->...ij',
-                                              D_1_abef, eps_Emab_n) +
-                                    np.einsum('...ijkl,...kl->...ij',
-                                              D_2_abef, eps_Emab_n - eps_pi_Emab))
+        sigma_Emab = phi_Emn * (np.einsum('...ijkl,...kl->...ij',
+                                          D_1_abef, eps_Emab_n1) +
+                                np.einsum('...ijkl,...kl->...ij',
+                                          D_2_abef, eps_Emab_n1 - eps_pi_Emab))
 
-            D_abef = phi_Emn * np.einsum(' ...ijkl->...ijkl',
-                                         D_1_abef + D_2_abef)
+        D_abef = phi_Emn * np.einsum(' ...ijkl->...ijkl',
+                                     D_1_abef + D_2_abef)
 
         return D_abef, sigma_Emab
 
