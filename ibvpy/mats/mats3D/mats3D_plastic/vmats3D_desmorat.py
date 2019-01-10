@@ -30,12 +30,12 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
     '''Shape of the primary variable required by the TStepState.
     '''
 
-    state_var_shapes = {'sigma_ab': (3, 3),
-                        'sigma_pi_ab': (3, 3),
-                        'eps_pi_ab': (3, 3),
-                        'alpha_ab': (3, 3),
-                        'z_a': (),
-                        'omega_a': ()}
+    state_var_shapes = {'sigma_ab_n': (3, 3),
+                        'sigma_pi_ab_n': (3, 3),
+                        'eps_pi_ab_n': (3, 3),
+                        'alpha_ab_n': (3, 3),
+                        'z_a_n': (),
+                        'omega_a_n': ()}
     r'''
     Shapes of the state variables
     to be stored in the global array at the level 
@@ -158,9 +158,7 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
 
         norm_a = np.sqrt(np.einsum('...ij,...ij', a, a))
         #print('norm_a', norm_a)
-
-        n = a / norm_a
-
+        #n = a / norm_a
         f = np.sqrt(np.einsum('...ij,...ij', a, a)
                     ) - self.tau_bar - self.K * z_a
 
@@ -178,11 +176,7 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
 #         delta_pi = delta_lamda / (1.0 - omega_a)
 
         eps_pi_ab = eps_pi_ab + (a * delta_pi / b)
-        print('eps_ab', eps_ab[..., 0, 0])
-        print('eps_pi_ab', eps_pi_ab[..., 0, 0])
-
         eps_diff_ab = eps_ab - eps_pi_ab
-
         Y_a = 0.5 * (
             (
                 np.einsum('...ij,...ijkl,...kl',
@@ -230,12 +224,12 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
         D_abef = phi_n * np.einsum(' ...ijkl->...ijkl',
                                    D_1_abef + D_2_abef)
 
-        return D_abef, sigma_ab
+        return sigma_ab, D_abef
 
     def update_state(self, eps_ab_n1, tn1,
                      sigma_ab_n, sigma_pi_ab_n, eps_pi_ab_n,
                      alpha_ab_n, z_a_n, omega_a_n):
-        eps_ab_n1[...], eps_pi_ab_n[...], alpha_ab_n[...], z_a_n[...], omega_a_n[...] = \
+        eps_pi_ab_n[...], alpha_ab_n[...], z_a_n[...], omega_a_n[...] = \
             self._get_state_variables(
             eps_ab_n1, eps_pi_ab_n, alpha_ab_n, z_a_n, omega_a_n
         )

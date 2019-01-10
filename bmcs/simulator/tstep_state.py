@@ -3,11 +3,9 @@
 
 from traits.api import \
     HasStrictTraits, WeakRef, \
-    Property, Float, Instance, DelegatesTo, \
+    Property, Float, Instance, \
     cached_property, Event, Dict, Str, Array, provides
-
 import numpy as np
-
 from .i_hist import IHist
 from .i_model import IModel
 from .i_tstep import ITStep
@@ -23,7 +21,7 @@ class TStepState(HasStrictTraits):
 
     primary_var_changed = Event
 
-    t_n1 = Float(0.0, auto_set=False, enter_set=True)
+    t_n1 = Float(0.0)
     '''Target time value of the control variable.
     '''
     U_n = Property(Array(np.float_), depends_on='model_structure_changed')

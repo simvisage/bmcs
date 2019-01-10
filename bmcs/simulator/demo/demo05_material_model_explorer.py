@@ -5,6 +5,7 @@ from bmcs.simulator import Simulator
 from bmcs.time_functions import \
     LoadingScenario
 from ibvpy.bcond import BCDof
+from .interaction_scripts import run_rerun_test
 
 
 class SimMATSExplore(Simulator):
@@ -40,6 +41,7 @@ if __name__ == '__main__':
     s = SimMATSExplore(
         model=MATS3DDesmorat()
     )
-
+    s.tstep.bcond_mngr.bcond_list = [s.bc]
     s.run()
     s.join()
+    # run_rerun_test(s)
