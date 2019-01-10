@@ -1,4 +1,10 @@
 
+from traits.api import \
+    Callable, Float, List, Property, cached_property,\
+    Instance
+from traitsui.api import \
+    Item, View, VGroup
+
 from bmcs.time_functions import \
     LoadingScenario
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
@@ -7,11 +13,6 @@ from ibvpy.core.scontext import SContext
 from ibvpy.core.tloop import TLine
 from ibvpy.mats.mats_eval import IMATSEval
 from ibvpy.mesh.fe_domain import FEDomain
-from traits.api import \
-    Callable, Float, List, Property, cached_property,\
-    Instance
-from traitsui.api import \
-    Item, View, VGroup
 from util.traits.either_type import \
     EitherType
 from view.plot2d import Viz2D, Vis2D

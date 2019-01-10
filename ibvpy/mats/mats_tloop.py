@@ -3,17 +3,18 @@ Created on 12.01.2016
 
 @author: Yingxiong
 '''
-from ibvpy.core.tline import TLine
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 from traits.api import Int, HasStrictTraits, Instance, \
     Float, Event, \
     Array, List, Bool, Property, cached_property, Str, Dict
 from traitsui.api import View, Item
+
+from ibvpy.core.tline import TLine
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
+import numpy as np
 from view.ui import BMCSLeafNode
 
 from .mats3D.mats3D_explore import MATS3DExplore
-import numpy as np
 
 
 #from matsXD.matsXD_explore import MATSXDExplore
@@ -174,7 +175,7 @@ if __name__ == '__main__':
         mats_eval=MATS3DDesmorat()
     )
 
-    ts.bcond_mngr.bcond_list = [BCDof(var='u', dof=0, value=3)]
+    ts.bcond_mngr.bcond_list = [BCDof(var='u', dof=0, value=0.001)]
 
     tl = TLoop(ts=ts, tline=TLine(step=0.1))
     tl.init()
