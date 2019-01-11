@@ -19,7 +19,6 @@ from traits.api import \
 from traitsui.api import \
     Item, View
 
-from bmcs.simulator.tstep_state import TStepState
 from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.core.tstepper import TStepper
 from ibvpy.mats.mats_eval import IMATSEval
@@ -28,13 +27,16 @@ from view.ui import BMCSTreeNode
 
 
 #from pyglet.media.drivers.alsa.asound import u_int16_t
-class MATSXDExplore(TStepState):
+class MATSXDExplore(TStepper):
 
     '''
     Base class for MATSExplorer dimensional to manage dimensionally 
     dependent presentation of the material models.
     Simulate the loading histories of a material point in 1D space.
         '''
+
+    explorer = WeakRef
+
     node_name = 'Stress space'
 
     tree_node_list = List([])
@@ -50,6 +52,8 @@ class MATSXDExplore(TStepState):
             self.mats_eval
         ]
 
+    state_array_shapes = DelegatesTo('mats_eval')
+
     algorithmic_stiffness = Bool(
         True, ALG=True, auto_set=False, enter_set=True)
 
@@ -62,6 +66,7 @@ class MATSXDExplore(TStepState):
 
     def get_corr_pred(self, U, dU, t_n, t_n1, update_state,
                       **state_vars):
+        print('U', U)
         eps_Emab = self.mats_eval.map_eps_eng_to_mtx(U)[np.newaxis, ...]
         deps_Emab = self.mats_eval.map_eps_eng_to_mtx(dU)[np.newaxis, ...]
         D_Emabef, sig_Emab = self.mats_eval.get_corr_pred(
@@ -71,6 +76,8 @@ class MATSXDExplore(TStepState):
         )
         K = self.mats_eval.map_tns4_to_tns2(D_Emabef[0])
         F_int = self.mats_eval.map_sig_mtx_to_eng(sig_Emab[0])
+        print('K', K)
+        print('F', F_int)
         return K, F_int
 
     traits_view = View(Item('mats_eval', show_label=False),

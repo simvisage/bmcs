@@ -146,13 +146,16 @@ if __name__ == '__main__':
             mats_eval=MATS3DDesmorat()
         )
     )
-    viz2d_sig_eps = Viz2DSigEps(name='stress-strain',
-                                vis2d=explorer)
+    explorer.tline.step = 0.5
+    explorer.run()
 
-    w = BMCSWindow(model=explorer)
-
-    w.viz_sheet.viz2d_list.append(viz2d_sig_eps)
-    w.viz_sheet.n_cols = 1
-    w.viz_sheet.monitor_chunk_size = 1
-    w.offline = False
-    w.configure_traits()
+#     viz2d_sig_eps = Viz2DSigEps(name='stress-strain',
+#                                 vis2d=explorer)
+#
+#     w = BMCSWindow(model=explorer)
+#
+#     w.viz_sheet.viz2d_list.append(viz2d_sig_eps)
+#     w.viz_sheet.n_cols = 1
+#     w.viz_sheet.monitor_chunk_size = 1
+#     w.offline = False
+#     w.configure_traits()

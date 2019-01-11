@@ -21,21 +21,13 @@ import traits.api as tr
 class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
     '''Damage - plasticity model by Desmorat.
     '''
-    # To use the model directly in the simulator specify the
-    # time stepping classes
-    tloop_type = TLoopImplicit
-    tstep_type = TStepBC
 
-    U_var_shape = (3, 3)
-    '''Shape of the primary variable required by the TStepState.
-    '''
-
-    state_var_shapes = {'sigma_Emab': (3, 3),
-                        'sigma_pi_Emab': (3, 3),
-                        'eps_pi_Emab': (3, 3),
-                        'alpha_Emab': (3, 3),
-                        'z_Ema': (),
-                        'omega_Ema': ()}
+    state_array_shapes = {'sigma_Emab': (3, 3),
+                          'sigma_pi_Emab': (3, 3),
+                          'eps_pi_Emab': (3, 3),
+                          'alpha_Emab': (3, 3),
+                          'z_Ema': (),
+                          'omega_Ema': ()}
     r'''
     Shapes of the state variables
     to be stored in the global array at the level 

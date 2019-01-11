@@ -44,17 +44,22 @@ class TStepBC(TStepState):
 
     @cached_property
     def _get__corr_pred(self):
-        U_k_r = self.U_k.reshape(self.model.U_var_shape)
-        F_int, K = self.model.get_corr_pred(
-            U_k_r, self.t_n1,
+        print('U_k', self.U_k)
+        U_k_field = self.model.map_vector_to_field(self.U_k)
+        sig_k, D_k = self.model.get_corr_pred(
+            U_k_field, self.t_n1,
             **self.state_vars
         )
-        self.K.add_mtx(K)
-        F_ext = np.zeros_like(F_int.flatten())
+        K_k = self.model.do_map_tns4_to_tns2(D_k)
+        print('K_k', K_k)
+        self.K.add_mtx(K_k)
+        F_ext = np.zeros_like(self.U_k)
         self.bcond_mngr.apply(
             self.step_flag, None, self.K, F_ext, self.t_n, self.t_n1
         )
-        R = F_ext - F_int.flatten()
+        F_int = self.model.map_field_to_vector(sig_k).flatten()
+        print('F_int', F_int)
+        R = F_ext - F_int
         self.K.apply_constraints(R)
         return R, self.K
 
@@ -66,7 +71,7 @@ class TStepBC(TStepState):
         '''Perform a single iteration
         '''
         d_U_k, pos_def = self.K.solve()
-        self.U_k += d_U_k
+        self.U_k[:] += d_U_k
         self.primary_var_changed = True
         self.step_flag = 'corrector'
 
@@ -74,9 +79,9 @@ class TStepBC(TStepState):
         '''Update the control, primary and state variables..
         '''
         self.U_n[:] = self.U_k[:]
-        U_k_r = self.U_k.reshape(self.model.U_var_shape)
+        U_k_field = self.model.map_vector_to_field(self.U_k)
         self.model.update_state(
-            U_k_r, self.t_n1,
+            U_k_field, self.t_n1,
             **self.state_vars
         )
         self.hist.record_timestep(

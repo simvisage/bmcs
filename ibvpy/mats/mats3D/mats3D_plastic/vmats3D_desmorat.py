@@ -14,8 +14,26 @@ from ibvpy.mats.mats3D.mats3D_eval import \
     MATS3DEval
 from ibvpy.mats.mats3D.vmats3D_eval import \
     MATS3D
+from mathkit.tensor import EPS, DELTA
 import numpy as np
 import traits.api as tr
+
+DD = np.hstack([DELTA, np.zeros_like(DELTA)])
+EEPS = np.hstack([np.zeros_like(EPS), EPS])
+GAMMA = np.einsum(
+    'ik,jk->kij', DD, DD
+) + np.einsum(
+    'ikj->kij', np.fabs(EEPS)
+)
+GAMMA_inv = np.einsum(
+    'ik,jk->kij', DD, DD
+) + 0.5 * np.einsum(
+    'ikj->kij', np.fabs(EEPS)
+)
+
+GG = np.einsum(
+    'mij,nkl->mnijkl', GAMMA_inv, GAMMA_inv
+)
 
 
 class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
@@ -26,9 +44,24 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
     tloop_type = TLoopImplicit
     tstep_type = TStepBC
 
-    U_var_shape = (3, 3)
+    U_var_shape = (6,)
     '''Shape of the primary variable required by the TStepState.
     '''
+
+    def map_vector_to_field(self, eps_eng):
+        return np.einsum(
+            'kij,...k->...ij', GAMMA, eps_eng
+        )
+
+    def map_field_to_vector(self, eps_tns):
+        return np.einsum(
+            'kij,...ij->...k', GAMMA_inv, eps_tns
+        )
+
+    def do_map_tns4_to_tns2(self, tns4):
+        return np.einsum(
+            'mnijkl,...ijkl->mn', GG, tns4
+        )
 
     state_var_shapes = {'sigma_ab_n': (3, 3),
                         'sigma_pi_ab_n': (3, 3),
@@ -75,8 +108,7 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
 
     @tr.cached_property
     def _get_D_1_abef(self):
-        la = self._get_lame_1_params()[0]
-        mu = self._get_lame_1_params()[1]
+        la, mu = self._get_lame_1_params()
         delta = np.identity(3)
         D_1_abef = (np.einsum(',ij,kl->ijkl', la, delta, delta) +
                     np.einsum(',ik,jl->ijkl', mu, delta, delta) +
@@ -216,10 +248,16 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
 
         phi_n = 1.0 - omega_a_k
 
-        sigma_ab = phi_n * (np.einsum('...ijkl,...kl->...ij',
-                                      D_1_abef, eps_ab_k) +
-                            np.einsum('...ijkl,...kl->...ij',
-                                      D_2_abef, eps_ab_k - eps_pi_ab_k))
+        sigma_ab = phi_n * (
+            np.einsum(
+                '...ijkl,...kl->...ij',
+                D_1_abef, eps_ab_k
+            ) +
+            np.einsum(
+                '...ijkl,...kl->...ij',
+                D_2_abef, eps_ab_k - eps_pi_ab_k
+            )
+        )
 
         D_abef = phi_n * np.einsum(' ...ijkl->...ijkl',
                                    D_1_abef + D_2_abef)
@@ -250,3 +288,26 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
         )
     )
     tree_view = traits_view
+
+
+if __name__ == '__main__':
+    m = MATS3DDesmorat()
+
+    # Convert the tensor to an engineering tensor
+    eps_eng = np.array([[[1, 2, 3, 4, 5, 6]]], dtype=np.float)
+
+    eps_tns = m.map_vector_to_field(eps_eng)
+    eps_eng2 = m.map_field_to_vector(eps_tns)
+    print(eps_eng - eps_eng2)
+
+    D_abdf = np.copy(m.D_1_abef)
+    D_20 = m.do_map_tns4_to_tns2(D_abdf)
+    print(D_20)
+    D_2x = np.einsum(
+        'mnijkl,...ijkl->mn', GG, np.copy(D_abdf)
+    )
+    print(D_2x)
+    D_2y = np.einsum(
+        'mnijkl,...ijkl->mn', GG, np.copy(D_abdf)
+    )
+    print(D_2y)
