@@ -42,6 +42,4 @@ if __name__ == '__main__':
         model=MATS3DDesmorat()
     )
     s.tstep.bcond_mngr.bcond_list = [s.bc]
-    s.run()
-    s.join()
-    # run_rerun_test(s)
+    run_rerun_test(s)

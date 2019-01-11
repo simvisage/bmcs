@@ -57,7 +57,6 @@ class TStepState(HasStrictTraits):
     @cached_property
     def _get_state_vars(self):
         sa_shapes = self.model.state_var_shapes
-        print('state array generated', sa_shapes)
         return {
             name: np.zeros(mats_sa_shape, dtype=np.float_)[np.newaxis, ...]
             for name, mats_sa_shape

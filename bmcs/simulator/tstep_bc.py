@@ -44,21 +44,19 @@ class TStepBC(TStepState):
 
     @cached_property
     def _get__corr_pred(self):
-        print('U_k', self.U_k)
+        self.K.reset_mtx()
         U_k_field = self.model.map_vector_to_field(self.U_k)
         sig_k, D_k = self.model.get_corr_pred(
             U_k_field, self.t_n1,
             **self.state_vars
         )
         K_k = self.model.do_map_tns4_to_tns2(D_k)
-        print('K_k', K_k)
         self.K.add_mtx(K_k)
         F_ext = np.zeros_like(self.U_k)
         self.bcond_mngr.apply(
             self.step_flag, None, self.K, F_ext, self.t_n, self.t_n1
         )
         F_int = self.model.map_field_to_vector(sig_k).flatten()
-        print('F_int', F_int)
         R = F_ext - F_int
         self.K.apply_constraints(R)
         return R, self.K
