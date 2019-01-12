@@ -137,7 +137,6 @@ class BCDof(BMCSTreeNode):
         '''
         According to the kind specification add the
         '''
-
         if self.is_essential():
 
             # The displacement is applied only in the first iteration step!.

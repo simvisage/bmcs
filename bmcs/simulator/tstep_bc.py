@@ -24,10 +24,6 @@ class TStepBC(TStepState):
     def _reset(self):
         self.step_flag = 'predictor'
 
-    t_n = Float(0.0)
-    '''Fundamental state time used for time dependent essential BC'
-    '''
-
     K = Property(
         Instance(SysMtxAssembly),
         depends_on='model_structure_changed'
@@ -87,3 +83,9 @@ class TStepBC(TStepState):
         )
         self.t_n = self.t_n1
         self.step_flag = 'predictor'
+
+    def __str__(self):
+        s = '\nt_n: %g, t_n1: %g' % (self.t_n, self.t_n1)
+        s += '\nU_n' + str(self.U_n)
+        s += '\nU_k' + str(self.U_k)
+        return s

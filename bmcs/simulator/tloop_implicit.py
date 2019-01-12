@@ -21,7 +21,7 @@ class TLoopImplicit(TLoop):
         t_n1 = self.tline.val
         t_max = self.tline.max
         dt = self.tline.step
-        while t_n1 < t_max:
+        while t_n1 <= t_max:
             print('\ttime: %g' % t_n1, end='')
             k = 0
             self.tstep.t_n1 = t_n1

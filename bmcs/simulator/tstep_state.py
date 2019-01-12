@@ -21,6 +21,9 @@ class TStepState(HasStrictTraits):
 
     primary_var_changed = Event
 
+    t_n = Float(0.0)
+    '''Fundamental state time used for time dependent essential BC'
+    '''
     t_n1 = Float(0.0)
     '''Target time value of the control variable.
     '''
@@ -66,6 +69,7 @@ class TStepState(HasStrictTraits):
     def init_state(self):
         '''Initialize state.
         '''
+        self.t_n = 0.0
         self.t_n1 = 0.0
         self.model_structure_changed = True
 
