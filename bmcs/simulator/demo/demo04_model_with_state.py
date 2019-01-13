@@ -50,29 +50,6 @@ class ModelWithState(Model):
                   enter_set=True,
                   auto_set=False)
 
-    def xget_corr_pred(self, U_k, t_n1, eps_p_n, q_n, alpha_n):
-        '''Return the value and the derivative of a function
-        '''
-        eps_n1 = U_k
-        E = self.E
-
-        sig_trial = self.E * (eps_n1 - eps_p_n)
-        xi_trial = sig_trial - q_n
-        f_trial = abs(xi_trial) - (self.sigma_y + self.K_bar * alpha_n)
-
-        sig_n1 = np.zeros_like(sig_trial)
-        D_shape = sig_trial.shape[:-2] + (1, 1)
-        D_n1 = np.zeros(D_shape, dtype='float_')
-        if f_trial <= 1e-8:
-            sig_n1[..., :] = sig_trial
-            D_n1[..., :, :] = E
-        else:
-            d_gamma = f_trial / (self.E + self.K_bar + self.H_bar)
-            sig_n1[..., :] = sig_trial - d_gamma * self.E * np.sign(xi_trial)
-            D_n1[..., :, :] = (self.E * (self.K_bar + self.H_bar)) / \
-                (self.E + self.K_bar + self.H_bar)
-        return sig_n1, D_n1
-
     def get_corr_pred(self, U_k, t_n1, eps_p_n, q_n, alpha_n):
         '''Return the value and the derivative of a function
         '''
