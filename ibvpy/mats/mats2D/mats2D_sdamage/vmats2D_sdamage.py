@@ -1,10 +1,13 @@
 
-from traits.api import on_trait_change
+from traits.api import on_trait_change, Bool
 from traitsui.api import UItem, \
     Item, View, Group, Spring
+
 from bmcs.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     PlottableFn, DamageFn, GfDamageFn
+from bmcs.simulator import \
+    Model, TLoopImplicit, TStepBC
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.mats2D.vmats2D_eval import MATS2D
 import numpy as np
@@ -13,10 +16,13 @@ import traits.api as tr
 from .vstrain_norm2d import StrainNorm2D, SN2DRankine
 
 
-class MATS2DScalarDamage(MATS2DEval, MATS2D):
+class MATS2DScalarDamage(Model, MATS2DEval, MATS2D):
     r'''
     Isotropic damage model.
     '''
+
+    tloop_type = TLoopImplicit
+    tstep_type = TStepBC
 
     node_name = 'isotropic damage model'
 
@@ -67,8 +73,8 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
     the material model
     '''
 
-    state_array_shapes = {'kappa': (),
-                          'omega': ()}
+    state_var_shapes = {'kappa_n': (),
+                        'omega_n': ()}
     r'''
     Shapes of the state variables
     to be stored in the global array at the level 
@@ -82,39 +88,41 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
         kappa[...] = 0
         omega[...] = 0
 
-    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1,
-                      update_state, algorithmic, kappa, omega):
+    algorithmic = Bool(True)
+
+    def get_corr_pred(self, eps_ab_k, tn1, kappa_n, omega_n):
         r'''
         Corrector predictor computation.
         @param eps_app_eng input variable - engineering strain
         '''
-        if update_state:
-            eps_Emab_n = eps_Emab_n1 - deps_Emab
-            kappa_Em, omega_Em, f_idx = self._get_state_variables(
-                eps_Emab_n, kappa, omega)
-            kappa[...] = kappa_Em
-            omega[...] = omega_Em
-
-        kappa_Em, omega_Em, f_idx = self._get_state_variables(
-            eps_Emab_n1, kappa, omega
+        kappa_k, omega_k, f_idx = self._get_state_variables(
+            eps_ab_k, kappa_n, omega_n
         )
-        phi_Em = (1.0 - omega_Em)
-        D_Emabcd = np.einsum(
-            'Em,abcd->Emabcd', phi_Em, self.D_abcd
+        phi_k = (1.0 - omega_k)
+        D_abcd_k = np.einsum(
+            '...,abcd->...abcd',
+            phi_k, self.D_abcd
         )
-        sigma_Emab = np.einsum(
-            'Emabcd,Emcd->Emab', D_Emabcd, eps_Emab_n1
+        sig_ab_k = np.einsum(
+            '...abcd,...cd->...ab',
+            D_abcd_k, eps_ab_k
         )
-        if algorithmic:
-            D_Emabcd_red = self._get_D_abcd_alg_reduction(
-                kappa_Em, eps_Emab_n1, f_idx)
-            D_Emabcd[f_idx] -= D_Emabcd_red[f_idx]
+        if self.algorithmic:
+            D_abcd_k_red = self._get_D_abcd_alg_reduction(
+                kappa_k, eps_ab_k, f_idx)
+            D_abcd_k[f_idx] -= D_abcd_k_red[f_idx]
 
-        return D_Emabcd, sigma_Emab
+        return sig_ab_k, D_abcd_k
 
-    def _get_state_variables(self, eps_Emab, kappa, omega):
+    def update_state(self, eps_Emab_n1, t_n1, kappa_n, omega_n):
+        eps_Emab_n = eps_Emab_n1
+        kappa_n[...], omega_n[...], f_idx = self._get_state_variables(
+            eps_Emab_n, kappa_n, omega_n
+        )
+
+    def _get_state_variables(self, eps_ab, kappa, omega):
         kappa_Em = np.copy(kappa)
-        eps_eq_Em = self.strain_norm.get_eps_eq(eps_Emab, kappa_Em)
+        eps_eq_Em = self.strain_norm.get_eps_eq(eps_ab, kappa_Em)
         f_idx = self._get_f_trial(eps_eq_Em)
         kappa_Em[f_idx] = eps_eq_Em[f_idx]
         omega_Em = self._get_omega(eps_eq_Em, f_idx)

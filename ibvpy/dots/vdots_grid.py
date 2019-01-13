@@ -4,14 +4,13 @@ Created on Feb 8, 2018
 @author: rch
 '''
 
-from ibvpy.api import \
-    IFETSEval, FEGrid
-from ibvpy.core.i_tstepper_eval import ITStepperEval
 from traits.api import provides
-from ibvpy.mats.mats2D import MATS2D
+
+from ibvpy.core.i_tstepper_eval import ITStepperEval
+from ibvpy.fets.fets_eval import IFETSEval
+from ibvpy.mesh.fe_grid import FEGrid
 from mathkit.matrix_la import \
     SysMtxArray
-
 import numpy as np
 import traits.api as tr
 
@@ -21,6 +20,7 @@ delta = np.identity(2)
 I_sym_abcd = 0.5 * \
     (np.einsum('ac,bd->abcd', delta, delta) +
      np.einsum('ad,bc->abcd', delta, delta))
+
 
 @provides(ITStepperEval)
 class DOTSGrid(tr.HasStrictTraits):
@@ -32,7 +32,6 @@ class DOTSGrid(tr.HasStrictTraits):
     n_y = tr.Int(30, input=True)
     integ_factor = tr.Float(1.0, input=True)
     fets = tr.Instance(IFETSEval, input=True)
-    mats = tr.Instance(MATS2D, input=True)
     mesh = tr.Property(tr.Instance(FEGrid), depends_on='+input')
 
     @tr.cached_property

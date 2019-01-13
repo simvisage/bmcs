@@ -1,14 +1,19 @@
 
 from traits.api import \
-    Instance, Property, cached_property, Enum, Float, on_trait_change
-
-from bmcs.simulator.tstep_state import TStepState
-from ibvpy.core.bcond_mngr import BCondMngr
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
+    Instance, Property, cached_property, Enum, on_trait_change
+from ibvpy.core.bcond_mngr import \
+    BCondMngr
+from mathkit.matrix_la.sys_mtx_assembly import \
+    SysMtxAssembly
 import numpy as np
+
+from .tstep_state import TStepState
+from .xdomain import IXDomain
 
 
 class TStepBC(TStepState):
+
+    xdomain = Instance(IXDomain)
 
     # Boundary condition manager
     #
@@ -42,17 +47,17 @@ class TStepBC(TStepState):
     def _get__corr_pred(self):
         self.K.reset_mtx()
         # Get the field representation of the primary variable
-        U_k_field = self.model.map_U_to_field(self.U_k)
+        U_k_field = self.xdomain.map_U_to_field(self.U_k)
         sig_k, D_k = self.model.get_corr_pred(
             U_k_field, self.t_n1, **self.state_vars
         )
-        K_k = self.model.map_field_to_K(D_k)
+        K_k = self.xdomain.map_field_to_K(D_k)
         self.K.add_mtx(K_k)
         F_ext = np.zeros_like(self.U_k)
         self.bcond_mngr.apply(
             self.step_flag, None, self.K, F_ext, self.t_n, self.t_n1
         )
-        F_int = self.model.map_field_to_F(sig_k).flatten()
+        F_int = self.xdomain.map_field_to_F(sig_k).flatten()
         R = F_ext - F_int
         self.K.apply_constraints(R)
         return R, self.K

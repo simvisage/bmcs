@@ -24,8 +24,6 @@ from ibvpy.core.tstepper_eval import \
     TStepperEval
 from ibvpy.dots.dots_eval import \
     DOTSEval
-from ibvpy.mats.mats_eval import \
-    IMATSEval
 import numpy as np
 from tvtk.tvtk_classes import tvtk_helper
 
@@ -68,8 +66,6 @@ class FETSEval(TStepperEval):
     n_nodal_dofs = Int(desc='Number of nodal degrees of freedom')
 
     id_number = Int
-
-    mats_eval = Instance(IMATSEval, desc='Material model')
 
     #-------------------------------------------------------------------------
     # Derived info about the finite element formulation
@@ -454,19 +450,6 @@ class FETSEval(TStepperEval):
     @cached_property
     def _get_m_arr_size(self):
         return self.get_mp_state_array_size(None)
-
-    def get_mp_state_array_size(self, sctx):
-        '''Get the size of the state array for a single material point.
-        '''
-        return self.mats_eval.get_state_array_size()
-
-    def setup(self, sctx):
-        '''Perform the setup in the all integration points.
-        '''
-        for i, gp in enumerate(self.ip_coords):
-            sctx.mats_state_array = sctx.elem_state_array[
-                (i * self.m_arr_size): ((i + 1) * self.m_arr_size)]
-            self.mats_eval.setup(sctx)
 
     ngp_r = Int(0, label='Number of Gauss points in r-direction')
     ngp_s = Int(0, label='Number of Gauss points in s-direction')

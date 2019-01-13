@@ -8,8 +8,6 @@ from traits.api import \
     Float, List
 from traitsui.api import View, VGroup, Item
 
-from bmcs.simulator import \
-    Model, TLoopImplicit, TStepBC
 from ibvpy.mats.mats3D.mats3D_eval import \
     MATS3DEval
 from ibvpy.mats.mats3D.vmats3D_eval import \
@@ -18,7 +16,7 @@ import numpy as np
 import traits.api as tr
 
 
-class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
+class MATS3DDesmorat(MATS3DEval, MATS3D):
     '''Damage - plasticity model by Desmorat.
     '''
 

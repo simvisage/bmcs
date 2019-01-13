@@ -32,7 +32,7 @@ class TStepState(HasStrictTraits):
     '''
     @cached_property
     def _get_U_n(self):
-        U_var_shape = self.model.U_var_shape
+        U_var_shape = self.xdomain.U_var_shape
         return np.zeros(U_var_shape, dtype=np.float_).flatten()
 
     '''Current fundamental value of the primary variable.
@@ -42,7 +42,7 @@ class TStepState(HasStrictTraits):
     '''
     @cached_property
     def _get_U_k(self):
-        U_var_shape = self.model.U_var_shape
+        U_var_shape = self.xdomain.U_var_shape
         return np.zeros(U_var_shape, dtype=np.float_).flatten()
 
     F_0 = Float(1.0, auto_set=False, enter_set=True)
@@ -59,11 +59,12 @@ class TStepState(HasStrictTraits):
     '''
     @cached_property
     def _get_state_vars(self):
-        sa_shapes = self.model.state_var_shapes
+        xmodel_shape = self.xdomain.state_var_shape
+        tmodel_shapes = self.model.state_var_shapes
         return {
-            name: np.zeros(mats_sa_shape, dtype=np.float_)[np.newaxis, ...]
+            name: np.zeros(xmodel_shape + mats_sa_shape, dtype=np.float_)
             for name, mats_sa_shape
-            in list(sa_shapes.items())
+            in list(tmodel_shapes.items())
         }
 
     def init_state(self):
