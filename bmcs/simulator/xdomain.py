@@ -3,8 +3,10 @@ from traits.api import \
     HasStrictTraits, Instance, Property, \
     provides, Enum, Float, on_trait_change, \
     Interface, Tuple, Int
+
 from ibvpy.dots.vdots_grid import \
     DOTSGrid
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 from mathkit.tensor import EPS, DELTA
 import numpy as np
 
@@ -100,11 +102,10 @@ class XDomainFEGrid(DOTSGrid):
         return F_int
 
     def map_field_to_K(self, D_Emabef):
-        print(self.BB_Emicjdabef.shape)
-        print(D_Emabef.shape)
         K_Eicjd = self.integ_factor * np.einsum(
             'Emicjdabef,Emabef->Eicjd', self.BB_Emicjdabef, D_Emabef
         )
         n_E, n_i, n_c, n_j, n_d = K_Eicjd.shape
-        K_E = K_Eicjd.reshape(-1, n_i * n_c, n_j * n_d)
-        return K_E
+        K_Eij = K_Eicjd.reshape(-1, n_i * n_c, n_j * n_d)
+        dof_Ei = self.dof_Eia.reshape(-1, n_i * n_c)
+        return SysMtxArray(mtx_arr=K_Eij, dof_map_arr=dof_Ei)

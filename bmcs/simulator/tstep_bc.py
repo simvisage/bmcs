@@ -52,7 +52,7 @@ class TStepBC(TStepState):
             U_k_field, self.t_n1, **self.state_vars
         )
         K_k = self.xdomain.map_field_to_K(D_k)
-        self.K.add_mtx(K_k)
+        self.K.sys_mtx_arrays.append(K_k)
         F_ext = np.zeros_like(self.U_k)
         self.bcond_mngr.apply(
             self.step_flag, None, self.K, F_ext, self.t_n, self.t_n1
@@ -78,7 +78,7 @@ class TStepBC(TStepState):
         '''Update the control, primary and state variables..
         '''
         self.U_n[:] = self.U_k[:]
-        U_k_field = self.model.map_U_to_field(self.U_k)
+        U_k_field = self.xdomain.map_U_to_field(self.U_k)
         self.model.update_state(
             U_k_field, self.t_n1,
             **self.state_vars

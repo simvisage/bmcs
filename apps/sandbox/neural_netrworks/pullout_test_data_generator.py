@@ -17,7 +17,7 @@ home_dir = os.path.expanduser('~')
 data_dir = os.path.join(home_dir, 'data')
 f_name = 'trainng_data.dat'
 file_path = os.path.join(data_dir, f_name)
-print('data_dir', data_dir)
+print('data stored in', file_path)
 if not os.path.exists(data_dir):
     os.makedirs(data_dir)
 
@@ -27,29 +27,36 @@ if __name__ == '__main__':
     po.w_max = 0.6
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(s_data='0, 0.1, 0.4, 1.7',
-                     tau_data='0, 70, 0, 0')
-    po.mats_eval.update_bs_law = True
 
     P_max = []
     w_at_max = []
     L_list = [10, 20, 50, 100]
+    A_m_list = np.array(
+        [10.0 * distance
+         for distance in[10., 20., 30., 40]],
+        dtype=np.float_
+    )
     for L in L_list:
-        print('',)
-        po.geometry.L_x = L
-        po.run()
+        for A_m in A_m_list:
+            print('',)
+            po.geometry.L_x = L
+            po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
+            po.mats_eval.set(s_data='0, 0.1, 0.4, 1.7',
+                             tau_data='0, 70, 0, 0')
+            po.mats_eval.update_bs_law = True
 
-        P_t = po.get_P_t()
-        w_0, w_L = po.get_w_t()
+            po.run()
 
-#        p.plot(w_L, P_t)
-        m_idx = np.argmax(P_t)
-        P_max.append(P_t[m_idx])
-        w_at_max.append(w_L[m_idx])
+            P_t = po.get_P_t()
+            w_0, w_L = po.get_w_t()
 
-#         print(P_max, w_at_max)
-#         p.plot(w_L, P_t)
+    #        p.plot(w_L, P_t)
+            m_idx = np.argmax(P_t)
+            P_max.append(P_t[m_idx])
+            w_at_max.append(w_L[m_idx])
+
+    #         print(P_max, w_at_max)
+    #         p.plot(w_L, P_t)
     p.plot(L_list, P_max)
 #    p.plot(L_list, P_max)
     p.show()

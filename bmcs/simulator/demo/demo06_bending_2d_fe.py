@@ -35,7 +35,7 @@ s = Simulator(
     model=MATS2DScalarDamage()
 )
 bc = BCDof(
-    var='u', dof=0, value=-0.001,
+    var='u', dof=0, value=-1,
     time_function=LoadingScenario()
 )
 s.tstep.xdomain = dgrid
