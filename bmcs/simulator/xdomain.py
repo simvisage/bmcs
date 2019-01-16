@@ -2,7 +2,7 @@
 from traits.api import \
     HasStrictTraits, Instance, Property, \
     provides, Enum, Float, on_trait_change, \
-    Interface, Tuple, Int
+    Interface, Tuple, Int, Type
 
 from ibvpy.dots.vdots_grid import \
     DOTSGrid
@@ -56,6 +56,8 @@ class XDomainSinglePoint(HasStrictTraits):
 class XDomainFEGrid(DOTSGrid):
 
     U_var_shape = Property(Int)
+
+    K_type = Type(SysMtxArray)
 
     def _get_U_var_shape(self):
         return self.mesh.n_dofs

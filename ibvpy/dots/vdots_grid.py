@@ -15,13 +15,6 @@ import numpy as np
 import traits.api as tr
 
 
-delta = np.identity(2)
-# symetrization operator
-I_sym_abcd = 0.5 * \
-    (np.einsum('ac,bd->abcd', delta, delta) +
-     np.einsum('ad,bc->abcd', delta, delta))
-
-
 @provides(ITStepperEval)
 class DOTSGrid(tr.HasStrictTraits):
     '''Domain time steppsr on a grid mesh
@@ -33,6 +26,21 @@ class DOTSGrid(tr.HasStrictTraits):
     integ_factor = tr.Float(1.0, input=True)
     fets = tr.Instance(IFETSEval, input=True)
     mesh = tr.Property(tr.Instance(FEGrid), depends_on='+input')
+
+    D1_abcd = tr.Array(np.float_)
+    '''Symmetric operator distributing the 
+    derivatives of the shape functions into the 
+    tensor field
+    '''
+
+    def _D1_abcd_default(self):
+        delta = np.identity(2)
+        # symmetrization operator
+        D1_abcd = 0.5 * (
+            np.einsum('ac,bd->abcd', delta, delta) +
+            np.einsum('ad,bc->abcd', delta, delta)
+        )
+        return D1_abcd
 
     @tr.cached_property
     def _get_mesh(self):
@@ -64,14 +72,16 @@ class DOTSGrid(tr.HasStrictTraits):
         inv_J_Emar = np.linalg.inv(J_Emar)
         inv_J_Enar = np.linalg.inv(J_Enar)
         B_Eimabc = np.einsum(
-            'abcd,imr,Eidr->Eimabc', I_sym_abcd, self.fets.dN_imr, inv_J_Emar
+            'abcd,imr,Eidr->Eimabc',
+            self.D1_abcd, self.fets.dN_imr, inv_J_Emar
         )
         B_Einabc = np.einsum(
-            'abcd,inr,Eidr->Einabc', I_sym_abcd, self.fets.dN_inr, inv_J_Enar
+            'abcd,inr,Eidr->Einabc',
+            self.D1_abcd, self.fets.dN_inr, inv_J_Enar
         )
         BB_Emicjdabef = np.einsum(
-            'Eimabc,Ejmefd, Em, m->Emicjdabef', B_Eimabc, B_Eimabc,
-            det_J_Em, self.fets.w_m
+            'Eimabc,Ejmefd, Em, m->Emicjdabef',
+            B_Eimabc, B_Eimabc, det_J_Em, self.fets.w_m
         )
         return (BB_Emicjdabef, B_Eimabc,
                 dof_Eia, x_Eia, dof_Ia, I_Ei,
