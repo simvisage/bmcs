@@ -16,6 +16,7 @@ from view.ui.bmcs_tree_node import BMCSRootNode
 from .i_hist import IHist
 from .i_model import IModel
 from .i_tstep import ITStep
+from .i_xdomain import IXDomain
 from .tline import TLine
 from .tloop import TLoop
 
@@ -58,6 +59,15 @@ class Simulator(BMCSRootNode):
     '''
 
     #=========================================================================
+    # Spatial domain
+    #=========================================================================
+    xdomain = Instance(IXDomain)
+    r'''Spatial domain represented by a finite element discretization.
+    providing the kinematic mapping between the linear algebra (vector and
+    matrix) and field representation of the primary variables.
+    '''
+
+    #=========================================================================
     # TIME LINE
     #=========================================================================
     tline = Instance(TLine)
@@ -85,7 +95,7 @@ class Simulator(BMCSRootNode):
     #=========================================================================
     # TIME LOOP
     #=========================================================================
-    tloop = Property(Instance(TLoop), depends_on='model')
+    tloop = Property(Instance(TLoop), depends_on='model,xdomain')
     r'''Time loop constructed based on the current model.
     '''
     @cached_property
@@ -94,12 +104,13 @@ class Simulator(BMCSRootNode):
                                      hist=self.hist,
                                      tline=self.tline)
 
-    tstep = Property(Instance(ITStep), depends_on='model')
+    tstep = Property(Instance(ITStep), depends_on='model,xdomain')
     r'''Class representing the time step and state
     '''
     @cached_property
     def _get_tstep(self):
         return self.model.tstep_type(model=self.model,
+                                     xdomain=self.xdomain,
                                      hist=self.hist)
 
     def pause(self):

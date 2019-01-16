@@ -9,7 +9,7 @@ from ibvpy.dots.vdots_grid import \
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 from mathkit.tensor import EPS, DELTA
 import numpy as np
-
+from .i_xdomain import IXDomain
 
 DD = np.hstack([DELTA, np.zeros_like(DELTA)])
 EEPS = np.hstack([np.zeros_like(EPS), EPS])
@@ -27,21 +27,6 @@ GAMMA_inv = np.einsum(
 GG = np.einsum(
     'mij,nkl->mnijkl', GAMMA_inv, GAMMA_inv
 )
-
-
-class IXDomain(Interface):
-    '''Mappings between spatial domain representation 
-    and between the linear algebr objects. 
-    '''
-    U_var_shape = Tuple
-
-    state_var_shape = Tuple
-
-    def map_U_to_field(self, eps_eng): pass
-
-    def map_field_to_F(self, eps_tns): pass
-
-    def map_field_to_K(self, tns4): pass
 
 
 @provides(IXDomain)

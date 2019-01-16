@@ -38,6 +38,7 @@ class TStepBC(TStepState):
     @cached_property
     def _get_K(self):
         K = SysMtxAssembly()
+        self.bcond_mngr.setup(None)
         self.bcond_mngr.apply_essential(K)
         return K
 
