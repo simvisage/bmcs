@@ -28,7 +28,6 @@ if __name__ == '__main__':
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
 
-    P_max = []
     w_at_max = []
     L_list = [10, 20, 50, 100]
     A_m_list = np.array(
@@ -37,10 +36,11 @@ if __name__ == '__main__':
         dtype=np.float_
     )
     for L in L_list:
+        P_max = []
         for A_m in A_m_list:
             print('',)
             po.geometry.L_x = L
-            po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
+            po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=A_m)
             po.mats_eval.set(s_data='0, 0.1, 0.4, 1.7',
                              tau_data='0, 70, 0, 0')
             po.mats_eval.update_bs_law = True
@@ -57,8 +57,9 @@ if __name__ == '__main__':
 
     #         print(P_max, w_at_max)
     #         p.plot(w_L, P_t)
-    p.plot(L_list, P_max)
+        p.plot(A_m_list, P_max)
 #    p.plot(L_list, P_max)
     p.show()
-
+print("L_list=",L_list,'\n',"P_max=",P_max)
 np.savetxt(file_path, P_max)
+
