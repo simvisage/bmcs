@@ -19,15 +19,15 @@ import traits.api as tr
 class DOTSGrid(tr.HasStrictTraits):
     '''Domain time steppsr on a grid mesh
     '''
+    x_0 = tr.Tuple(0., 0., input=True)
     L_x = tr.Float(200, input=True)
     L_y = tr.Float(100, input=True)
     n_x = tr.Int(100, input=True)
     n_y = tr.Int(30, input=True)
     integ_factor = tr.Float(1.0, input=True)
     fets = tr.Instance(IFETSEval, input=True)
-    mesh = tr.Property(tr.Instance(FEGrid), depends_on='+input')
 
-    D1_abcd = tr.Array(np.float_)
+    D1_abcd = tr.Array(np.float_, input=True)
     '''Symmetric operator distributing the 
     derivatives of the shape functions into the 
     tensor field
@@ -42,9 +42,15 @@ class DOTSGrid(tr.HasStrictTraits):
         )
         return D1_abcd
 
+    mesh = tr.Property(tr.Instance(FEGrid), depends_on='+input')
+
     @tr.cached_property
     def _get_mesh(self):
-        return FEGrid(coord_max=(self.L_x, self.L_y),
+        return FEGrid(coord_min=self.x_0,
+                      coord_max=(
+                          self.x_0[0] + self.L_x,
+                          self.x_0[1] + self.L_y
+                      ),
                       shape=(self.n_x, self.n_y),
                       fets_eval=self.fets)
 

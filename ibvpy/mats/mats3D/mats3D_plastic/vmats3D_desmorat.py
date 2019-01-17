@@ -174,7 +174,12 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
 #
 #         delta_pi = delta_lamda / (1.0 - omega_a)
 
-        eps_pi_ab = eps_pi_ab + (a * delta_pi / b)
+#        eps_pi_ab = eps_pi_ab + (a * delta_pi / b)
+        return_ab = np.einsum(
+            '...ij,...->...ij',
+            a, delta_pi / b
+        )
+        eps_pi_ab = eps_pi_ab + return_ab
         eps_diff_ab = eps_ab - eps_pi_ab
         Y_a = 0.5 * (
             (
@@ -188,12 +193,12 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
         )
         omega_a = omega_a + (Y_a / self.S) * delta_pi
 
-        if omega_a >= 0.99:
-            omega_a = 0.99
+        omega_a[np.where(omega_a >= 0.99)] = 0.99
 
-        alpha_ab = alpha_ab + plas_1 * \
-            (a * delta_pi / b) * (1.0 - omega_a)
-
+        alpha_ab = alpha_ab + np.einsum(
+            '...ij,...->...ij',
+            return_ab, (1.0 - omega_a)
+        )
         z_a = z_a + delta_pi * (1.0 - omega_a)
 
         return eps_pi_ab, alpha_ab, z_a, omega_a
@@ -215,19 +220,21 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
 
         phi_n = 1.0 - omega_a_k
 
-        sigma_ab = phi_n * (
+        sigma_ab = (
             np.einsum(
-                '...ijkl,...kl->...ij',
-                D_1_abef, eps_ab_k
+                '...,...ijkl,...kl->...ij',
+                phi_n, D_1_abef, eps_ab_k
             ) +
             np.einsum(
-                '...ijkl,...kl->...ij',
-                D_2_abef, eps_ab_k - eps_pi_ab_k
+                '...,...ijkl,...kl->...ij',
+                phi_n, D_2_abef, eps_ab_k - eps_pi_ab_k
             )
         )
 
-        D_abef = phi_n * np.einsum(' ...ijkl->...ijkl',
-                                   D_1_abef + D_2_abef)
+        D_abef = np.einsum(
+            '...,...ijkl->...ijkl',
+            phi_n, D_1_abef + D_2_abef
+        )
 
         return sigma_ab, D_abef
 

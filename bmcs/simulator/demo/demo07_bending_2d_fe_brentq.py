@@ -1,17 +1,17 @@
 from traits.api import \
-    provides, HasStrictTraits, Property, Array, cached_property
+    provides, Property, Array, cached_property
 
 from bmcs.simulator import \
-    Simulator, TLoop, IXDomain
+    Simulator, IXDomain
 from bmcs.simulator.xdomain import \
     DD, EEPS, XDomainFEGrid
-from bmcs.time_functions import \
-    LoadingScenario
-from ibvpy.bcond import BCDof
+from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
+from ibvpy.mats.mats2D import \
+    MATS2DScalarDamage
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
-from mathkit.tensor import EPS, DELTA
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 import numpy as np
 
 from .interaction_scripts import run_rerun_test
@@ -39,17 +39,11 @@ class XDomainAxiSym(XDomainFEGrid):
             np.einsum('ad,bc->abcd', delta, delta)
         )
 
-    cached_grid_values2 = Property(depends_on='+input')
+    N_Eimabc = Property(depends_on='+input')
 
     @cached_property
-    def _get_cached_grid_values2(self):
-        x_Ia = self.mesh.X_Id
-        I_Ei = self.mesh.I_Ei
-        x_Eia = x_Ia[I_Ei, :]
-        J_Emar = np.einsum(
-            'imr,Eia->Emar', self.fets.dN_imr, x_Eia
-        )
-        det_J_Em = np.linalg.det(J_Emar)
+    def _get_N_Eimabc(self):
+        x_Eia = self.x_Eia
         r_Em = np.einsum(
             'im,Eic->Emc',
             self.fets.N_im, x_Eia
@@ -58,43 +52,76 @@ class XDomainAxiSym(XDomainFEGrid):
             'abc,im, Em->Eimabc',
             self.D0_abc, self.fets.N_im, 1. / r_Em
         )
-        print('x_mc', r_Em)
-#         B_Einabc = np.einsum(
-#             'abc,in->inabc',
-#             self.D0_abc, self.fets.N_in
-#         )
-        BB_Emicjdabef = np.einsum(
-            'Eimabc,Ejmefd, Em, m->Emicjdabef',
-            N_Eimabc, N_Eimabc, det_J_Em, self.fets.w_m
-        )
-        return (BB_Emicjdabef, N_Eimabc)  # , B_Einabc)
+        return N_Eimabc
 
-    def map_U_to_field2(self, U):
+    NN_Emicjdabef = Property(depends_on='+input')
+
+    @cached_property
+    def _get_NN_Emicjdabef(self):
+        NN_Emicjdabef = np.einsum(
+            'Eimabc,Ejmefd, Em, m->Emicjdabef',
+            self.N_Eimabc, self.N_Eimabc, self.det_J_Em, self.fets.w_m
+        )
+        return NN_Emicjdabef
+
+    def map_U_to_field(self, U):
         n_c = self.fets.n_nodal_dofs
         U_Ia = U.reshape(-1, n_c)
         U_Eia = U_Ia[self.I_Ei]
 
-        BB_Emicjdabef, N_Eimabc = self.cached_grid_values2
         eps_Emab = np.einsum(
             'Eimabc,Eic->Emab',
-            N_Eimabc, U_Eia
+            self.B_Eimabc + self.N_Eimabc, U_Eia
         )
         return eps_Emab
 
+    def map_field_to_F(self, sig_Emab):
+        n_E, n_i, n_m, n_a, n_b, n_c = self.B_Eimabc.shape
+        f_Eic = self.integ_factor * np.einsum(
+            'm,Eimabc,Emab,Em->Eic',
+            self.fets.w_m, self.B_Eimabc + self.N_Eimabc, sig_Emab, self.det_J_Em
+        )
+        f_Ei = f_Eic.reshape(-1, n_i * n_c)
+        dof_E = self.dof_Eia.reshape(-1, n_i * n_c)
+        F_int = np.bincount(dof_E.flatten(), weights=f_Ei.flatten())
+        return F_int
 
-U_Eic = np.array([[[0.0, 0.0],
-                   [0.0, 1.0],
-                   [0.0, 0.0],
-                   [0.0, 1.0]]], dtype=np.float_)
+    def map_field_to_K(self, D_Emabef):
+        K_Eicjd = self.integ_factor * np.einsum(
+            'Emicjdabef,Emabef->Eicjd',
+            self.BB_Emicjdabef + self.NN_Emicjdabef, D_Emabef
+        )
+        n_E, n_i, n_c, n_j, n_d = K_Eicjd.shape
+        K_Eij = K_Eicjd.reshape(-1, n_i * n_c, n_j * n_d)
+        dof_Ei = self.dof_Eia.reshape(-1, n_i * n_c)
+        return SysMtxArray(mtx_arr=K_Eij, dof_map_arr=dof_Ei)
 
-xdomain = XDomainAxiSym(L_x=1, L_y=1,
-                        integ_factor=0,
-                        n_x=1, n_y=1,
+
+xdomain = XDomainAxiSym(x_0=(0, 0),
+                        L_x=1, L_y=1,
+                        integ_factor=1,
+                        n_x=10, n_y=10,
                         fets=FETS2D4Q())
 
-eps_ij = xdomain.map_U_to_field(U_Eic.flatten())
-print(eps_ij)
+m = MATS3DDesmorat()
 
-print(xdomain.cached_grid_values2[1])
-eps_ij = xdomain.map_U_to_field2(U_Eic.flatten())
-print(eps_ij)
+s = Simulator(
+    model=m,
+    xdomain=xdomain
+)
+
+fixed_y = BCSlice(slice=xdomain.mesh[:, 0, :, 0],
+                  var='u', dims=[1], value=0)
+fixed_x = BCSlice(slice=xdomain.mesh[0, :, 0, :],
+                  var='u', dims=[0], value=0)
+control_bc = BCSlice(slice=xdomain.mesh[-1, :, -1, :],
+                     var='u', dims=[1], value=-0.0003)
+s.tstep.bcond_mngr.bcond_list = [
+    fixed_x,
+    fixed_y,
+    control_bc
+]
+
+s.run()
+s.join()
+print(s.tstep.U_n)

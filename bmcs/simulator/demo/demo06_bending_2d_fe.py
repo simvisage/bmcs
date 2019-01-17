@@ -41,10 +41,3 @@ s.tstep.bcond_mngr.bcond_list = [
 ]
 s.run()
 s.join()
-dgrid2 = XDomainFEGrid(L_x=L, L_y=H,
-                       integ_factor=50,
-                       n_x=10, n_y=4,
-                       fets=FETS2D4Q())
-s.xdomain = dgrid2
-s.run()
-s.join()
