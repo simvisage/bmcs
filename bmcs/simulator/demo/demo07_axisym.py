@@ -1,3 +1,6 @@
+import time
+
+from mayavi import mlab
 from traits.api import \
     provides, Property, Array, cached_property
 
@@ -14,11 +17,19 @@ from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 import numpy as np
 
-from .interaction_scripts import run_rerun_test
+from .demo07_viz3d_state_field import \
+    Vis3DStateField, Viz3DStateField
+from .demo07_viz3d_strain_field import \
+    Vis3DStrainField, Viz3DStrainField
 
 
 @provides(IXDomain)
 class XDomainAxiSym(XDomainFEGrid):
+
+    vtk_expand_operator = Array(np.float_)
+
+    def _vtk_expand_operator_default(self):
+        return np.identity(3)
 
     D0_abc = Array(np.float_)
 
@@ -98,9 +109,9 @@ class XDomainAxiSym(XDomainFEGrid):
 
 
 xdomain = XDomainAxiSym(x_0=(0, 0),
-                        L_x=1, L_y=1,
-                        integ_factor=1,
-                        n_x=10, n_y=10,
+                        L_x=150, L_y=50,
+                        integ_factor=2 * np.pi,
+                        n_x=15, n_y=5,
                         fets=FETS2D4Q())
 
 m = MATS3DDesmorat()
@@ -109,19 +120,31 @@ s = Simulator(
     model=m,
     xdomain=xdomain
 )
-
-fixed_y = BCSlice(slice=xdomain.mesh[:, 0, :, 0],
-                  var='u', dims=[1], value=0)
-fixed_x = BCSlice(slice=xdomain.mesh[0, :, 0, :],
-                  var='u', dims=[0], value=0)
-control_bc = BCSlice(slice=xdomain.mesh[-1, :, -1, :],
-                     var='u', dims=[1], value=-0.0003)
+s.tloop.k_max = 1000
+left_y = BCSlice(slice=xdomain.mesh[0, :, 0, :],
+                 var='u', dims=[1], value=0)
+left_x = BCSlice(slice=xdomain.mesh[0, :, 0, :],
+                 var='u', dims=[0], value=0.5)
+right_x = BCSlice(slice=xdomain.mesh[-1, :, -1, :],
+                  var='u', dims=[0], value=0.0)
 s.tstep.bcond_mngr.bcond_list = [
-    fixed_x,
-    fixed_y,
-    control_bc
+    left_x,
+    right_x,
+    left_y
 ]
 
+s.tstep.record = {
+    'strain': Vis3DStrainField(tstep=s.tstep, var='eps_ab'),
+    'damage': Vis3DStateField(tstep=s.tstep, var='omega_a'),
+    'kinematic hardening': Vis3DStateField(tstep=s.tstep, var='z_a')
+}
+s.tline.step = 0.05
 s.run()
-s.join()
-print(s.tstep.U_n)
+time.sleep(5)
+
+strain_viz = Viz3DStrainField(vis3d=s.tstep.record['strain'])
+strain_viz.setup()
+damage_viz = Viz3DStateField(vis3d=s.tstep.record['damage'])
+damage_viz.setup()
+damage_viz.plot(0.0)
+mlab.show()

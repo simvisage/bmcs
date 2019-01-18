@@ -51,14 +51,14 @@ class TStepState(HasStrictTraits):
 
     model_structure_changed = Event
 
-    state_vars = Property(Dict(Str, Array),
-                          depends_on='model_structure_changed')
+    state_n = Property(Dict(Str, Array),
+                       depends_on='model_structure_changed')
     '''Dictionary of state arrays.
     The entry names and shapes are defined by the material
     model.
     '''
     @cached_property
-    def _get_state_vars(self):
+    def _get_state_n(self):
         xmodel_shape = self.xdomain.state_var_shape
         tmodel_shapes = self.model.state_var_shapes
         return {
@@ -86,7 +86,7 @@ class TStepState(HasStrictTraits):
         U_k_r = self.U_k.reshape(self.model.U_var_shape)
         F, dF = self.model.get_corr_pred(
             U_k_r, self.t_n1,
-            **self.state_vars
+            **self.state_n
         )
         F_t = self.F_0 * self.t_n1
 
@@ -123,8 +123,8 @@ class TStepState(HasStrictTraits):
         self.U_n[:] = self.U_k[:]
         self.model.update_state(
             self.U_k, self.t_n1,
-            **self.state_vars
+            **self.state_n
         )
         self.hist.record_timestep(
-            self, self.U_n, self.state_vars
+            self, self.U_n, self.state_n
         )

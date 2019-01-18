@@ -7,11 +7,11 @@ Created on Feb 8, 2018
 from ibvpy.core.i_tstepper_eval import ITStepperEval
 from mathkit.matrix_la import \
     SysMtxAssembly
+import numpy as np
+import traits.api as tr
 
 from .bcond_mngr import BCondMngr
-import numpy as np
 from .tline import TLine
-import traits.api as tr
 
 
 class TimeLoop(tr.HasStrictTraits):

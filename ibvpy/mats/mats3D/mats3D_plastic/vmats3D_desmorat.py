@@ -30,12 +30,12 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
     '''Shape of the primary variable required by the TStepState.
     '''
 
-    state_var_shapes = {'sigma_ab_n': (3, 3),
-                        'sigma_pi_ab_n': (3, 3),
-                        'eps_pi_ab_n': (3, 3),
-                        'alpha_ab_n': (3, 3),
-                        'z_a_n': (),
-                        'omega_a_n': ()}
+    state_var_shapes = {'sigma_ab': (3, 3),
+                        'sigma_pi_ab': (3, 3),
+                        'eps_pi_ab': (3, 3),
+                        'alpha_ab': (3, 3),
+                        'z_a': (),
+                        'omega_a': ()}
     r'''
     Shapes of the state variables
     to be stored in the global array at the level 
@@ -140,111 +140,76 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
                     enter_set=True,
                     auto_set=False)
 
-    def _get_state_variables(self, eps_ab, eps_pi_ab, alpha_ab, z_a, omega_a):
-
-        D_1_abef = self.D_1_abef
-        D_2_abef = self.D_2_abef
-
-        sigma_pi_ab_trial = (
-            np.einsum('...ijkl,...kl->...ij', D_2_abef, eps_ab - eps_pi_ab))
-
-        #print('eps_ab', eps_ab)
-        #print('D_2_abef', D_2_abef)
-        #print('sigma_pi_ab_trial', sigma_pi_ab_trial)
-
-        a = sigma_pi_ab_trial - self.gamma * alpha_ab
-        #print('a', a)
-
-        norm_a = np.sqrt(np.einsum('...ij,...ij', a, a))
-        #print('norm_a', norm_a)
-        #n = a / norm_a
-        f = np.sqrt(np.einsum('...ij,...ij', a, a)
-                    ) - self.tau_bar - self.K * z_a
-
-        plas_1 = f > 1e-6
-        elas_1 = f < 1e-6
-
-        delta_pi = f / \
-            (self.E_2 + (self.K + self.gamma) * (1. - omega_a)) * plas_1
-
-        b = 1.0 * elas_1 + norm_a * plas_1
-
-#         delta_lamda = f / (np.einsum('...ij,...ijkl,...kl',
-#                                      n, D_2_abef, n) + self.gamma * np.einsum('...ij,...ij', n, n) + self.K)
-#
-#         delta_pi = delta_lamda / (1.0 - omega_a)
-
-#        eps_pi_ab = eps_pi_ab + (a * delta_pi / b)
-        return_ab = np.einsum(
-            '...ij,...->...ij',
-            a, delta_pi / b
-        )
-        eps_pi_ab = eps_pi_ab + return_ab
-        eps_diff_ab = eps_ab - eps_pi_ab
-        Y_a = 0.5 * (
-            (
-                np.einsum('...ij,...ijkl,...kl',
-                          eps_ab, D_1_abef, eps_ab)
-            ) +
-            0.5 * (
-                np.einsum('...ij,...ijkl,...kl',
-                          eps_diff_ab, D_2_abef, eps_diff_ab)
-            )
-        )
-        omega_a = omega_a + (Y_a / self.S) * delta_pi
-
-        omega_a[np.where(omega_a >= 0.99)] = 0.99
-
-        alpha_ab = alpha_ab + np.einsum(
-            '...ij,...->...ij',
-            return_ab, (1.0 - omega_a)
-        )
-        z_a = z_a + delta_pi * (1.0 - omega_a)
-
-        return eps_pi_ab, alpha_ab, z_a, omega_a
-
-    def get_corr_pred(self, eps_ab_k, tn1,
-                      sigma_ab_n, sigma_pi_ab_n, eps_pi_ab_n,
-                      alpha_ab_n, z_a_n, omega_a_n):
+    def get_corr_pred(self, eps_ab, tn1,
+                      sigma_ab, sigma_pi_ab, eps_pi_ab,
+                      alpha_ab, z_a, omega_a):
         r'''
         Corrector predictor computation.
         '''
-        Em_len = len(eps_ab_k.shape) - 2
-        new_shape = tuple([1 for i in range(Em_len)]) + self.D_abef.shape
-        D_1_abef = self.D_1_abef.reshape(*new_shape)
-        D_2_abef = self.D_2_abef.reshape(*new_shape)
-
-        eps_pi_ab_k, alpha_ab_k, z_a_k, omega_a_k = self._get_state_variables(
-            eps_ab_k, eps_pi_ab_n, alpha_ab_n, z_a_n, omega_a_n
+        D_1_abef = self.D_1_abef
+        D_2_abef = self.D_2_abef
+        sigma_pi_ab_trial = np.einsum(
+            '...ijkl,...kl->...ij',
+            D_2_abef, eps_ab - eps_pi_ab
         )
+        a = sigma_pi_ab_trial - self.gamma * alpha_ab
+        norm_a = np.sqrt(np.einsum(
+            '...ij,...ij',
+            a, a)
+        )
+        f = norm_a - self.tau_bar - self.K * z_a
 
-        phi_n = 1.0 - omega_a_k
+        # identify the inelastic material points to perform return mapping
+        I = np.where(f > 1e-6)
+        delta_pi_I = (
+            f[I] /
+            (self.E_2 + (self.K + self.gamma) * (1. - omega_a[I]))
+        )
+        b_I = norm_a[I]
+        return_ab_I = np.einsum(
+            '...ij,...->...ij',
+            a[I], delta_pi_I / b_I
+        )
+        eps_pi_ab[I] += return_ab_I
+        eps_diff_ab_I = eps_ab[I] - eps_pi_ab[I]
+        Y_a_I = 0.5 * (
+            (
+                np.einsum('...ij,...ijkl,...kl',
+                          eps_ab[I], D_1_abef, eps_ab[I])
+            ) +
+            0.5 * (
+                np.einsum('...ij,...ijkl,...kl',
+                          eps_diff_ab_I, D_2_abef, eps_diff_ab_I)
+            )
+        )
+        omega_a[I] += (Y_a_I / self.S) * delta_pi_I
+        omega_a[I][np.where(omega_a[I] >= 0.99)] = 0.99
+        alpha_ab[I] += np.einsum(
+            '...ij,...->...ij',
+            return_ab_I, (1.0 - omega_a[I])
+        )
+        z_a[I] += delta_pi_I * (1.0 - omega_a[I])
 
-        sigma_ab = (
+        # evaluate the material stress and stiffness tensors
+        phi_n = 1.0 - omega_a
+        # this is a side effect - recording a returned value
+        # simultaneously as a state variable - not ideal! dangerous.
+        sigma_ab[...] = (
             np.einsum(
                 '...,...ijkl,...kl->...ij',
-                phi_n, D_1_abef, eps_ab_k
+                phi_n, D_1_abef, eps_ab
             ) +
             np.einsum(
                 '...,...ijkl,...kl->...ij',
-                phi_n, D_2_abef, eps_ab_k - eps_pi_ab_k
+                phi_n, D_2_abef, eps_ab - eps_pi_ab
             )
         )
-
+        # secant stiffness matrix
         D_abef = np.einsum(
             '...,...ijkl->...ijkl',
             phi_n, D_1_abef + D_2_abef
         )
-
         return sigma_ab, D_abef
-
-    def update_state(self, eps_ab_n1, tn1,
-                     sigma_ab_n, sigma_pi_ab_n, eps_pi_ab_n,
-                     alpha_ab_n, z_a_n, omega_a_n):
-        eps_pi_ab_n[...], alpha_ab_n[...], z_a_n[...], omega_a_n[...] = \
-            self._get_state_variables(
-            eps_ab_n1, eps_pi_ab_n, alpha_ab_n, z_a_n, omega_a_n
-        )
 
     traits_view = View(
         VGroup(

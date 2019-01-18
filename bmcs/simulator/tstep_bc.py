@@ -1,6 +1,10 @@
 
+import copy
+
 from traits.api import \
-    Instance, Property, cached_property, Enum, on_trait_change
+    Instance, Property, cached_property, Enum, on_trait_change, \
+    List, Dict
+
 from ibvpy.core.bcond_mngr import \
     BCondMngr
 from mathkit.matrix_la.sys_mtx_assembly import \
@@ -21,6 +25,23 @@ class TStepBC(TStepState):
 
     def _bcond_mngr_default(self):
         return BCondMngr()
+
+    state_k = Dict
+    '''State variables within the current iteration step
+    '''
+
+    record = Dict
+
+    response_traces = Property(
+        List, depends_on='response_dict_items, model_structure_changed'
+    )
+
+    @cached_property
+    def _get_response_traces(self):
+        rt_list = self.record.values()
+        for rt in rt_list:
+            rt.setup()
+        return rt_list
 
     step_flag = Enum('predictor', 'corrector')
     '''Step flag to control the inclusion of essential BC'
@@ -49,8 +70,9 @@ class TStepBC(TStepState):
         self.K.reset_mtx()
         # Get the field representation of the primary variable
         U_k_field = self.xdomain.map_U_to_field(self.U_k)
+        self.state_k = copy.deepcopy(self.state_n)
         sig_k, D_k = self.model.get_corr_pred(
-            U_k_field, self.t_n1, **self.state_vars
+            U_k_field, self.t_n1, **self.state_k
         )
         K_k = self.xdomain.map_field_to_K(D_k)
         self.K.sys_mtx_arrays.append(K_k)
@@ -79,14 +101,11 @@ class TStepBC(TStepState):
         '''Update the control, primary and state variables..
         '''
         self.U_n[:] = self.U_k[:]
-        U_k_field = self.xdomain.map_U_to_field(self.U_k)
-        self.model.update_state(
-            U_k_field, self.t_n1,
-            **self.state_vars
-        )
-        self.hist.record_timestep(
-            self, self.U_n, self.state_vars
-        )
+        for name, s_k in self.state_k.items():
+            self.state_n[name] = s_k
+        for rt in self.response_traces:
+            rt.update(self.U_n, self.t_n1)
+        self.hist.record_timestep(self.t_n1, self.U_n, self.state_n)
         self.t_n = self.t_n1
         self.step_flag = 'predictor'
 

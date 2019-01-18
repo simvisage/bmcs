@@ -16,7 +16,7 @@ a = 50.0
 w_max = 0.3
 dgrid1 = XDomainFEGrid(L_x=L, L_y=H,
                        integ_factor=50,
-                       n_x=20, n_y=30,
+                       n_x=5, n_y=2,
                        fets=FETS2D4Q())
 x_x, x_y = dgrid1.mesh.geo_grid.point_x_grid
 L_1 = x_x[1, 0]
@@ -41,3 +41,4 @@ s.tstep.bcond_mngr.bcond_list = [
 ]
 s.run()
 s.join()
+print(s.tstep.U_n)

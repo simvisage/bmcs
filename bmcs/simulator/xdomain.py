@@ -48,7 +48,7 @@ class XDomainSinglePoint(HasStrictTraits):
 
     def map_field_to_K(self, tns4):
         return np.einsum(
-            'mnijkl,...ijkl->mn', GG, tns4
+            'mnijkl,...ijkl->...mn', GG, tns4
         )
 
 
@@ -56,6 +56,11 @@ class XDomainSinglePoint(HasStrictTraits):
 class XDomainFEGrid(DOTSGrid):
 
     U_var_shape = Property(Int)
+
+    vtk_expand_operator = Property
+
+    def _get_vtk_expand_operator(self):
+        return self.fets.vtk_expand_operator
 
     K_type = Type(SysMtxArray)
 
