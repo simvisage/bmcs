@@ -73,8 +73,8 @@ class MATS2DScalarDamage(Model, MATS2DEval, MATS2D):
     the material model
     '''
 
-    state_var_shapes = {'kappa_n': (),
-                        'omega_n': ()}
+    state_var_shapes = {'kappa': (),
+                        'omega': ()}
     r'''
     Shapes of the state variables
     to be stored in the global array at the level 
@@ -90,69 +90,34 @@ class MATS2DScalarDamage(Model, MATS2DEval, MATS2D):
 
     algorithmic = Bool(True)
 
-    def get_corr_pred(self, eps_ab_k, tn1, kappa_n, omega_n):
+    def get_corr_pred(self, eps_ab, tn1, kappa, omega):
         r'''
         Corrector predictor computation.
         @param eps_app_eng input variable - engineering strain
         '''
-        kappa_k, omega_k, f_idx = self._get_state_variables(
-            eps_ab_k, kappa_n, omega_n
-        )
-        phi_k = (1.0 - omega_k)
-        D_abcd_k = np.einsum(
+        eps_eq = self.strain_norm.get_eps_eq(eps_ab, kappa)
+        I = self.omega_fn.get_f_trial(eps_eq)
+        eps_eq_I = eps_eq[I]
+        kappa[I] = eps_eq_I
+        omega[I] = self.omega_fn(eps_eq_I)
+        phi = (1.0 - omega)
+        D_abcd = np.einsum(
             '...,abcd->...abcd',
-            phi_k, self.D_abcd
+            phi, self.D_abcd
         )
-        sig_ab_k = np.einsum(
+        sig_ab = np.einsum(
             '...abcd,...cd->...ab',
-            D_abcd_k, eps_ab_k
+            D_abcd, eps_ab
         )
         if self.algorithmic:
-            D_abcd_k_red = self._get_D_abcd_alg_reduction(
-                kappa_k, eps_ab_k, f_idx)
-            D_abcd_k[f_idx] -= D_abcd_k_red[f_idx]
-
-        return sig_ab_k, D_abcd_k
-
-    def update_state(self, eps_Emab_n1, t_n1, kappa_n, omega_n):
-        eps_Emab_n = eps_Emab_n1
-        kappa_n[...], omega_n[...], f_idx = self._get_state_variables(
-            eps_Emab_n, kappa_n, omega_n
-        )
-
-    def _get_state_variables(self, eps_ab, kappa, omega):
-        kappa_Em = np.copy(kappa)
-        eps_eq_Em = self.strain_norm.get_eps_eq(eps_ab, kappa_Em)
-        f_idx = self._get_f_trial(eps_eq_Em)
-        kappa_Em[f_idx] = eps_eq_Em[f_idx]
-        omega_Em = self._get_omega(eps_eq_Em, f_idx)
-        return kappa_Em, omega_Em, f_idx
-
-    def _get_f_trial(self, eps_eq_Em):
-        return self.omega_fn.get_f_trial(eps_eq_Em)
-
-    def _get_omega(self, kappa_Em, idx_map):
-        r'''
-        Return new value of damage parameter
-        @param kappa_Em: maximum strain norm achieved so far 
-        '''
-        return self.omega_fn(kappa_Em, idx_map)
-
-    def _get_domega(self, kappa_Em, idx_map):
-        '''
-        Return new value of damage parameter derivative
-        @param kappa_Em: maximum strain norm achieved so far
-        '''
-        return self.omega_fn.diff(kappa_Em, idx_map)
-
-    def _get_D_abcd_alg_reduction(self, kappa_Em, eps_Emab_n1, f_idx):
-        '''Calculate the stiffness term to be subtracted
-        from the secant stiffness to get the algorithmic stiffness.
-        '''
-        domega_Em = self._get_domega(kappa_Em, f_idx)
-        deps_eq_Emcd = self.strain_norm.get_deps_eq(eps_Emab_n1)
-        return np.einsum('...,...cd,abcd,...cd->...abcd',
-                         domega_Em, deps_eq_Emcd, self.D_abcd, eps_Emab_n1)
+            domega_I = self.omega_fn.diff(eps_eq_I)
+            domega_I[np.where(np.fabs(domega_I) < .001)] = .001
+            deps_eq_cd_I = self.strain_norm.get_deps_eq(eps_ab[I])
+            D_abcd[I] -= np.einsum(
+                '...,...cd,abcd,...cd->...abcd',
+                domega_I, deps_eq_cd_I, self.D_abcd, eps_ab[I]
+            )
+        return sig_ab, D_abcd
 
     traits_view = View(
         Group(

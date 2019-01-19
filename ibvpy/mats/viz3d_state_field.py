@@ -15,7 +15,7 @@ from tvtk.api import \
 
 import numpy as np
 import traits.api as tr
-from .demo07_viz3d_strain_field import Vis3DField, Viz3DHist
+from ibvpy.mats.viz3d_strain_field import Vis3DField, Viz3DHist
 
 
 class Vis3DStateField(Vis3DField):
