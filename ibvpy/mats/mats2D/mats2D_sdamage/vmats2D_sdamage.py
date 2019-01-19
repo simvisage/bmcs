@@ -6,11 +6,11 @@ from traitsui.api import UItem, \
 from bmcs.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     PlottableFn, DamageFn, GfDamageFn
-from bmcs.simulator import \
-    Model, TLoopImplicit, TStepBC
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.mats2D.vmats2D_eval import MATS2D
 import numpy as np
+from simulator import \
+    Model, TLoopImplicit, TStepBC
 import traits.api as tr
 
 from .vstrain_norm2d import StrainNorm2D, SN2DRankine

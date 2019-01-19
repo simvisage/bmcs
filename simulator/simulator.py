@@ -10,7 +10,7 @@ from traits.api import \
     Instance, on_trait_change, Str, \
     Property, cached_property, Bool
 
-from bmcs.simulator.hist import Hist
+from simulator.hist import Hist
 from view.ui.bmcs_tree_node import BMCSRootNode
 
 from .i_hist import IHist

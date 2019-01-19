@@ -4,7 +4,7 @@
 
 from traits.api import \
     Int, Float, Bool
-from bmcs.simulator import \
+from simulator import \
     TLoop
 
 

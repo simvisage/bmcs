@@ -2,16 +2,17 @@ import time
 
 from mayavi import mlab
 
-from bmcs.simulator import \
-    Simulator
-from bmcs.simulator.xdomain import \
-    XDomainFEGrid
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.mats.mats2D import \
     MATS2DScalarDamage
 from ibvpy.mats.viz3d_state_field import \
     Vis3DStateField, Viz3DStateField
+from simulator import \
+    Simulator
+from simulator.xdomain import \
+    XDomainFEGrid
+
 
 L = 600.0
 H = 100.0

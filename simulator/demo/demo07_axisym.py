@@ -1,11 +1,9 @@
 import time
+
 from mayavi import mlab
 from traits.api import \
     provides, Property, Array, cached_property
-from bmcs.simulator import \
-    Simulator, IXDomain
-from bmcs.simulator.xdomain import \
-    XDomainFEGrid
+
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
@@ -16,6 +14,10 @@ from ibvpy.mats.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 import numpy as np
+from simulator import \
+    Simulator, IXDomain
+from simulator.xdomain import \
+    XDomainFEGrid
 
 
 @provides(IXDomain)
