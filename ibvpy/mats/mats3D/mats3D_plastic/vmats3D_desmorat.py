@@ -8,13 +8,13 @@ from traits.api import \
     Float, List
 from traitsui.api import View, VGroup, Item
 
-from bmcs.simulator import \
-    Model, TLoopImplicit, TStepBC
 from ibvpy.mats.mats3D.mats3D_eval import \
     MATS3DEval
 from ibvpy.mats.mats3D.vmats3D_eval import \
     MATS3D
 import numpy as np
+from simulator import \
+    Model, TLoopImplicit, TStepBC
 import traits.api as tr
 
 

@@ -3,7 +3,7 @@ import copy
 
 from traits.api import \
     Instance, Property, cached_property, Enum, on_trait_change, \
-    List, Dict
+    List, Dict, WeakRef, DelegatesTo
 
 from ibvpy.core.bcond_mngr import \
     BCondMngr
@@ -17,31 +17,22 @@ from .xdomain import IXDomain
 
 class TStepBC(TStepState):
 
-    xdomain = Instance(IXDomain)
+    xdomain = DelegatesTo('sim')
 
     # Boundary condition manager
     #
-    bcond_mngr = Instance(BCondMngr)
+    bcond_mngr = Property(Instance(BCondMngr),
+                          depends='bc,bc_items, model_structure_changed')
 
-    def _bcond_mngr_default(self):
-        return BCondMngr()
+    @cached_property
+    def _get_bcond_mngr(self):
+        return BCondMngr(bcond_list=self.sim.bc)
 
     state_k = Dict
     '''State variables within the current iteration step
     '''
 
-    record = Dict
-
-    response_traces = Property(
-        List, depends_on='response_dict_items, model_structure_changed'
-    )
-
-    @cached_property
-    def _get_response_traces(self):
-        rt_list = self.record.values()
-        for rt in rt_list:
-            rt.setup()
-        return rt_list
+    record = DelegatesTo('sim')
 
     step_flag = Enum('predictor', 'corrector')
     '''Step flag to control the inclusion of essential BC'
@@ -83,7 +74,7 @@ class TStepBC(TStepState):
         F_int = self.xdomain.map_field_to_F(sig_k).flatten()
         R = F_ext - F_int
         self.K.apply_constraints(R)
-        return R, self.K
+        return R, self.K, F_int
 
     def _get_R_norm(self):
         R = self.R
@@ -103,9 +94,7 @@ class TStepBC(TStepState):
         self.U_n[:] = self.U_k[:]
         for name, s_k in self.state_k.items():
             self.state_n[name] = s_k
-        for rt in self.response_traces:
-            rt.update(self.U_n, self.t_n1)
-        self.hist.record_timestep(self.t_n1, self.U_n, self.state_n)
+        self.hist.record_timestep(self.t_n1, self.U_n, self.F_k, self.state_n)
         self.t_n = self.t_n1
         self.step_flag = 'predictor'
 

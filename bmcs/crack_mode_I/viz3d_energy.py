@@ -5,10 +5,10 @@ Created on May 30, 2018
 '''
 
 from scipy import interpolate as ip
-from view.plot2d import Viz2D, Vis2D
 
 import numpy as np
 import traits.api as tr
+from view.plot2d import Viz2D, Vis2D
 
 
 class Vis2DEnergy(Vis2D):
@@ -48,7 +48,7 @@ class Vis2DEnergy(Vis2D):
         self.U_bar_t.append(U_bar)
 
     def get_t(self):
-        return np.array(self.tloop.t_record, dtype=np.float_)
+        return np.array(self.model.t, dtype=np.float_)
 
     def get_w(self):
         _, w = self.model.get_PW()

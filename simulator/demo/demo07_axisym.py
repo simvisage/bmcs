@@ -113,28 +113,24 @@ xdomain = XDomainAxiSym(x_0=(0, 0),
 
 m = MATS3DDesmorat()
 
-s = Simulator(
-    model=m,
-    xdomain=xdomain
-)
-s.tloop.k_max = 1000
 left_y = BCSlice(slice=xdomain.mesh[0, :, 0, :],
                  var='u', dims=[1], value=0)
 left_x = BCSlice(slice=xdomain.mesh[0, :, 0, :],
                  var='u', dims=[0], value=0.5)
 right_x = BCSlice(slice=xdomain.mesh[-1, :, -1, :],
                   var='u', dims=[0], value=0.0)
-s.tstep.bcond_mngr.bcond_list = [
-    left_x,
-    right_x,
-    left_y
-]
 
-s.tstep.record = {
-    'strain': Vis3DStrainField(tstep=s.tstep, var='eps_ab'),
-    'damage': Vis3DStateField(tstep=s.tstep, var='omega_a'),
-    'kinematic hardening': Vis3DStateField(tstep=s.tstep, var='z_a')
-}
+s = Simulator(
+    model=m,
+    xdomain=xdomain,
+    bc=[left_x, right_x, left_y],
+    record={
+        'strain': Vis3DStrainField(var='eps_ab'),
+        'damage': Vis3DStateField(var='omega_a'),
+        'kinematic hardening': Vis3DStateField(var='z_a')
+    }
+)
+s.tloop.k_max = 1000
 s.tline.step = 0.05
 s.run()
 time.sleep(5)

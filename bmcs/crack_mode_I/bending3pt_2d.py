@@ -11,28 +11,26 @@ from traits.api import \
     List, Float, Trait, Int, on_trait_change
 from traitsui.api import \
     View, Item, UItem, VGroup
+
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
-    IMATSEval, TLine, BCSlice
+    BCSlice
 from ibvpy.core.bcond_mngr import BCondMngr
-from ibvpy.core.vtloop import TimeLoop
-from ibvpy.dots.vdots_grid import DOTSGrid
 from ibvpy.fets import \
     FETS2D4Q
 from ibvpy.mats.mats2D import \
     MATS2DElastic, MATS2DMplDamageEEQ, MATS2DScalarDamage, MATS2DMplCSDEEQ  # , MATS2DMplCSDODF
-from ibvpy.mats.mats3D.mats3D_sdamage.viz3d_sdamage import Vis3DSDamage,\
-    Viz3DSDamage
-from ibvpy.mats.mats3D.viz3d_strain_field import \
+from ibvpy.mats.viz3d_state_field import \
+    Vis3DStateField, Viz3DStateField
+from ibvpy.mats.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
-from ibvpy.mats.mats3D.viz3d_stress_field import \
-    Vis3DStressField, Viz3DStressField
 import numpy as np
+from simulator import Simulator, Model, XDomainFEGrid
 import traits.api as tr
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
-from view.window import BMCSModel, BMCSWindow
+from view.window import BMCSWindow
 
 from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
@@ -70,7 +68,7 @@ class Viz2DForceDeflection(Viz2D):
 
     def plot_marker(self, ax, vot):
         P, W = self.vis2d.get_PW()
-        idx = self.vis2d.tloop.get_time_idx(vot)
+        idx = self.vis2d.hist.get_time_idx(vot)
         P, w = P[idx], W[idx]
         ax.plot([w], [P], 'o', color='black', markersize=10)
 
@@ -143,17 +141,17 @@ class Vis2DCrackBand(Vis2D):
         self.sig_t.append(sig_E1)
 
     def get_t(self):
-        return np.array(self.tloop.t_record, dtype=np.float_)
+        return np.array(self.model.t, dtype=np.float_)
 
     def get_a_x(self):
         return self.X_E
 
     def get_eps_t(self, vot):
-        t_idx = self.tloop.get_time_idx(vot)
+        t_idx = self.model.hist.get_time_idx(vot)
         return self.eps_t[t_idx]
 
     def get_sig_t(self, vot):
-        t_idx = self.tloop.get_time_idx(vot)
+        t_idx = self.model.hist.get_time_idx(vot)
         return self.sig_t[t_idx]
 
     def get_a_t(self):
@@ -371,7 +369,7 @@ class Geometry(BMCSLeafNode):
     tree_view = traits_view
 
 
-class BendingTestModel(BMCSModel, Vis2D):
+class BendingTestModel(Simulator, Vis2D):
 
     #=========================================================================
     # Tree node attributes
@@ -384,7 +382,7 @@ class BendingTestModel(BMCSModel, Vis2D):
 
         return [
             self.tline,
-            self.mats_eval,
+            self.model,
             self.cross_section,
             self.geometry
         ]
@@ -392,27 +390,10 @@ class BendingTestModel(BMCSModel, Vis2D):
     def _update_node_list(self):
         self.tree_node_list = [
             self.tline,
-            self.mats_eval,
+            self.model,
             self.cross_section,
             self.geometry
         ]
-
-    #=========================================================================
-    # Interactive control of the time loop
-    #=========================================================================
-    def init(self):
-        self.tloop.init()
-
-    def eval(self):
-        return self.tloop.eval()
-
-    def pause(self):
-        self.tloop.stop = True
-        self.tloop.paused = True
-
-    def stop(self):
-        self.tloop.stop = True
-        self.tloop.restart = True
 
     #=========================================================================
     # Test setup parameters
@@ -452,31 +433,31 @@ class BendingTestModel(BMCSModel, Vis2D):
     #=========================================================================
     # Material model
     #=========================================================================
-    mats_eval_type = Trait('microplane damage (eeg)',
-                           {'elastic': MATS2DElastic,
-                            'microplane damage (eeq)': MATS2DMplDamageEEQ,
-                            'microplane CSD (eeq)': MATS2DMplCSDEEQ,
-                            #'microplane CSD (odf)': MATS2DMplCSDODF,
-                            'scalar damage': MATS2DScalarDamage
-                            },
-                           MAT=True
-                           )
+    model_type = Trait('microplane damage (eeg)',
+                       {'elastic': MATS2DElastic,
+                        'microplane damage (eeq)': MATS2DMplDamageEEQ,
+                        'microplane CSD (eeq)': MATS2DMplCSDEEQ,
+                        #'microplane CSD (odf)': MATS2DMplCSDODF,
+                        'scalar damage': MATS2DScalarDamage
+                        },
+                       MAT=True
+                       )
 
-    @on_trait_change('mats_eval_type')
-    def _set_mats_eval(self):
-        self.mats_eval = self.mats_eval_type_()
+    @on_trait_change('model_type')
+    def _set_model(self):
+        self.model = self.model_type_()
         self._update_node_list()
 
 #     @on_trait_change('BC,MAT,MESH')
 #     def reset_node_list(self):
 #         self._update_node_list()
 
-    mats_eval = Instance(IMATSEval,
-                         report=True)
+    model = Instance(Model,
+                     report=True)
     '''Material model'''
 
-    def _mats_eval_default(self):
-        return self.mats_eval_type_()
+    def _model_default(self):
+        return self.model_type_()
 
     #=========================================================================
     # Finite element type
@@ -489,16 +470,15 @@ class BendingTestModel(BMCSModel, Vis2D):
     def _get_fets_eval(self):
         return FETS2D4Q()
 
-    bcond_mngr = Property(Instance(BCondMngr),
-                          depends_on='GEO,CS,BC,MAT,MESH')
+    bc = Property(Instance(BCondMngr),
+                  depends_on='GEO,CS,BC,MAT,MESH')
     '''Boundary condition manager
     '''
     @cached_property
-    def _get_bcond_mngr(self):
-        bc_list = [self.fixed_right_bc,
-                   self.fixed_x,
-                   self.control_bc]
-        return BCondMngr(bcond_list=bc_list)
+    def _get_bc(self):
+        return [self.fixed_right_bc,
+                self.fixed_x,
+                self.control_bc]
 
     fixed_right_bc = Property(depends_on='CS,BC,GEO,MAT,MESH')
     '''Foxed boundary condition'''
@@ -531,16 +511,15 @@ class BendingTestModel(BMCSModel, Vis2D):
         return BCSlice(slice=self.fe_grid[0, -1, :, -1],
                        var='u', dims=[1], value=-self.w_max)
 
-    dots_grid = Property(Instance(DOTSGrid),
-                         depends_on='CS,MAT,GEO,MESH,FE')
+    xdomain = Property(depends_on='CS,MAT,GEO,MESH,FE')
     '''Discretization object.
     '''
     @cached_property
-    def _get_dots_grid(self):
-        dgrid = DOTSGrid(L_x=self.geometry.L / 2., L_y=self.geometry.H,
-                         integ_factor=self.cross_section.b,
-                         n_x=self.n_e_x, n_y=self.n_e_y,
-                         fets=self.fets_eval, mats=self.mats_eval)
+    def _get_xdomain(self):
+        dgrid = XDomainFEGrid(L_x=self.geometry.L / 2., L_y=self.geometry.H,
+                              integ_factor=self.cross_section.b,
+                              n_x=self.n_e_x, n_y=self.n_e_y,
+                              fets=self.fets_eval)
 
         L = self.geometry.L / 2.0
         L_c = self.geometry.L_c
@@ -553,43 +532,7 @@ class BendingTestModel(BMCSModel, Vis2D):
     fe_grid = Property
 
     def _get_fe_grid(self):
-        return self.dots_grid.mesh
-
-    tline = Instance(TLine)
-
-    def _tline_default(self):
-        t_max = 1.0
-        d_t = 0.1
-        return TLine(min=0.0, step=d_t, max=t_max,
-                     time_change_notifier=self.time_changed,
-                     )
-
-    alg_stiff = tr.Bool(False,
-                        ALG=True,
-                        label='use algorithmic stiffness')
-
-    k_max = Int(600,
-                label='Maximum number of iterations',
-                ALG=True)
-
-    tolerance = Float(1e-4,
-                      label='tolerance',
-                      ALG=True)
-
-    tloop = Property(Instance(TimeLoop),
-                     depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
-    '''Algorithm controlling the time stepping.
-    '''
-    @cached_property
-    def _get_tloop(self):
-        k_max = self.k_max
-        tolerance = self.tolerance
-        return TimeLoop(ts=self.dots_grid, k_max=k_max,
-                        tolerance=tolerance,
-                        tline=self.tline,
-                        algorithmic=self.alg_stiff,
-                        bc_mngr=self.bcond_mngr,
-                        response_traces=list(self.response_traces.values()))
+        return self.xdomain.mesh
 
     response_traces = tr.Dict
     '''Response traces.
@@ -606,15 +549,16 @@ class BendingTestModel(BMCSModel, Vis2D):
         return self.get_t()
 
     def get_t(self):
-        return np.array(self.tloop.t_record, dtype=np.float_)
+        return self.hist.get_t_arr()
 
     def get_PW(self):
         record_dofs = np.unique(
             self.fe_grid[self.controlled_elem, -
                          1, :, -1].dofs[:, :, 1].flatten()
         )
-        Fd_int_t = np.array(self.tloop.F_int_record)
-        Ud_t = np.array(self.tloop.U_record)
+        Fd_int_t = np.array(self.hist.conj_vars)
+        Ud_t = np.array(self.hist.prim_vars)
+
         F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
         U_t = -Ud_t[:, record_dofs[0]]
         return F_int_t, U_t
@@ -632,9 +576,6 @@ class BendingTestModel(BMCSModel, Vis2D):
         VGroup(
             Item('n_e_x'),
             Item('n_e_y'),
-            Item('k_max'),
-            Item('tolerance'),
-            Item('alg_stiff'),
             label='Numerical parameters',
         ),
     )
@@ -643,8 +584,8 @@ class BendingTestModel(BMCSModel, Vis2D):
 
 
 def run_bending3pt_sdamage(*args, **kw):
-    bt = BendingTestModel(n_e_x=20, n_e_y=30, k_max=500,
-                          mats_eval_type='scalar damage'
+    bt = BendingTestModel(n_e_x=20, n_e_y=30,
+                          model_type='scalar damage'
                           #mats_eval_type='microplane damage (eeq)'
                           #mats_eval_type='microplane CSD (eeq)'
                           #mats_eval_type='microplane CSD (odf)'
@@ -653,19 +594,21 @@ def run_bending3pt_sdamage(*args, **kw):
     E = 30000.0
     f_t = 2.5
     G_f = 0.09
-    bt.mats_eval.trait_set(
+    bt.model.trait_set(
         stiffness='algorithmic',
         E=E,
         nu=0.2
     )
-    bt.mats_eval.omega_fn.trait_set(
+    bt.model.omega_fn.trait_set(
         f_t=f_t,
         G_f=G_f,
         L_s=L_c
     )
+
     # print 'Gf', h_b * bt.mats_eval.get_G_f()
 
     bt.w_max = 1.0
+    bt.tloop.k_max = 400
     bt.tline.step = 0.02
     bt.cross_section.b = 100.
     bt.geometry.trait_set(
@@ -713,9 +656,8 @@ def run_bending3pt_sdamage_viz3d(*args, **kw):
 #     w.run()
     w.offline = True
     bt = w.model
-    vis3d_damage = Vis3DSDamage()
-    bt.response_traces['damage'] = vis3d_damage
-    viz3d_damage = Viz3DSDamage(vis3d=vis3d_damage)
+    bt.record['damage'] = Vis3DStateField(var='omega')
+    viz3d_damage = Viz3DStateField(vis3d=bt.hist['damage'])
     w.viz_sheet.add_viz3d(viz3d_damage)
     w.configure_traits(*args, **kw)
 

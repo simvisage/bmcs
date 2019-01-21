@@ -8,7 +8,7 @@ from threading import Thread
 
 from traits.api import \
     Instance, on_trait_change, Str, \
-    Property, cached_property, Bool
+    Property, cached_property, Bool, List, Dict
 
 from simulator.hist import Hist
 from view.ui.bmcs_tree_node import BMCSRootNode
@@ -104,14 +104,20 @@ class Simulator(BMCSRootNode):
                                      hist=self.hist,
                                      tline=self.tline)
 
+    bc = List
+    r'''Boundary conditions
+    '''
+    record = Dict
+    r'''Recorded variables
+    '''
+
     tstep = Property(Instance(ITStep), depends_on='model,xdomain')
     r'''Class representing the time step and state
     '''
     @cached_property
     def _get_tstep(self):
-        return self.model.tstep_type(model=self.model,
-                                     xdomain=self.xdomain,
-                                     hist=self.hist)
+        return self.model.tstep_type(sim=self,
+                                     )
 
     def pause(self):
         self.tloop.paused = True
@@ -129,7 +135,7 @@ class Simulator(BMCSRootNode):
     '''
 
     def _hist_default(self):
-        return Hist()
+        return Hist(sim=self)
 
     #=========================================================================
     # COMPUTATION THREAD

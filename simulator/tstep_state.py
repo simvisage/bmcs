@@ -3,7 +3,7 @@
 
 from traits.api import \
     HasStrictTraits, WeakRef, \
-    Property, Float, Instance, \
+    Property, Float, DelegatesTo, \
     cached_property, Event, Dict, Str, Array, provides
 import numpy as np
 from .i_hist import IHist
@@ -15,9 +15,12 @@ from .i_tstep import ITStep
 class TStepState(HasStrictTraits):
     '''Time step with managed and configurable state variables.
     '''
-    model = Instance(IModel)
 
-    hist = WeakRef(IHist)
+    sim = WeakRef
+
+    model = DelegatesTo('sim')
+
+    hist = DelegatesTo('sim')
 
     primary_var_changed = Event
 
@@ -90,19 +93,25 @@ class TStepState(HasStrictTraits):
         )
         F_t = self.F_0 * self.t_n1
 
-        return F_t - F, dF
+        return F_t - F, dF, F
 
     R = Property
 
     def _get_R(self):
-        R, dR = self._corr_pred
+        R, _, _ = self._corr_pred
         return R.flatten()
 
     dR = Property
 
     def _get_dR(self):
-        R, dR = self._corr_pred
+        _, dR, _ = self._corr_pred
         return dR
+
+    F_k = Property
+
+    def _get_F_k(self):
+        _, _, F_k = self._corr_pred
+        return F_k
 
     R_norm = Property
 
