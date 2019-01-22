@@ -94,7 +94,7 @@ class TStepBC(TStepState):
         self.U_n[:] = self.U_k[:]
         for name, s_k in self.state_k.items():
             self.state_n[name] = s_k
-        self.hist.record_timestep(self.t_n1, self.U_n, self.F_k, self.state_n)
+        self.hist.record_timestep(self.t_n1, self.U_k, self.F_k, self.state_n)
         self.t_n = self.t_n1
         self.step_flag = 'predictor'
 

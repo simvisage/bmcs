@@ -558,7 +558,6 @@ class BendingTestModel(Simulator, Vis2D):
         )
         Fd_int_t = np.array(self.hist.conj_vars)
         Ud_t = np.array(self.hist.prim_vars)
-
         F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
         U_t = -Ud_t[:, record_dofs[0]]
         return F_int_t, U_t
@@ -607,8 +606,8 @@ def run_bending3pt_sdamage(*args, **kw):
 
     # print 'Gf', h_b * bt.mats_eval.get_G_f()
 
-    bt.w_max = 1.0
-    bt.tloop.k_max = 400
+    bt.w_max = 0.2
+    print('SETTING KMAX')
     bt.tline.step = 0.02
     bt.cross_section.b = 100.
     bt.geometry.trait_set(
@@ -618,8 +617,12 @@ def run_bending3pt_sdamage(*args, **kw):
         L_c=L_c
     )
     bt.loading_scenario.trait_set(loading_type='monotonic')
+    bt.tloop.k_max = 400
+    print('SETTING KMAX', bt.tloop.k_max)
     w = BMCSWindow(model=bt)
+    w.viz_sheet.monitor_chunk_size = 1
     bt.add_viz2d('F-w', 'load-displacement')
+    return w
     vis2d_energy = bt.response_traces['energy']
     vis2d_crack_band = bt.response_traces['crack band']
     viz2d_energy = Viz2DEnergy(name='dissipation',
@@ -659,6 +662,7 @@ def run_bending3pt_sdamage_viz3d(*args, **kw):
     bt.record['damage'] = Vis3DStateField(var='omega')
     viz3d_damage = Viz3DStateField(vis3d=bt.hist['damage'])
     w.viz_sheet.add_viz3d(viz3d_damage)
+    w.offline = False
     w.configure_traits(*args, **kw)
 
 

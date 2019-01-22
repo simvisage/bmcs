@@ -81,7 +81,7 @@ class Simulator(BMCSRootNode):
         )
 
     def time_changed(self, time):
-        if self.ui != None:
+        if not(self.ui is None):
             self.ui.viz_sheet.time_changed(time)
 
     def time_range_changed(self, tmax):

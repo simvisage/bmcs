@@ -35,8 +35,8 @@ class Hist(HasStrictTraits):
         corresponding state of the model.
         '''
         self.timesteps.append(t)
-        self.prim_vars.append(prim_var)
-        self.conj_vars.append(conj_var)
+        self.prim_vars.append(np.copy(prim_var))
+        self.conj_vars.append(np.copy(conj_var))
         self.state_vars.append(state_vars)
         for vis in self.record_dict.values():
             vis.update(prim_var, t)
