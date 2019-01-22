@@ -7,17 +7,19 @@ Created on Feb 11, 2018
 import os
 import tempfile
 
-from mathkit.tensor import DELTA23_ab
 from mayavi.filters.api import ExtractTensorComponents
 from mayavi.modules.api import Surface
 from tvtk.api import \
     tvtk
 
+from mathkit.tensor import DELTA23_ab
 import numpy as np
 import traits.api as tr
 
 
 class Vis3D(tr.HasTraits):
+
+    sim = tr.WeakRef
 
     dir = tr.Directory
 

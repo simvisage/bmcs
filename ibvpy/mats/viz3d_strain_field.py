@@ -10,46 +10,17 @@ from mayavi import mlab
 from mayavi.filters.api import ExtractTensorComponents
 from mayavi.modules.api import Surface
 from mayavi.sources.vtk_xml_file_reader import VTKXMLFileReader
-from tvtk.api import \
-    tvtk, write_data
+from tvtk.api import write_data
 
 import numpy as np
 import traits.api as tr
-from view.plot3d.viz3d import Vis3D, Viz3D
-
-
-class Vis3DField(Vis3D):
-
-    tstep = tr.WeakRef
-
-    var = tr.Str('<unnamed>')
-
-    def setup(self):
-        self.new_dir()
-        ts = self.tstep
-        xdomain = ts.xdomain
-        fets = xdomain.fets
-        DELTA_x_ab = fets.vtk_expand_operator
-
-        vtk_cell_type = fets.vtk_cell_class().cell_type
-        n_c = fets.n_nodal_dofs
-        n_E, n_i, n_a = xdomain.x_Eia.shape
-        points = np.einsum(
-            'Ia,ab->Ib',
-            xdomain.x_Eia.reshape(-1, n_c), DELTA_x_ab
-        )
-        U = np.zeros_like(points)
-        self.ug = tvtk.UnstructuredGrid(points=points)
-        vtk_cells = (np.arange(n_E) * n_i)[:, np.newaxis] + \
-            np.array(fets.vtk_cell, dtype=np.int_)[np.newaxis, :]
-        self.ug.set_cells(vtk_cell_type, vtk_cells)
-        self.update(U, 0)
+from .viz3d_field import Vis3DField, Viz3DField
 
 
 class Vis3DStrainField(Vis3DField):
 
     def update(self, U, t):
-        xdomain = self.tstep.xdomain
+        xdomain = self.sim.xdomain
         fets = xdomain.fets
         n_c = fets.n_nodal_dofs
         DELTA_x_ab = fets.vtk_expand_operator
@@ -78,15 +49,7 @@ class Vis3DStrainField(Vis3DField):
         self.add_file(target_file)
 
 
-class Viz3DHist(Viz3D):
-
-    def plot(self, vot):
-        idx = self.vis3d.tstep.hist.get_time_idx(vot)
-        self.d.file_list = self.vis3d.file_list
-        self.d.timestep = idx + 1
-
-
-class Viz3DStrainField(Viz3DHist):
+class Viz3DStrainField(Viz3DField):
 
     label = tr.Str('<unnambed>')
     vis3d = tr.WeakRef

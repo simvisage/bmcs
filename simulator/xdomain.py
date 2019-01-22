@@ -39,7 +39,7 @@ class XDomainSinglePoint(HasStrictTraits):
     def map_U_to_field(self, eps_eng):
         return np.einsum(
             'kij,...k->...ij', GAMMA, eps_eng
-        )
+        )[np.newaxis, ...]
 
     def map_field_to_F(self, eps_tns):
         return np.einsum(

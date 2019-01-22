@@ -62,7 +62,7 @@ class Hist(HasStrictTraits):
     @cached_property
     def _get_record_dict(self):
         for viz in self.sim.record.values():
-            viz.tstep = self.sim.tstep
+            viz.sim = self.sim
             viz.setup()
         return {key: viz for key, viz in self.sim.record.items()}
 

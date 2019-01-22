@@ -7,29 +7,26 @@ Created on Feb 11, 2018
 import os
 
 from mayavi import mlab
-from mayavi.filters.api import ExtractTensorComponents
-from mayavi.modules.api import Surface
 from mayavi.sources.vtk_xml_file_reader import VTKXMLFileReader
-from tvtk.api import \
-    tvtk, write_data
+from tvtk.api import write_data
 
+from ibvpy.mats.viz3d_field import Vis3DField, Viz3DField
 import numpy as np
 import traits.api as tr
-from ibvpy.mats.viz3d_strain_field import Vis3DField, Viz3DHist
 
 
 class Vis3DStateField(Vis3DField):
 
-    tmodel = tr.DelegatesTo('tstep')
+    model = tr.DelegatesTo('sim')
 
     state_vars = tr.Property()
 
     def _get_state_vars(self):
-        return self.tmodel.state_var_shapes
+        return self.model.state_var_shapes
 
     def update(self, U, t):
-        ts = self.tstep
-        xdomain = ts.xdomain
+        ts = self.sim.tstep
+        xdomain = self.sim.xdomain
         fets = xdomain.fets
         omega_field = ts.state_n[self.var]
         n_c = fets.n_nodal_dofs
@@ -51,7 +48,7 @@ class Vis3DStateField(Vis3DField):
         self.add_file(target_file)
 
 
-class Viz3DStateField(Viz3DHist):
+class Viz3DStateField(Viz3DField):
 
     vis3d = tr.WeakRef
 

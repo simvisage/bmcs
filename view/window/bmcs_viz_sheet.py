@@ -265,7 +265,6 @@ class BMCSVizSheet(ROutputSection):
 
     @on_trait_change('vot,n_cols')
     def replot(self):
-        print('REPLOTTING')
         if self.offline:
             return
         if self.running and self.mode == 'monitor' and \
@@ -283,12 +282,9 @@ class BMCSVizSheet(ROutputSection):
             self.reference_viz2d.plot(ax, self.vot)
         self.data_changed = True
         self.skipped_steps = 0
-        print('REPLOTTING 3D')
         if self.mode == 'browse':
-            print('UPDATE PIPELINE')
             self.update_pipeline(self.vot)
         else:
-            print('REPLOT THREAD')
             up = RunThread(self, self.vot)
             up.start()
 

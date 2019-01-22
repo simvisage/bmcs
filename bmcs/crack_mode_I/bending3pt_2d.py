@@ -35,6 +35,15 @@ from view.window import BMCSWindow
 from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
+class VisForceDeflection(Vis2D):
+
+    def setup(self):
+        pass
+
+    def update(self, U, t):
+        pass
+
+
 class Viz2DForceDeflection(Viz2D):
 
     '''Plot adaptor for the pull-out simulator.
@@ -44,7 +53,8 @@ class Viz2DForceDeflection(Viz2D):
     show_legend = tr.Bool(True, auto_set=False, enter_set=True)
 
     def plot(self, ax, vot, *args, **kw):
-        P, W = self.vis2d.get_PW()
+        sim = self.vis2d.sim
+        P, W = sim.get_PW()
         ymin, ymax = np.min(P), np.max(P)
         L_y = ymax - ymin
         ymax += 0.05 * L_y
@@ -67,8 +77,9 @@ class Viz2DForceDeflection(Viz2D):
         self.plot_marker(ax, vot)
 
     def plot_marker(self, ax, vot):
-        P, W = self.vis2d.get_PW()
-        idx = self.vis2d.hist.get_time_idx(vot)
+        sim = self.vis2d.sim
+        P, W = sim.get_PW()
+        idx = sim.hist.get_time_idx(vot)
         P, w = P[idx], W[idx]
         ax.plot([w], [P], 'o', color='black', markersize=10)
 
@@ -83,42 +94,33 @@ class Viz2DForceDeflection(Viz2D):
 
 class Vis2DCrackBand(Vis2D):
 
-    model = tr.WeakRef
-    tloop = tr.Property
-
-    def _get_tloop(self):
-        return self.model.tloop
-
     X_E = tr.Array(np.float_)
     eps_t = tr.List
     sig_t = tr.List
     a_t = tr.List
 
-    def setup(self, tl):
+    def setup(self):
         self.X_E = []
         self.eps_t = []
         self.sig_t = []
         self.a_t = []
 
     def update(self, U, t):
-        bt = self.model
-        tl = self.tloop
-        ts = tl.ts
-        fe_grid = ts.mesh
-        mats = ts.mats
-        fets = ts.fets
+        bt = self.sim
+        tstep = self.sim.tstep
+        xdomain = self.sim.xdomain
+        mats = self.sim.model
+        fets = xdomain.fets
         n_c = fets.n_nodal_dofs
         U_Ia = U.reshape(-1, n_c)
-        U_Eia = U_Ia[ts.I_Ei]
+        U_Eia = U_Ia[xdomain.I_Ei]
         eps_Enab = np.einsum(
-            'Einabc,Eic->Enab', ts.B_Einabc, U_Eia
+            'Einabc,Eic->Enab', xdomain.B_Einabc, U_Eia
         )
-        deps_Emab = np.zeros_like(eps_Enab)
-        D_Enabef, sig_Enab = mats.get_corr_pred(
-            eps_Enab, deps_Emab, t, t, False, False,
-            ** ts.state_arrays
+        sig_Enab, _ = mats.get_corr_pred(
+            eps_Enab, t, ** tstep.state_n
         )
-        crack_band = fe_grid[0, bt.n_a + 1:]
+        crack_band = xdomain.mesh[0, bt.n_a + 1:]
         E = crack_band.elems
         X = crack_band.dof_X
         eps_Ey = eps_Enab[E, :, 0, 0]
@@ -141,17 +143,17 @@ class Vis2DCrackBand(Vis2D):
         self.sig_t.append(sig_E1)
 
     def get_t(self):
-        return np.array(self.model.t, dtype=np.float_)
+        return np.array(self.sim.t, dtype=np.float_)
 
     def get_a_x(self):
         return self.X_E
 
     def get_eps_t(self, vot):
-        t_idx = self.model.hist.get_time_idx(vot)
+        t_idx = self.sim.hist.get_time_idx(vot)
         return self.eps_t[t_idx]
 
     def get_sig_t(self, vot):
-        t_idx = self.model.hist.get_time_idx(vot)
+        t_idx = self.sim.hist.get_time_idx(vot)
         return self.sig_t[t_idx]
 
     def get_a_t(self):
@@ -277,7 +279,7 @@ class Viz2DdGdA(Viz2D):
         t = self.vis2d_cb.get_t()
         G_t = self.vis2d.get_G_t()
         a_t = self.vis2d_cb.get_a_t()
-        b = self.vis2d_cb.model.cross_section.b
+        b = self.vis2d_cb.sim.cross_section.b
 
         tck = ip.splrep(a_t * b, G_t, s=0, k=1)
         dG_da = ip.splev(a_t, tck, der=1)
@@ -369,7 +371,7 @@ class Geometry(BMCSLeafNode):
     tree_view = traits_view
 
 
-class BendingTestModel(Simulator, Vis2D):
+class BendingTestModel(Simulator):
 
     #=========================================================================
     # Tree node attributes
@@ -534,15 +536,6 @@ class BendingTestModel(Simulator, Vis2D):
     def _get_fe_grid(self):
         return self.xdomain.mesh
 
-    response_traces = tr.Dict
-    '''Response traces.
-    '''
-
-    def _response_traces_default(self):
-        return {'energy': Vis2DEnergy(model=self),
-                'crack band': Vis2DCrackBand(model=self),
-                }
-
     t = Property
 
     def _get_t(self):
@@ -607,7 +600,6 @@ def run_bending3pt_sdamage(*args, **kw):
     # print 'Gf', h_b * bt.mats_eval.get_G_f()
 
     bt.w_max = 0.2
-    print('SETTING KMAX')
     bt.tline.step = 0.02
     bt.cross_section.b = 100.
     bt.geometry.trait_set(
@@ -620,27 +612,30 @@ def run_bending3pt_sdamage(*args, **kw):
     bt.tloop.k_max = 400
     print('SETTING KMAX', bt.tloop.k_max)
     w = BMCSWindow(model=bt)
-    w.viz_sheet.monitor_chunk_size = 1
-    bt.add_viz2d('F-w', 'load-displacement')
-    return w
-    vis2d_energy = bt.response_traces['energy']
-    vis2d_crack_band = bt.response_traces['crack band']
+#    bt.add_viz2d('F-w', 'load-displacement')
+
+    bt.record['F-w'] = VisForceDeflection()
+    bt.record['energy'] = Vis2DEnergy()
+    bt.record['crack band'] = Vis2DCrackBand()
+
+    fw = Viz2DForceDeflection(name='F-w', vis2d=bt.hist['F-w'])
     viz2d_energy = Viz2DEnergy(name='dissipation',
-                               vis2d=vis2d_energy)
+                               vis2d=bt.hist['energy'])
     viz2d_energy_rates = Viz2DEnergyReleasePlot(name='dissipated energy',
-                                                vis2d=vis2d_energy)
+                                                vis2d=bt.hist['energy'])
+    w.viz_sheet.viz2d_list.append(fw)
+    w.viz_sheet.viz2d_list.append(viz2d_energy)
+    w.viz_sheet.viz2d_list.append(viz2d_energy_rates)
     viz2d_cb_strain = Viz2DStrainInCrack(name='strain in crack',
-                                         vis2d=vis2d_crack_band)
+                                         vis2d=bt.hist['crack band'])
+    w.viz_sheet.viz2d_list.append(viz2d_cb_strain)
     viz2d_cb_a = Viz2DTA(name='crack length',
-                         vis2d=vis2d_crack_band,
+                         vis2d=bt.hist['crack band'],
                          visible=False)
     viz2d_cb_dGda = Viz2DdGdA(name='energy release per crack extension',
-                              vis2d=vis2d_energy,
-                              vis2d_cb=vis2d_crack_band,
+                              vis2d=bt.hist['energy'],
+                              vis2d_cb=bt.hist['crack band'],
                               visible=False)
-    w.viz_sheet.viz2d_list.append(viz2d_energy)
-    w.viz_sheet.viz2d_list.append(viz2d_cb_strain)
-    w.viz_sheet.viz2d_list.append(viz2d_energy_rates)
     w.viz_sheet.viz2d_list.append(viz2d_cb_a)
     w.viz_sheet.viz2d_list.append(viz2d_cb_dGda)
     w.viz_sheet.monitor_chunk_size = 1
