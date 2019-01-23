@@ -8,14 +8,15 @@ from threading import Thread
 
 from traits.api import \
     Instance, on_trait_change, Str, \
-    Property, cached_property, Bool
+    Property, cached_property, Bool, List, Dict
 
-from bmcs.simulator.hist import Hist
+from simulator.hist import Hist
 from view.ui.bmcs_tree_node import BMCSRootNode
 
 from .i_hist import IHist
 from .i_model import IModel
 from .i_tstep import ITStep
+from .i_xdomain import IXDomain
 from .tline import TLine
 from .tloop import TLoop
 
@@ -58,6 +59,15 @@ class Simulator(BMCSRootNode):
     '''
 
     #=========================================================================
+    # Spatial domain
+    #=========================================================================
+    xdomain = Instance(IXDomain)
+    r'''Spatial domain represented by a finite element discretization.
+    providing the kinematic mapping between the linear algebra (vector and
+    matrix) and field representation of the primary variables.
+    '''
+
+    #=========================================================================
     # TIME LINE
     #=========================================================================
     tline = Instance(TLine)
@@ -71,7 +81,7 @@ class Simulator(BMCSRootNode):
         )
 
     def time_changed(self, time):
-        if self.ui != None:
+        if not(self.ui is None):
             self.ui.viz_sheet.time_changed(time)
 
     def time_range_changed(self, tmax):
@@ -85,7 +95,7 @@ class Simulator(BMCSRootNode):
     #=========================================================================
     # TIME LOOP
     #=========================================================================
-    tloop = Property(Instance(TLoop), depends_on='model')
+    tloop = Property(Instance(TLoop), depends_on='model,xdomain')
     r'''Time loop constructed based on the current model.
     '''
     @cached_property
@@ -94,13 +104,20 @@ class Simulator(BMCSRootNode):
                                      hist=self.hist,
                                      tline=self.tline)
 
-    tstep = Property(Instance(ITStep), depends_on='model')
+    bc = List
+    r'''Boundary conditions
+    '''
+    record = Dict
+    r'''Recorded variables
+    '''
+
+    tstep = Property(Instance(ITStep), depends_on='model,xdomain')
     r'''Class representing the time step and state
     '''
     @cached_property
     def _get_tstep(self):
-        return self.model.tstep_type(model=self.model,
-                                     hist=self.hist)
+        return self.model.tstep_type(sim=self,
+                                     )
 
     def pause(self):
         self.tloop.paused = True
@@ -118,7 +135,7 @@ class Simulator(BMCSRootNode):
     '''
 
     def _hist_default(self):
-        return Hist()
+        return Hist(sim=self)
 
     #=========================================================================
     # COMPUTATION THREAD

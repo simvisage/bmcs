@@ -3,7 +3,7 @@
 
 from traits.api import \
     HasStrictTraits, WeakRef, \
-    Property, Float, Instance, \
+    Property, Float, DelegatesTo, \
     cached_property, Event, Dict, Str, Array, provides
 import numpy as np
 from .i_hist import IHist
@@ -15,9 +15,12 @@ from .i_tstep import ITStep
 class TStepState(HasStrictTraits):
     '''Time step with managed and configurable state variables.
     '''
-    model = Instance(IModel)
 
-    hist = WeakRef(IHist)
+    sim = WeakRef
+
+    model = DelegatesTo('sim')
+
+    hist = DelegatesTo('sim')
 
     primary_var_changed = Event
 
@@ -51,14 +54,14 @@ class TStepState(HasStrictTraits):
 
     model_structure_changed = Event
 
-    state_vars = Property(Dict(Str, Array),
-                          depends_on='model_structure_changed')
+    state_n = Property(Dict(Str, Array),
+                       depends_on='model_structure_changed')
     '''Dictionary of state arrays.
     The entry names and shapes are defined by the material
     model.
     '''
     @cached_property
-    def _get_state_vars(self):
+    def _get_state_n(self):
         xmodel_shape = self.xdomain.state_var_shape
         tmodel_shapes = self.model.state_var_shapes
         return {
@@ -86,23 +89,29 @@ class TStepState(HasStrictTraits):
         U_k_r = self.U_k.reshape(self.model.U_var_shape)
         F, dF = self.model.get_corr_pred(
             U_k_r, self.t_n1,
-            **self.state_vars
+            **self.state_n
         )
         F_t = self.F_0 * self.t_n1
 
-        return F_t - F, dF
+        return F_t - F, dF, F
 
     R = Property
 
     def _get_R(self):
-        R, dR = self._corr_pred
+        R, _, _ = self._corr_pred
         return R.flatten()
 
     dR = Property
 
     def _get_dR(self):
-        R, dR = self._corr_pred
+        _, dR, _ = self._corr_pred
         return dR
+
+    F_k = Property
+
+    def _get_F_k(self):
+        _, _, F_k = self._corr_pred
+        return F_k
 
     R_norm = Property
 
@@ -123,8 +132,8 @@ class TStepState(HasStrictTraits):
         self.U_n[:] = self.U_k[:]
         self.model.update_state(
             self.U_k, self.t_n1,
-            **self.state_vars
+            **self.state_n
         )
         self.hist.record_timestep(
-            self, self.U_n, self.state_vars
+            self, self.U_n, self.state_n
         )

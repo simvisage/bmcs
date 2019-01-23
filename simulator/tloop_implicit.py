@@ -4,7 +4,7 @@
 
 from traits.api import \
     Int, Float, Bool
-from bmcs.simulator import \
+from simulator import \
     TLoop
 
 
@@ -21,6 +21,7 @@ class TLoopImplicit(TLoop):
         t_n1 = self.tline.val
         t_max = self.tline.max
         dt = self.tline.step
+        print("KMAX", self.k_max)
         while t_n1 <= t_max:
             print('\ttime: %g' % t_n1, end='')
             k = 0

@@ -2,14 +2,14 @@
 from traits.api import \
     HasStrictTraits, Instance, Property, \
     provides, Enum, Float, on_trait_change, \
-    Interface, Tuple, Int
+    Interface, Tuple, Int, Type
 
 from ibvpy.dots.vdots_grid import \
     DOTSGrid
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 from mathkit.tensor import EPS, DELTA
 import numpy as np
-
+from .i_xdomain import IXDomain
 
 DD = np.hstack([DELTA, np.zeros_like(DELTA)])
 EEPS = np.hstack([np.zeros_like(EPS), EPS])
@@ -29,21 +29,6 @@ GG = np.einsum(
 )
 
 
-class IXDomain(Interface):
-    '''Mappings between spatial domain representation 
-    and between the linear algebr objects. 
-    '''
-    U_var_shape = Tuple
-
-    state_var_shape = Tuple
-
-    def map_U_to_field(self, eps_eng): pass
-
-    def map_field_to_F(self, eps_tns): pass
-
-    def map_field_to_K(self, tns4): pass
-
-
 @provides(IXDomain)
 class XDomainSinglePoint(HasStrictTraits):
 
@@ -54,7 +39,7 @@ class XDomainSinglePoint(HasStrictTraits):
     def map_U_to_field(self, eps_eng):
         return np.einsum(
             'kij,...k->...ij', GAMMA, eps_eng
-        )
+        )[np.newaxis, ...]
 
     def map_field_to_F(self, eps_tns):
         return np.einsum(
@@ -62,15 +47,24 @@ class XDomainSinglePoint(HasStrictTraits):
         )
 
     def map_field_to_K(self, tns4):
-        return np.einsum(
-            'mnijkl,...ijkl->mn', GG, tns4
+        K_mij = np.einsum(
+            'mnijkl,...ijkl->...mn', GG, tns4
         )
+        dof_Ei = np.arange(6, dtype=np.int_)[np.newaxis, ...]
+        return SysMtxArray(mtx_arr=K_mij, dof_map_arr=dof_Ei)
 
 
 @provides(IXDomain)
 class XDomainFEGrid(DOTSGrid):
 
     U_var_shape = Property(Int)
+
+    vtk_expand_operator = Property
+
+    def _get_vtk_expand_operator(self):
+        return self.fets.vtk_expand_operator
+
+    K_type = Type(SysMtxArray)
 
     def _get_U_var_shape(self):
         return self.mesh.n_dofs

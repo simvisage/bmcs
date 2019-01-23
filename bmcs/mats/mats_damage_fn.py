@@ -164,55 +164,27 @@ class GfDamageFn(DamageFn):
         eps_0 = f_t / self.E
         return np.where(eps_eq_Em - eps_0 > 0)
 
-    def __call__(self, kappa_Em, idx_map=None):
+    def __call__(self, kappa):
         L_s = self.L_s
         f_t = self.f_t
         G_f = self.G_f
         E = self.E
         eps_0 = self.eps_0
-        if idx_map != None:
-            kappa_Em_ = kappa_Em[idx_map]
-            if len(self.f_t_Em) > 0:
-                f_t = self.f_t * self.f_t_Em[idx_map]
-        else:
-            kappa_Em_ = kappa_Em
-        omega_Em_ = (
-            1 - f_t * np.exp(-f_t *
-                             (kappa_Em_ - eps_0) * L_s / G_f)
-            / (E * kappa_Em_)
+        return (
+            1 - f_t * np.exp(-f_t * (kappa - eps_0) * L_s / G_f)
+            / (E * kappa)
         )
-        if idx_map != None:
-            omega_Em = np.zeros_like(kappa_Em)
-            omega_Em[idx_map] = omega_Em_
-        else:
-            omega_Em = omega_Em_
-        return omega_Em
 
-    def diff(self, kappa_Em, idx_map=None):
+    def diff(self, kappa):
         L_s = self.L_s
         f_t = self.f_t
         G_f = self.G_f
         E = self.E
         eps_0 = self.eps_0
-        if idx_map != None:
-            kappa_Em_ = kappa_Em[idx_map]
-            if len(self.f_t_Em) > 0:
-                f_t = self.f_t * self.f_t_Em[idx_map]
-        else:
-            kappa_Em_ = kappa_Em
-        domega_Em_ = (
-            f_t *
-            np.exp(L_s * (eps_0 - kappa_Em_)
-                   * f_t / G_f)
-            / (E * G_f * kappa_Em_**2) *
-            (G_f + L_s * kappa_Em_ * f_t)
+        return (
+            f_t * np.exp(L_s * (eps_0 - kappa) * f_t / G_f)
+            / (E * G_f * kappa**2) * (G_f + L_s * kappa * f_t)
         )
-        if idx_map != None:
-            domega_Em = np.zeros_like(kappa_Em)
-            domega_Em[idx_map] = domega_Em_
-        else:
-            domega_Em = domega_Em_
-        return domega_Em
 
     traits_view = View(
         VGroup(

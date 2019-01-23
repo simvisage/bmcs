@@ -59,6 +59,13 @@ class Vis2D(HasStrictTraits):
     from Visual3D which introduces a dictionary viz3d objects.
     '''
 
+    def setup(self):
+        pass
+
+    sim = WeakRef
+    '''Root of the simulation to extract the data
+    '''
+
     vot = Float(0.0, time_change=True)
     '''Visual object time
     '''

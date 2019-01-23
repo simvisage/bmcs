@@ -4,11 +4,14 @@
 '''
 
 from threading import Thread
+
 from reporter import Reporter
 from reporter.reporter import ReportStudy
+from simulator import Simulator
+import traits.api as tr
+
 from .bmcs_model import BMCSModel
 from .bmcs_viz_sheet import BMCSVizSheet
-import traits.api as tr
 
 
 class RunTimeLoopThread(Thread):
@@ -34,7 +37,7 @@ class BMCSStudy(ReportStudy):
     '''Combine the model with specification of outputs
     '''
 
-    model = tr.Instance(BMCSModel)
+    model = tr.Instance(Simulator)
     '''Model of the studied phoenomenon.
     '''
 

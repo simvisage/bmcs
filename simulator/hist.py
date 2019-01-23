@@ -6,7 +6,7 @@ Created on Dec 17, 2018
 
 from traits.api import \
     HasStrictTraits, provides, \
-    List, WeakRef
+    List, Dict, WeakRef, Property, cached_property
 
 import numpy as np
 
@@ -19,19 +19,27 @@ class Hist(HasStrictTraits):
     '''Object storing and managing the history of calculation.
     '''
 
+    sim = WeakRef
+
     timesteps = List()
 
-    primary_vars = List()
+    prim_vars = List()
+    conj_vars = List()
 
     state_vars = List()
 
-    def record_timestep(self, t, primary_var, state_vars=None):
+    def record_timestep(self, t,
+                        prim_var, conj_var,
+                        state_vars=None):
         '''Add the time step and record the 
         corresponding state of the model.
         '''
         self.timesteps.append(t)
-        self.primary_vars.append(primary_var)
+        self.prim_vars.append(np.copy(prim_var))
+        self.conj_vars.append(np.copy(conj_var))
         self.state_vars.append(state_vars)
+        for vis in self.record_dict.values():
+            vis.update(prim_var, t)
 
     def get_time_idx_arr(self, vot):
         '''Get the index corresponding to visual time
@@ -43,3 +51,20 @@ class Hist(HasStrictTraits):
 
     def get_time_idx(self, vot):
         return int(self.get_time_idx_arr(vot))
+
+    def get_t_arr(self):
+        return np.array(self.timesteps, dtype=np.float_)
+
+    record_dict = Property(
+        Dict, depends_on='sim.record, sim.record_items'
+    )
+
+    @cached_property
+    def _get_record_dict(self):
+        for viz in self.sim.record.values():
+            viz.sim = self.sim
+            viz.setup()
+        return {key: viz for key, viz in self.sim.record.items()}
+
+    def __getitem__(self, key):
+        return self.record_dict[key]

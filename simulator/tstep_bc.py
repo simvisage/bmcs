@@ -1,6 +1,10 @@
 
+import copy
+
 from traits.api import \
-    Instance, Property, cached_property, Enum, on_trait_change
+    Instance, Property, cached_property, Enum, on_trait_change, \
+    List, Dict, WeakRef, DelegatesTo
+
 from ibvpy.core.bcond_mngr import \
     BCondMngr
 from mathkit.matrix_la.sys_mtx_assembly import \
@@ -13,14 +17,22 @@ from .xdomain import IXDomain
 
 class TStepBC(TStepState):
 
-    xdomain = Instance(IXDomain)
+    xdomain = DelegatesTo('sim')
 
     # Boundary condition manager
     #
-    bcond_mngr = Instance(BCondMngr)
+    bcond_mngr = Property(Instance(BCondMngr),
+                          depends='bc,bc_items, model_structure_changed')
 
-    def _bcond_mngr_default(self):
-        return BCondMngr()
+    @cached_property
+    def _get_bcond_mngr(self):
+        return BCondMngr(bcond_list=self.sim.bc)
+
+    state_k = Dict
+    '''State variables within the current iteration step
+    '''
+
+    record = DelegatesTo('sim')
 
     step_flag = Enum('predictor', 'corrector')
     '''Step flag to control the inclusion of essential BC'
@@ -38,6 +50,7 @@ class TStepBC(TStepState):
     @cached_property
     def _get_K(self):
         K = SysMtxAssembly()
+        self.bcond_mngr.setup(None)
         self.bcond_mngr.apply_essential(K)
         return K
 
@@ -48,8 +61,9 @@ class TStepBC(TStepState):
         self.K.reset_mtx()
         # Get the field representation of the primary variable
         U_k_field = self.xdomain.map_U_to_field(self.U_k)
+        self.state_k = copy.deepcopy(self.state_n)
         sig_k, D_k = self.model.get_corr_pred(
-            U_k_field, self.t_n1, **self.state_vars
+            U_k_field, self.t_n1, **self.state_k
         )
         K_k = self.xdomain.map_field_to_K(D_k)
         self.K.sys_mtx_arrays.append(K_k)
@@ -60,7 +74,7 @@ class TStepBC(TStepState):
         F_int = self.xdomain.map_field_to_F(sig_k).flatten()
         R = F_ext - F_int
         self.K.apply_constraints(R)
-        return R, self.K
+        return R, self.K, F_int
 
     def _get_R_norm(self):
         R = self.R
@@ -78,14 +92,9 @@ class TStepBC(TStepState):
         '''Update the control, primary and state variables..
         '''
         self.U_n[:] = self.U_k[:]
-        U_k_field = self.xdomain.map_U_to_field(self.U_k)
-        self.model.update_state(
-            U_k_field, self.t_n1,
-            **self.state_vars
-        )
-        self.hist.record_timestep(
-            self, self.U_n, self.state_vars
-        )
+        for name, s_k in self.state_k.items():
+            self.state_n[name] = s_k
+        self.hist.record_timestep(self.t_n1, self.U_k, self.F_k, self.state_n)
         self.t_n = self.t_n1
         self.step_flag = 'predictor'
 
