@@ -47,9 +47,11 @@ class XDomainSinglePoint(HasStrictTraits):
         )
 
     def map_field_to_K(self, tns4):
-        return np.einsum(
+        K_mij = np.einsum(
             'mnijkl,...ijkl->...mn', GG, tns4
         )
+        dof_Ei = np.arange(6, dtype=np.int_)[np.newaxis, ...]
+        return SysMtxArray(mtx_arr=K_mij, dof_map_arr=dof_Ei)
 
 
 @provides(IXDomain)
