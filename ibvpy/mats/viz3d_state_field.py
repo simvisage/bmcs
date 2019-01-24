@@ -24,8 +24,10 @@ class Vis3DStateField(Vis3DField):
     def _get_state_vars(self):
         return self.model.state_var_shapes
 
-    def update(self, U, t):
+    def update(self):
         ts = self.sim.tstep
+        U = ts.U_k
+        t = ts.t_n1
         xdomain = self.sim.xdomain
         fets = xdomain.fets
         omega_field = ts.state_n[self.var]

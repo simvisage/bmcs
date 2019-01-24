@@ -47,6 +47,25 @@ class Simulator(BMCSRootNode):
     It handles also the communication between the simulation and
     the user interface in several modes of interaction.
     '''
+    tree_node_list = List([])
+
+    def _tree_node_list_default(self):
+        return [
+            self.tline,
+            self.model,
+            self.xdomain,
+            #            self.bc
+        ]
+
+    def _update_node_list(self):
+        print('updating MATS explore', self.dim)
+        self.tree_node_list = [
+            self.tline,
+            self.model,
+            self.xdomain,
+            #            self.bc
+        ]
+
     title = Str
 
     desc = Str
@@ -149,8 +168,27 @@ class Simulator(BMCSRootNode):
         if self.running:
             return
         self.running = True
+
+        print('RUN')
+        if self.ui:
+            # inform ui that the simulation is running in a thread
+            self.ui.start_event = True
+            self.ui.running = True
+
         self.run_thread = RunTimeLoopThread(self)
-        self.run_thread.start()
+
+        try:
+            # start the calculation process
+            self.run_thread.start()
+        except Exception as e:
+            if self.ui:
+                self.ui.running = False
+            raise e  # re-raise exception
+
+        if self.ui:
+            # cleanup ui and send the finish event
+            self.ui.running = False
+            self.ui.finish_event = True
 
     def join(self):
         r'''Wait until the thread finishes

@@ -254,9 +254,8 @@ class BMCSVizSheet(ROutputSection):
     def run_finished(self):
         self.skipped_steps = self.monitor_chunk_size
         # self.update_pipeline(1.0)
-        self.running = False
-        print('RUN finshed')
         self.replot()
+        self.running = False
         self.offline = True
 
     monitor_chunk_size = Int(10, label='Monitor each # steps')
@@ -278,7 +277,7 @@ class BMCSVizSheet(ROutputSection):
         if self.reference_viz2d:
             ax = self.reference_axes
             ax.clear()
-            viz2d.clear()
+            self.reference_viz2d.clear()
             self.reference_viz2d.plot(ax, self.vot)
         self.data_changed = True
         self.skipped_steps = 0

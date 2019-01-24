@@ -12,6 +12,7 @@ from ibvpy.mats.viz3d_state_field import \
     Vis3DStateField, Viz3DStateField
 from ibvpy.mats.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
+from ibvpy.mats.viz_primary import VisPrimary
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 import numpy as np
 from simulator import \
@@ -125,6 +126,7 @@ s = Simulator(
     xdomain=xdomain,
     bc=[left_x, right_x, left_y],
     record={
+        'primary': VisPrimary(),
         'strain': Vis3DStrainField(var='eps_ab'),
         'damage': Vis3DStateField(var='omega_a'),
         'kinematic hardening': Vis3DStateField(var='z_a')
@@ -135,9 +137,10 @@ s.tline.step = 0.05
 s.run()
 time.sleep(5)
 
-strain_viz = Viz3DStrainField(vis3d=s.tstep.record['strain'])
+strain_viz = Viz3DStrainField(vis3d=s.hist['strain'])
 strain_viz.setup()
-damage_viz = Viz3DStateField(vis3d=s.tstep.record['damage'])
+damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
 damage_viz.setup()
 damage_viz.plot(0.0)
+print(s.hist['primary'].U)
 mlab.show()

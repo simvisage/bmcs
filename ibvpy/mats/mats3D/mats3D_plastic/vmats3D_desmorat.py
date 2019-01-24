@@ -1,4 +1,3 @@
-
 '''
 Created on 30.10.2018
 
@@ -7,7 +6,6 @@ Created on 30.10.2018
 from traits.api import \
     Float, List
 from traitsui.api import View, VGroup, Item
-
 from ibvpy.mats.mats3D.mats3D_eval import \
     MATS3DEval
 from ibvpy.mats.mats3D.vmats3D_eval import \
@@ -43,6 +41,8 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
     '''
 
     node_name = 'Desmorat model'
+
+    tree_node_list = List([])
 
     #-------------------------------------------------------------------------
     # Material parameters
@@ -101,8 +101,6 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
                     np.einsum(',il,jk->ijkl', mu, delta, delta))
 
         return D_2_abef
-
-    tree_node_list = List([])
 
     gamma = Float(110.0,
                   label="Gamma",
@@ -173,13 +171,14 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
         eps_pi_ab[I] += return_ab_I
         eps_diff_ab_I = eps_ab[I] - eps_pi_ab[I]
         Y_a_I = 0.5 * (
-            (
-                np.einsum('...ij,...ijkl,...kl',
-                          eps_ab[I], D_1_abef, eps_ab[I])
-            ) +
-            0.5 * (
-                np.einsum('...ij,...ijkl,...kl',
-                          eps_diff_ab_I, D_2_abef, eps_diff_ab_I)
+            np.einsum(
+                '...ij,...ijkl,...kl',
+                eps_ab[I], D_1_abef, eps_ab[I]
+            )
+            +
+            np.einsum(
+                '...ij,...ijkl,...kl',
+                eps_diff_ab_I, D_2_abef, eps_diff_ab_I
             )
         )
         omega_a[I] += (Y_a_I / self.S) * delta_pi_I
@@ -222,23 +221,8 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
             Item('gamma', full_size=True, resizable=True),
             Item('K'),
             Item("S"),
-            Item("Tau_0 "),
+            Item("tau_bar"),
             label='Inelastic parameters'
         )
     )
     tree_view = traits_view
-
-
-if __name__ == '__main__':
-    m = MATS3DDesmorat()
-
-    # Convert the tensor to an engineering tensor
-    eps_eng = np.array([[[1, 2, 3, 4, 5, 6]]], dtype=np.float)
-
-    eps_tns = m.map_U_to_field(eps_eng)
-    eps_eng2 = m.map_field_to_F(eps_tns)
-    print(eps_eng - eps_eng2)
-
-    D_abdf = m.D_1_abef
-    D_20 = m.map_field_to_K(D_abdf)
-    print(D_20)

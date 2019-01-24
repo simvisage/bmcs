@@ -9,7 +9,10 @@ from ibvpy.dots.vdots_grid import \
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 from mathkit.tensor import EPS, DELTA
 import numpy as np
+from view.ui import BMCSLeafNode
+
 from .i_xdomain import IXDomain
+
 
 DD = np.hstack([DELTA, np.zeros_like(DELTA)])
 EEPS = np.hstack([np.zeros_like(EPS), EPS])
@@ -30,7 +33,7 @@ GG = np.einsum(
 
 
 @provides(IXDomain)
-class XDomainSinglePoint(HasStrictTraits):
+class XDomainSinglePoint(BMCSLeafNode):
 
     U_var_shape = (6,)
 

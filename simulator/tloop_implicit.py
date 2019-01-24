@@ -21,8 +21,7 @@ class TLoopImplicit(TLoop):
         t_n1 = self.tline.val
         t_max = self.tline.max
         dt = self.tline.step
-        print("KMAX", self.k_max)
-        while t_n1 <= t_max:
+        while t_n1 <= (t_max + 1e-8):
             print('\ttime: %g' % t_n1, end='')
             k = 0
             self.tstep.t_n1 = t_n1
@@ -43,7 +42,7 @@ class TLoopImplicit(TLoop):
             # accept the time step and record the state in history
             self.tstep.make_incr()
             # update the line - launches notifiers to subscribers
-            self.tline.val = t_n1
+            self.tline.val = min(t_n1, self.tline.max)
             # set a new target time
             t_n1 += dt
         return
