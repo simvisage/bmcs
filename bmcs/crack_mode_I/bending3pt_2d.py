@@ -51,6 +51,8 @@ class PulloutResponse(Vis2D):
         print('U_ti', len(U_ti))
         P = -np.sum(F_ti[:, record_dofs], axis=1)
         w = -U_ti[:, record_dofs[0]]
+        print('W', w)
+        print('P', P)
         self.Pw = P, w
 
 
