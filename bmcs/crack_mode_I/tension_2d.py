@@ -5,6 +5,13 @@ Created on 12.01.2016
 @todo: derive the size of the state array.
 '''
 
+from scipy import interpolate as ip
+from traits.api import \
+    Property, Instance, cached_property, \
+    List, Float, Trait, Int, on_trait_change
+from traitsui.api import \
+    View, Item, UItem, VGroup
+
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
@@ -22,21 +29,16 @@ from ibvpy.mats.mats3D.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
 from ibvpy.mats.mats3D.viz3d_stress_field import \
     Vis3DStressField, Viz3DStressField
-from scipy import interpolate as ip
-from traits.api import \
-    Property, Instance, cached_property, \
-    List, Float, Trait, Int, on_trait_change
-from traitsui.api import \
-    View, Item, UItem, VGroup
+import numpy as np
+import numpy as np
+from simulator import Simulator
+import traits.api as tr
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
-from view.window import BMCSModel, BMCSWindow
+from view.window import BMCSWindow
 
 from .bending3pt_2d import \
     Viz2DForceDeflection, Vis2DCrackBand, CrossSection
-import numpy as np
-import numpy as np
-import traits.api as tr
 from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
@@ -92,7 +94,7 @@ class Geometry(BMCSLeafNode):
     tree_view = traits_view
 
 
-class TensileTestModel(BMCSModel, Vis2D):
+class TensileTestModel(Simulator):
     '''The tensile test is used to verify the softening behavior
     '''
     node_name = 'tensile test simulation'

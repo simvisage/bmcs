@@ -19,7 +19,10 @@ from .viz3d_field import Vis3DField, Viz3DField
 
 class Vis3DStrainField(Vis3DField):
 
-    def update(self, U, t):
+    def update(self):
+        ts = self.sim.tstep
+        U = ts.U_k
+        t = ts.t_n1
         xdomain = self.sim.xdomain
         fets = xdomain.fets
         n_c = fets.n_nodal_dofs

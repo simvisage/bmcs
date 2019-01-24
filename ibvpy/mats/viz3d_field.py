@@ -35,7 +35,6 @@ class Vis3DField(Vis3D):
         vtk_cells = (np.arange(n_E) * n_i)[:, np.newaxis] + \
             np.array(fets.vtk_cell, dtype=np.int_)[np.newaxis, :]
         self.ug.set_cells(vtk_cell_type, vtk_cells)
-        self.update(U, 0)
 
 
 class Viz3DField(Viz3D):
@@ -43,4 +42,4 @@ class Viz3DField(Viz3D):
     def plot(self, vot):
         idx = self.vis3d.sim.hist.get_time_idx(vot)
         self.d.file_list = self.vis3d.file_list
-        self.d.timestep = idx + 1
+        self.d.timestep = idx

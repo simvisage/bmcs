@@ -13,19 +13,20 @@ from mathkit.matrix_la import \
     SysMtxArray
 import numpy as np
 import traits.api as tr
+from view.ui import BMCSLeafNode
 
 
 @provides(ITStepperEval)
-class DOTSGrid(tr.HasStrictTraits):
+class DOTSGrid(BMCSLeafNode):
     '''Domain time steppsr on a grid mesh
     '''
     x_0 = tr.Tuple(0., 0., input=True)
-    L_x = tr.Float(200, input=True)
-    L_y = tr.Float(100, input=True)
-    n_x = tr.Int(100, input=True)
-    n_y = tr.Int(30, input=True)
-    integ_factor = tr.Float(1.0, input=True)
-    fets = tr.Instance(IFETSEval, input=True)
+    L_x = tr.Float(200, input=True, MESH=True)
+    L_y = tr.Float(100, input=True, MESH=True)
+    n_x = tr.Int(100, input=True, MESH=True)
+    n_y = tr.Int(30, input=True, MESH=True)
+    integ_factor = tr.Float(1.0, input=True, MESH=True)
+    fets = tr.Instance(IFETSEval, input=True, MESH=True)
 
     D1_abcd = tr.Array(np.float_, input=True)
     '''Symmetric operator distributing the 

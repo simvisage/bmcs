@@ -18,10 +18,12 @@ class Vis2DEnergy(Vis2D):
     def setup(self):
         self.U_bar_t = []
 
-    def update(self, U, t):
+    def update(self):
         mats = self.sim.model
         tstep = self.sim.tstep
         xdomain = self.sim.xdomain
+        U = tstep.U_k
+        t = tstep.t_n1
         fets = xdomain.fets
         n_c = fets.n_nodal_dofs
         U_Ia = U.reshape(-1, n_c)
@@ -41,14 +43,14 @@ class Vis2DEnergy(Vis2D):
         self.U_bar_t.append(U_bar)
 
     def get_t(self):
-        return np.array(self.sim.t, dtype=np.float_)
+        return self.sim.hist.t
 
     def get_w(self):
-        _, w = self.sim.get_PW()
+        _, w = self.sim.hist['Pw'].Pw
         return w
 
     def get_W_t(self):
-        P, w = self.sim.get_PW()
+        P, w = self.sim.hist['Pw'].Pw
         w_t = []
         for i, _ in enumerate(w):
             w_t.append(np.trapz(P[:i + 1], w[:i + 1]))

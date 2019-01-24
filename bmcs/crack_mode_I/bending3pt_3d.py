@@ -4,6 +4,11 @@ Created on 12.01.2016
 
 @todo: derive the size of the state array.
 '''
+from traits.api import \
+    Property, Instance, cached_property, \
+    List, Float, Trait, Int, on_trait_change
+from traitsui.api import \
+    View, Item
 
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
@@ -16,21 +21,16 @@ from ibvpy.fets import FETS3D8H
 from ibvpy.mats.mats3D import \
     MATS3DMplDamageODF, MATS3DMplDamageEEQ, MATS3DElastic, \
     MATS3DScalarDamage
-from traits.api import \
-    Property, Instance, cached_property, \
-    List, Float, Trait, Int, on_trait_change
-from traitsui.api import \
-    View, Item
-from view.plot2d import Viz2D, Vis2D
-from view.ui import BMCSLeafNode
-from view.window import BMCSModel, BMCSWindow
 from ibvpy.mats.mats3D.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
 from ibvpy.mats.mats3D.viz3d_stress_field import \
     Vis3DStressField, Viz3DStressField
-
 import numpy as np
+from simulator import Simulator
 import traits.api as tr
+from view.plot2d import Viz2D, Vis2D
+from view.ui import BMCSLeafNode
+from view.window import BMCSWindow
 
 
 class Viz2DForceDeflectionX(Viz2D):
@@ -114,7 +114,7 @@ class Geometry(BMCSLeafNode):
     tree_view = view
 
 
-class BendingTestModel(BMCSModel, Vis2D):
+class BendingTestModel(Simulator, Vis2D):
 
     #=========================================================================
     # Tree node attributes

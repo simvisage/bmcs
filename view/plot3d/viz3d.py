@@ -4,16 +4,7 @@ Created on Feb 11, 2018
 @author: rch
 '''
 
-import os
 import tempfile
-
-from mayavi.filters.api import ExtractTensorComponents
-from mayavi.modules.api import Surface
-from tvtk.api import \
-    tvtk
-
-from mathkit.tensor import DELTA23_ab
-import numpy as np
 import traits.api as tr
 
 
@@ -25,6 +16,9 @@ class Vis3D(tr.HasTraits):
 
     file_list = tr.List(tr.Str,
                         desc='a list of files belonging to a time series')
+
+    def setup(self):
+        pass
 
     def new_dir(self):
         self.dir = tempfile.mkdtemp()

@@ -8,7 +8,7 @@ Created on 12.01.2016
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
-    List, Float, Trait, Int, on_trait_change
+    List, Float, Trait, Int, on_trait_change, Tuple
 from traitsui.api import \
     View, Item, UItem, VGroup
 
@@ -25,6 +25,7 @@ from ibvpy.mats.viz3d_state_field import \
     Vis3DStateField, Viz3DStateField
 from ibvpy.mats.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
+from ibvpy.rtrace.record_vars import RecordVars
 import numpy as np
 from simulator import Simulator, Model, XDomainFEGrid
 import traits.api as tr
@@ -35,13 +36,22 @@ from view.window import BMCSWindow
 from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
-class VisForceDeflection(Vis2D):
+class PulloutResponse(Vis2D):
 
-    def setup(self):
-        pass
+    Pw = Tuple
 
-    def update(self, U, t):
-        pass
+    def update(self):
+        sim = self.sim
+        record_dofs = np.unique(
+            sim.fe_grid[
+                sim.controlled_elem, -1, :, -1].dofs[:, :, 1].flatten()
+        )
+        U_ti = self.sim.hist.U_t
+        F_ti = self.sim.hist.F_t
+        print('U_ti', len(U_ti))
+        P = -np.sum(F_ti[:, record_dofs], axis=1)
+        w = -U_ti[:, record_dofs[0]]
+        self.Pw = P, w
 
 
 class Viz2DForceDeflection(Viz2D):
@@ -54,7 +64,8 @@ class Viz2DForceDeflection(Viz2D):
 
     def plot(self, ax, vot, *args, **kw):
         sim = self.vis2d.sim
-        P, W = sim.get_PW()
+        print('replotting')
+        P, W = sim.hist['Pw'].Pw
         ymin, ymax = np.min(P), np.max(P)
         L_y = ymax - ymin
         ymax += 0.05 * L_y
@@ -78,7 +89,7 @@ class Viz2DForceDeflection(Viz2D):
 
     def plot_marker(self, ax, vot):
         sim = self.vis2d.sim
-        P, W = sim.get_PW()
+        P, W = sim.hist['Pw'].Pw
         idx = sim.hist.get_time_idx(vot)
         P, w = P[idx], W[idx]
         ax.plot([w], [P], 'o', color='black', markersize=10)
@@ -105,8 +116,10 @@ class Vis2DCrackBand(Vis2D):
         self.sig_t = []
         self.a_t = []
 
-    def update(self, U, t):
+    def update(self):
         bt = self.sim
+        U = self.sim.tstep.U_k
+        t = self.sim.tstep.t_n1
         tstep = self.sim.tstep
         xdomain = self.sim.xdomain
         mats = self.sim.model
@@ -276,7 +289,7 @@ class Viz2DdGdA(Viz2D):
     vis2d_cb = tr.WeakRef
 
     def plot(self, ax, vot, *args, **kw):
-        t = self.vis2d_cb.get_t()
+        t = self.vis2d.sim.hist.t
         G_t = self.vis2d.get_G_t()
         a_t = self.vis2d_cb.get_a_t()
         b = self.vis2d_cb.sim.cross_section.b
@@ -544,22 +557,7 @@ class BendingTestModel(Simulator):
     def get_t(self):
         return self.hist.get_t_arr()
 
-    def get_PW(self):
-        record_dofs = np.unique(
-            self.fe_grid[self.controlled_elem, -
-                         1, :, -1].dofs[:, :, 1].flatten()
-        )
-        Fd_int_t = np.array(self.hist.conj_vars)
-        Ud_t = np.array(self.hist.prim_vars)
-        F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
-        U_t = -Ud_t[:, record_dofs[0]]
-        return F_int_t, U_t
-
-    viz2d_classes = {'F-w': Viz2DForceDeflection,
-                     'load function': Viz2DLoadControlFunction,
-                     }
-
-    traits_view = View(  # UItem('mats_eval@', resizable=True),
+    traits_view = View(
         VGroup(
             Item('w_max', full_size=True, resizable=True),
         ),
@@ -614,11 +612,11 @@ def run_bending3pt_sdamage(*args, **kw):
     w = BMCSWindow(model=bt)
 #    bt.add_viz2d('F-w', 'load-displacement')
 
-    bt.record['F-w'] = VisForceDeflection()
+    bt.record['Pw'] = PulloutResponse()
     bt.record['energy'] = Vis2DEnergy()
     bt.record['crack band'] = Vis2DCrackBand()
 
-    fw = Viz2DForceDeflection(name='F-w', vis2d=bt.hist['F-w'])
+    fw = Viz2DForceDeflection(name='Pw', vis2d=bt.hist['Pw'])
     viz2d_energy = Viz2DEnergy(name='dissipation',
                                vis2d=bt.hist['energy'])
     viz2d_energy_rates = Viz2DEnergyReleasePlot(name='dissipated energy',
