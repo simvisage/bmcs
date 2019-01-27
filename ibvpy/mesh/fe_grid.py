@@ -122,6 +122,16 @@ class FEGrid(FEGridActivationMap):
        the CellSpec?
     '''
 
+    # Grid geometry specification
+    #
+    coord_min = Array(Float, value=[0., 0., 0.])
+    coord_max = Array(Float, value=[1., 1., 1.])
+
+    geo_transform = Callable
+
+    # number of elements in the individual dimensions
+    shape = Array(Int, value=[1, 1, 1], changes_ndofs=True)
+
     changed_structure = Event
 
     @on_trait_change('+changed_structure')
@@ -214,16 +224,6 @@ class FEGrid(FEGridActivationMap):
         time stepper.
         '''
         return self.fets_eval.dots_class(sdomain=self)
-
-    # Grid geometry specification
-    #
-    coord_min = Array(Float, value=[0., 0., 0.])
-    coord_max = Array(Float, value=[1., 1., 1.])
-
-    geo_transform = Callable
-
-    # number of elements in the individual dimensions
-    shape = Array(Int, value=[1, 1, 1], changes_ndofs=True)
 
     dof_r = Property
 

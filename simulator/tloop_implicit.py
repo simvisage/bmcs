@@ -4,7 +4,7 @@
 
 from traits.api import \
     Int, Float, Bool
-from simulator import \
+from .tloop import \
     TLoop
 
 

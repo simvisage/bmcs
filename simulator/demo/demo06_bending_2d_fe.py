@@ -8,10 +8,8 @@ from ibvpy.mats.mats2D import \
     MATS2DScalarDamage
 from ibvpy.mats.viz3d_state_field import \
     Vis3DStateField, Viz3DStateField
-from simulator import \
-    Simulator
-from simulator.xdomain import \
-    XDomainFEGrid
+from simulator.api import \
+    Simulator, XDomainFEGrid
 
 
 L = 600.0
@@ -19,9 +17,9 @@ H = 100.0
 L_c = 5.0
 a = 5.0
 w_max = 0.4
-dgrid1 = XDomainFEGrid(L_x=L, L_y=H,
+dgrid1 = XDomainFEGrid(coord_max=(L, H),
+                       shape=(20, 20),
                        integ_factor=50,
-                       n_x=20, n_y=20,
                        fets=FETS2D4Q())
 x_x, x_y = dgrid1.mesh.geo_grid.point_x_grid
 L_1 = x_x[1, 0]

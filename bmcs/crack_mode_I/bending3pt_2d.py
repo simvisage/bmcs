@@ -13,7 +13,7 @@ from traitsui.api import \
     View, Item, UItem, VGroup
 
 from bmcs.time_functions import \
-    LoadingScenario, Viz2DLoadControlFunction
+    LoadingScenario
 from ibvpy.api import \
     BCSlice
 from ibvpy.core.bcond_mngr import BCondMngr
@@ -25,9 +25,8 @@ from ibvpy.mats.viz3d_state_field import \
     Vis3DStateField, Viz3DStateField
 from ibvpy.mats.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
-from ibvpy.rtrace.record_vars import RecordVars
 import numpy as np
-from simulator import Simulator, Model, XDomainFEGrid
+from simulator.api import Simulator, Model, XDomainFEGrid
 import traits.api as tr
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
@@ -38,7 +37,10 @@ from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 class PulloutResponse(Vis2D):
 
-    Pw = Tuple
+    Pw = Tuple()
+
+    def _Pw_default(self):
+        return ([0], [0])
 
     def update(self):
         sim = self.sim
@@ -48,11 +50,9 @@ class PulloutResponse(Vis2D):
         )
         U_ti = self.sim.hist.U_t
         F_ti = self.sim.hist.F_t
-        print('U_ti', len(U_ti))
+        print('F_ti', F_ti)
         P = -np.sum(F_ti[:, record_dofs], axis=1)
         w = -U_ti[:, record_dofs[0]]
-        print('W', w)
-        print('P', P)
         self.Pw = P, w
 
 
@@ -66,7 +66,6 @@ class Viz2DForceDeflection(Viz2D):
 
     def plot(self, ax, vot, *args, **kw):
         sim = self.vis2d.sim
-        print('replotting')
         P, W = sim.hist['Pw'].Pw
         ymin, ymax = np.min(P), np.max(P)
         L_y = ymax - ymin
@@ -158,7 +157,7 @@ class Vis2DCrackBand(Vis2D):
         self.sig_t.append(sig_E1)
 
     def get_t(self):
-        return np.array(self.sim.t, dtype=np.float_)
+        return np.array(self.sim.hist.t, dtype=np.float_)
 
     def get_a_x(self):
         return self.X_E
@@ -181,10 +180,10 @@ class Vis2DCrackBand(Vis2D):
         return ip.splev(t, tck, der=1)
 
 
-def align_yaxis_np(ax1, ax2):
+def align_xaxis_np(ax1, ax2):
     """Align zeros of the two axes, zooming them out by same ratio"""
     axes = np.array([ax1, ax2])
-    extrema = np.array([ax.get_ylim() for ax in axes])
+    extrema = np.array([ax.get_xlim() for ax in axes])
     tops = extrema[:, 1] / (extrema[:, 1] - extrema[:, 0])
     # Ensure that plots (intervals) are ordered bottom to top:
     if tops[0] > tops[1]:
@@ -195,7 +194,7 @@ def align_yaxis_np(ax1, ax2):
 
     extrema[0, 1] = extrema[0, 0] + tot_span * (extrema[0, 1] - extrema[0, 0])
     extrema[1, 0] = extrema[1, 1] + tot_span * (extrema[1, 0] - extrema[1, 1])
-    [axes[i].set_ylim(*extrema[i]) for i in range(2)]
+    [axes[i].set_xlim(*extrema[i]) for i in range(2)]
 
 
 class Viz2DStrainInCrack(Viz2D):
@@ -212,18 +211,19 @@ class Viz2DStrainInCrack(Viz2D):
         eps = self.vis2d.get_eps_t(vot)
         sig = self.vis2d.get_sig_t(vot)
         a_x = self.vis2d.get_a_x()
-        ax.plot(a_x, eps, linewidth=3, color='red', alpha=0.4,
+        ax.plot(eps, a_x, linewidth=3, color='red', alpha=0.4,
                 label='P(w;x=L)')
-        ax.fill_between(a_x, 0, eps, facecolor='orange', alpha=0.2)
-        ax.set_ylabel('Strain [-]')
-        ax.set_xlabel('Position [mm]')
+#        ax.fill_betweenx(eps, 0, a_x, facecolor='orange', alpha=0.2)
+        ax.set_xlabel('Strain [-]')
+        ax.set_ylabel('Position [mm]')
         if self.ax_sig:
             self.ax_sig.clear()
         else:
-            self.ax_sig = ax.twinx()
-        self.ax_sig.plot(a_x, sig, linewidth=2, color='blue')
-        self.ax_sig.fill_between(a_x, 0, sig, facecolor='blue', alpha=0.2)
-        align_yaxis_np(ax, self.ax_sig)
+            self.ax_sig = ax.twiny()
+        self.ax_sig.set_xlabel('Stress [MPa]')
+        self.ax_sig.plot(sig, a_x, linewidth=2, color='blue')
+        self.ax_sig.fill_betweenx(a_x, sig, facecolor='blue', alpha=0.2)
+        align_xaxis_np(ax, self.ax_sig)
         if self.show_legend:
             ax.legend(loc=4)
 
@@ -533,9 +533,9 @@ class BendingTestModel(Simulator):
     '''
     @cached_property
     def _get_xdomain(self):
-        dgrid = XDomainFEGrid(L_x=self.geometry.L / 2., L_y=self.geometry.H,
+        dgrid = XDomainFEGrid(coord_max=(self.geometry.L / 2., self.geometry.H),
                               integ_factor=self.cross_section.b,
-                              n_x=self.n_e_x, n_y=self.n_e_y,
+                              shape=(self.n_e_x, self.n_e_y),
                               fets=self.fets_eval)
 
         L = self.geometry.L / 2.0
@@ -550,14 +550,6 @@ class BendingTestModel(Simulator):
 
     def _get_fe_grid(self):
         return self.xdomain.mesh
-
-    t = Property
-
-    def _get_t(self):
-        return self.get_t()
-
-    def get_t(self):
-        return self.hist.get_t_arr()
 
     traits_view = View(
         VGroup(

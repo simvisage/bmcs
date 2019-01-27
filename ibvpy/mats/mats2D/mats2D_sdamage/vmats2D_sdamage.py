@@ -9,7 +9,7 @@ from bmcs.mats.mats_damage_fn import \
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.mats2D.vmats2D_eval import MATS2D
 import numpy as np
-from simulator import \
+from simulator.api import \
     Model, TLoopImplicit, TStepBC
 import traits.api as tr
 

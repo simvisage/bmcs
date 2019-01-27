@@ -51,10 +51,12 @@ class Vis2DEnergy(Vis2D):
 
     def get_W_t(self):
         P, w = self.sim.hist['Pw'].Pw
-        w_t = []
-        for i, _ in enumerate(w):
-            w_t.append(np.trapz(P[:i + 1], w[:i + 1]))
-        return w_t
+        print(P)
+        print(w)
+        return [
+            np.trapz(P[:i + 1], w[:i + 1])
+            for i, _ in enumerate(w)
+        ]
 
     def get_G_t(self):
         U_bar_t = np.array(self.U_bar_t, dtype=np.float_)
@@ -80,6 +82,7 @@ class Viz2DEnergy(Viz2D):
         t = self.vis2d.get_t()
         U_bar_t = self.vis2d.U_bar_t
         W_t = self.vis2d.get_W_t()
+        print('W_t', W_t)
         ax.plot(t, W_t, color=color_W, label=label_W)
         ax.plot(t, U_bar_t, color=color_U, label=label_U)
         ax.fill_between(t, W_t, U_bar_t, facecolor='gray', alpha=0.5,

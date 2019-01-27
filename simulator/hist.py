@@ -11,7 +11,6 @@ from traits.api import \
 import numpy as np
 
 from .i_hist import IHist
-from .tstep import TStep
 
 
 @provides(IHist)
@@ -44,14 +43,13 @@ class Hist(HasStrictTraits):
 
     @cached_property
     def _get_U_t(self):
-        print('U_t recalculated', self.timesteps)
-        return np.array(self.U_list, dtype=np.int)
+        return np.array(self.U_list, dtype=np.float_)
 
     F_t = Property(depends_on='timesteps_items')
 
     @cached_property
     def _get_F_t(self):
-        return np.array(self.U_list, dtype=np.int)
+        return np.array(self.U_list, dtype=np.float_)
 
     t = Property(depends_on='timesteps_items')
 
@@ -63,6 +61,8 @@ class Hist(HasStrictTraits):
         '''Get the index corresponding to visual time
         '''
         t = self.t
+        if len(t) == 0:
+            return 0
         idx = np.array(np.arange(len(t)), dtype=np.float_)
         t_idx = np.interp(vot, t, idx)
         return np.array(t_idx, np.int_)

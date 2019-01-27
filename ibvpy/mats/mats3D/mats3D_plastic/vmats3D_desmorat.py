@@ -11,7 +11,7 @@ from ibvpy.mats.mats3D.mats3D_eval import \
 from ibvpy.mats.mats3D.vmats3D_eval import \
     MATS3D
 import numpy as np
-from simulator import \
+from simulator.api import \
     Model, TLoopImplicit, TStepBC
 import traits.api as tr
 

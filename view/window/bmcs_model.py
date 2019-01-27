@@ -3,13 +3,16 @@
 '''
 
 from traits.api import \
-    Instance, List, Bool, on_trait_change, Str
+    Instance, List, Bool, on_trait_change, Str, provides
+
 from ibvpy.core.tline import TLine
 import numpy as np
+from simulator.api import ISimulator
 from view.ui.bmcs_tree_node import \
     BMCSRootNode
 
 
+@provides(ISimulator)
 class BMCSModel(BMCSRootNode):
     '''Base class for models included in the iMCS Tool Suite.
     It implements the state dependencies within the model tree.

@@ -26,7 +26,7 @@ from ibvpy.mats.mats3D.viz3d_strain_field import \
 from ibvpy.mats.mats3D.viz3d_stress_field import \
     Vis3DStressField, Viz3DStressField
 import numpy as np
-from simulator import Simulator
+from simulator.api import Simulator
 import traits.api as tr
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode

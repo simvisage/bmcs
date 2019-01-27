@@ -3,7 +3,7 @@ import copy
 
 from traits.api import \
     Instance, Property, cached_property, Enum, on_trait_change, \
-    List, Dict, WeakRef, DelegatesTo
+    Dict, DelegatesTo
 
 from ibvpy.core.bcond_mngr import \
     BCondMngr
@@ -12,7 +12,6 @@ from mathkit.matrix_la.sys_mtx_assembly import \
 import numpy as np
 
 from .tstep_state import TStepState
-from .xdomain import IXDomain
 
 
 class TStepBC(TStepState):
