@@ -221,5 +221,5 @@ class XDomainFEGrid(DOTSGrid):
 if __name__ == '__main__':
     from ibvpy.fets.fets1D5.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
     xd = XDomainFEGrid(coord_max=(1,), shape=(1,),
-                       dim_u=1, fets=FETS1D52ULRHFatigue())
-    print(xd.B_Eimabc.shape)
+                       dim_u=2, fets=FETS1D52ULRHFatigue())
+    print(xd.BB_Emicjdabef.shape)
