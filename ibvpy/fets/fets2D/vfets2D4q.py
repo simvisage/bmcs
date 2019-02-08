@@ -104,3 +104,8 @@ class FETS2D4Q(FETSEval):
 
     def _get_dN_inr(self):
         return self.shape_function_values[2]
+
+
+if __name__ == '__main__':
+    fe = FETS2D4Q()
+    fe.configure_traits()

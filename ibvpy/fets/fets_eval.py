@@ -759,7 +759,6 @@ class FETSEval(TStepperEval):
 
     traits_view = View(
         Group(
-            Item('mats_eval'),
             Item('n_e_dofs'),
             Item('n_nodal_dofs'),
             label='Numerical parameters'

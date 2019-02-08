@@ -473,7 +473,7 @@ class FEGrid(FEGridActivationMap):
     '''
 
     def _get_X_Id(self):
-        return self.geo_grid.point_x_arr
+        return self.geo_grid.point_X_arr
 
     def apply_on_ip_grid(self, fn, ip_mask):
         '''
@@ -711,14 +711,18 @@ class FEGrid(FEGridActivationMap):
         '''
         # Check if the specifiers for both grids are identical
         #
-        cell_grid = CellGrid(grid_cell_spec=self.dof_grid_spec,
-                             geo_transform=self.geo_transform,
-                             shape=self.shape,
-                             coord_min=self.coord_min,
-                             coord_max=self.coord_max)
-        _xdof_grid = DofCellGrid(cell_grid=cell_grid,
-                                 n_nodal_dofs=self.n_nodal_dofs,
-                                 dof_offset=self.dof_offset)
+        cell_grid = CellGrid(
+            grid_cell_spec=self.dof_grid_spec,
+            geo_transform=self.geo_transform,
+            shape=self.shape,
+            coord_min=self.coord_min,
+            coord_max=self.coord_max
+        )
+        _xdof_grid = DofCellGrid(
+            cell_grid=cell_grid,
+            n_nodal_dofs=self.n_nodal_dofs,
+            dof_offset=self.dof_offset
+        )
 
         # if self.dof_r.all() != self.geo_r.all():
         #

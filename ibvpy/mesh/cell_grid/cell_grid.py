@@ -273,7 +273,7 @@ class CellGrid(SDomain):
         return c_[tuple([x.flatten() for x in self.point_x_grid])]
 
     point_X_arr = Property(
-        depends_on='grid_cell_spec,shape,coord_min,coord_max')
+        depends_on='grid_cell_spec,shape,coord_min,coord_max, geo_transform')
 
     @cached_property
     def _get_point_X_arr(self):

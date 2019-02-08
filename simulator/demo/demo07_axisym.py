@@ -15,7 +15,7 @@ from ibvpy.mats.viz3d_strain_field import \
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 import numpy as np
 from simulator.api import \
-    Simulator, IXDomain
+    Simulator
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 
 xdomain = XDomainFEGridAxiSym(coord_max=(150, 50),

@@ -74,6 +74,7 @@ class GeoCellGrid(SDomain):
     cell_node_map = DelegatesTo('cell_grid')
     point_X_grid = DelegatesTo('cell_grid')
     point_x_grid = DelegatesTo('cell_grid')
+    point_X_arr = DelegatesTo('cell_grid')
     point_x_arr = DelegatesTo('cell_grid')
     n_dims = DelegatesTo('cell_grid')
 

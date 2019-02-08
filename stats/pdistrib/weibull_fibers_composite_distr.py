@@ -6,7 +6,7 @@ Created on Jun 6, 2013
 from math import pi
 
 from scipy.integrate import cumtrapz
-from traits.api import HasTraits, Float
+from traits.api import HasStrictTraits, Float
 
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 import numpy as np
@@ -16,7 +16,7 @@ def H(x):
     return x >= 0.0
 
 
-class WeibullFibers(HasTraits):
+class WeibullFibers(HasStrictTraits):
     '''Base class for the distribution of strength of Weibull fibers
     '''
     m = Float(5.)
@@ -116,7 +116,7 @@ class fibers_MC(WeibullFibers):
 
     Ll = Float(1e10)
     Lr = Float(1e10)
-    specimen_length = 1000.
+    specimen_length = Float(1000.)
 
     # approximate saw tooth profile
     def cdf2(self, e, depsf, r, al, ar):
