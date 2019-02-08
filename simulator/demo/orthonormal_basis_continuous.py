@@ -79,7 +79,7 @@ g.R_r = [sp.sin(eta_0), sp.cos(eta_0), eta_1]
 black = (0, 0, 0)
 white = (1, 1, 1)
 
-ee0, ee1, ee2 = np.mgrid[0:10:13j, 0:1:13j, 0:1:13j]
+ee0, ee1, ee2 = np.mgrid[0:5:13j, 0:1:3j, 0:1:1j]
 
 mlab.figure(bgcolor=white)
 for e0, e1, e2 in zip(ee0.flatten(), ee1.flatten(), ee2.flatten()):
