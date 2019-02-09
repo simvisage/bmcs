@@ -1,20 +1,19 @@
 
 from traits.api import \
     Property, cached_property, \
-    provides, \
+    provides, Callable, \
     Tuple, Int, Type, Array, Float, Instance
 
-from ibvpy.dots.vdots_grid import \
-    DOTSGrid
 from ibvpy.fets.i_fets_eval import IFETSEval
 from ibvpy.mesh.fe_grid import FEGrid
 from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 import numpy as np
 from simulator.i_xdomain import IXDomain
+from view.ui.bmcs_tree_node import BMCSTreeNode
 
 
 @provides(IXDomain)
-class XDomainFEGrid(DOTSGrid):
+class XDomainFEGrid(BMCSTreeNode):
 
     #=========================================================================
     # Type and shape specification of state variables representing the domain
@@ -37,39 +36,6 @@ class XDomainFEGrid(DOTSGrid):
         return (self.mesh.n_active_elems, self.fets.n_m,)
 
     #=========================================================================
-    # Conversion between linear algebra objects and field variables
-    #=========================================================================
-    def map_U_to_field(self, U):
-        n_c = self.fets.n_nodal_dofs
-        U_Ia = U.reshape(-1, n_c)
-        U_Eia = U_Ia[self.I_Ei]
-        eps_Emab = np.einsum(
-            'Eimabc,Eic->Emab',
-            self.B_Eimabc, U_Eia
-        )
-        return eps_Emab
-
-    def map_field_to_F(self, sig_Emab):
-        _, n_i, _, _, _, n_c = self.B_Eimabc.shape
-        f_Eic = self.integ_factor * np.einsum(
-            'm,Eimabc,Emab,Em->Eic',
-            self.fets.w_m, self.B_Eimabc, sig_Emab, self.det_J_Em
-        )
-        f_Ei = f_Eic.reshape(-1, n_i * n_c)
-        dof_E = self.dof_Eia.reshape(-1, n_i * n_c)
-        F_int = np.bincount(dof_E.flatten(), weights=f_Ei.flatten())
-        return F_int
-
-    def map_field_to_K(self, D_Emabef):
-        K_Eicjd = self.integ_factor * np.einsum(
-            'Emicjdabef,Emabef->Eicjd', self.BB_Emicjdabef, D_Emabef
-        )
-        _, n_i, n_c, n_j, n_d = K_Eicjd.shape
-        K_Eij = K_Eicjd.reshape(-1, n_i * n_c, n_j * n_d)
-        dof_Ei = self.dof_Eia.reshape(-1, n_i * n_c)
-        return SysMtxArray(mtx_arr=K_Eij, dof_map_arr=dof_Ei)
-
-    #=========================================================================
     # Input parameters
     #=========================================================================
     coord_min = Array(Float, value=[0., 0., 0.], GEO=True)
@@ -80,6 +46,9 @@ class XDomainFEGrid(DOTSGrid):
     '''
     shape = Array(Int, value=[1, 1, 1], MESH=True)
     '''Number of elements in the individual dimensions
+    '''
+    geo_transform = Callable
+    '''Geometry transformation
     '''
     integ_factor = Float(1.0, input=True, CS=True)
     '''Integration factor used to multiply the integral
@@ -115,6 +84,7 @@ class XDomainFEGrid(DOTSGrid):
         return FEGrid(coord_min=self.coord_min,
                       coord_max=self.coord_max,
                       shape=self.shape,
+                      geo_transform=self.geo_transform,
                       fets_eval=self.fets)
 
     #=========================================================================
@@ -138,84 +108,133 @@ class XDomainFEGrid(DOTSGrid):
             'inr,Eia->Enar', self.fets.dN_inr, x_Eia
         )
         det_J_Em = np.linalg.det(J_Emar)
-        inv_J_Emar = np.linalg.inv(J_Emar)
-        inv_J_Enar = np.linalg.inv(J_Enar)
-        B_Eimabc = np.einsum(
-            'abcd,imr,Eidr->Eimabc',
-            self.D1_abcd, self.fets.dN_imr, inv_J_Emar
-        )
-        B_Einabc = np.einsum(
-            'abcd,inr,Eidr->Einabc',
-            self.D1_abcd, self.fets.dN_inr, inv_J_Enar
-        )
-        BB_Emicjdabef = np.einsum(
-            'Eimabc,Ejmefd, Em, m->Emicjdabef',
-            B_Eimabc, B_Eimabc, det_J_Em, self.fets.w_m
-        )
-        return (BB_Emicjdabef, B_Eimabc,
-                dof_Eia, x_Eia, dof_Ia, I_Ei,
-                B_Einabc, det_J_Em)
+        return (dof_Eia, x_Eia, dof_Ia, I_Ei,
+                det_J_Em, J_Emar, J_Enar)
 
-    #=========================================================================
-    # Property traits acessing the operators on field variables
-    #=========================================================================
-    BB_Emicjdabef = Property()
-    '''Quadratic form of the kinematic mapping.
-    '''
-
-    def _get_BB_Emicjdabef(self):
-        return self.cached_grid_values[0]
-
-    B_Eimabc = Property()
-    '''Kinematic mapping between displacements and strains in every
-    integration point.
-    '''
-
-    def _get_B_Eimabc(self):
-        return self.cached_grid_values[1]
-
-    B_Einabc = Property()
+    B1_Einabc = Property()
     '''Kinematic mapping between displacement and strain in every
     visualization point
     '''
 
-    def _get_B_Einabc(self):
-        return self.cached_grid_values[6]
+    @cached_property
+    def _get_B1_Einabc(self):
+        inv_J_Enar = np.linalg.inv(self.J_Enar)
+        return np.einsum(
+            'abcd,imr,Eidr->Eimabc',
+            self.D1_abcd, self.fets.dN_inr, inv_J_Enar
+        )
 
     dof_Eia = Property()
     '''Mapping [element, node, direction] -> degree of freedom.
     '''
 
     def _get_dof_Eia(self):
-        return self.cached_grid_values[2]
+        return self.cached_grid_values[0]
 
     x_Eia = Property()
     '''Mapping [element, node, direction] -> value of coordinate.
     '''
 
     def _get_x_Eia(self):
-        return self.cached_grid_values[3]
+        return self.cached_grid_values[1]
 
     dof_Ia = Property()
     '''[global node, direction] -> degree of freedom
     '''
 
     def _get_dof_Ia(self):
-        return self.cached_grid_values[4]
+        return self.cached_grid_values[2]
 
     I_Ei = Property()
     '''[element, node] -> global node
     '''
 
     def _get_I_Ei(self):
-        return self.cached_grid_values[5]
+        return self.cached_grid_values[3]
 
     det_J_Em = Property()
-    '''Jacobi determinant in every element and integration point.
+    '''Jacobi matrix in integration points
     '''
 
     def _get_det_J_Em(self):
-        return self.cached_grid_values[7]
+        return self.cached_grid_values[4]
+
+    J_Emar = Property()
+    '''Jacobi matrix in integration points
+    '''
+
+    def _get_J_Emar(self):
+        return self.cached_grid_values[5]
+
+    J_Enar = Property()
+    '''Jacobi matrix in nodal points
+    '''
+
+    def _get_J_Enar(self):
+        return self.cached_grid_values[6]
+
+    #=========================================================================
+    # Conversion between linear algebra objects and field variables
+    #=========================================================================
+    B1_Eimabc = Property(depends_on='MESH,GEO,CS,FE')
+    '''Kinematic mapping between displacements and strains in every
+    integration point.
+    '''
+    @cached_property
+    def _get_B1_Eimabc(self):
+        inv_J_Emar = np.linalg.inv(self.J_Emar)
+        return np.einsum(
+            'abcd,inr,Eidr->Einabc',
+            self.D1_abcd, self.fets.dN_imr, inv_J_Emar
+        )
+
+    B_Eimabc = Property(depends_on='MESH,GEO,CS,FE')
+    '''Kinematic mapping between displacements and strains in every
+    integration point.
+    '''
+    @cached_property
+    def _get_B_Eimabc(self):
+        return self.B1_Eimabc
+
+    BB_Emicjdabef = Property(depends_on='MESH,GEO,CS,FE')
+    '''Quadratic form of the kinematic mapping.
+    '''
+
+    def _get_BB_Emicjdabef(self):
+        return np.einsum(
+            'Eimabc,Ejmefd, Em, m->Emicjdabef',
+            self.B_Eimabc, self.B_Eimabc, self.det_J_Em, self.fets.w_m
+        )
+
+    def map_U_to_field(self, U):
+        n_c = self.fets.n_nodal_dofs
+        U_Ia = U.reshape(-1, n_c)
+        U_Eia = U_Ia[self.I_Ei]
+        eps_Emab = np.einsum(
+            'Eimabc,Eic->Emab',
+            self.B_Eimabc, U_Eia
+        )
+        return eps_Emab
+
+    def map_field_to_F(self, sig_Emab):
+        _, n_i, _, _, _, n_c = self.B_Eimabc.shape
+        f_Eic = self.integ_factor * np.einsum(
+            'm,Eimabc,Emab,Em->Eic',
+            self.fets.w_m, self.B_Eimabc, sig_Emab, self.det_J_Em
+        )
+        f_Ei = f_Eic.reshape(-1, n_i * n_c)
+        dof_E = self.dof_Eia.reshape(-1, n_i * n_c)
+        F_int = np.bincount(dof_E.flatten(), weights=f_Ei.flatten())
+        return F_int
+
+    def map_field_to_K(self, D_Emabef):
+        K_Eicjd = self.integ_factor * np.einsum(
+            'Emicjdabef,Emabef->Eicjd', self.BB_Emicjdabef, D_Emabef
+        )
+        _, n_i, n_c, n_j, n_d = K_Eicjd.shape
+        K_Eij = K_Eicjd.reshape(-1, n_i * n_c, n_j * n_d)
+        dof_Ei = self.dof_Eia.reshape(-1, n_i * n_c)
+        return SysMtxArray(mtx_arr=K_Eij, dof_map_arr=dof_Ei)
 
 
 if __name__ == '__main__':

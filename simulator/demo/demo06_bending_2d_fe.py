@@ -26,7 +26,7 @@ L_1 = x_x[1, 0]
 d_L = L_c - L_1
 x_x[1:, :] += d_L * (L - x_x[1:, :]) / (L - L_1)
 a_L = a / H
-n_a = int(a_L * dgrid1.n_y)
+n_a = int(a_L * dgrid1.shape[1])
 fixed_right_bc = BCSlice(slice=dgrid1.mesh[-1, 0, -1, 0],
                          var='u', dims=[1], value=0)
 fixed_x = BCSlice(slice=dgrid1.mesh[0, n_a:, 0, -1],

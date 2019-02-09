@@ -74,12 +74,12 @@ g = Geo()
 
 g.R_r = [eta_0, eta_1 * eta_2, eta_0 * eta_1]
 g.R_r = [sp.sin(eta_0) * eta_0, sp.cos(eta_0 + eta_1 + 1)**2, eta_1 + eta_2]
-g.R_r = [sp.sin(eta_0), sp.cos(eta_0), eta_1]
+#g.R_r = [sp.sin(eta_0), sp.cos(eta_0), eta_1]
 
 black = (0, 0, 0)
 white = (1, 1, 1)
 
-ee0, ee1, ee2 = np.mgrid[0:5:13j, 0:1:3j, 0:1:1j]
+ee0, ee1, ee2 = np.mgrid[0:2:10j, 0:1:5j, 0:1:5j]
 
 mlab.figure(bgcolor=white)
 for e0, e1, e2 in zip(ee0.flatten(), ee1.flatten(), ee2.flatten()):

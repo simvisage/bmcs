@@ -41,6 +41,7 @@ class Vis3DStrainField(Vis3DField):
             '...ab,ac,bd->...cd',
             eps_Enab, DELTA_f_ab, DELTA_f_ab
         )
+
         eps_Encd_tensor_field = eps_Encd.reshape(-1, 9)
         self.ug.point_data.tensors = eps_Encd_tensor_field
         self.ug.point_data.tensors.name = 'strain'

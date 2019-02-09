@@ -64,7 +64,7 @@ for r, c in zip((0, 1, 2), colors):
 # consider a constant displacement field and transform it into
 # the coordinates - visualize
 u_Ema = .5 * np.ones_like(x_Ema)
-u_Ema[..., 2] = -.4
+u_Ema[..., (1, 2)] = 0
 
 u_Emr = np.einsum(
     '...ra,...a->...r',
