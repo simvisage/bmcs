@@ -28,19 +28,29 @@ class Vis3DStateField(Vis3DField):
         ts = self.sim.tstep
         U = ts.U_k
         t = ts.t_n1
-        xdomain = self.sim.xdomain
-        fets = xdomain.fets
-        omega_field = ts.state_n[self.var]
-        n_c = fets.n_nodal_dofs
-        DELTA_x_ab = fets.vtk_expand_operator
-        U_Ia = U.reshape(-1, n_c)
-        U_Eia = U_Ia[xdomain.I_Ei]
-        U_vector_field = np.einsum(
-            'Ia,ab->Ib', U_Eia.reshape(-1, n_c), DELTA_x_ab
-        )
-        self.ug.point_data.vectors = U_vector_field
+        # this needs to be adopted to tstep[domain_state]
+        # loop over the subdomains
+        U_vector_fields = []
+        state_fields = []
+        for domain in ts.fe_domain:
+            xdomain = domain.xdomain
+            fets = xdomain.fets
+            state_field = domain.state_n.get(self.var, None)
+            if state_field is None:
+                # If the state variable not present in the domain, skip
+                continue
+            print('shape', state_field.shape)
+            state_fields.append(state_field.flatten())
+            n_c = fets.n_nodal_dofs
+            DELTA_x_ab = fets.vtk_expand_operator
+            U_Ia = U.reshape(-1, n_c)
+            U_Eia = U_Ia[xdomain.I_Ei]
+            U_vector_fields.append(np.einsum(
+                'Ia,ab->Ib', U_Eia.reshape(-1, n_c), DELTA_x_ab
+            ))
+        self.ug.point_data.vectors = np.vstack(U_vector_fields)
         self.ug.point_data.vectors.name = 'displacement'
-        self.ug.point_data.scalars = omega_field.flatten()
+        self.ug.point_data.scalars = np.hstack(state_fields)
         self.ug.point_data.scalars.name = self.var
         fname = '%s_step_%008.4f' % (self.var, t)
         target_file = os.path.join(

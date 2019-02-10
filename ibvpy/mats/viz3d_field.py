@@ -19,22 +19,41 @@ class Vis3DField(Vis3D):
 
     def setup(self):
         self.new_dir()
-        xdomain = self.sim.xdomain
-        fets = xdomain.fets
-        DELTA_x_ab = fets.vtk_expand_operator
-
-        vtk_cell_type = fets.vtk_cell_class().cell_type
-        n_c = fets.n_nodal_dofs
-        n_E, n_i, _ = xdomain.x_Eia.shape
-        points = np.einsum(
-            'Ia,ab->Ib',
-            xdomain.x_Eia.reshape(-1, n_c), DELTA_x_ab
-        )
-        U = np.zeros_like(points)
-        self.ug = tvtk.UnstructuredGrid(points=points)
-        vtk_cells = (np.arange(n_E) * n_i)[:, np.newaxis] + \
-            np.array(fets.vtk_cell, dtype=np.int_)[np.newaxis, :]
-        self.ug.set_cells(vtk_cell_type, vtk_cells)
+        # make a loop over the XDomainModel
+        fe_domain = self.sim.tstep.fe_domain
+        vtk_point_list = []
+        vtk_cell_list = []
+        vtk_cell_offset_list = []
+        vtk_cell_types_list = []
+        point_offset = 0
+        cell_offset = 0
+        for domain in fe_domain:
+            xdomain = domain.xdomain
+            fets = xdomain.fets
+            DELTA_x_ab = fets.vtk_expand_operator
+            n_c = fets.n_nodal_dofs
+            vtk_points = np.einsum(
+                'Ia,ab->Ib',
+                xdomain.x_Eia.reshape(-1, n_c), DELTA_x_ab
+            )
+            vtk_point_list.append(vtk_points)
+            cells, cell_offsets, cell_types = xdomain.get_vtk_cell_data(
+                'nodes', point_offset, cell_offset)
+            point_offset += vtk_points.shape[0]
+            cell_offset += cells.shape[0]
+            vtk_cell_list.append(cells)
+            vtk_cell_offset_list.append(cell_offsets)
+            vtk_cell_types_list.append(cell_types)
+        vtk_cell_types = np.hstack(vtk_cell_types_list)
+        vtk_cell_offsets = np.hstack(vtk_cell_offset_list)
+        vtk_cells = np.hstack(vtk_cell_list)
+        n_cells = vtk_cell_types.shape[0]
+        vtk_cell_array = tvtk.CellArray()
+        vtk_cell_array.set_cells(n_cells, vtk_cells)
+        self.ug = tvtk.UnstructuredGrid(points=np.vstack(vtk_point_list))
+        self.ug.set_cells(vtk_cell_types,
+                          vtk_cell_offsets,
+                          vtk_cell_array)
 
 
 class Viz3DField(Viz3D):

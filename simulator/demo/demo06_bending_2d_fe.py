@@ -1,3 +1,22 @@
+'''Example calculating the 3 point bending test 
+with just one halve of the specimen included.
+
+
+Hierarchy of configurable operators to perform an increment 
+and iteration step
+
+1. TimeBC - Time dependent boundary conditions 
+2. DomainState - multiple uniform domains with state force and stiffness 
+2.1 LocalGlobalMapping 
+2.1.1 Kinematics - supplies the B matrix
+      Can be parameterized at several leels - propose a structure
+2.1.2 Discretization
+2.2 TModel
+
+Complying structure for response tracing
+extracting data from several domains
+'''
+
 import time
 
 from mayavi import mlab
@@ -34,8 +53,7 @@ fixed_x = BCSlice(slice=dgrid1.mesh[0, n_a:, 0, -1],
 control_bc = BCSlice(slice=dgrid1.mesh[0, -1, :, -1],
                      var='u', dims=[1], value=-w_max)
 s = Simulator(
-    model=MATS2DScalarDamage(algorithmic=True),
-    xdomain=dgrid1,
+    domains=[(dgrid1, MATS2DScalarDamage(algorithmic=True))],
     bc=[fixed_right_bc, fixed_x, control_bc],
     record={
         'damage': Vis3DStateField(var='omega'),

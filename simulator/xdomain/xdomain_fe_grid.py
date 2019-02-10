@@ -2,7 +2,7 @@
 from traits.api import \
     Property, cached_property, \
     provides, Callable, \
-    Tuple, Int, Type, Array, Float, Instance
+    Tuple, Int, Type, Array, Float, Instance, Bool
 
 from ibvpy.fets.i_fets_eval import IFETSEval
 from ibvpy.mesh.fe_grid import FEGrid
@@ -224,6 +224,7 @@ class XDomainFEGrid(BMCSTreeNode):
         )
         f_Ei = f_Eic.reshape(-1, n_i * n_c)
         dof_E = self.dof_Eia.reshape(-1, n_i * n_c)
+        return dof_E.flatten(), f_Ei.flatten()
         F_int = np.bincount(dof_E.flatten(), weights=f_Ei.flatten())
         return F_int
 
@@ -236,9 +237,113 @@ class XDomainFEGrid(BMCSTreeNode):
         dof_Ei = self.dof_Eia.reshape(-1, n_i * n_c)
         return SysMtxArray(mtx_arr=K_Eij, dof_map_arr=dof_Ei)
 
+    debug_cell_data = Bool(False)
+    # @todo - comment this procedure`
+
+    def get_vtk_cell_data(self, position, point_offset, cell_offset):
+        if position == 'nodes':
+            subcell_offsets, subcell_lengths, subcells, subcell_types = \
+                self.fets.vtk_node_cell_data
+        elif position == 'int_pnts':
+            subcell_offsets, subcell_lengths, subcells, subcell_types = \
+                self.fets.vtk_ip_cell_data
+
+        if self.debug_cell_data:
+            print('subcell_offsets')
+            print(subcell_offsets)
+            print('subcell_lengths')
+            print(subcell_lengths)
+            print('subcells')
+            print(subcells)
+            print('subcell_types')
+            print(subcell_types)
+
+        n_subcells = subcell_types.shape[0]
+        n_cell_points = self.n_cell_points
+        subcell_size = subcells.shape[0] + n_subcells
+
+        if self.debug_cell_data:
+            print('n_cell_points', n_cell_points)
+            print('n_cells', self.n_cells)
+
+        vtk_cell_array = np.zeros((self.n_cells, subcell_size), dtype=int)
+
+        idx_cell_pnts = np.repeat(True, subcell_size)
+
+        if self.debug_cell_data:
+            print('idx_cell_pnts')
+            print(idx_cell_pnts)
+
+        idx_cell_pnts[subcell_offsets] = False
+
+        if self.debug_cell_data:
+            print('idx_cell_pnts')
+            print(idx_cell_pnts)
+
+        idx_lengths = idx_cell_pnts == False
+
+        if self.debug_cell_data:
+            print('idx_lengths')
+            print(idx_lengths)
+
+        point_offsets = np.arange(self.n_cells) * n_cell_points
+        point_offsets += point_offset
+
+        if self.debug_cell_data:
+            print('point_offsets')
+            print(point_offsets)
+
+        vtk_cell_array[:, idx_cell_pnts] = point_offsets[
+            :, None] + subcells[None, :]
+        vtk_cell_array[:, idx_lengths] = subcell_lengths[None, :]
+
+        if self.debug_cell_data:
+            print('vtk_cell_array')
+            print(vtk_cell_array)
+
+        n_active_cells = self.mesh.n_active_elems
+
+        if self.debug_cell_data:
+            print('n active cells')
+            print(n_active_cells)
+
+        cell_offsets = np.arange(n_active_cells, dtype=int) * subcell_size
+        cell_offsets += cell_offset
+        vtk_cell_offsets = cell_offsets[:, None] + subcell_offsets[None, :]
+
+        if self.debug_cell_data:
+            print('vtk_cell_offsets')
+            print(vtk_cell_offsets)
+
+        vtk_cell_types = np.zeros(
+            self.n_cells * n_subcells, dtype=int
+        ).reshape(self.n_cells, n_subcells)
+        vtk_cell_types += subcell_types[None, :]
+
+        if self.debug_cell_data:
+            print('vtk_cell_types')
+            print(vtk_cell_types)
+
+        return (vtk_cell_array.flatten(),
+                vtk_cell_offsets.flatten(),
+                vtk_cell_types.flatten())
+
+    n_cells = Property(Int)
+
+    def _get_n_cells(self):
+        '''Return the total number of cells'''
+        return self.mesh.n_active_elems
+
+    n_cell_points = Property(Int)
+
+    def _get_n_cell_points(self):
+        '''Return the number of points defining one cell'''
+        return self.fets.n_vtk_r
+
 
 if __name__ == '__main__':
     from ibvpy.fets.fets1D5.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
     xd = XDomainFEGrid(coord_max=(1,), shape=(1,),
                        dim_u=2, fets=FETS1D52ULRHFatigue())
     print(xd.BB_Emicjdabef.shape)
+    print(xd.get_vtk_cell_data('nodes', 0, 0))

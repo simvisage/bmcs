@@ -12,7 +12,7 @@ from .i_tstep import ITStep
 
 
 @provides(ITStep)
-class TStepState(HasStrictTraits):
+class TStepDemo(HasStrictTraits):
     '''Time step with managed and configurable state variables.
     '''
 

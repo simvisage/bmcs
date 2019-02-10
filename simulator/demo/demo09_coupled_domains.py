@@ -1,5 +1,12 @@
 '''This example couples two domains via 
 an zero-thickness interface. 
+
+Todo - simplify the domain-staet-xdomain-mesh hierarchy
+
+The dependencies - Simulator - who sets the type of the time stepping
+loop and the type of the time step.
+
+Test two independent domains.
 '''
 
 import time
@@ -31,14 +38,13 @@ class XDomain(BMCSTreeNode):
         self.subdomains = args
 
 
-xdomain1 = XDomainFEGridTransform(coord_max=(100, 10),
+xdomain1 = XDomainFEGridTransform(coord_max=(100, 50),
                                   shape=(2, 1),
                                   fets=FETS2D4Q())
-xdomain2 = XDomainFEGridTransform(coord_min=(100, 10),
-                                  coord_max=(100, 20),
+xdomain2 = XDomainFEGridTransform(coord_min=(0, 50),
+                                  coord_max=(100, 100),
                                   shape=(2, 1),
                                   fets=FETS2D4Q())
-xdomain = XDomain([xdomain1, xdomain2])
 
 left_y = BCSlice(slice=xdomain1.mesh[0, 0, 0, 0],
                  var='u', dims=[1], value=0)
@@ -46,15 +52,24 @@ left_x = BCSlice(slice=xdomain1.mesh[0, :, 0, :],
                  var='u', dims=[0], value=-0.4)
 right_x = BCSlice(slice=xdomain1.mesh[-1, :, -1, :],
                   var='u', dims=[0], value=0.0)
+bc1 = [left_y, left_x, right_x]
+left_y = BCSlice(slice=xdomain2.mesh[0, 0, 0, 0],
+                 var='u', dims=[1], value=0)
+left_x = BCSlice(slice=xdomain2.mesh[0, :, 0, :],
+                 var='u', dims=[0], value=-0.4)
+right_x = BCSlice(slice=xdomain2.mesh[-1, :, -1, :],
+                  var='u', dims=[0], value=0.0)
+bc2 = [left_y, left_x, right_x]
 
 s = Simulator(
-    model=MATS3DDesmorat(),
-    xdomain=xdomain1,
-    bc=[left_x, right_x, left_y],
+    domains=[(xdomain1, MATS3DDesmorat()),
+             (xdomain2, MATS3DDesmorat()),
+             ],
+    bc=bc1 + bc2,
     record={
-        'strain': Vis3DStrainField(var='eps_ab'),
+        #        'strain': Vis3DStrainField(var='eps_ab'),
         'damage': Vis3DStateField(var='omega_a'),
-        'kinematic hardening': Vis3DStateField(var='z_a')
+        #        'kinematic hardening': Vis3DStateField(var='z_a')
     }
 )
 s.tloop.k_max = 1000

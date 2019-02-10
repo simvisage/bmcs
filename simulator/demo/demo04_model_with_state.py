@@ -2,9 +2,11 @@
 from traits.api import \
     Float
 import traits.has_traits
-from bmcs.simulator import \
-    Model, Simulator, TLoopImplicit, TStepState
+
 import numpy as np
+from simulator.api import \
+    Model, Simulator, TLoopImplicit, TStepState
+
 from .interaction_scripts import run_rerun_test
 traits.has_traits.CHECK_INTERFACES = 2
 

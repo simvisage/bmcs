@@ -55,8 +55,7 @@ right_x = BCSlice(slice=xdomain.mesh[-1, :, -1, :],
                   var='u', dims=[0], value=0.0)
 
 s = Simulator(
-    model=MATS3DDesmorat(),
-    xdomain=xdomain,
+    domains=[(xdomain, MATS3DDesmorat())],
     bc=[left_x, right_x, left_y],
     record={
         'strain': Vis3DStrainField(var='eps_ab'),

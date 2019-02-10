@@ -25,6 +25,20 @@ class Hist(HasStrictTraits):
     U_list = List()
     F_list = List()
 
+    record_dict = Property(
+        Dict, depends_on='sim.record, sim.record_items'
+    )
+
+    @cached_property
+    def _get_record_dict(self):
+        for vis in self.sim.record.values():
+            vis.sim = self.sim
+            vis.setup()
+        return {key: vis for key, vis in self.sim.record.items()}
+
+    def __getitem__(self, key):
+        return self.record_dict[key]
+
     state_vars = List()
 
     def record_timestep(self, t, U, F,
@@ -69,17 +83,3 @@ class Hist(HasStrictTraits):
 
     def get_time_idx(self, vot):
         return int(self.get_time_idx_arr(vot))
-
-    record_dict = Property(
-        Dict, depends_on='sim.record, sim.record_items'
-    )
-
-    @cached_property
-    def _get_record_dict(self):
-        for viz in self.sim.record.values():
-            viz.sim = self.sim
-            viz.setup()
-        return {key: viz for key, viz in self.sim.record.items()}
-
-    def __getitem__(self, key):
-        return self.record_dict[key]

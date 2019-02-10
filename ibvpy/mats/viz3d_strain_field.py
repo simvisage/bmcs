@@ -23,27 +23,29 @@ class Vis3DStrainField(Vis3DField):
         ts = self.sim.tstep
         U = ts.U_k
         t = ts.t_n1
-        xdomain = self.sim.xdomain
-        fets = xdomain.fets
-        n_c = fets.n_nodal_dofs
-        DELTA_x_ab = fets.vtk_expand_operator
-        DELTA_f_ab = xdomain.vtk_expand_operator
-        U_Ia = U.reshape(-1, n_c)
-        U_Eia = U_Ia[xdomain.I_Ei]
-        U_vector_field = np.einsum(
-            'Ia,ab->Ib',
-            U_Eia.reshape(-1, n_c), DELTA_x_ab
-        )
-        self.ug.point_data.vectors = U_vector_field
+        U_vector_fields = []
+        eps_Encd_tensor_fields = []
+        for domain in ts.fe_domain:
+            xdomain = domain.xdomain
+            fets = xdomain.fets
+            n_c = fets.n_nodal_dofs
+            DELTA_x_ab = fets.vtk_expand_operator
+            DELTA_f_ab = xdomain.vtk_expand_operator
+            U_Ia = U.reshape(-1, n_c)
+            U_Eia = U_Ia[xdomain.I_Ei]
+            U_vector_fields.append(np.einsum(
+                'Ia,ab->Ib',
+                U_Eia.reshape(-1, n_c), DELTA_x_ab
+            ))
+            eps_Enab = xdomain.map_U_to_field(U)
+            eps_Encd = np.einsum(
+                '...ab,ac,bd->...cd',
+                eps_Enab, DELTA_f_ab, DELTA_f_ab
+            )
+            eps_Encd_tensor_fields.append(eps_Encd.reshape(-1, 9))
+        self.ug.point_data.vectors = np.vstack(U_vector_fields)
         self.ug.point_data.vectors.name = 'displacement'
-        eps_Enab = xdomain.map_U_to_field(U)
-        eps_Encd = np.einsum(
-            '...ab,ac,bd->...cd',
-            eps_Enab, DELTA_f_ab, DELTA_f_ab
-        )
-
-        eps_Encd_tensor_field = eps_Encd.reshape(-1, 9)
-        self.ug.point_data.tensors = eps_Encd_tensor_field
+        self.ug.point_data.tensors = np.vstack(eps_Encd_tensor_fields)
         self.ug.point_data.tensors.name = 'strain'
         fname = '%s_step_%8.4f' % (self.var, t)
         target_file = os.path.join(

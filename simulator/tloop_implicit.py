@@ -3,15 +3,18 @@
 '''
 
 from traits.api import \
-    Int, Float, Bool
+    Int, Float, Type
 from .tloop import \
     TLoop
+from .tstep_bc import TStepBC
 
 
 class TLoopImplicit(TLoop):
     '''Time loop with implicit time stepping controlling the newton
     based algorithms.
     '''
+
+    tstep_type = Type(TStepBC)
 
     k_max = Int(30, enter_set=True, auto_set=False)
 

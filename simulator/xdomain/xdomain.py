@@ -7,7 +7,7 @@ from traits.api import \
 import numpy as np
 
 
-class FEDomain(HasStrictTraits):
+class XDomain(HasStrictTraits):
     '''Test the state dependencies within the hierarchical domain representation.
     '''
 
