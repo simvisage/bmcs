@@ -2,8 +2,9 @@
 import copy
 
 from traits.api import \
+    HasStrictTraits, provides, \
     Instance, Property, cached_property, Enum, on_trait_change, \
-    Dict, DelegatesTo
+    Dict, DelegatesTo, WeakRef, Event, Array, Float, Str
 
 from ibvpy.core.bcond_mngr import \
     BCondMngr
@@ -11,12 +12,51 @@ from mathkit.matrix_la.sys_mtx_assembly import \
     SysMtxAssembly
 import numpy as np
 
-from .tstep_state import TStepState
+from .i_tstep import ITStep
 
 
-class TStepBC(TStepState):
+@provides(ITStep)
+class TStepBC(HasStrictTraits):
+
+    sim = WeakRef
+
+    model = DelegatesTo('sim')
+
+    hist = DelegatesTo('sim')
+
+    primary_var_changed = Event
 
     xdomain = DelegatesTo('sim')
+
+    #=========================================================================
+    #
+    #=========================================================================
+
+    t_n = Float(0.0)
+    '''Fundamental state time used for time dependent essential BC'
+    '''
+    t_n1 = Float(0.0)
+    '''Target time value of the control variable.
+    '''
+    U_n = Property(Array(np.float_), depends_on='model_structure_changed')
+    '''Fundamental value of the primary (control variable)
+    '''
+    @cached_property
+    def _get_U_n(self):
+        U_var_shape = self.xdomain.U_var_shape
+        return np.zeros(U_var_shape, dtype=np.float_).flatten()
+
+    '''Current fundamental value of the primary variable.
+    '''
+    U_k = Property(Array(np.float_), depends_on='model_structure_changed')
+    '''Fundamental value of the primary (control variable)
+    '''
+    @cached_property
+    def _get_U_k(self):
+        U_var_shape = self.xdomain.U_var_shape
+        return np.zeros(U_var_shape, dtype=np.float_).flatten()
+
+    model_structure_changed = Event
 
     # Boundary condition manager
     #
@@ -26,6 +66,29 @@ class TStepBC(TStepState):
     @cached_property
     def _get_bcond_mngr(self):
         return BCondMngr(bcond_list=self.sim.bc)
+
+    state_n = Property(Dict(Str, Array),
+                       depends_on='model_structure_changed')
+    '''Dictionary of state arrays.
+    The entry names and shapes are defined by the material
+    model.
+    '''
+    @cached_property
+    def _get_state_n(self):
+        xmodel_shape = self.xdomain.state_var_shape
+        tmodel_shapes = self.model.state_var_shapes
+        return {
+            name: np.zeros(xmodel_shape + mats_sa_shape, dtype=np.float_)
+            for name, mats_sa_shape
+            in list(tmodel_shapes.items())
+        }
+
+    def init_state(self):
+        '''Initialize state.
+        '''
+        self.t_n = 0.0
+        self.t_n1 = 0.0
+        self.model_structure_changed = True
 
     state_k = Dict
     '''State variables within the current iteration step
@@ -53,10 +116,10 @@ class TStepBC(TStepState):
         self.bcond_mngr.apply_essential(K)
         return K
 
-    _corr_pred = Property(depends_on='primary_var_changed,t_n1')
+    corr_pred = Property(depends_on='primary_var_changed,t_n1')
 
     @cached_property
-    def _get__corr_pred(self):
+    def _get_corr_pred(self):
         self.K.reset_mtx()
         # Get the field representation of the primary variable
         U_k_field = self.xdomain.map_U_to_field(self.U_k)
@@ -75,14 +138,10 @@ class TStepBC(TStepState):
         self.K.apply_constraints(R)
         return R, self.K, F_int
 
-    def _get_R_norm(self):
-        R = self.R
-        return np.sqrt(np.einsum('...i,...i', R, R))
-
     def make_iter(self):
         '''Perform a single iteration
         '''
-        d_U_k, pos_def = self.K.solve()
+        d_U_k, _ = self.K.solve()
         self.U_k[:] += d_U_k
         self.primary_var_changed = True
         self.step_flag = 'corrector'
@@ -102,3 +161,27 @@ class TStepBC(TStepState):
         s += '\nU_n' + str(self.U_n)
         s += '\nU_k' + str(self.U_k)
         return s
+
+    R_norm = Property
+
+    def _get_R_norm(self):
+        R = self.R
+        return np.sqrt(np.einsum('...i,...i', R, R))
+
+    R = Property
+
+    def _get_R(self):
+        R, _, _ = self.corr_pred
+        return R.flatten()
+
+    dR = Property
+
+    def _get_dR(self):
+        _, dR, _ = self.corr_pred
+        return dR
+
+    F_k = Property
+
+    def _get_F_k(self):
+        _, _, F_k = self.corr_pred
+        return F_k
