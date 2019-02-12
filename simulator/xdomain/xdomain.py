@@ -11,6 +11,11 @@ class XDomain(HasStrictTraits):
     '''Test the state dependencies within the hierarchical domain representation.
     '''
 
+    def __init__(self, subdomains, *args, **kw):
+        super().__init__(*args, **kw)
+        self.subdomains = subdomains
+        self.serialized_subdomains
+
     changed_structure = Event
 
     subdomains = List(domain_changed=True)
@@ -22,13 +27,14 @@ class XDomain(HasStrictTraits):
 
     serialized_subdomains = Property(depends_on='subdomains, subdomains_items')
 
+    @cached_property
     def _get_serialized_subdomains(self):
         '''Link the new subdomain at the end of the series.
         '''
         s = np.array(self.subdomains)
         for s1, s2 in zip(s[:-1], s[1:]):
-            s1.xdomain.mesh.next_domain = s2
-            s2.xdomain.mesh.previous_domain = s1
+            s1.xdomain.mesh.next_grid = s2.xdomain.mesh
+            s2.xdomain.mesh.prev_grid = s1.xdomain.mesh
         return self.subdomains
 
     nonempty_subdomains = Property(depends_on='changed_structure')

@@ -4,7 +4,7 @@ import copy
 from traits.api import \
     HasStrictTraits, provides, \
     Instance, Property, cached_property, Enum, on_trait_change, \
-    Dict, List, DelegatesTo, WeakRef, Event, Array, Float, Str
+    DelegatesTo, WeakRef, Event, Array, Float
 
 from ibvpy.core.bcond_mngr import \
     BCondMngr
@@ -28,8 +28,9 @@ class TStepBC(HasStrictTraits):
 
     primary_var_changed = Event
 
-    xdomain = DelegatesTo('sim')
-
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self.fe_domain
     #=========================================================================
     #
     #=========================================================================
@@ -96,7 +97,7 @@ class TStepBC(HasStrictTraits):
         self.bcond_mngr.apply_essential(K)
         return K
 
-    fe_domain = Property(depends_on='sim.domains')
+    fe_domain = Property(depends_on='model_structure_changed')
 
     @cached_property
     def _get_fe_domain(self):
@@ -104,7 +105,7 @@ class TStepBC(HasStrictTraits):
             DomainState(tstep=self, xdomain=xdomain, tmodel=tmodel)
             for xdomain, tmodel in self.sim.domains
         ]
-        return XDomain(subdomains=domains)
+        return XDomain(domains)
 
     corr_pred = Property(depends_on='primary_var_changed,t_n1')
 
@@ -197,23 +198,3 @@ class TStepBC(HasStrictTraits):
         return F_k
 
     record = DelegatesTo('sim')
-
-    xstate_n = Property(Dict(Str, Array),
-                        depends_on='model_structure_changed')
-    '''Dictionary of state arrays.
-    The entry names and shapes are defined by the material
-    model.
-    '''
-    @cached_property
-    def _get_xstate_n(self):
-        xmodel_shape = self.xdomain.state_var_shape
-        tmodel_shapes = self.model.state_var_shapes
-        return {
-            name: np.zeros(xmodel_shape + mats_sa_shape, dtype=np.float_)
-            for name, mats_sa_shape
-            in list(tmodel_shapes.items())
-        }
-
-    xstate_k = Dict
-    '''State variables within the current iteration step
-    '''

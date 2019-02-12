@@ -20,6 +20,7 @@ from ibvpy.rtrace.rt_domain import RTraceDomain
 from .fe_grid_activation_map import FEGridActivationMap
 from .fe_grid_idx_slice import FEGridIdxSlice
 from .fe_grid_ls_slice import FEGridLevelSetSlice
+from .fe_grid_node_slice import ISliceProperty
 from .i_fe_uniform_domain import IFEUniformDomain
 
 
@@ -322,6 +323,11 @@ class FEGrid(FEGridActivationMap):
         resizable=True,
         scrollable=True,
     )
+
+    I = Property
+
+    def _get_I(self):
+        return ISliceProperty(fe_grid=self)
 
     def __getitem__(self, idx):
         if isinstance(idx, tuple) or isinstance(idx, int):

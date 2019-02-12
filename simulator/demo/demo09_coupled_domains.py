@@ -12,7 +12,7 @@ Test two independent domains.
 import time
 
 from mayavi import mlab
-from traits.api import provides, List
+
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
@@ -24,27 +24,20 @@ from ibvpy.mats.viz3d_strain_field import \
 import numpy as np
 from simulator.api import \
     Simulator
-from simulator.i_xdomain import IXDomain
-from simulator.xdomain.xdomain_transform import XDomainFEGridTransform
-from view.ui.bmcs_tree_node import BMCSTreeNode
+from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
+from simulator.xdomain.xdomain_interface import XDomainFEInterface
 
-
-@provides(IXDomain)
-class XDomain(BMCSTreeNode):
-    subdomains = List()
-
-    def __init__(self, *args, **kw):
-        super().__init__(**kw)
-        self.subdomains = args
-
-
-xdomain1 = XDomainFEGridTransform(coord_max=(100, 50),
-                                  shape=(2, 1),
-                                  fets=FETS2D4Q())
-xdomain2 = XDomainFEGridTransform(coord_min=(0, 50),
-                                  coord_max=(100, 100),
-                                  shape=(2, 1),
-                                  fets=FETS2D4Q())
+xdomain1 = XDomainFEGrid(coord_max=(100, 50),
+                         shape=(2, 1),
+                         fets=FETS2D4Q())
+xdomain2 = XDomainFEGrid(coord_min=(0, 60),
+                         coord_max=(100, 100),
+                         shape=(2, 1),
+                         fets=FETS2D4Q())
+xdomain12 = XDomainFEInterface(
+    I=xdomain1.mesh.I[:, -1],
+    J=xdomain2.mesh.I[:, 0]
+)
 
 left_y = BCSlice(slice=xdomain1.mesh[0, 0, 0, 0],
                  var='u', dims=[1], value=0)
@@ -73,15 +66,37 @@ s = Simulator(
     }
 )
 s.tloop.k_max = 1000
-s.tline.step = 0.05
-s.run()
-time.sleep(2)
+s.tline.step = 0.0
+# s.run()
+# time.sleep(3)
+# print(s.tstep.fe_domain)
+print(s.tstep.fe_domain.serialized_subdomains)
+
+# REMARK - The domains have been serialized within
+# the fe_domain of the simulator - this is done upon
+# the assignment to the tstep that governs the calculation.
+# Actually this kind of access is cryptical and should be avoided.
+# The problem might be circumvented by providing
+# navigation through the domain from the toplevel object -i.e. fe_domain
+#
+# xd['upper'][ :, -1, :, -1].dofs
+# xd['lower'][ :, -1, :, -1].dofs
+#
+# XD('upper', upper, concrete1,
+#    'lower', lower, concrete2,
+#    'interface, intf, press_sens)
+#
+# xdomain.mesh.I[:,-1]
+# xdomain.mesh.E[]
+#
+print(xdomain12.o_pEia)
+print(xdomain12.X_pEia)
 
 # strain_viz = Viz3DStrainField(vis3d=s.hist['strain'])
 # strain_viz.setup()
 # strain_viz.plot(0.0)
 
-damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
-damage_viz.setup()
-damage_viz.plot(0.0)
-mlab.show()
+# damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
+# damage_viz.setup()
+# damage_viz.plot(0.0)
+# mlab.show()

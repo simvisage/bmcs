@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------
 #
 # Copyright (c) 2009, IMB, RWTH Aachen.
 # All rights reserved.
@@ -15,16 +15,28 @@
 
 from traits.api import Interface, Int, Array, Property
 
-class IFEGridSlice( Interface ):
+
+class IFENodeSlice(Interface):
+    '''
+    Interface of the spatial domain.
+    '''
+
+    geo_X = Property
+
+    dof_X = Property
+
+    dofs = Property
+
+
+class IFEGridSlice(Interface):
     '''
     Interface of the spatial domain.
     '''
 
     elems = Property(Array(Int))
-        
-    geo_X = Property
-    
-    dof_X = Property
-    
-    dofs = Property
 
+    geo_X = Property
+
+    dof_X = Property
+
+    dofs = Property

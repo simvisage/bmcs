@@ -87,6 +87,30 @@ class XDomainFEGrid(BMCSTreeNode):
                       geo_transform=self.geo_transform,
                       fets_eval=self.fets)
 
+    x_Eia = Property(depends_on='MESH,GEO,CS,FE')
+
+    def _get_x_Eia(self):
+        x_Ia = self.mesh.X_Id
+        I_Ei = self.mesh.I_Ei
+        x_Eia = x_Ia[I_Ei, :]
+        return x_Eia
+
+    o_Ia = Property(depends_on='MESH,GEO,CS,FE')
+
+    @cached_property
+    def _get_o_Ia(self):
+        x_Ia = self.mesh.X_Id
+        n_I, n_a = x_Ia.shape
+        do = self.mesh.dof_offset
+        return do + np.arange(n_I * n_a, dtype=np.int_).reshape(n_I, -1)
+
+    o_Eia = Property(depends_on='MESH,GEO,CS,FE')
+
+    @cached_property
+    def _get_o_Eia(self):
+        I_Ei = self.mesh.I_Ei
+        return self.o_Ia[I_Ei]
+
     #=========================================================================
     # Differential operators on FE approximation of the field variables
     #=========================================================================
@@ -95,12 +119,8 @@ class XDomainFEGrid(BMCSTreeNode):
 
     @cached_property
     def _get_cached_grid_values(self):
-        x_Ia = self.mesh.X_Id
-        n_I, n_a = x_Ia.shape
-        dof_Ia = np.arange(n_I * n_a, dtype=np.int_).reshape(n_I, -1)
-        I_Ei = self.mesh.I_Ei
-        x_Eia = x_Ia[I_Ei, :]
-        dof_Eia = dof_Ia[I_Ei]
+        x_Eia = self.x_Eia
+        o_Eia = self.o_Eia
         J_Emar = np.einsum(
             'imr,Eia->Emar', self.fets.dN_imr, x_Eia
         )
@@ -108,8 +128,7 @@ class XDomainFEGrid(BMCSTreeNode):
             'inr,Eia->Enar', self.fets.dN_inr, x_Eia
         )
         det_J_Em = np.linalg.det(J_Emar)
-        return (dof_Eia, x_Eia, dof_Ia, I_Ei,
-                det_J_Em, J_Emar, J_Enar)
+        return (det_J_Em, J_Emar, J_Enar)
 
     B1_Einabc = Property()
     '''Kinematic mapping between displacement and strain in every
@@ -124,54 +143,33 @@ class XDomainFEGrid(BMCSTreeNode):
             self.D1_abcd, self.fets.dN_inr, inv_J_Enar
         )
 
-    dof_Eia = Property()
-    '''Mapping [element, node, direction] -> degree of freedom.
-    '''
-
-    def _get_dof_Eia(self):
-        return self.cached_grid_values[0]
-
-    x_Eia = Property()
-    '''Mapping [element, node, direction] -> value of coordinate.
-    '''
-
-    def _get_x_Eia(self):
-        return self.cached_grid_values[1]
-
-    dof_Ia = Property()
-    '''[global node, direction] -> degree of freedom
-    '''
-
-    def _get_dof_Ia(self):
-        return self.cached_grid_values[2]
-
     I_Ei = Property()
     '''[element, node] -> global node
     '''
 
     def _get_I_Ei(self):
-        return self.cached_grid_values[3]
+        return self.mesh.I_Ei
 
     det_J_Em = Property()
     '''Jacobi matrix in integration points
     '''
 
     def _get_det_J_Em(self):
-        return self.cached_grid_values[4]
+        return self.cached_grid_values[0]
 
     J_Emar = Property()
     '''Jacobi matrix in integration points
     '''
 
     def _get_J_Emar(self):
-        return self.cached_grid_values[5]
+        return self.cached_grid_values[1]
 
     J_Enar = Property()
     '''Jacobi matrix in nodal points
     '''
 
     def _get_J_Enar(self):
-        return self.cached_grid_values[6]
+        return self.cached_grid_values[2]
 
     #=========================================================================
     # Conversion between linear algebra objects and field variables
@@ -223,10 +221,8 @@ class XDomainFEGrid(BMCSTreeNode):
             self.fets.w_m, self.B_Eimabc, sig_Emab, self.det_J_Em
         )
         f_Ei = f_Eic.reshape(-1, n_i * n_c)
-        dof_E = self.dof_Eia.reshape(-1, n_i * n_c)
-        return dof_E.flatten(), f_Ei.flatten()
-        F_int = np.bincount(dof_E.flatten(), weights=f_Ei.flatten())
-        return F_int
+        o_E = self.o_Eia.reshape(-1, n_i * n_c)
+        return o_E.flatten(), f_Ei.flatten()
 
     def map_field_to_K(self, D_Emabef):
         K_Eicjd = self.integ_factor * np.einsum(
@@ -234,8 +230,8 @@ class XDomainFEGrid(BMCSTreeNode):
         )
         _, n_i, n_c, n_j, n_d = K_Eicjd.shape
         K_Eij = K_Eicjd.reshape(-1, n_i * n_c, n_j * n_d)
-        dof_Ei = self.dof_Eia.reshape(-1, n_i * n_c)
-        return SysMtxArray(mtx_arr=K_Eij, dof_map_arr=dof_Ei)
+        o_Ei = self.o_Eia.reshape(-1, n_i * n_c)
+        return SysMtxArray(mtx_arr=K_Eij, dof_map_arr=o_Ei)
 
     debug_cell_data = Bool(False)
     # @todo - comment this procedure`

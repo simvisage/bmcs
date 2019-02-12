@@ -91,6 +91,11 @@ class DofCellGrid(SDomain):
         node_dof_array += self.dof_offset
         return node_dof_array
 
+    dofs_Ia = Property()
+
+    def _get_dofs_Ia(self):
+        return self.dofs
+
     def _get_doffed_nodes(self):
         '''
         Get the indices of nodes containing DOFs. 
@@ -323,18 +328,21 @@ class DofGridSlice(CellGridSlice):
         self.dof_grid = dof_grid
         super(DofGridSlice, self).__init__(**args)
 
-    cell_grid = Property(depends_on='dof_grid.+changed_structure')
+    cell_grid = Property()
 
-    @cached_property
     def _get_cell_grid(self):
         return self.dof_grid.cell_grid
 
     dofs = Property
 
     def _get_dofs(self):
-        idx1, idx2 = self.idx_tuple
-        return self.dof_grid.cell_dof_map[np.ix_(self.elems,
-                                                 self.cell_grid.grid_cell[idx2])]
+        _, idx2 = self.idx_tuple
+        return self.dof_grid.cell_dof_map[
+            np.ix_(
+                self.elems,
+                self.cell_grid.grid_cell[idx2]
+            )
+        ]
 
 #-----------------------------------------------------------------------
 # View a single cell instance
