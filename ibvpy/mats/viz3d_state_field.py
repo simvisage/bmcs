@@ -74,11 +74,34 @@ class Viz3DStateField(Viz3DField):
         self.warp_vector.filter.scale_factor = self.warp_factor
         self.surf = m.pipeline.surface(self.warp_vector)
         lut = self.warp_vector.children[0]
-        lut.scalar_lut_manager.set(
+        lut.scalar_lut_manager.trait_set(
             lut_mode='Reds',
             show_scalar_bar=True,
             show_legend=True,
             data_name='damage',
             use_default_range=False,
-            data_range=np.array([0, 1], dtype=np.float_)
+            data_range=np.array([0, 1], dtype=np.float_),
+        )
+
+        lut.scalar_lut_manager.scalar_bar.width = 0.5
+        lut.scalar_lut_manager.scalar_bar.height = 0.15
+        lut.scalar_lut_manager.scalar_bar.orientation = 'horizontal'
+#         lut.scalar_lut_manager.scalar_bar.position = np.array(
+#             [0.51099757, -0.26046512])
+
+        lut.scalar_lut_manager.scalar_bar_representation.trait_set(
+            maximum_size=np.array([100000, 100000]),
+            minimum_size=np.array([1, 1]),
+            position=np.array([0.5, 0.05]),
+            position2=np.array([0.45, 0.1]),
+        )
+        lut.scalar_lut_manager.label_text_property.trait_set(
+            font_family='times',
+            italic=False,
+            bold=False
+        )
+        lut.scalar_lut_manager.title_text_property.trait_set(
+            font_family='times',
+            italic=False,
+            bold=False
         )

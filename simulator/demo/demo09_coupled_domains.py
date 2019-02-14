@@ -102,7 +102,7 @@ s = Simulator(
     bc=bc1,  # + bc2,
     record={
         'strain': Vis3DStrainField(var='eps_ab'),
-        #        'damage': Vis3DStateField(var='omega'),
+        'damage': Vis3DStateField(var='omega'),
         #        'kinematic hardening': Vis3DStateField(var='z_a')
     }
 )
@@ -131,15 +131,30 @@ s.tstep.fe_domain.serialized_subdomains
 
 xdomain12.hidden = True
 s.run()
-time.sleep(4)
+time.sleep(6)
+
+mlab.options.backend = 'envisage'
+
 strain_viz = Viz3DStrainField(vis3d=s.hist['strain'])
 strain_viz.setup()
-strain_viz.plot(0.0)
+strain_viz.plot(s.tstep.t_n)
+strain_viz.src.visible = False
 
-# damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
-# damage_viz.setup()
-# damage_viz.plot(0.0)
-mlab.view(0, 0, 200,
-          np.array([60., 10.,  0.]))
+damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
+damage_viz.setup()
+damage_viz.warp_vector.filter.scale_factor = 100.0
+damage_viz.plot(s.tstep.t_n)
 
+mlab.view(0, 0, 140,
+          np.array([50., 5.,  0.]))
+mlab.orientation_axes()
+axes = mlab.axes(strain_viz.src)
+axes.label_text_property.trait_set(
+    font_family='times', italic=False
+)
+axes.title_text_property.font_family = 'times'
+axes.axes.trait_set(
+    x_label='x', y_label='y', z_label='z'
+)
+mlab.show_pipeline()
 mlab.show()
