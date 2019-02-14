@@ -15,8 +15,6 @@ class MATS1D5Elastic(MATSEval):
 
     node_name = "multilinear bond law"
 
-    state_arr_shape = tr.Tuple((0,))
-
     E_s = tr.Float(100.0, tooltip='Shear stiffness of the interface [MPa]',
                    MAT=True, unit='MPa', symbol='E_\mathrm{s}',
                    desc='Shear-modulus of the interface',

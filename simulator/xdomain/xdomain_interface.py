@@ -166,11 +166,11 @@ class XDomainFEInterface(XDomainFEGridTransform):
 
     def map_field_to_F(self, sig_Emab):
         _, _, n_p, n_i, _, n_a = self.B_Eimabc.shape
-        n_o = n_p * n_i * n_a
         f_Eic = self.integ_factor * np.einsum(
             'm,Empira,Emr,Em->Epia',
             self.fets.w_m, self.B_Eimabc, sig_Emab, self.det_J_Em
         )
+        n_o = n_p * n_i * n_a
         f_Ei = f_Eic.reshape(-1, n_o)
         o_E = self.o_Eia.reshape(-1, n_o)
         return o_E.flatten(), f_Ei.flatten()
