@@ -70,7 +70,7 @@ class MATS1D5Elastic(MATSEval):
         return tau, D
 
 
-n_x_e = 40
+n_x_e = 20
 xdomain1 = XDomainFEGrid(coord_max=(100, 10),
                          shape=(n_x_e, 3),
                          fets=FETS2D4Q())
@@ -139,4 +139,7 @@ strain_viz.plot(0.0)
 # damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
 # damage_viz.setup()
 # damage_viz.plot(0.0)
+mlab.view(0, 0, 200,
+          np.array([60., 10.,  0.]))
+
 mlab.show()
