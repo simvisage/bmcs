@@ -131,30 +131,40 @@ s.tstep.fe_domain.serialized_subdomains
 
 xdomain12.hidden = True
 s.run()
-time.sleep(6)
+time.sleep(3)
 
 mlab.options.backend = 'envisage'
-
+f_strain = mlab.figure()
+scene = mlab.get_engine().scenes[-1]
+scene.name = 'strain'
 strain_viz = Viz3DStrainField(vis3d=s.hist['strain'])
 strain_viz.setup()
+strain_viz.warp_vector.filter.scale_factor = 100.0
 strain_viz.plot(s.tstep.t_n)
-strain_viz.src.visible = False
 
+f_damage = mlab.figure()
+scene = mlab.get_engine().scenes[-1]
+scene.name = 'damage'
 damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
 damage_viz.setup()
 damage_viz.warp_vector.filter.scale_factor = 100.0
 damage_viz.plot(s.tstep.t_n)
 
-mlab.view(0, 0, 140,
-          np.array([50., 5.,  0.]))
-mlab.orientation_axes()
-axes = mlab.axes(strain_viz.src)
-axes.label_text_property.trait_set(
-    font_family='times', italic=False
-)
-axes.title_text_property.font_family = 'times'
-axes.axes.trait_set(
-    x_label='x', y_label='y', z_label='z'
-)
-mlab.show_pipeline()
+
+def decorate_figure(f, viz):
+    mlab.view(0, 0, 140,
+              np.array([50., 5.,  0.]), figure=f)
+    mlab.orientation_axes(viz.src, figure=f)
+    axes = mlab.axes(viz.src, figure=f)
+    axes.label_text_property.trait_set(
+        font_family='times', italic=False
+    )
+    axes.title_text_property.font_family = 'times'
+    axes.axes.trait_set(
+        x_label='x', y_label='y', z_label='z'
+    )
+
+
+decorate_figure(f_damage, damage_viz)
+decorate_figure(f_strain, strain_viz)
 mlab.show()

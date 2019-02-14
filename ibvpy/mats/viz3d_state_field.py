@@ -86,9 +86,6 @@ class Viz3DStateField(Viz3DField):
         lut.scalar_lut_manager.scalar_bar.width = 0.5
         lut.scalar_lut_manager.scalar_bar.height = 0.15
         lut.scalar_lut_manager.scalar_bar.orientation = 'horizontal'
-#         lut.scalar_lut_manager.scalar_bar.position = np.array(
-#             [0.51099757, -0.26046512])
-
         lut.scalar_lut_manager.scalar_bar_representation.trait_set(
             maximum_size=np.array([100000, 100000]),
             minimum_size=np.array([1, 1]),

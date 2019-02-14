@@ -83,8 +83,21 @@ class Viz3DStrainField(Viz3DField):
             show_legend=True,
             data_name='strain field'
         )
-        lut.scalar_lut_manager.scalar_bar.set(
-            height=0.1,
-            width=0.7,
-            position=np.array([0.1,  0.1])
+        lut.scalar_lut_manager.scalar_bar.orientation = 'horizontal'
+        lut.scalar_lut_manager.scalar_bar_representation.trait_set(
+            maximum_size=np.array([100000, 100000]),
+            minimum_size=np.array([1, 1]),
+            position=np.array([0.3, 0.05]),
+            position2=np.array([0.65, 0.1]),
+        )
+
+        lut.scalar_lut_manager.label_text_property.trait_set(
+            font_family='times',
+            italic=False,
+            bold=False
+        )
+        lut.scalar_lut_manager.title_text_property.trait_set(
+            font_family='times',
+            italic=False,
+            bold=False
         )
