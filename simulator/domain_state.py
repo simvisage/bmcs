@@ -2,14 +2,10 @@
 import copy
 
 from traits.api import \
-    HasStrictTraits, provides, \
-    Instance, Property, cached_property, Enum, on_trait_change, \
-    Dict, DelegatesTo, WeakRef, Event, Array, Float, Str
+    HasStrictTraits, Bool, \
+    Property, cached_property, \
+    Dict, DelegatesTo, WeakRef, Array, Str
 
-from ibvpy.core.bcond_mngr import \
-    BCondMngr
-from mathkit.matrix_la.sys_mtx_assembly import \
-    SysMtxAssembly
 import numpy as np
 
 from .i_model import IModel
@@ -41,6 +37,8 @@ class DomainState(HasStrictTraits):
             for name, mats_sa_shape
             in list(tmodel_shapes.items())
         }
+
+    hidden = Bool(False)
 
     state_k = Dict
     '''State variables within the current iteration step

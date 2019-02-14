@@ -28,6 +28,7 @@ class XDomainFEGridTransform(XDomainFEGrid):
             To3D, self.J_Emar, To3D
         )
         m_0_Ema = J_Emar[..., 0]
+
         m_2_Ema = np.einsum(
             '...i,...j,ijk->...k',
             m_0_Ema, J_Emar[..., 1], EPS

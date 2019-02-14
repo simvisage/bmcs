@@ -27,16 +27,19 @@ class Vis3DStrainField(Vis3DField):
         eps_Encd_tensor_fields = []
         for domain in ts.fe_domain:
             xdomain = domain.xdomain
+            if xdomain.hidden:
+                continue
             fets = xdomain.fets
             n_c = fets.n_nodal_dofs
             DELTA_x_ab = fets.vtk_expand_operator
             DELTA_f_ab = xdomain.vtk_expand_operator
-            U_Ia = U.reshape(-1, n_c)
-            U_Eia = U_Ia[xdomain.I_Ei]
+
+            U_Eia = U[xdomain.o_Eia]
+            _, _, n_a = U_Eia.shape
             U_vector_fields.append(np.einsum(
-                'Ia,ab->Ib',
-                U_Eia.reshape(-1, n_c), DELTA_x_ab
+                'Ia,ab->Ib', U_Eia.reshape(-1, n_a), DELTA_x_ab
             ))
+
             eps_Enab = xdomain.map_U_to_field(U)
             eps_Encd = np.einsum(
                 '...ab,ac,bd->...cd',

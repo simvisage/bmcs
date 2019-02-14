@@ -54,7 +54,9 @@ class XDomain(HasStrictTraits):
         Use the last subdomain's: dof_offset + n_dofs 
         '''
         last_d = self.serialized_subdomains[-1]
-        return last_d.xdomain.mesh.dof_offset + last_d.xdomain.mesh.n_dofs
+        dof_offset = last_d.xdomain.mesh.dof_offset
+        n_dofs = last_d.xdomain.n_dofs
+        return dof_offset + n_dofs
 
     dof_offset_arr = Property
 
@@ -74,3 +76,6 @@ class XDomain(HasStrictTraits):
 
     def __iter__(self):
         return iter(self.subdomains)
+
+    def __getitem__(self, idx):
+        return self.serialized_subdomains[idx]

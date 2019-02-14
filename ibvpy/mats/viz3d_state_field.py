@@ -36,17 +36,15 @@ class Vis3DStateField(Vis3DField):
             xdomain = domain.xdomain
             fets = xdomain.fets
             state_field = domain.state_n.get(self.var, None)
-            if state_field is None:
+            if (xdomain.hidden) or (state_field is None):
                 # If the state variable not present in the domain, skip
                 continue
-            print('shape', state_field.shape)
             state_fields.append(state_field.flatten())
-            n_c = fets.n_nodal_dofs
             DELTA_x_ab = fets.vtk_expand_operator
-            U_Ia = U.reshape(-1, n_c)
-            U_Eia = U_Ia[xdomain.I_Ei]
+            U_Eia = U[xdomain.o_Eia]
+            _, _, n_a = U_Eia.shape
             U_vector_fields.append(np.einsum(
-                'Ia,ab->Ib', U_Eia.reshape(-1, n_c), DELTA_x_ab
+                'Ia,ab->Ib', U_Eia.reshape(-1, n_a), DELTA_x_ab
             ))
         self.ug.point_data.vectors = np.vstack(U_vector_fields)
         self.ug.point_data.vectors.name = 'displacement'

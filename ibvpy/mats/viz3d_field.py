@@ -29,6 +29,8 @@ class Vis3DField(Vis3D):
         cell_offset = 0
         for domain in fe_domain:
             xdomain = domain.xdomain
+            if xdomain.hidden:
+                continue
             fets = xdomain.fets
             DELTA_x_ab = fets.vtk_expand_operator
             n_c = fets.n_nodal_dofs

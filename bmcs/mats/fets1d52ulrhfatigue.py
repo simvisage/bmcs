@@ -41,6 +41,8 @@ class FETS1D52ULRHFatigue(FETSEval):
     Fe Bar 2 nodes, deformation
     '''
 
+    vtk_expand_operator = tr.Array(np.float_, value=[[1, 0, 0]])
+
     debug_on = True
 
 #     A_m = Float(100 * 8 - 9 * 1.85, desc='matrix area [mm2]')

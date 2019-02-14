@@ -15,6 +15,7 @@ from view.ui.bmcs_tree_node import BMCSTreeNode
 @provides(IXDomain)
 class XDomainFEGrid(BMCSTreeNode):
 
+    hidden = Bool(False)
     #=========================================================================
     # Type and shape specification of state variables representing the domain
     #=========================================================================
@@ -111,26 +112,7 @@ class XDomainFEGrid(BMCSTreeNode):
         I_Ei = self.mesh.I_Ei
         return self.o_Ia[I_Ei]
 
-    #=========================================================================
-    # Differential operators on FE approximation of the field variables
-    #=========================================================================
-    cached_grid_values = Property(Tuple,
-                                  depends_on='MESH,GEO,CS,FE')
-
-    @cached_property
-    def _get_cached_grid_values(self):
-        x_Eia = self.x_Eia
-        o_Eia = self.o_Eia
-        J_Emar = np.einsum(
-            'imr,Eia->Emar', self.fets.dN_imr, x_Eia
-        )
-        J_Enar = np.einsum(
-            'inr,Eia->Enar', self.fets.dN_inr, x_Eia
-        )
-        det_J_Em = np.linalg.det(J_Emar)
-        return (det_J_Em, J_Emar, J_Enar)
-
-    B1_Einabc = Property()
+    B1_Einabc = Property(depends_on='MESH,GEO,CS,FE')
     '''Kinematic mapping between displacement and strain in every
     visualization point
     '''
@@ -143,33 +125,38 @@ class XDomainFEGrid(BMCSTreeNode):
             self.D1_abcd, self.fets.dN_inr, inv_J_Enar
         )
 
-    I_Ei = Property()
+    I_Ei = Property(depends_on='MESH,GEO,CS,FE')
     '''[element, node] -> global node
     '''
 
     def _get_I_Ei(self):
         return self.mesh.I_Ei
 
-    det_J_Em = Property()
+    det_J_Em = Property(depends_on='MESH,GEO,CS,FE')
     '''Jacobi matrix in integration points
     '''
 
     def _get_det_J_Em(self):
-        return self.cached_grid_values[0]
+        return np.linalg.det(self.J_Emar)
 
-    J_Emar = Property()
+    J_Emar = Property(depends_on='MESH,GEO,CS,FE')
     '''Jacobi matrix in integration points
     '''
-
+    @cached_property
     def _get_J_Emar(self):
-        return self.cached_grid_values[1]
+        return np.einsum(
+            'imr,Eia->Emar', self.fets.dN_imr, self.x_Eia
+        )
 
-    J_Enar = Property()
+    J_Enar = Property(depends_on='MESH,GEO,CS,FE')
     '''Jacobi matrix in nodal points
     '''
-
+    @cached_property
     def _get_J_Enar(self):
-        return self.cached_grid_values[2]
+        return np.einsum(
+            'inr,Eia->Enar',
+            self.fets.dN_inr, self.x_Eia
+        )
 
     #=========================================================================
     # Conversion between linear algebra objects and field variables
@@ -200,14 +187,19 @@ class XDomainFEGrid(BMCSTreeNode):
 
     def _get_BB_Emicjdabef(self):
         return np.einsum(
-            'Eimabc,Ejmefd, Em, m->Emicjdabef',
+            '...Eimabc,...Ejmefd, Em, m->...Emicjdabef',
             self.B_Eimabc, self.B_Eimabc, self.det_J_Em, self.fets.w_m
         )
 
+    n_dofs = Property
+
+    def _get_n_dofs(self):
+        return self.mesh.n_dofs
+
     def map_U_to_field(self, U):
         n_c = self.fets.n_nodal_dofs
-        U_Ia = U.reshape(-1, n_c)
-        U_Eia = U_Ia[self.I_Ei]
+        #U_Ia = U.reshape(-1, n_c)
+        U_Eia = U[self.o_Eia]
         eps_Emab = np.einsum(
             'Eimabc,Eic->Emab',
             self.B_Eimabc, U_Eia
