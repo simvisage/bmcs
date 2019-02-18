@@ -16,6 +16,7 @@ from mayavi import mlab
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
+from ibvpy.mats.mats1D5.vmats1D5_elastic import MATS1D5Elastic
 from ibvpy.mats.mats2D import \
     MATS2DScalarDamage
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
@@ -30,7 +31,7 @@ from simulator.api import \
     Simulator
 from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
-from .mats1d5_elastic import MATS1D5Elastic
+
 
 n_x_e = 20
 xdomain1 = XDomainFEGrid(coord_min=(0, 0),
@@ -76,7 +77,7 @@ s.tstep.fe_domain.serialized_subdomains
 
 xdomain12.hidden = True
 s.run()
-time.sleep(3)
+time.sleep(5)
 
 mlab.options.backend = 'envisage'
 f_strain = mlab.figure()

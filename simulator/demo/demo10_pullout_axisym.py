@@ -14,27 +14,22 @@ import time
 from mayavi import mlab
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from ibvpy.api import MATSEval
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
-from ibvpy.mats.mats2D import \
-    MATS2DScalarDamage
+from ibvpy.mats.mats1D5.vmats1D5_elastic import \
+    MATS1D5Elastic
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
 from ibvpy.mats.viz3d_state_field import \
     Vis3DStateField, Viz3DStateField
 from ibvpy.mats.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
-from mathkit.matrix_la.dense_mtx import DenseMtx
 import numpy as np
 from simulator.api import \
     Simulator
-from simulator.i_model import IModel
-from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
-import traits.api as tr
-from .mats1d5_elastic import MATS1D5Elastic
+
 
 n_x_e = 20
 n_y_e = 5

@@ -60,20 +60,20 @@ class XDomainFEGrid(BMCSTreeNode):
 
     dim_u = Int(2)
 
-    D1_abcd = Array(np.float_, input=True)
-    '''Symmetric operator distributing the 
+    Diff1_abcd = Array(np.float_, input=True)
+    '''Symmetric operator distributing the first order
     derivatives of the shape functions into the 
     tensor field
     '''
 
-    def _D1_abcd_default(self):
+    def _Diff1_abcd_default(self):
         delta = np.identity(self.dim_u)
         # symmetrization operator
-        D1_abcd = 0.5 * (
+        Diff1_abcd = 0.5 * (
             np.einsum('ac,bd->abcd', delta, delta) +
             np.einsum('ad,bc->abcd', delta, delta)
         )
-        return D1_abcd
+        return Diff1_abcd
 
     #=========================================================================
     # Finite element discretization respecting the FE definition
@@ -122,7 +122,7 @@ class XDomainFEGrid(BMCSTreeNode):
         inv_J_Enar = np.linalg.inv(self.J_Enar)
         return np.einsum(
             'abcd,imr,Eidr->Eimabc',
-            self.D1_abcd, self.fets.dN_inr, inv_J_Enar
+            self.Diff1_abcd, self.fets.dN_inr, inv_J_Enar
         )
 
     I_Ei = Property(depends_on='MESH,GEO,CS,FE')
@@ -170,7 +170,7 @@ class XDomainFEGrid(BMCSTreeNode):
         inv_J_Emar = np.linalg.inv(self.J_Emar)
         return np.einsum(
             'abcd,inr,Eidr->Einabc',
-            self.D1_abcd, self.fets.dN_imr, inv_J_Emar
+            self.Diff1_abcd, self.fets.dN_imr, inv_J_Emar
         )
 
     B_Eimabc = Property(depends_on='MESH,GEO,CS,FE')
