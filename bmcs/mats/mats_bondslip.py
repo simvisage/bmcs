@@ -128,7 +128,7 @@ class MATSBondSlipFatigue(MATSEval, BMCSTreeNode, RInputRecord):
 
         n_e, n_ip, n_s = eps.shape
         D = np.zeros((n_e, n_ip, 3, 3))
-        D[:, :, 0, 0] = self.E_m
+        D[:, :, 0, 0] = self.E_mx
         D[:, :, 2, 2] = self.E_f
 
         Y = 0.5 * self.E_b * (eps[:, :, 1] - xs_pi) ** 2
