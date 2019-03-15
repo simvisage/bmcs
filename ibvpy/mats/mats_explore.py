@@ -8,8 +8,8 @@ from traitsui.api import \
 from bmcs.time_functions import \
     LoadingScenario
 from ibvpy.bcond import BCDof
-from simulator import Simulator
-from simulator.xdomain import XDomainSinglePoint
+from simulator.api import Simulator
+from simulator.xdomain.xdomain_point import XDomainSinglePoint
 from util.traits.either_type import \
     EitherType
 from view.window import BMCSWindow

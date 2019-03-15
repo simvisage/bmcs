@@ -14,11 +14,12 @@ import time
 from mayavi import mlab
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from ibvpy.api import MATSEval
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
-from ibvpy.mats.mats2D import \
-    MATS2DScalarDamage
+from ibvpy.mats.mats1D5.vmats1D5_dp import \
+    MATS1D5Richard2
+from ibvpy.mats.mats1D5.vmats1D5_e import \
+    MATS1D5Elastic
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
 from ibvpy.mats.viz3d_state_field import \
@@ -29,12 +30,9 @@ from mathkit.matrix_la.dense_mtx import DenseMtx
 import numpy as np
 from simulator.api import \
     Simulator
-from simulator.i_model import IModel
-from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
-import traits.api as tr
-from .mats1d5_elastic import MATS1D5Elastic
+
 
 n_x_e = 20
 n_y_e = 5
@@ -70,7 +68,7 @@ bc1 = [left_y, left_x, right_x]
 s = Simulator(
     domains=[(xd1, m1),
              (xd2, m2),
-             (xd12, MATS1D5Elastic(E_s=10000, E_n=1)),
+             (xd12, MATS1D5Richard2(E_N=1000, E_T=1000, tau_bar=20)),
              ],
     bc=bc1,  # + bc2,
     record={

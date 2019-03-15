@@ -23,6 +23,9 @@ xdomain = XDomainFEGridAxiSym(coord_max=(150, 50),
                               integ_factor=2 * np.pi,
                               fets=FETS2D4Q())
 
+print(xdomain.B1_Eimabc.shape)
+print(xdomain.B0_Eimabc.shape)
+
 m = MATS3DDesmorat()
 
 left_y = BCSlice(slice=xdomain.mesh[0, :, 0, :],

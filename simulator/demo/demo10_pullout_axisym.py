@@ -16,7 +16,7 @@ from mayavi import mlab
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
-from ibvpy.mats.mats1D5.vmats1D5_elastic import \
+from ibvpy.mats.mats1D5.vmats1D5_e import \
     MATS1D5Elastic
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
