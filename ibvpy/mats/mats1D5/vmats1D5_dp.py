@@ -128,8 +128,9 @@ class MATS1D5Richard2(MATSEval):
         s = u_r[..., 0]
         w = u_r[..., 1]
         # For normal
-        H_u_T = 0.5 * (np.sign(-w) + 1)
-        sig_N = H_u_T * self.E_N * w
+        H_w_N = np.array(w <= 0.0, dtype=np.float_)
+        E_alg_N = H_w_N * self.E_N
+        sig_N = E_alg_N * w
 
         # For tangential
         #Y = 0.5 * self.E_T * (u_T - s_pi)**2
@@ -164,6 +165,8 @@ class MATS1D5Richard2(MATSEval):
 
         # Algorithmic Stiffness
 
+        E_alg_T = (1 - omega) * self.E_T
+
         if False:
             E_alg_T = (
                 (1 - omega) * self.E_T -
@@ -180,6 +183,11 @@ class MATS1D5Richard2(MATSEval):
         sig = np.zeros_like(u_r)
         sig[..., 0] = sig_T
         sig[..., 1] = sig_N
-        grid_shape = tuple([1 for _ in range(len(u_r.shape[:-1]))])
-        D = self.D_rs.reshape(grid_shape + (2, 2))
-        return sig, D
+        E_TN = np.einsum('abEm->Emab',
+                         np.array(
+                             [
+                                 [E_alg_T, np.zeros_like(E_alg_T)],
+                                 [np.zeros_like(E_alg_N), E_alg_N]
+                             ])
+                         )
+        return sig, E_TN

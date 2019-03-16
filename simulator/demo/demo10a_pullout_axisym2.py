@@ -48,7 +48,7 @@ xd2 = XDomainFEGridAxiSym(coord_min=(0, R_in),
                           shape=(n_x_e, n_y_e),
                           integ_factor=2 * np.pi,
                           fets=FETS2D4Q())
-m1 = MATS3DDesmorat(E_1=210000, tau_bar=200.0)
+m1 = MATS3DDesmorat(E_1=21000, tau_bar=200.0)
 m2 = MATS3DDesmorat()
 
 xd12 = XDomainFEInterface(
@@ -57,18 +57,20 @@ xd12 = XDomainFEInterface(
     fets=FETS1D52ULRHFatigue()
 )
 
+u_max = 0.01
 left_y = BCSlice(slice=xd1.mesh[0, 0, 0, 0],
                  var='u', dims=[1], value=0)
 left_x = BCSlice(slice=xd1.mesh[0, :, 0, :],
                  var='u', dims=[0], value=-0)
 right_x = BCSlice(slice=xd1.mesh[-1, :, -1, :],
-                  var='u', dims=[0], value=0.1)
+                  var='u', dims=[0], value=u_max)
 bc1 = [left_y, left_x, right_x]
 
 s = Simulator(
     domains=[(xd1, m1),
              (xd2, m2),
-             (xd12, MATS1D5Richard2(E_N=1000, E_T=1000, tau_bar=20)),
+             (xd12, MATS1D5Richard2(E_N=10000, E_T=2000,
+                                    m=0.0, tau_bar=20)),
              ],
     bc=bc1,  # + bc2,
     record={
