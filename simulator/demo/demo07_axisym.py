@@ -1,18 +1,14 @@
 import time
 
 from mayavi import mlab
-from traits.api import \
-    provides, Property, Array, cached_property
-
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
-from ibvpy.mats.viz3d_state_field import \
-    Vis3DStateField, Viz3DStateField
-from ibvpy.mats.viz3d_strain_field import \
-    Vis3DStrainField, Viz3DStrainField
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
+from ibvpy.mats.viz3d_scalar_field import \
+    Vis3DStateField, Viz3DScalarField
+from ibvpy.mats.viz3d_tensor_field import \
+    Vis3DStrainField, Viz3DTensorField
 import numpy as np
 from simulator.api import \
     Simulator
@@ -49,9 +45,12 @@ s.tline.step = 0.05
 s.run()
 time.sleep(5)
 
-strain_viz = Viz3DStrainField(vis3d=s.hist['strain'])
+mlab.options.backend = 'envisage'
+
+strain_viz = Viz3DTensorField(vis3d=s.hist['strain'])
 strain_viz.setup()
-damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
+damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
 damage_viz.setup()
 damage_viz.plot(0.0)
+
 mlab.show()

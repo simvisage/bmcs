@@ -25,8 +25,8 @@ from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.mats.mats2D import \
     MATS2DScalarDamage
-from ibvpy.mats.viz3d_state_field import \
-    Vis3DStateField, Viz3DStateField
+from ibvpy.mats.viz3d_scalar_field import \
+    Vis3DStateField, Viz3DScalarField
 from simulator.api import \
     Simulator, XDomainFEGrid
 
@@ -59,11 +59,12 @@ s = Simulator(
         'damage': Vis3DStateField(var='omega'),
     }
 )
+
 s.tloop.k_max = 200
 s.tline.step = 0.05
 s.run()
 time.sleep(3)
-damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
+damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
 damage_viz.setup()
 damage_viz.plot(0.0)
 mlab.show()

@@ -1,11 +1,11 @@
 from scipy.optimize.zeros import brentq
 
-from bmcs.simulator import Simulator, TLoop
 from bmcs.time_functions import \
     LoadingScenario
 from ibvpy.bcond import BCDof
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
+from simulator.api import Simulator, TLoop
 
 from .interaction_scripts import run_rerun_test
 

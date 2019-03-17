@@ -21,10 +21,10 @@ from ibvpy.mats.mats2D import \
     MATS2DScalarDamage
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
-from ibvpy.mats.viz3d_state_field import \
-    Vis3DStateField, Viz3DStateField
-from ibvpy.mats.viz3d_strain_field import \
-    Vis3DStrainField, Viz3DStrainField
+from ibvpy.mats.viz3d_scalar_field import \
+    Vis3DStateField, Viz3DScalarField
+from ibvpy.mats.viz3d_tensor_field import \
+    Vis3DStrainField, Viz3DTensorField
 import numpy as np
 from simulator.api import \
     Simulator
@@ -82,7 +82,7 @@ mlab.options.backend = 'envisage'
 f_strain = mlab.figure()
 scene = mlab.get_engine().scenes[-1]
 scene.name = 'strain'
-strain_viz = Viz3DStrainField(vis3d=s.hist['strain'])
+strain_viz = Viz3DTensorField(vis3d=s.hist['strain'])
 strain_viz.setup()
 strain_viz.warp_vector.filter.scale_factor = 100.0
 strain_viz.plot(s.tstep.t_n)
@@ -90,7 +90,7 @@ strain_viz.plot(s.tstep.t_n)
 f_damage = mlab.figure()
 scene = mlab.get_engine().scenes[-1]
 scene.name = 'damage'
-damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
+damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
 damage_viz.setup()
 damage_viz.warp_vector.filter.scale_factor = 100.0
 damage_viz.plot(s.tstep.t_n)

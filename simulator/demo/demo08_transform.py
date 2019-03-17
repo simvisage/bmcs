@@ -24,10 +24,10 @@ from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
-from ibvpy.mats.viz3d_state_field import \
-    Vis3DStateField, Viz3DStateField
-from ibvpy.mats.viz3d_strain_field import \
-    Vis3DStrainField, Viz3DStrainField
+from ibvpy.mats.viz3d_scalar_field import \
+    Vis3DStateField, Viz3DScalarField
+from ibvpy.mats.viz3d_tensor_field import \
+    Vis3DStrainField, Viz3DTensorField
 import numpy as np
 from simulator.api import \
     Simulator
@@ -72,7 +72,7 @@ time.sleep(2)
 # strain_viz.setup()
 # strain_viz.plot(0.0)
 
-damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
+damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
 damage_viz.setup()
 damage_viz.plot(0.0)
 mlab.show()

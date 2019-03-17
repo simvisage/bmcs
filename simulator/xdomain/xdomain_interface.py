@@ -21,7 +21,8 @@ class XDomainFEInterface(XDomainFEGridTransform):
     state_var_shape = Property(Tuple)
 
     def _get_state_var_shape(self):
-        return (20, self.fets.n_m,)
+        n_elems = len(self.o_Epia)
+        return (n_elems, self.fets.n_m,)
 
     vtk_expand_operator = Array(np.float_)
 

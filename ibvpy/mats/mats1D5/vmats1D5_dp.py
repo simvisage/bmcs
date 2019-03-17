@@ -4,44 +4,13 @@ Created on Feb 14, 2019
 @author: rch
 '''
 
-'''
-@tr.provides(IModel)
-
-class MATS1D5Elastic(MATSEval):
-
-    node_name = "multilinear bond law"
-
-    E_s = tr.Float(100.0, tooltip='Shear stiffness of the interface [MPa]',
-                   MAT=True, unit='MPa', symbol='E_\mathrm{s}',
-                   desc='Shear-modulus of the interface',
-                   auto_set=True, enter_set=True)
-
-    E_n = tr.Float(100.0, tooltip='Normal stiffness of the interface [MPa]',
-                   MAT=True, unit='MPa', symbol='E_\mathrm{n}',
-                   desc='Normal stiffness of the interface',
-                   auto_set=False, enter_set=True)
-
-    state_var_shapes = {}
-
-    D_rs = tr.Property(depends_on='E_n,E_s')
-
-    @tr.cached_property
-    def _get_D_rs(self):
-        return np.array([[self.E_s, 0],
-                         [0, self.E_n]], dtype=np.float_)
-
-    def get_corr_pred(self, u_r, tn1):
-        tau = np.einsum(
-            'rs,...s->...r',
-            self.D_rs, u_r)
-        grid_shape = tuple([1 for _ in range(len(u_r.shape[:-1]))])
-        D = self.D_rs.reshape(grid_shape + (2, 2))
-        return tau, D
-    
-   '''
-
 from sqlalchemy.orm import state
+from traits.api import on_trait_change
 
+from bmcs.mats.mats_damage_fn import \
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
+    MultilinearDamageFn, \
+    FRPDamageFn
 from ibvpy.api import MATSEval
 import numpy as np
 from simulator.i_model import IModel
@@ -49,7 +18,7 @@ import traits.api as tr
 
 
 @tr.provides(IModel)
-class MATS1D5Richard2(MATSEval):
+class MATS1D5DP(MATSEval):
 
     node_name = 'Pressure Sensitive bond model'
 
@@ -73,46 +42,70 @@ class MATS1D5Richard2(MATSEval):
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    S = tr.Float(0.1, label='S',
-                 desc='Damage accumulation parameter',
-                 MAT=True,
-                 enter_set=True, auto_set=False)
-
-    r = tr.Float(0.1, label='r',
-                 desc='Damage accumulation parameter',
-                 MAT=True,
-                 enter_set=True, auto_set=False)
-
     c = tr.Float(1, Label='c',
                  desc='Damage accumulation parameter',
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    tau_0 = tr.Float(1, label='tau_0',
-                     desc='Reversibility limit',
-                     MAT=True,
-                     enter_set=True, auto_set=False)
+    tau_bar = tr.Float(1, label='tau_bar',
+                       desc='Reversibility limit',
+                       MAT=True,
+                       enter_set=True, auto_set=False)
 
-    m = tr.Float(1, label='m',
-                 desc='Lateral Pressure Coefficient',
-                 MAT=True,
-                 enter_set=True, auto_set=False)
-
-    tau_bar = tr.Float(1.1)
-
-    state_var_shapes = dict(s_pi=(),
+    state_var_shapes = dict(s_p=(),
                             alpha=(),
                             z=(),
-                            omega=())
+                            omega=(),
+                            kappa=())
 
-    D_rs = tr.Property(depends_on='E_N,E_T')
+    uncoupled_dp = tr.Bool(False,
+                           MAT=True,
+                           label='Uncoupled d-p'
+                           )
 
-    @tr.cached_property
-    def _get_D_rs(self):
-        return np.array([[self.E_T, 0],
-                         [0, self.E_N]], dtype=np.float_)
+    s_0 = tr.Float(MAT=True,
+                   desc='Elastic strain/displacement limit')
 
-    def init(self, s_pi, alpha, z, omega):
+    def __init__(self, *args, **kw):
+        super(MATS1D5DP, self).__init__(*args, **kw)
+        self._update_s0()
+
+    @on_trait_change('tau_bar,E_T')
+    def _update_s0(self):
+        if not self.uncoupled_dp:
+            if self.E_T == 0:
+                self.s_0 = 0
+            else:
+                self.s_0 = self.tau_bar / self.E_T
+            self.omega_fn.s_0 = self.s_0
+
+    omega_fn_type = tr.Trait('FRP',
+                             dict(li=LiDamageFn,
+                                  jirasek=JirasekDamageFn,
+                                  abaqus=AbaqusDamageFn,
+                                  FRP=FRPDamageFn,
+                                  multilinear=MultilinearDamageFn
+                                  ),
+                             MAT=True,
+                             )
+
+    @on_trait_change('omega_fn_type')
+    def _reset_omega_fn(self):
+        print('resetting')
+        self.omega_fn = self.omega_fn_type_(s_0=self.s_0)
+
+    omega_fn = tr.Instance(IDamageFn, report=True)
+
+    def _omega_fn_default(self):
+        return MultilinearDamageFn()
+
+    def omega(self, k):
+        return self.omega_fn(k)
+
+    def omega_derivative(self, k):
+        return self.omega_fn.diff(k)
+
+    def init(self, s_pi, alpha, z, omega, kappa):
         r'''
         Initialize the state variables.
         '''
@@ -120,10 +113,11 @@ class MATS1D5Richard2(MATSEval):
         alpha[...] = 0
         z[...] = 0
         omega[...] = 0
+        kappa[...] = 0
 
     algorithmic = tr.Bool(True)
 
-    def get_corr_pred(self, u_r, t_n, s_pi, alpha, z, omega):
+    def get_corr_pred(self, u_r, t_n, s_p, alpha, z, omega, kappa):
 
         s = u_r[..., 0]
         w = u_r[..., 1]
@@ -131,57 +125,43 @@ class MATS1D5Richard2(MATSEval):
         H_w_N = np.array(w <= 0.0, dtype=np.float_)
         E_alg_N = H_w_N * self.E_N
         sig_N = E_alg_N * w
-
-        # For tangential
-        #Y = 0.5 * self.E_T * (u_T - s_pi)**2
-        tau_pi_trial = self.E_T * (s - s_pi)
+        sig_pi_trial = self.E_T * (s - s_p)
         Z = self.K * z
+        # for handling the negative values of isotropic hardening
+        h_1 = self.tau_bar + Z
+        pos_iso = h_1 > 1e-6
+
         X = self.gamma * alpha
 
-        f = np.fabs(tau_pi_trial - X) - Z - self.tau_0 + self.m * sig_N
+        # for handling the negative values of kinematic hardening (not yet)
+        # h_2 = h * np.sign(sig_pi_trial - X) * \
+        #    np.sign(sig_pi_trial) + X * np.sign(sig_pi_trial)
+        #pos_kin = h_2 > 1e-6
+
+        f = np.fabs(sig_pi_trial - X) - h_1 * pos_iso
+
         I = f > 1e-6
-
-        sig_T = self.E_T * s
-
         # Return mapping
-        delta_lambda_I = f[I] / \
-            (self.E_T / (1 - omega[I]) + self.gamma + self.K)
-
-        # update all state variables
-
-        s_pi[I] += (delta_lambda_I *
-                    np.sign(tau_pi_trial[I] - X[I]) / (1 - omega[I]))
-
-        Y_I = 0.5 * self.E_T * (s[I] - s_pi[I])**2
-
-        omega[I] += (delta_lambda_I * (1 - omega[I])
-                     ** self.c * (Y_I / self.S)**self.r)
-
-        sig_T[I] = (1 - omega[I]) * self.E_T * (s[I] - s_pi[I])
-
-        alpha[I] += delta_lambda_I * np.sign(tau_pi_trial[I] - X[I])
-
-        z[I] += delta_lambda_I
-
-        # Algorithmic Stiffness
+        delta_lamda_I = f[I] / (self.E_T + self.gamma + np.fabs(self.K))
+        # update all the state variables
+        s_p[I] += delta_lamda_I * np.sign(sig_pi_trial[I] - X[I])
+        z[I] += delta_lamda_I
+        alpha[I] += delta_lamda_I * np.sign(sig_pi_trial[I] - X[I])
+        kappa[...] = np.max(np.array([kappa, np.fabs(s)]), axis=0)
+        omega[...] = self.omega(kappa)
+        tau = (1 - omega) * self.E_T * (s - s_p)
 
         E_alg_T = (1 - omega) * self.E_T
 
-        if False:
-            E_alg_T = (
-                (1 - omega) * self.E_T -
-                ((self.E_T**2 * (1 - omega)) /
-                 (self.E_T + (self.gamma + self.K) * (1 - omega)))
-                -
-                ((1 - omega)**self.c *
-                 (Y_I / self.S)**self.r *
-                 self.E_T**2 * (s - s_pi) * self.tau_bar /
-                 (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) /
-                (self.E_T / (1 - omega) + self.gamma + self.K)
-            )
+        domega_ds = self.omega_derivative(kappa)
+        # Consistent tangent operator
+        E_alg_T[I] = -self.E_T / (self.E_T + self.K + self.gamma) \
+            * domega_ds[I] * self.E_T * (s[I] - s_p[I]) \
+            + (1 - omega[I]) * self.E_T * (self.K + self.gamma) / \
+            (self.E_T + self.K + self.gamma)
 
         sig = np.zeros_like(u_r)
-        sig[..., 0] = sig_T
+        sig[..., 0] = tau
         sig[..., 1] = sig_N
         E_TN = np.einsum('abEm->Emab',
                          np.array(

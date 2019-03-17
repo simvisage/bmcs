@@ -58,15 +58,15 @@ class Vis3DStateField(Vis3DField):
         self.add_file(target_file)
 
 
-class Viz3DStateField(Viz3DField):
+class Viz3DScalarField(Viz3DField):
 
     vis3d = tr.WeakRef
-
     warp_factor = tr.Float(1.0, auto_set=False, enter_set=True)
 
     def setup(self):
         m = mlab
         fname = self.vis3d.file_list[0]
+        var = self.vis3d.var
         self.d = VTKXMLFileReader()
         self.d.initialize(fname)
         self.src = m.pipeline.add_dataset(self.d)
@@ -78,7 +78,7 @@ class Viz3DStateField(Viz3DField):
             lut_mode='Reds',
             show_scalar_bar=True,
             show_legend=True,
-            data_name='damage',
+            data_name=var,
             use_default_range=False,
             data_range=np.array([0, 1], dtype=np.float_),
         )
