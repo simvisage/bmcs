@@ -12,8 +12,11 @@ Test two independent domains.
 - define the damage function with parameters realistic for concrete
 - define the UI components representing the scale of the problem
 - sort XDomains as mix-in class - define the class hierarchy and examples 
-- define the pressure sensitive bond
-- define the user interface that can be used to configure the viz3d
+- reproduce the pullout from the fatigue paper
+- test the the pressure sensitive bond
+- include the microplane model with parameters calibrated on 3d bending
+- instead of mlab get the bmcs window
+- reproduce splitting
 '''
 
 import time
@@ -84,8 +87,8 @@ s = Simulator(
              ],
     bc=bc1,  # + bc2,
     record={
-        'strain': Vis3DStrainField(),
-        'stress': Vis3DStressField(),
+        'strain': Vis3DStrainField(var='eps_ab'),
+        'stress': Vis3DStressField(var='sig_ab'),
         'damage': Vis3DStateField(var='omega_a'),
         #        'kinematic hardening': Vis3DStateField(var='z_a')
     }
@@ -125,20 +128,7 @@ damage_viz.setup()
 damage_viz.warp_vector.filter.scale_factor = 100.0
 damage_viz.plot(s.tstep.t_n)
 
-
-def decorate_figure(f, viz):
-    mlab.view(0, 0, 400,
-              np.array([150., 40.,  0.]), figure=f)
-    mlab.orientation_axes(viz.src, figure=f)
-    axes = mlab.axes(viz.src, figure=f)
-    axes.label_text_property.trait_set(
-        font_family='times', italic=False
-    )
-    axes.title_text_property.font_family = 'times'
-    axes.axes.trait_set(
-        x_label='x', y_label='y', z_label='z'
-    )
-
+from .mlab_decorators import decorate_figure
 
 decorate_figure(f_strain, strain_viz)
 decorate_figure(f_stress, stress_viz)

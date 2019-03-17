@@ -30,6 +30,8 @@ from simulator.api import \
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
 
+from .mlab_decorators import decorate_figure
+
 
 n_x_e = 20
 n_y_e = 5
@@ -98,21 +100,6 @@ damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
 damage_viz.setup()
 damage_viz.warp_vector.filter.scale_factor = 100.0
 damage_viz.plot(s.tstep.t_n)
-
-
-def decorate_figure(f, viz):
-    mlab.view(0, 0, 400,
-              np.array([150., 40.,  0.]), figure=f)
-    mlab.orientation_axes(viz.src, figure=f)
-    axes = mlab.axes(viz.src, figure=f)
-    axes.label_text_property.trait_set(
-        font_family='times', italic=False
-    )
-    axes.title_text_property.font_family = 'times'
-    axes.axes.trait_set(
-        x_label='x', y_label='y', z_label='z'
-    )
-
 
 decorate_figure(f_damage, damage_viz)
 decorate_figure(f_strain, strain_viz)

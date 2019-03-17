@@ -47,10 +47,22 @@ time.sleep(5)
 
 mlab.options.backend = 'envisage'
 
+f_strain = mlab.figure()
+scene = mlab.get_engine().scenes[-1]
+scene.name = 'strain'
 strain_viz = Viz3DTensorField(vis3d=s.hist['strain'])
 strain_viz.setup()
+
+f_damage = mlab.figure()
+scene = mlab.get_engine().scenes[-1]
+scene.name = 'damage'
 damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
 damage_viz.setup()
 damage_viz.plot(0.0)
+
+from .mlab_decorators import decorate_figure
+
+decorate_figure(f_strain, strain_viz, 200, [70, 20, 0])
+decorate_figure(f_damage, damage_viz, 200, [70, 20, 0])
 
 mlab.show()
