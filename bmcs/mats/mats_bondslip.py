@@ -6,20 +6,21 @@ Created on 05.12.2016
 
 from os.path import join
 
-from ibvpy.api import MATSEval
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from reporter.report_item import RInputRecord
 from traits.api import  \
     Constant, Float, Tuple, List, on_trait_change, \
     Instance, Trait, Bool, Str, Button, Property
 from traitsui.api import View, VGroup, Item, UItem, Group
+
+from ibvpy.api import MATSEval
+from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+import numpy as np
+from reporter.report_item import RInputRecord
 from view.ui import BMCSTreeNode
 
 from .mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
     MultilinearDamageFn, \
     FRPDamageFn
-import numpy as np
 
 
 class MATSBondSlipFatigue(MATSEval, BMCSTreeNode, RInputRecord):
@@ -128,7 +129,7 @@ class MATSBondSlipFatigue(MATSEval, BMCSTreeNode, RInputRecord):
 
         n_e, n_ip, n_s = eps.shape
         D = np.zeros((n_e, n_ip, 3, 3))
-        D[:, :, 0, 0] = self.E_mx
+        D[:, :, 0, 0] = self.E_m
         D[:, :, 2, 2] = self.E_f
 
         Y = 0.5 * self.E_b * (eps[:, :, 1] - xs_pi) ** 2
@@ -140,39 +141,40 @@ class MATSBondSlipFatigue(MATSEval, BMCSTreeNode, RInputRecord):
             Z + self.a * self.pressure / 3
 
         elas = f <= 1e-6
-        plas = f > 1e-6
+        I = f > 1e-6
 
         d_sig = np.einsum('...st,...t->...s', D, d_eps)
         sig += d_sig
 
+        w_I = w[I]
+
         # Return mapping
-        delta_lamda = f[plas] / \
-            (self.E_b / (1 - w[plas]) + self.gamma + self.K)
+        delta_lamda_I = f[I] / \
+            (self.E_b / (1 - w_I) + self.gamma + self.K)
         # update all the state variables
 
-        xs_plas = xs_pi[plas]
+        xs_pi[I] += (delta_lamda_I *
+                     np.sign(sig_pi_trial[I] - X[I]) / (1 - w_I))
+        Y_I = 0.5 * self.E_b * (eps[:, :, 1][I] - xs_pi[I]) ** 2
 
-        xs_pi[plas] += (delta_lamda[plas] *
-                        np.sign(sig_pi_trial[plas] - X[plas]) / (1 - w[plas]))
-        Y = 0.5 * self.E_b * (eps[:, :, 1][plas] - xs_pi[plas]) ** 2
+        print(w_I)
+        w[I] += (1 - w_I) ** self.c * \
+            (delta_lamda_I * (Y_I / self.S) ** self.r)
 
-        w += (1 - w[plas]) ** self.c * \
-            (delta_lamda[plas] * (Y[plas] / self.S) ** self.r)
-
-        sig[:, :, 1][plas] = (1 - w[plas]) * self.E_b * \
-            (eps[:, :, 1][plas] - xs_pi[plas])
+        sig[:, :, 1][I] = (1 - w_I) * self.E_b * \
+            (eps[:, :, 1][I] - xs_pi[I])
         #X = X + self.gamma * delta_lamda * np.sign(sig_pi_trial - X)
-        alpha[plas] += delta_lamda[plas] * \
-            np.sign(sig_pi_trial[plas] - X[plas])
-        z[plas] += delta_lamda[plas]
+        alpha[I] += delta_lamda_I * \
+            np.sign(sig_pi_trial[I] - X[I])
+        z[I] += delta_lamda_I
 
         # Consistent tangent operator
-        D_ed = (self.E_b * (1 - w) - ((1 - w) * self.E_b ** 2) / (self.E_b + (self.gamma + self.K) * (1 - w))
-                - ((1 - w) ** self.c * (self.E_b ** 2) * ((Y / self.S) ** self.r)
-                   * np.sign(sig_pi_trial - X) * (eps[:, :, 1] - xs_pi)) / ((self.E_b / (1 - w)) + self.gamma + self.K)
-                )
+        D_ed_I = (self.E_b * (1 - w_I) - ((1 - w_I) * self.E_b ** 2) / (self.E_b + (self.gamma + self.K) * (1 - w_I))
+                  - ((1 - w_I) ** self.c * (self.E_b ** 2) * ((Y_I / self.S) ** self.r)
+                     * np.sign(sig_pi_trial[I] - X[I]) * (eps[:, :, 1][I] - xs_pi[I])) / ((self.E_b / (1 - w_I)) + self.gamma + self.K)
+                  )
         D[:, :, 1, 1][elas] = (1 - w[elas]) * self.E_b
-        D[:, :, 1, 1][plas] = D_ed[plas]
+        D[:, :, 1, 1][I] = D_ed_I
 
         return sig, D, xs_pi, alpha, z, kappa, w
 
