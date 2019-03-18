@@ -46,6 +46,8 @@ class Vis3DStateField(Vis3DField):
             U_vector_fields.append(np.einsum(
                 'Ia,ab->Ib', U_Eia.reshape(-1, n_a), DELTA_x_ab
             ))
+        if len(U_vector_fields) == 0:
+            raise ValueError('no fields for variable %s' % self.var)
         self.ug.point_data.vectors = np.vstack(U_vector_fields)
         self.ug.point_data.vectors.name = 'displacement'
         self.ug.point_data.scalars = np.hstack(state_fields)
