@@ -472,7 +472,6 @@ class FRPDamageFn(DamageFn):
 
     @on_trait_change('B, Gf')
     def _update_dependent_params(self):
-
         self.E_b = 1.734 * self.Gf * self.B ** 2.0
         # calculation of s_0, implicit function solved using Newton method
 
@@ -627,7 +626,7 @@ class MultilinearDamageFn(DamageFn):
 
 if __name__ == '__main__':
     #ld = LiDamageFn()
-    ld = GfDamageFn()
-    mld = MultilinearDamageFn()
-    #ld = FRPDamageFn()
+    #ld = GfDamageFn()
+    #mld = MultilinearDamageFn()
+    mld = FRPDamageFn(Gf=100)
     mld.configure_traits()

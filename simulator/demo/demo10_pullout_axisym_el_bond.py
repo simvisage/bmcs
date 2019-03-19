@@ -16,19 +16,21 @@ from mayavi import mlab
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
-from ibvpy.mats.mats1D5.vmats1D5_elastic import \
+from ibvpy.mats.mats1D5.vmats1D5_e import \
     MATS1D5Elastic
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
-from ibvpy.mats.viz3d_state_field import \
-    Vis3DStateField, Viz3DStateField
-from ibvpy.mats.viz3d_strain_field import \
-    Vis3DStrainField, Viz3DStrainField
+from ibvpy.mats.viz3d_scalar_field import \
+    Vis3DStateField, Viz3DScalarField
+from ibvpy.mats.viz3d_tensor_field import \
+    Vis3DStrainField, Viz3DTensorField
 import numpy as np
 from simulator.api import \
     Simulator
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
+
+from .mlab_decorators import decorate_figure
 
 
 n_x_e = 20
@@ -86,7 +88,7 @@ mlab.options.backend = 'envisage'
 f_strain = mlab.figure()
 scene = mlab.get_engine().scenes[-1]
 scene.name = 'strain'
-strain_viz = Viz3DStrainField(vis3d=s.hist['strain'])
+strain_viz = Viz3DTensorField(vis3d=s.hist['strain'])
 strain_viz.setup()
 strain_viz.warp_vector.filter.scale_factor = 100.0
 strain_viz.plot(s.tstep.t_n)
@@ -94,25 +96,10 @@ strain_viz.plot(s.tstep.t_n)
 f_damage = mlab.figure()
 scene = mlab.get_engine().scenes[-1]
 scene.name = 'damage'
-damage_viz = Viz3DStateField(vis3d=s.hist['damage'])
+damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
 damage_viz.setup()
 damage_viz.warp_vector.filter.scale_factor = 100.0
 damage_viz.plot(s.tstep.t_n)
-
-
-def decorate_figure(f, viz):
-    mlab.view(0, 0, 400,
-              np.array([150., 40.,  0.]), figure=f)
-    mlab.orientation_axes(viz.src, figure=f)
-    axes = mlab.axes(viz.src, figure=f)
-    axes.label_text_property.trait_set(
-        font_family='times', italic=False
-    )
-    axes.title_text_property.font_family = 'times'
-    axes.axes.trait_set(
-        x_label='x', y_label='y', z_label='z'
-    )
-
 
 decorate_figure(f_damage, damage_viz)
 decorate_figure(f_strain, strain_viz)

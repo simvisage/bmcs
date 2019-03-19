@@ -15,6 +15,15 @@ from .xdomain_transform import XDomainFEGridTransform
 @provides(IXDomain)
 class XDomainFEInterface(XDomainFEGridTransform):
 
+    #=========================================================================
+    # CRIMINAL - Change
+    #=========================================================================
+    state_var_shape = Property(Tuple)
+
+    def _get_state_var_shape(self):
+        n_elems = len(self.o_Epia)
+        return (n_elems, self.fets.n_m,)
+
     vtk_expand_operator = Array(np.float_)
 
     def _vtk_expand_operator_default(self):

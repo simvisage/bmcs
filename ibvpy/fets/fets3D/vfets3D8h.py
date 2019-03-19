@@ -88,6 +88,7 @@ class FETS3D8H(FETSEval):
     n_nodal_dofs = 3
 
     vtk_cells = [[0, 1, 3, 2, 4, 5, 7, 6]]
+    vtk_cell_types = 'Hexahedron'
     vtk_cell = [0, 1, 3, 2, 4, 5, 7, 6]
     vtk_cell_type = 'Hexahedron'
 

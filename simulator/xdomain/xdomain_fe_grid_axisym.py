@@ -19,9 +19,9 @@ class XDomainFEGridAxiSym(XDomainFEGrid):
     def _vtk_expand_operator_default(self):
         return np.identity(3)
 
-    D0_abc = Array(np.float_)
+    Diff0_abc = Array(np.float_)
 
-    def _D0_abc_default(self):
+    def _Diff0_abc_default(self):
         D3D_33 = np.array([[0, 0, 0],
                            [0, 0, 0],
                            [0, 0, 1]], np.float_)
@@ -29,9 +29,9 @@ class XDomainFEGridAxiSym(XDomainFEGrid):
                            [0, 1]], np.float_)
         return np.einsum('ab,cc->abc', D3D_33, D2D_11)
 
-    D1_abcd = Array(np.float)
+    Diff1_abcd = Array(np.float)
 
-    def _D1_abcd_default(self):
+    def _Diff1_abcd_default(self):
         delta = np.vstack([np.identity(2), np.zeros((1, 2), dtype=np.float_)])
         return 0.5 * (
             np.einsum('ac,bd->abcd', delta, delta) +
@@ -49,7 +49,7 @@ class XDomainFEGridAxiSym(XDomainFEGrid):
         )[..., 1]
         B0_Eimabc = np.einsum(
             'abc,im, Em->Eimabc',
-            self.D0_abc, self.fets.N_im, 1. / r_Em
+            self.Diff0_abc, self.fets.N_im, 1. / r_Em
         )
         return B0_Eimabc
 

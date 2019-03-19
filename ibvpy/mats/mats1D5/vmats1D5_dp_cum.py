@@ -18,9 +18,9 @@ import traits.api as tr
 
 
 @tr.provides(IModel)
-class MATS1D5DP(MATSEval):
+class MATS1D5DPCum(MATSEval):
 
-    node_name = 'Pressure Sensitive bond model'
+    node_name = 'Cumulative damage plasticity model'
 
     E_N = tr.Float(100, label='E_N',
                    desc='Normal stiffness of the interface',
