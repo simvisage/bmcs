@@ -64,6 +64,11 @@ class Viz3DScalarField(Viz3DField):
 
     vis3d = tr.WeakRef
     warp_factor = tr.Float(1.0, auto_set=False, enter_set=True)
+    lut_manager = tr.Property
+
+    def _get_lut_manager(self):
+        lut = self.warp_vector.children[0]
+        return lut.scalar_lut_manager
 
     def setup(self):
         m = mlab

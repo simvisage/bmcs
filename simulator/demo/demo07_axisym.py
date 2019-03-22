@@ -58,6 +58,9 @@ scene = mlab.get_engine().scenes[-1]
 scene.name = 'damage'
 damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
 damage_viz.setup()
+damage_viz.use_default_range = True
+damage_viz.warp_vector.filter.scale_factor = 100.0
+damage_viz.plot(s.tstep.t_n)
 damage_viz.plot(0.0)
 
 from .mlab_decorators import decorate_figure

@@ -24,26 +24,6 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
     tloop_type = TLoopImplicit
     tstep_type = TStepBC
 
-    U_var_shape = (6,)
-    '''Shape of the primary variable required by the TStepState.
-    '''
-
-    state_var_shapes = {'sigma_ab': (3, 3),
-                        'sigma_pi_ab': (3, 3),
-                        'eps_pi_ab': (3, 3),
-                        'alpha_ab': (3, 3),
-                        'z_a': (),
-                        'omega_a': ()}
-    r'''
-    Shapes of the state variables
-    to be stored in the global array at the level 
-    of the domain.
-    '''
-
-    node_name = 'Desmorat model'
-
-    tree_node_list = List([])
-
     #-------------------------------------------------------------------------
     # Material parameters
     #-------------------------------------------------------------------------
@@ -64,6 +44,65 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
                   desc="Poisson ratio",
                   auto_set=False,
                   input=True)
+
+    gamma = Float(110.0,
+                  label="Gamma",
+                  desc="kinematic hardening modulus",
+                  MAT=True,
+                  symbol=r'\gamma',
+                  unit='MPa/mm',
+                  enter_set=True,
+                  auto_set=False)
+
+    K = Float(130.0,
+              label="K",
+              desc="isotropic hardening modulus",
+              MAT=True,
+              symbol='K',
+              unit='MPa/mm',
+              enter_set=True,
+              auto_set=False)
+
+    S = Float(476.0e-6,
+              label="S",
+              desc="damage strength",
+              MAT=True,
+              symbol='S',
+              unit='MPa/mm',
+              enter_set=True,
+              auto_set=False)
+
+    tau_bar = Float(6.0,
+                    label="Tau_0 ",
+                    desc="yield stress",
+                    symbol=r'\bar{\tau}',
+                    unit='MPa',
+                    MAT=True,
+                    enter_set=True,
+                    auto_set=False)
+
+    #=========================================================================
+    # Configurational parameters
+    #=========================================================================
+    U_var_shape = (6,)
+    '''Shape of the primary variable required by the TStepState.
+    '''
+
+    state_var_shapes = {'sigma_ab': (3, 3),
+                        'sigma_pi_ab': (3, 3),
+                        'eps_pi_ab': (3, 3),
+                        'alpha_ab': (3, 3),
+                        'z_a': (),
+                        'omega_a': ()}
+    r'''
+    Shapes of the state variables
+    to be stored in the global array at the level 
+    of the domain.
+    '''
+
+    node_name = 'Desmorat model'
+
+    tree_node_list = List([])
 
     def _get_lame_1_params(self):
         la = self.E_1 * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
@@ -101,42 +140,6 @@ class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
                     np.einsum(',il,jk->ijkl', mu, delta, delta))
 
         return D_2_abef
-
-    gamma = Float(110.0,
-                  label="Gamma",
-                  desc="kinematic hardening modulus",
-                  MAT=True,
-                  symbol=r'\gamma',
-                  unit='MPa/mm',
-                  enter_set=True,
-                  auto_set=False)
-
-    K = Float(130.0,
-              label="K",
-              desc="isotropic hardening modulus",
-              MAT=True,
-              symbol='K',
-              unit='MPa/mm',
-              enter_set=True,
-              auto_set=False)
-
-    S = Float(476.0e-6,
-              label="S",
-              desc="damage strength",
-              MAT=True,
-              symbol='S',
-              unit='MPa/mm',
-              enter_set=True,
-              auto_set=False)
-
-    tau_bar = Float(6.0,
-                    label="Tau_0 ",
-                    desc="yield stress",
-                    symbol=r'\bar{\tau}',
-                    unit='MPa',
-                    MAT=True,
-                    enter_set=True,
-                    auto_set=False)
 
     def get_corr_pred(self, eps_ab, tn1,
                       sigma_ab, sigma_pi_ab, eps_pi_ab,
