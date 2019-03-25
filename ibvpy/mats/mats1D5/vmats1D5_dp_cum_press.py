@@ -14,37 +14,37 @@ class MATS1D5DPCumPress(MATSEval):
 
     node_name = 'Pressure sensitive cumulative damage plasticity'
 
-    E_N = tr.Float(100, label='E_N',
+    E_N = tr.Float(1000, label='E_N',
                    desc='Normal stiffness of the interface',
                    MAT=True,
                    enter_set=True, auto_set=False)
 
-    E_T = tr.Float(100, label='E_T',
+    E_T = tr.Float(12900, label='E_T',
                    desc='Shear modulus of the interface',
                    MAT=True,
                    enter_set=True, auto_set=False)
 
-    gamma = tr.Float(40.0, label='gamma',
+    gamma = tr.Float(55.0, label='gamma',
                      desc='Kinematic Hardening Modulus',
                      MAT=True,
                      enter_set=True, auto_set=False)
 
-    K = tr.Float(1, label='K',
+    K = tr.Float(11, label='K',
                  desc='Isotropic hardening modulus',
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    S = tr.Float(0.1, label='S',
+    S = tr.Float(0.00048, label='S',
                  desc='Damage accumulation parameter',
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    r = tr.Float(0.1, label='r',
+    r = tr.Float(0.51, label='r',
                  desc='Damage accumulation parameter',
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    c = tr.Float(1, Label='c',
+    c = tr.Float(2.8, Label='c',
                  desc='Damage accumulation parameter',
                  MAT=True,
                  enter_set=True, auto_set=False)
@@ -59,7 +59,7 @@ class MATS1D5DPCumPress(MATSEval):
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    tau_bar = tr.Float(1.1)
+    tau_bar = tr.Float(4.2)
 
     state_var_shapes = dict(s_pi=(),
                             alpha=(),
@@ -146,7 +146,7 @@ class MATS1D5DPCumPress(MATSEval):
                  (self.E_T + (self.gamma + self.K) * (1 - omega)))
                 -
                 ((1 - omega)**self.c *
-                 (Y_I / self.S)**self.r *
+                 (Y[I] / self.S)**self.r *
                  self.E_T**2 * (s - s_pi) * self.tau_bar /
                  (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) /
                 (self.E_T / (1 - omega) + self.gamma + self.K)
