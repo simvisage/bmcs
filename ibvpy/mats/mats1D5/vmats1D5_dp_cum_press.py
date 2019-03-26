@@ -14,7 +14,7 @@ class MATS1D5DPCumPress(MATSEval):
 
     node_name = 'Pressure sensitive cumulative damage plasticity'
 
-    E_N = tr.Float(1000, label='E_N',
+    E_N = tr.Float(30000, label='E_N',
                    desc='Normal stiffness of the interface',
                    MAT=True,
                    enter_set=True, auto_set=False)
@@ -48,18 +48,15 @@ class MATS1D5DPCumPress(MATSEval):
                  desc='Damage accumulation parameter',
                  MAT=True,
                  enter_set=True, auto_set=False)
-
-    tau_0 = tr.Float(1, label='tau_0',
-                     desc='Reversibility limit',
-                     MAT=True,
-                     enter_set=True, auto_set=False)
-
-    m = tr.Float(1, label='m',
+    m = tr.Float(0.3, label='m',
                  desc='Lateral Pressure Coefficient',
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    tau_bar = tr.Float(4.2)
+    tau_bar = tr.Float(4.2, label='tau_bar',
+                       desc='Reversibility limit',
+                       MAT=True,
+                       enter_set=True, auto_set=False)
 
     state_var_shapes = dict(s_pi=(),
                             alpha=(),
@@ -99,7 +96,7 @@ class MATS1D5DPCumPress(MATSEval):
         Z = self.K * z
         X = self.gamma * alpha
 
-        f = np.fabs(tau_pi_trial - X) - Z - self.tau_0  # + self.m * sig_N
+        f = np.fabs(tau_pi_trial - X) - Z - self.tau_bar  # + self.m * sig_N
         I = f > 1e-6
 
         sig_T = self.E_T * s

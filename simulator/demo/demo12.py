@@ -4,13 +4,10 @@ Created on 25.03.2019
 @author: fseemab
 '''
 import time
+
 from mayavi import mlab
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
-    MultilinearDamageFn, \
-    FRPDamageFn
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.mats.mats1D5.vmats1D5_dp_cum_press import \
@@ -27,20 +24,24 @@ from simulator.api import \
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
 
+from .mlab_decorators import decorate_figure
+
+
 ds = 14
 n_x_e = 40
 n_y_e1 = 5
 n_y_e2 = 2
 L_x = 3 * ds
-R_in = ds
-R_out = 10 * ds / 2
+R_in = ds / 2
+R_out = 10 * ds / 2 - ds / 2
+R_top = R_out + R_in
 xd1 = XDomainFEGridAxiSym(coord_min=(0, 0),
                           coord_max=(L_x, R_out),
                           shape=(n_x_e, n_y_e1),
                           integ_factor=2 * np.pi,
                           fets=FETS2D4Q())
 xd2 = XDomainFEGridAxiSym(coord_min=(0, R_out),
-                          coord_max=(L_x, R_out),
+                          coord_max=(L_x, R_top),
                           shape=(n_x_e, n_y_e2),
                           fets=FETS2D4Q())
 
@@ -53,15 +54,14 @@ xd12 = XDomainFEInterface(
     fets=FETS1D52ULRHFatigue()
 )
 
-u_max = 0.6 * 3
-left_y_c = BCSlice(slice=xd1.mesh[0, :, 0, :],
-                   var='u', dims=[0], value=0)
-left_x_s = BCSlice(slice=xd2.mesh[0, :, 0, :],
-                   var='u', dims=[0], value=u_max)
-bc1 = [left_y_c, left_x_s]
+u_max = 0.0014 * 2
+right_x_c = BCSlice(slice=xd1.mesh[-1, :, -1, :],
+                    var='u', dims=[0], value=0)
+right_x_s = BCSlice(slice=xd2.mesh[-1, :, -1, :],
+                    var='u', dims=[0], value=u_max)
+bc1 = [right_x_c, right_x_s]
 
-m_interface = MATS1D5DPCumPress(E_N=1000, E_T=2000,
-                                tau_bar=10)
+m_interface = MATS1D5DPCumPress()
 
 s = Simulator(
     domains=[(xd1, m1),
@@ -77,7 +77,7 @@ s = Simulator(
     }
 )
 
-s.tloop.k_max = 2000
+s.tloop.k_max = 1000
 s.tline.step = 0.01
 s.tstep.fe_domain.serialized_subdomains
 
@@ -111,7 +111,6 @@ damage_viz.setup()
 damage_viz.warp_vector.filter.scale_factor = 100.0
 damage_viz.plot(s.tstep.t_n)
 
-from .mlab_decorators import decorate_figure
 
 decorate_figure(f_strain, strain_viz)
 decorate_figure(f_stress, stress_viz)
