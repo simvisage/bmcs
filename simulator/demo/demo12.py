@@ -32,40 +32,39 @@ n_x_e = 40
 n_y_e1 = 5
 n_y_e2 = 2
 L_x = 3 * ds
-R_in = ds / 2
-R_out = 10 * ds / 2 - ds / 2
-R_top = R_out + R_in
-xd1 = XDomainFEGridAxiSym(coord_min=(0, 0),
-                          coord_max=(L_x, R_out),
-                          shape=(n_x_e, n_y_e1),
-                          integ_factor=2 * np.pi,
-                          fets=FETS2D4Q())
-xd2 = XDomainFEGridAxiSym(coord_min=(0, R_out),
-                          coord_max=(L_x, R_top),
-                          shape=(n_x_e, n_y_e2),
-                          fets=FETS2D4Q())
+R_steel = ds / 2
+R_concrete = 7 * ds
+xd_steel_1 = XDomainFEGridAxiSym(coord_min=(0, 0),
+                                 coord_max=(L_x, R_steel),
+                                 shape=(n_x_e, n_y_e1),
+                                 integ_factor=2 * np.pi,
+                                 fets=FETS2D4Q())
+xd_concrete_2 = XDomainFEGridAxiSym(coord_min=(0, R_steel),
+                                    coord_max=(L_x, R_concrete),
+                                    shape=(n_x_e, n_y_e2),
+                                    fets=FETS2D4Q())
 
 m1 = MATS3DDesmorat(tau_bar=2.0)
 m2 = MATS3DDesmorat(E_1=210000, nu=0.3, tau_bar=2000.0)
 
 xd12 = XDomainFEInterface(
-    I=xd1.mesh.I[:, -1],
-    J=xd2.mesh.I[:, 0],
+    I=xd_steel_1.mesh.I[:, -1],
+    J=xd_concrete_2.mesh.I[:, 0],
     fets=FETS1D52ULRHFatigue()
 )
 
 u_max = 0.0014 * 2
-right_x_c = BCSlice(slice=xd1.mesh[-1, :, -1, :],
-                    var='u', dims=[0], value=0)
-right_x_s = BCSlice(slice=xd2.mesh[-1, :, -1, :],
+right_x_s = BCSlice(slice=xd_steel_1.mesh[-1, :, -1, :],
                     var='u', dims=[0], value=u_max)
+right_x_c = BCSlice(slice=xd_concrete_2.mesh[-1, :, -1, :],
+                    var='u', dims=[0], value=0)
 bc1 = [right_x_c, right_x_s]
 
 m_interface = MATS1D5DPCumPress()
 
 s = Simulator(
-    domains=[(xd1, m1),
-             (xd2, m2),
+    domains=[(xd_steel_1, m1),
+             (xd_concrete_2, m2),
              (xd12, m_interface),
              ],
     bc=bc1,  # + bc2,
