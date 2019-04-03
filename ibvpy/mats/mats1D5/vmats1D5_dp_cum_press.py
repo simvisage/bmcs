@@ -3,6 +3,7 @@ Created on Feb 14, 2019
 
 @author: rch
 '''
+
 from ibvpy.api import MATSEval
 import numpy as np
 from simulator.i_model import IModel
@@ -48,7 +49,7 @@ class MATS1D5DPCumPress(MATSEval):
                  desc='Damage accumulation parameter',
                  MAT=True,
                  enter_set=True, auto_set=False)
-    m = tr.Float(0.3, label='m',
+    m = tr.Float(0.0, label='m',
                  desc='Lateral Pressure Coefficient',
                  MAT=True,
                  enter_set=True, auto_set=False)
@@ -96,10 +97,10 @@ class MATS1D5DPCumPress(MATSEval):
         Z = self.K * z
         X = self.gamma * alpha
 
-        f = np.fabs(tau_pi_trial - X) - Z - self.tau_bar  # + self.m * sig_N
+        f = np.fabs(tau_pi_trial - X) - Z - self.tau_bar + self.m * sig_N
         I = f > 1e-6
 
-        sig_T = self.E_T * s
+        sig_T = (1 - omega) * self.E_T * (s - s_pi)
 
         # Return mapping
         delta_lambda_I = f[I] / \
@@ -123,7 +124,7 @@ class MATS1D5DPCumPress(MATSEval):
 
         # Algorithmic Stiffness
 
-        E_alg_T = (1 - omega) * self.E_T
+        #E_alg_T = (1 - omega) * self.E_T
 
         # Consistent tangent operator
         if False:
@@ -136,18 +137,18 @@ class MATS1D5DPCumPress(MATSEval):
                 ((self.E_T / (1 - omega)) + self.gamma + self.K)
             )
 
-        if False:
-            E_alg_T = (
-                (1 - omega) * self.E_T -
-                ((self.E_T**2 * (1 - omega)) /
-                 (self.E_T + (self.gamma + self.K) * (1 - omega)))
-                -
-                ((1 - omega)**self.c *
-                 (Y[I] / self.S)**self.r *
-                 self.E_T**2 * (s - s_pi) * self.tau_bar /
-                 (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) /
-                (self.E_T / (1 - omega) + self.gamma + self.K)
-            )
+        # if False:
+        E_alg_T = (
+            (1 - omega) * self.E_T -
+            ((self.E_T**2 * (1 - omega)) /
+             (self.E_T + (self.gamma + self.K) * (1 - omega)))
+            -
+            ((1 - omega)**self.c *
+             (Y / self.S)**self.r *
+             self.E_T**2 * (s - s_pi) * self.tau_bar /
+             (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) /
+            (self.E_T / (1 - omega) + self.gamma + self.K)
+        )
 
         sig = np.zeros_like(u_r)
         sig[..., 0] = sig_T
@@ -159,4 +160,6 @@ class MATS1D5DPCumPress(MATSEval):
                                  [np.zeros_like(E_alg_N), E_alg_N]
                              ])
                          )
+        #print('u_r =', u_r)
+        #print('E_TN =', E_TN)
         return sig, E_TN

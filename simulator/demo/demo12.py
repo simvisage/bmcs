@@ -8,6 +8,7 @@ import time
 from mayavi import mlab
 
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
+
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.mats.mats1D5.vmats1D5_dp_cum_press import \
@@ -29,23 +30,25 @@ from .mlab_decorators import decorate_figure
 
 ds = 14
 n_x_e = 40
-n_y_e1 = 5
+n_y_e1 = 10
 n_y_e2 = 2
 L_x = 3 * ds
 R_steel = ds / 2
 R_concrete = 7 * ds
 xd_steel_1 = XDomainFEGridAxiSym(coord_min=(0, 0),
                                  coord_max=(L_x, R_steel),
-                                 shape=(n_x_e, n_y_e1),
-                                 integ_factor=2 * np.pi,
+                                 shape=(n_x_e, n_y_e2),
+
                                  fets=FETS2D4Q())
 xd_concrete_2 = XDomainFEGridAxiSym(coord_min=(0, R_steel),
                                     coord_max=(L_x, R_concrete),
-                                    shape=(n_x_e, n_y_e2),
+                                    shape=(n_x_e, n_y_e1),
+                                    integ_factor=2 * np.pi,
                                     fets=FETS2D4Q())
 
-m1 = MATS3DDesmorat(tau_bar=2.0)
-m2 = MATS3DDesmorat(E_1=210000, nu=0.3, tau_bar=2000.0)
+m1 = MATS3DDesmorat(E_1=210000, nu=0.3, tau_bar=2000.0)
+m2 = MATS3DDesmorat(tau_bar=2.0)
+
 
 xd12 = XDomainFEInterface(
     I=xd_steel_1.mesh.I[:, -1],
@@ -53,7 +56,7 @@ xd12 = XDomainFEInterface(
     fets=FETS1D52ULRHFatigue()
 )
 
-u_max = 0.0014 * 2
+u_max = 0.3 * 3
 right_x_s = BCSlice(slice=xd_steel_1.mesh[-1, :, -1, :],
                     var='u', dims=[0], value=u_max)
 right_x_c = BCSlice(slice=xd_concrete_2.mesh[-1, :, -1, :],
