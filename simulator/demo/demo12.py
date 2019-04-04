@@ -56,7 +56,7 @@ xd12 = XDomainFEInterface(
     fets=FETS1D52ULRHFatigue()
 )
 
-u_max = 0.3 * 3
+u_max = 0.0017 * 2
 right_x_s = BCSlice(slice=xd_steel_1.mesh[-1, :, -1, :],
                     var='u', dims=[0], value=u_max)
 right_x_c = BCSlice(slice=xd_concrete_2.mesh[-1, :, -1, :],
