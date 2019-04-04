@@ -1,15 +1,15 @@
 
+from ibvpy.fets.i_fets_eval import IFETSEval
+from ibvpy.mesh.fe_grid import FEGrid
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
+from simulator.i_xdomain import IXDomain
 from traits.api import \
     Property, cached_property, \
     provides, Callable, \
     Tuple, Int, Type, Array, Float, Instance, Bool
-
-from ibvpy.fets.i_fets_eval import IFETSEval
-from ibvpy.mesh.fe_grid import FEGrid
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
-import numpy as np
-from simulator.i_xdomain import IXDomain
 from view.ui.bmcs_tree_node import BMCSTreeNode
+
+import numpy as np
 
 
 @provides(IXDomain)
@@ -21,15 +21,15 @@ class XDomainFEGrid(BMCSTreeNode):
     #=========================================================================
     U_var_shape = Property(Int)
 
+    def _get_U_var_shape(self):
+        return self.mesh.n_dofs
+
     vtk_expand_operator = Property
 
     def _get_vtk_expand_operator(self):
         return self.fets.vtk_expand_operator
 
     K_type = Type(SysMtxArray)
-
-    def _get_U_var_shape(self):
-        return self.mesh.n_dofs
 
     state_var_shape = Property(Tuple)
 
@@ -101,9 +101,10 @@ class XDomainFEGrid(BMCSTreeNode):
     @cached_property
     def _get_o_Ia(self):
         x_Ia = self.mesh.X_Id
-        n_I, n_a = x_Ia.shape
+        n_I, _ = x_Ia.shape
+        n_a = self.mesh.n_nodal_dofs
         do = self.mesh.dof_offset
-        return do + np.arange(n_I * n_a, dtype=np.int_).reshape(n_I, -1)
+        return do + np.arange(n_I * n_a, dtype=np.int_).reshape(-1, n_a)
 
     o_Eia = Property(depends_on='MESH,GEO,CS,FE')
 

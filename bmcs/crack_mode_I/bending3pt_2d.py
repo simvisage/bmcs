@@ -5,13 +5,6 @@ Created on 12.01.2016
 @todo: derive the size of the state array.
 '''
 
-from scipy import interpolate as ip
-from traits.api import \
-    Property, Instance, cached_property, \
-    List, Float, Trait, Int, on_trait_change, Tuple
-from traitsui.api import \
-    View, Item, UItem, VGroup
-
 from bmcs.time_functions import \
     LoadingScenario
 from ibvpy.api import \
@@ -20,17 +13,25 @@ from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.fets import \
     FETS2D4Q
 from ibvpy.mats.mats2D import \
-    MATS2DElastic, MATS2DMplDamageEEQ, MATS2DScalarDamage, MATS2DMplCSDEEQ  # , MATS2DMplCSDODF
-from ibvpy.mats.viz3d_state_field import \
-    Vis3DStateField, Viz3DStateField
-from ibvpy.mats.viz3d_strain_field import \
-    Vis3DStrainField, Viz3DStrainField
-import numpy as np
+    MATS2DElastic, MATS2DMplDamageEEQ, MATS2DScalarDamage, \
+    MATS2DMplCSDEEQ  # , MATS2DMplCSDODF
+from ibvpy.mats.viz3d_scalar_field import \
+    Vis3DStateField, Viz3DScalarField
+from ibvpy.mats.viz3d_tensor_field import \
+    Vis3DStrainField, Vis3DStressField, Viz3DTensorField
+from scipy import interpolate as ip
 from simulator.api import Simulator, Model, XDomainFEGrid
-import traits.api as tr
+from traits.api import \
+    Property, Instance, cached_property, \
+    List, Float, Trait, Int, on_trait_change, Tuple
+from traitsui.api import \
+    View, Item, UItem, VGroup
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSWindow
+
+import numpy as np
+import traits.api as tr
 
 from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
@@ -50,7 +51,6 @@ class PulloutResponse(Vis2D):
         )
         U_ti = self.sim.hist.U_t
         F_ti = self.sim.hist.F_t
-        print('F_ti', F_ti)
         P = -np.sum(F_ti[:, record_dofs], axis=1)
         w = -U_ti[:, record_dofs[0]]
         self.Pw = P, w
@@ -647,7 +647,7 @@ def run_bending3pt_sdamage_viz3d(*args, **kw):
     w.offline = True
     bt = w.model
     bt.record['damage'] = Vis3DStateField(var='omega')
-    viz3d_damage = Viz3DStateField(vis3d=bt.hist['damage'])
+    viz3d_damage = Viz3DScalarField(vis3d=bt.hist['damage'])
     w.viz_sheet.add_viz3d(viz3d_damage)
     w.offline = False
     w.configure_traits(*args, **kw)

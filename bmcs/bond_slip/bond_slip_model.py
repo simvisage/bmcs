@@ -11,6 +11,8 @@ Created on 12.12.2016
 '''
 
 
+from bmcs.bond_slip.mats_bondslip import \
+    MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 from bmcs.mats.mats_damage_fn import \
     IDamageFn, \
     LiDamageFn, JirasekDamageFn, AbaqusDamageFn, FRPDamageFn
@@ -19,6 +21,7 @@ from bmcs.time_functions import \
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from ibvpy.api import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from simulator.api import Simulator
 from traits.api import \
     Property, Instance, cached_property, Str, \
     List, Float, Trait, on_trait_change, Bool, Dict,\
@@ -28,10 +31,8 @@ from traitsui.api import \
 from traitsui.editors.enum_editor import EnumEditor
 from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSTreeNode
-from view.window.bmcs_window import BMCSModel, BMCSWindow
+from view.window.bmcs_window import BMCSWindow
 
-from bmcs.bond_slip.mats_bondslip import \
-    MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
 import numpy as np
 
 
@@ -163,7 +164,7 @@ class Viz2DBondHistory(Viz2D):
     )
 
 
-class BondSlipModel(BMCSModel, Vis2D):
+class BondSlipModel(Simulator, Vis2D):
 
     node_name = Str('Bond slip model')
 

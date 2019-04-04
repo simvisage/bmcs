@@ -1,15 +1,15 @@
 
 import copy
 
+from ibvpy.core.bcond_mngr import \
+    BCondMngr
+from mathkit.matrix_la.sys_mtx_assembly import \
+    SysMtxAssembly
 from traits.api import \
     HasStrictTraits, provides, \
     Instance, Property, cached_property, Enum, on_trait_change, \
     DelegatesTo, WeakRef, Event, Array, Float
 
-from ibvpy.core.bcond_mngr import \
-    BCondMngr
-from mathkit.matrix_la.sys_mtx_assembly import \
-    SysMtxAssembly
 import numpy as np
 
 from .domain_state import DomainState

@@ -28,9 +28,10 @@ from traits.api import HasTraits, Button, Str, Constant
 from traitsui.api import \
     View, Item, UItem, VGroup, Group, Spring, HGroup
 
-from .bmcs_version import CURRENT_VERSION
 from ibvpy.mats.mats3D.mats3D_plastic.yield_face3D_explorer \
     import run_explorer
+
+from .bmcs_version import CURRENT_VERSION
 
 
 # A bmcs mayavi instance so we can close it correctly.
@@ -121,37 +122,58 @@ class BMCSLauncher(HasTraits):
             HGroup(
                 Spring(),
                 Item('version', style='readonly',
-                     full_size=True, resizable=True)
+                     full_size=True, resizable=True,
+                     )
             ),
             Group(
                 UItem('bond_slip_model_d',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 UItem('bond_slip_model_p',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 UItem('bond_slip_model_dp',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 label='Bond-slip models, lecture #1-2'
             ),
             Group(
                 UItem('pullout_model_const_shear',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 UItem('pullout_model_multilinear',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 #                 UItem('pullout_model_frp_damage',
                 #                       full_size=True, resizable=True),
                 UItem('pullout_model_dp',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 label='Pull-out models, lecture #3-6'
             ),
             Group(
                 UItem('tensile_test_2d_sdamage',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 UItem('bending3pt_2d_sdamage_viz2d',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 UItem('bending3pt_2d_sdamage_viz3d',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 UItem('bending3pt_3d',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 label='Bending, crack propagation, lecture #7-9'
             ),
             Group(

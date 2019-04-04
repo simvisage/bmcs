@@ -5,8 +5,6 @@ Created on 25.03.2019
 '''
 import time
 
-from mayavi import mlab
-
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 
 from ibvpy.bcond import BCSlice
@@ -19,31 +17,34 @@ from ibvpy.mats.viz3d_scalar_field import \
     Vis3DStateField, Viz3DScalarField
 from ibvpy.mats.viz3d_tensor_field import \
     Vis3DStrainField, Vis3DStressField, Viz3DTensorField
-import numpy as np
+from mayavi import mlab
 from simulator.api import \
     Simulator
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
+from view.window import BMCSWindow
+
+import numpy as np
 
 from .mlab_decorators import decorate_figure
+from .viz2d_fw import Viz2DFW, Vis2DFW
 
 
 ds = 14
 n_x_e = 40
-n_y_e1 = 10
-n_y_e2 = 2
+n_y_concrete = 5
+n_y_steel = 2
 L_x = 3 * ds
 R_steel = ds / 2
 R_concrete = 7 * ds
 xd_steel_1 = XDomainFEGridAxiSym(coord_min=(0, 0),
                                  coord_max=(L_x, R_steel),
-                                 shape=(n_x_e, n_y_e2),
-
+                                 shape=(n_x_e, n_y_steel),
+                                 integ_factor=2 * np.pi,
                                  fets=FETS2D4Q())
 xd_concrete_2 = XDomainFEGridAxiSym(coord_min=(0, R_steel),
                                     coord_max=(L_x, R_concrete),
-                                    shape=(n_x_e, n_y_e1),
-                                    integ_factor=2 * np.pi,
+                                    shape=(n_x_e, n_y_concrete),
                                     fets=FETS2D4Q())
 
 m1 = MATS3DDesmorat(E_1=210000, nu=0.3, tau_bar=2000.0)
@@ -61,6 +62,8 @@ right_x_s = BCSlice(slice=xd_steel_1.mesh[-1, :, -1, :],
                     var='u', dims=[0], value=u_max)
 right_x_c = BCSlice(slice=xd_concrete_2.mesh[-1, :, -1, :],
                     var='u', dims=[0], value=0)
+
+print(right_x_s.dofs)
 bc1 = [right_x_c, right_x_s]
 
 m_interface = MATS1D5DPCumPress()
@@ -72,6 +75,7 @@ s = Simulator(
              ],
     bc=bc1,  # + bc2,
     record={
+        'Pw': Vis2DFW(bc=right_x_s),
         'strain': Vis3DStrainField(var='eps_ab'),
         'stress': Vis3DStressField(var='sig_ab'),
         'damage': Vis3DStateField(var='omega_a'),
@@ -79,13 +83,23 @@ s = Simulator(
     }
 )
 
+fw = Viz2DFW(name='Pw', vis2d=s.hist['Pw'])
+s.run()
+time.sleep(4)
+w = BMCSWindow(model=s)
+w.viz_sheet.viz2d_list.append(fw)
+
 s.tloop.k_max = 1000
 s.tline.step = 0.01
 s.tstep.fe_domain.serialized_subdomains
 
 xd12.hidden = True
-s.run()
-time.sleep(3)
+# s.run()
+# time.sleep(3)
+
+w.run()
+w.offline = True
+w.configure_traits()
 
 mlab.options.backend = 'envisage'
 

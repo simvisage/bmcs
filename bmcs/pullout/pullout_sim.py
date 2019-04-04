@@ -7,22 +7,106 @@ Created on 12.01.2016
 @todo: introduce a switch for left and right supports
 '''
 
+from bmcs.time_functions import \
+    LoadingScenario
+from ibvpy.api import BCDof, IMATSEval
+from ibvpy.fets.fets1D5 import FETS1D52ULRH
+from ibvpy.mats.mats1D5.vmats1D5_bondslip1D import \
+    MATSBondSlipMultiLinear
+from reporter import RInputRecord
+from simulator.api import \
+    Simulator, XDomainFEInterface1D
 from traits.api import \
     Property, Instance, cached_property, \
     HasStrictTraits, Bool, List, Float, Trait, Int, Enum, \
     Array, Button
+from traits.api import \
+    on_trait_change, Tuple
 from traitsui.api import \
     View, Item, Group
 from traitsui.ui_editors.array_view_editor import ArrayViewEditor
-
-from bmcs.time_functions import \
-    LoadingScenario
-import matplotlib.pyplot as plt
-import numpy as np
-from reporter import RInputRecord
-from simulator import Simulator, Model
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+class PulloutResponse(Vis2D):
+
+    Pw = Tuple()
+
+    def _Pw_default(self):
+        return ([0], [0], [0])
+
+    def update(self):
+        sim = self.sim
+        c_dof = sim.controlled_dof
+        f_dof = sim.free_end_dof
+        U_ti = self.sim.hist.U_t
+        F_ti = self.sim.hist.F_t
+        P = F_ti[:, c_dof]
+        w_L = U_ti[:, c_dof]
+        w_0 = U_ti[:, f_dof]
+        self.Pw = P, w_0, w_L
+
+
+class Viz2DPullOutFW(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = 'F-W'
+
+    show_legend = Bool(True, auto_set=False, enter_set=True)
+
+    def plot(self, ax, vot, *args, **kw):
+        sim = self.vis2d.sim
+        P_t, w_0_t, w_L_t = sim.hist['Pw'].Pw
+        ymin, ymax = np.min(P_t), np.max(P_t)
+        L_y = ymax - ymin
+        ymax += 0.05 * L_y
+        ymin -= 0.05 * L_y
+        xmin, xmax = np.min(w_L_t), np.max(w_L_t)
+        L_x = xmax - xmin
+        xmax += 0.03 * L_x
+        xmin -= 0.03 * L_x
+        ax.plot(w_L_t, P_t, linewidth=2, color='black', alpha=0.4,
+                label='P(w;x=L)')
+        ax.plot(w_0_t, P_t, linewidth=1, color='magenta', alpha=0.4,
+                label='P(w;x=0)')
+        ax.set_ylim(ymin=ymin, ymax=ymax)
+        ax.set_xlim(xmin=xmin, xmax=xmax)
+        ax.set_ylabel('pull-out force P [N]')
+        ax.set_xlabel('pull-out slip w [mm]')
+        if self.show_legend:
+            ax.legend(loc=4)
+        self.plot_marker(ax, vot)
+
+    def plot_marker(self, ax, vot):
+        sim = self.vis2d.sim
+        P_t, w_0_t, w_L_t = sim.hist['Pw'].Pw
+        idx = sim.hist.get_time_idx(vot)
+        P, w = P_t[idx], w_L_t[idx]
+        ax.plot([w], [P], 'o', color='black', markersize=10)
+        P, w = P_t[idx], w_0_t[idx]
+        ax.plot([w], [P], 'o', color='magenta', markersize=10)
+
+    show_data = Button()
+
+    def _show_data_fired(self):
+        P_t = self.vis2d.get_P_t()
+        w_0, w_L = self.vis2d.get_w_t()
+        data = np.vstack([w_0, w_L, P_t]).T
+        show_data = DataSheet(data=data)
+        show_data.edit_traits()
+
+    def plot_tex(self, ax, vot, *args, **kw):
+        self.plot(ax, vot, *args, **kw)
+
+    traits_view = View(
+        Item('name', style='readonly'),
+        Item('show_legend'),
+        Item('show_data')
+    )
 
 
 class CrossSection(BMCSLeafNode, RInputRecord):
@@ -96,64 +180,6 @@ class DataSheet(HasStrictTraits):
              ),
         width=0.5,
         height=0.6
-    )
-
-
-class Viz2DPullOutFW(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = 'F-W'
-
-    show_legend = Bool(True, auto_set=False, enter_set=True)
-
-    def plot(self, ax, vot, *args, **kw):
-        P_t = self.vis2d.get_P_t()
-        ymin, ymax = np.min(P_t), np.max(P_t)
-        L_y = ymax - ymin
-        ymax += 0.05 * L_y
-        ymin -= 0.05 * L_y
-        w_0, w_L = self.vis2d.get_w_t()
-        xmin, xmax = np.min(w_L), np.max(w_L)
-        L_x = xmax - xmin
-        xmax += 0.03 * L_x
-        xmin -= 0.03 * L_x
-        ax.plot(w_L, P_t, linewidth=2, color='black', alpha=0.4,
-                label='P(w;x=L)')
-        ax.plot(w_0, P_t, linewidth=1, color='magenta', alpha=0.4,
-                label='P(w;x=0)')
-        ax.set_ylim(ymin=ymin, ymax=ymax)
-        ax.set_xlim(xmin=xmin, xmax=xmax)
-        ax.set_ylabel('pull-out force P [N]')
-        ax.set_xlabel('pull-out slip w [mm]')
-        if self.show_legend:
-            ax.legend(loc=4)
-        self.plot_marker(ax, vot)
-
-    def plot_marker(self, ax, vot):
-        P_t = self.vis2d.get_P_t()
-        w_0, w_L = self.vis2d.get_w_t()
-        idx = self.vis2d.tloop.get_time_idx(vot)
-        P, w = P_t[idx], w_L[idx]
-        ax.plot([w], [P], 'o', color='black', markersize=10)
-        P, w = P_t[idx], w_0[idx]
-        ax.plot([w], [P], 'o', color='magenta', markersize=10)
-
-    show_data = Button()
-
-    def _show_data_fired(self):
-        P_t = self.vis2d.get_P_t()
-        w_0, w_L = self.vis2d.get_w_t()
-        data = np.vstack([w_0, w_L, P_t]).T
-        show_data = DataSheet(data=data)
-        show_data.edit_traits()
-
-    def plot_tex(self, ax, vot, *args, **kw):
-        self.plot(ax, vot, *args, **kw)
-
-    traits_view = View(
-        Item('name', style='readonly'),
-        Item('show_legend'),
-        Item('show_data')
     )
 
 
@@ -261,7 +287,7 @@ class PullOutModelBase(Simulator):
         return [
             self.tline,
             self.loading_scenario,
-            self.model,
+            self.mats_eval,
             self.cross_section,
             self.geometry
         ]
@@ -270,7 +296,7 @@ class PullOutModelBase(Simulator):
         self.tree_node_list = [
             self.tline,
             self.loading_scenario,
-            self.model,
+            self.tmodel,
             self.cross_section,
             self.geometry,
         ]
@@ -325,13 +351,95 @@ class PullOutModelBase(Simulator):
     # Discretization
     #=========================================================================
     n_e_x = Int(20,
+                MESH=True,
                 auto_set=False,
                 enter_set=True,
-                MESH=True,
-                symbol='n_\mathrm{e}',
+                symbol='n_\mathrm{E}',
                 unit='-',
-                desc='number of finite elements')
+                desc='number of finite elements along the embedded length'
+                )
 
+    #=========================================================================
+    # Algorithimc parameters
+    #=========================================================================
+    k_max = Int(400,
+                unit='\mathrm{mm}',
+                symbol='k_{\max}',
+                desc='maximum number of iterations',
+                ALG=True)
+
+    tolerance = Float(1e-4,
+                      unit='-',
+                      symbol='\epsilon',
+                      desc='required accuracy',
+                      ALG=True)
+
+    mats_eval_type = Trait('multilinear',
+                           {'multilinear': MATSBondSlipMultiLinear},
+                           MAT=True,
+                           desc='material model type')
+
+    @on_trait_change('mats_eval_type')
+    def _set_mats_eval(self):
+        self.mats_eval = self.mats_eval_type_()
+        self._update_node_list()
+
+    mats_eval = Instance(IMATSEval, report=True)
+    '''Material model'''
+
+    def _mats_eval_default(self):
+        return self.mats_eval_type_()
+
+    mm = Property
+
+    def _get_mm(self):
+        return self.mats_eval
+
+    material = Property
+
+    def _get_material(self):
+        return self.mats_eval
+
+    #=========================================================================
+    # Finite element type
+    #=========================================================================
+    fets_eval = Property(Instance(FETS1D52ULRH),
+                         depends_on='CS,MAT')
+    '''Finite element time stepper implementing the corrector
+    predictor operators at the element level'''
+    @cached_property
+    def _get_fets_eval(self):
+        return FETS1D52ULRH(A_m=self.cross_section.A_m,
+                            P_b=self.cross_section.P_b,
+                            A_f=self.cross_section.A_f)
+
+    dots_grid = Property(Instance(XDomainFEInterface1D),
+                         depends_on='CS,MAT,GEO,MESH,FE')
+    '''Discretization object.
+    '''
+    @cached_property
+    def _get_dots_grid(self):
+        geo = self.geometry
+        return XDomainFEInterface1D(
+            dim_u=2,
+            coord_max=[geo.L_x],
+            shape=[self.n_e_x],
+            fets=FETS1D52ULRH()
+        )
+
+    fe_grid = Property
+
+    def _get_fe_grid(self):
+        return self.dots_grid.mesh
+
+    domains = Property(depends_on='CS,MAT,GEO,MESH,FE')
+
+    def _get_domains(self):
+        return [(self.dots_grid, self.mats_eval)]
+
+    #=========================================================================
+    # Boundary conditions
+    #=========================================================================
     w_max = Float(1, BC=True,
                   symbol='w_{\max}',
                   unit='mm',
@@ -346,12 +454,6 @@ class PullOutModelBase(Simulator):
 
     def _set_u_f0_max(self, value):
         self.w_max = value
-
-    n_e_x = Int(20, MESH=True, auto_set=False, enter_set=True,
-                symbol='n_\mathrm{E}',
-                unit='-',
-                desc='number of finite elements along the embedded length'
-                )
 
     fixed_boundary = Enum('non-loaded end (matrix)',
                           'loaded end (matrix)',
@@ -382,18 +484,32 @@ class PullOutModelBase(Simulator):
     def _get_free_end_dof(self):
         return self.n_e_x + 1
 
-    k_max = Int(400,
-                unit='\mathrm{mm}',
-                symbol='k_{\max}',
-                desc='maximum number of iterations',
-                ALG=True)
+    fixed_bc = Property(depends_on='BC,MESH')
+    '''Foxed boundary condition'''
+    @cached_property
+    def _get_fixed_bc(self):
+        return BCDof(node_name='fixed left end', var='u',
+                     dof=0, value=0.0)
 
-    tolerance = Float(1e-4,
-                      unit='-',
-                      symbol='\epsilon',
-                      desc='required accuracy',
-                      ALG=True)
+    control_bc = Property(depends_on='BC,MESH')
+    '''Control boundary condition - make it accessible directly
+    for the visualization adapter as property
+    '''
+    @cached_property
+    def _get_control_bc(self):
+        return BCDof(node_name='pull-out displacement', var='u',
+                     dof=self.controlled_dof, value=self.w_max,
+                     time_function=self.loading_scenario)
 
+    bc = Property(depends_on='BC,MESH')
+
+    @cached_property
+    def _get_bc(self):
+        return [self.fixed_bc, self.control_bc]
+
+    #=========================================================================
+    #
+    #=========================================================================
     def plot_u_C(self, ax, vot,
                  label_m='matrix', label_f='reinf'):
         X_M = self.tstepper.X_M

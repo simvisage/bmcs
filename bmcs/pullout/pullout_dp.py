@@ -3,6 +3,14 @@ Created on 12.01.2016
 @author: ABaktheer, RChudoba, Yingxiong
 '''
 
+
+from scipy import interpolate as ip
+from traits.api import \
+    Property, Instance, cached_property, \
+    List, Float, Int, Trait, on_trait_change, Enum
+from traitsui.api import \
+    View, Item, Group
+
 from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSBondSlipDP, MATSBondSlipMultiLinear
 from bmcs.mats.tloop_dp import TLoop
@@ -12,16 +20,10 @@ from bmcs.time_functions import \
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from scipy import interpolate as ip
-from traits.api import \
-    Property, Instance, cached_property, \
-    List, Float, Int, Trait, on_trait_change, Enum
-from traitsui.api import \
-    View, Item, Group
+import numpy as np
 from view.plot2d import Vis2D, Viz2D
 from view.window import BMCSModel, BMCSWindow, TLine
 
-import numpy as np
 from .pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     Viz2DEnergyPlot, Viz2DEnergyReleasePlot, \
     PullOutModelBase

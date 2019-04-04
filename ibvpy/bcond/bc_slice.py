@@ -12,6 +12,12 @@
 #
 # Created on May 26, 2009 by: rchx
 
+from ibvpy.core.i_bcond import \
+    IBCond
+from ibvpy.mesh.fe_grid_idx_slice import FEGridIdxSlice
+from ibvpy.plugins.mayavi_util.pipelines import \
+    MVPointLabels
+from mathkit.mfn import MFnLineArray
 from numpy import \
     ix_, dot, repeat, zeros
 from scipy.linalg import \
@@ -24,18 +30,12 @@ from traits.api import Float, \
 from traitsui.api import \
     VSplit, \
     View, UItem, Item, TableEditor, VGroup
+from view.plot2d import Vis2D, Viz2DTimeFunction
+from view.ui import BMCSTreeNode
 
-from ibvpy.core.i_bcond import \
-    IBCond
-from ibvpy.mesh.fe_grid_idx_slice import FEGridIdxSlice
-from ibvpy.plugins.mayavi_util.pipelines import \
-    MVPointLabels
-from mathkit.mfn import MFnLineArray
 import numpy as np
 from traitsui.table_column \
     import ObjectColumn
-from view.plot2d import Vis2D, Viz2DTimeFunction
-from view.ui import BMCSTreeNode
 
 from .bc_dof import BCDof
 
@@ -269,7 +269,7 @@ class BCSlice(BMCSTreeNode, Vis2D):
     dofs = Property
 
     def _get_dofs(self):
-        return self.slice.dofs
+        return np.unique(self.slice.dofs[:, :, self.dims].flatten())
 
     dof_X = Property
 

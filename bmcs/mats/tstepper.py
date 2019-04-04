@@ -9,7 +9,7 @@ from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 from traits.api import HasTraits, Instance, \
     Property, cached_property, List
 
-from .fets1d52ulrhfatigue import FETS1D52ULRHFatigue
+from bmcs.mats.fets1d52ulrhfatigue_delete_moved_to_fets import FETS1D52ULRHFatigue
 from .mats_bondslip import MATSBondSlipFatigue
 import numpy as np
 
