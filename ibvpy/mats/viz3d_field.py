@@ -7,10 +7,10 @@ Created on Feb 11, 2018
 import os
 
 from tvtk.api import tvtk
+from view.plot3d.viz3d import Vis3D, Viz3D
 
 import numpy as np
 import traits.api as tr
-from view.plot3d.viz3d import Vis3D, Viz3D
 
 
 class Vis3DField(Vis3D):
@@ -59,6 +59,14 @@ class Vis3DField(Vis3D):
 
 
 class Viz3DField(Viz3D):
+
+    visible = tr.Property(tr.Bool)
+
+    def _set_visible(self, visible):
+        self.d.visible = visible
+
+    def _get_visible(self):
+        return self.d.visible
 
     def plot(self, vot):
         idx = self.vis3d.sim.hist.get_time_idx(vot)

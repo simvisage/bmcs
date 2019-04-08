@@ -105,9 +105,6 @@ class Vis3DStressField(Vis3DField):
 
 class Viz3DTensorField(Viz3DField):
 
-    label = tr.Str('<unnambed>')
-    vis3d = tr.WeakRef
-
     def setup(self):
         m = mlab
         fname = self.vis3d.file_list[0]

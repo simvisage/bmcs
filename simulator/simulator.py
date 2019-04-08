@@ -6,11 +6,10 @@ Simulator implementation
 '''
 from threading import Thread
 
+from simulator.hist import Hist
 from traits.api import \
     Instance, on_trait_change, Str, \
     Property, cached_property, Bool, List, Dict, provides
-
-from simulator.hist import Hist
 from view.ui.bmcs_tree_node import BMCSRootNode
 
 from .i_hist import IHist
@@ -161,7 +160,7 @@ class Simulator(BMCSRootNode):
             return
         self.running = True
 
-        print('RUN')
+        print('RUN', self.ui)
         if self.ui:
             # inform ui that the simulation is running in a thread
             self.ui.start_event = True

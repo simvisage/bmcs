@@ -14,6 +14,7 @@ from matplotlib.figure import \
 from mayavi.core.ui.api import \
     MayaviScene, SceneEditor, MlabSceneModel
 from pyface.api import GUI
+from reporter import ROutputSection
 from traits.api import \
     Str, Instance,  Event, Enum, \
     Tuple, List, Range, Int, Float, \
@@ -24,10 +25,13 @@ from traitsui.api import \
     View, Item, UItem, VGroup, VSplit, \
     HSplit, HGroup, Tabbed, TabularEditor
 from traitsui.tabular_adapter import TabularAdapter
+from util.traits.editors import \
+    MPLFigureEditor
+from view.plot2d.viz2d import Viz2D
+from view.plot3d.viz3d import Viz3D
 
 import matplotlib.pyplot as plt
 import numpy as np
-from reporter import ROutputSection
 import traits.api as tr
 from traitsui.api \
     import TableEditor
@@ -35,10 +39,6 @@ from traitsui.extras.checkbox_column \
     import CheckboxColumn
 from traitsui.table_column \
     import ObjectColumn
-from util.traits.editors import \
-    MPLFigureEditor
-from view.plot2d.viz2d import Viz2D
-from view.plot3d.viz3d import Viz3D
 
 
 class RunThread(Thread):
@@ -66,23 +66,27 @@ class Viz2DAdapter(TabularAdapter):
 
 
 # The tabular editor works in conjunction with an adapter class, derived from
-tabular_editor = TabularEditor(
-    adapter=Viz2DAdapter(),
-    operations=['delete', 'move', 'edit'],
-    # Row titles are not supported in WX:
-    drag_move=True,
-    auto_update=True,
-    selected='selected_viz2d',
-)
-
-
-# The 'players' trait table editor:
+# the 'players' trait table editor:
 viz2d_list_editor = TableEditor(
     sortable=False,
     configurable=False,
     auto_size=False,
     selected='selected_viz2d',
     click='viz2d_list_editor_clicked',
+    columns=[CheckboxColumn(name='visible',  label='visible',
+                            width=0.12),
+             ObjectColumn(name='name', editable=False, width=0.24,
+                          horizontal_alignment='left'),
+             ])
+
+# The tabular editor works in conjunction with an adapter class, derived from
+# the 'players' trait table editor:
+viz3d_list_editor = TableEditor(
+    sortable=False,
+    configurable=False,
+    auto_size=False,
+    selected='selected_viz3d',
+    #    click='viz3d_list_editor_clicked',
     columns=[CheckboxColumn(name='visible',  label='visible',
                             width=0.12),
              ObjectColumn(name='name', editable=False, width=0.24,
@@ -492,7 +496,8 @@ class BMCSVizSheet(ROutputSection):
         '''Add a new visualization objectk.'''
         viz3d.ftv = self
         vis3d = viz3d.vis3d
-        label = '%s[%s:%s]-%s' % (viz3d.label,
+        name = viz3d.name
+        label = '%s[%s:%s]-%s' % (name,
                                   str(vis3d.__class__),
                                   str(viz3d.__class__),
                                   vis3d
@@ -538,6 +543,11 @@ class BMCSVizSheet(ROutputSection):
             viz3d.plot(vot)
         fig.scene.disable_render = False
 
+    selected_viz3d = Instance(Viz3D)
+
+    def _selected_viz3d_changed(self):
+        print('selection done')
+
     # Traits view definition:
     traits_view = View(
         VSplit(
@@ -560,6 +570,11 @@ class BMCSVizSheet(ROutputSection):
                               editor=viz2d_list_editor,
                               width=100),
                         UItem('selected_viz2d@',
+                              width=200),
+                        UItem('viz3d_list@',
+                              editor=viz3d_list_editor,
+                              width=100),
+                        UItem('selected_viz3d@',
                               width=200),
                         VGroup(
                             #                             UItem('export_button',
@@ -603,26 +618,11 @@ class BMCSVizSheet(ROutputSection):
 
 
 if __name__ == '__main__':
-    import traits.api as tr
-    from ibvpy.dots.vdots_grid import DOTSGrid
-    from ibvpy.fets.fets2D.vfets2D4q import FETS2D4Q
-    dots = DOTSGrid(n_x=5, n_y=2, fets=FETS2D4Q())
-
-    n_elems = dots.mesh.n_active_elems
-    U = np.random.random(n_elems * 4 * 3).reshape(-1, 3) * 10.0
-
-    class TLoop(tr.HasTraits):
-
-        U_record = tr.List()
-        ts = tr.Instance(dots)
-
-    tl = TLoop(ts=dots)
-    tl.U_record.append(U)
-    viz3d = Viz3D()
-    viz3d.set_tloop(tloop=tl)
-
+    viz3d_1 = Viz3D(label='first')
+    viz3d_2 = Viz3D(label='second')
     vs = BMCSVizSheet()
-    vs.add_viz3d(viz3d)
+    vs.add_viz3d(viz3d_1)
+    vs.add_viz3d(viz3d_2)
     vs.run_started()
     vs.replot()
     vs.run_finished()

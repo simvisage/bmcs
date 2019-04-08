@@ -2,6 +2,7 @@
 from ibvpy.mats.mats3D.mats3D_eval import \
     MATS3DEval
 from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
+from simulator.model import Model
 from traits.api import \
     Trait, Dict
 from traitsui.api import \
@@ -10,13 +11,13 @@ from traitsui.api import \
 import numpy as np
 
 
-class MATS3DElastic(MATS3DEval, MATS3D):
+class MATS3DElastic(Model, MATS3DEval, MATS3D):
     '''
     Elastic Model.
     Material time-step-evaluator for Scalar-Damage-Model
     '''
 
-    state_array_shapes = {}
+    state_var_shapes = {}
 
     #-------------------------------------------------------------------------
     # View specification
@@ -32,23 +33,18 @@ class MATS3DElastic(MATS3DEval, MATS3D):
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1,
-                      update_state, algorithmic):
+    def get_corr_pred(self, eps_Emab, tn1):
         '''
         Corrector predictor computation.
-        @param eps_app_eng input variable - engineering strain
+        @param eps_Emab input variable - strain tensor
         '''
-        Em_len = len(eps_Emab_n1.shape) - 2
-        new_shape = tuple([1 for i in range(Em_len)]) + self.D_abef.shape
-        D_abef = self.D_abef.reshape(*new_shape)
         sigma_Emab = np.einsum(
-            '...abcd,...cd->...ab', D_abef, eps_Emab_n1
+            'abcd,...cd->...ab', self.D_abef, eps_Emab
         )
-        return D_abef, sigma_Emab
-
-    # Declare and fill-in the rte_dict - it is used by the clients to
-    # assemble all the available time-steppers.
-    #
+        Em_len = len(eps_Emab.shape) - 2
+        new_shape = tuple([1 for _ in range(Em_len)]) + self.D_abef.shape
+        D_abef = self.D_abef.reshape(*new_shape)
+        return sigma_Emab, D_abef
 
     rte_dict = Trait(Dict)
 

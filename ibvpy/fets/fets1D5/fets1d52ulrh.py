@@ -4,10 +4,10 @@ Created on 12.01.2016
 @author: Yingxiong
 '''
 
+from ibvpy.fets.fets_eval import FETSEval, IFETSEval
 from traits.api import Int, Array, \
     Property, cached_property, Float, List, provides, Type
 
-from ibvpy.fets.fets_eval import FETSEval, IFETSEval
 import numpy as np
 import sympy as sp
 import traits.api as tr
@@ -34,7 +34,7 @@ dN_xi_ir = sp.Matrix([[-1. / 2], [1. / 2]], dtype=np.float_)
 
 
 @provides(IFETSEval)
-class FETS1D52ULRHFatigue(FETSEval):
+class FETS1D52ULRH(FETSEval):
 
     '''
     Fe Bar 2 nodes, deformation
@@ -277,5 +277,5 @@ class FETS1D52ULRHFatigue(FETSEval):
 
 
 if __name__ == '__main__':
-    fe = FETS1D52ULRHFatigue()
+    fe = FETS1D52ULRH()
     print('dN_imr', fe.dN_imr)

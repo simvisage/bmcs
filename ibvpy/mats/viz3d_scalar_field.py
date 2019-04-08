@@ -6,11 +6,11 @@ Created on Feb 11, 2018
 
 import os
 
+from ibvpy.mats.viz3d_field import Vis3DField, Viz3DField
 from mayavi import mlab
 from mayavi.sources.vtk_xml_file_reader import VTKXMLFileReader
 from tvtk.api import write_data
 
-from ibvpy.mats.viz3d_field import Vis3DField, Viz3DField
 import numpy as np
 import traits.api as tr
 
@@ -62,8 +62,8 @@ class Vis3DStateField(Vis3DField):
 
 class Viz3DScalarField(Viz3DField):
 
-    vis3d = tr.WeakRef
     warp_factor = tr.Float(1.0, auto_set=False, enter_set=True)
+
     lut_manager = tr.Property
 
     def _get_lut_manager(self):

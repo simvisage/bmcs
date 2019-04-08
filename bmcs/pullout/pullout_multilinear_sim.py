@@ -178,6 +178,7 @@ def run_pullout_multilinear(*args, **kw):
     po.mats_eval.update_bs_law = True
     po.record['Pw'] = PulloutResponse()
     fw = Viz2DPullOutFW(name='Pw', vis2d=po.hist['Pw'])
+    sf = Viz2DPullOutField(name='sf', vis2d=po.hist['fields'])
 
     po.run()
     time.sleep(4)

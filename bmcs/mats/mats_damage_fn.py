@@ -1,6 +1,8 @@
 
 from os.path import join
 
+from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from reporter import RInputRecord
 from scipy.optimize import newton
 from traits.api import \
     Instance, Str, \
@@ -9,11 +11,9 @@ from traits.api import \
     Array, WeakRef
 from traitsui.api import \
     View, Item, UItem, VGroup
-
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-import numpy as np
-from reporter import RInputRecord
 from view.ui import BMCSLeafNode
+
+import numpy as np
 
 
 class PlottableFn(RInputRecord):
@@ -225,37 +225,25 @@ class JirasekDamageFn(DamageFn):
         eps_0 = self.s_0
         return np.where(eps_eq_Em - eps_0 > 0)
 
-    def __call__(self, kappa_Em):
+    def __call__(self, kappa):
         s_0 = self.s_0
         s_f = self.s_f
-        omega = np.zeros_like(kappa_Em, dtype=np.float_)
-        d_idx = np.where(kappa_Em >= s_0)[0]
-        k = kappa_Em[d_idx]
-        omega[d_idx] = 1. - s_0 / k * np.exp(-1 * (k - s_0) / (s_f - s_0))
+        omega = np.zeros_like(kappa, dtype=np.float_)
+        I = np.where(kappa >= s_0)
+        k_I = kappa[I]
+        omega[I] = 1. - s_0 / k_I * np.exp(-1 * (k_I - s_0) / (s_f - s_0))
         return omega
 
-        omega_Em = np.zeros_like(kappa_Em)
-        epsilon_0 = self.epsilon_0
-        epsilon_f = self.epsilon_f
-        kappa_idx = np.where(kappa_Em >= epsilon_0)
-        omega_Em[kappa_idx] = (
-            1.0 - (epsilon_0 / kappa_Em[kappa_idx] *
-                   np.exp(-1.0 * (kappa_Em[kappa_idx] - epsilon_0) /
-                          (epsilon_f - epsilon_0))
-                   ))
-        return omega_Em
-
     def diff(self, kappa):
-
-        nz_ix = np.where(kappa != 0.0)[0]
         s_0 = self.s_0
         s_f = self.s_f
-
+        I = np.where(kappa >= s_0)
+        k_I = kappa[I]
         domega_dkappa = np.zeros_like(kappa)
-        kappa_nz = kappa[nz_ix]
-        domega_dkappa[nz_ix] = ((s_0 / (kappa_nz * s_f)) -
-                                (s_0 / kappa_nz**2)) * np.exp(-(kappa_nz - s_0) / (s_f))
-
+        domega_dkappa[I] = (
+            s_0 * (-k_I + s_0 - s_f) * np.exp((k_I - s_0) /
+                                              (s_0 - s_f)) / (k_I**2 * (s_0 - s_f))
+        )
         return domega_dkappa
 
     latex_eq = Str(r'''Damage function (Jirasek)
@@ -628,5 +616,6 @@ if __name__ == '__main__':
     #ld = LiDamageFn()
     #ld = GfDamageFn()
     #mld = MultilinearDamageFn()
-    mld = FRPDamageFn(Gf=100)
+    #mld = FRPDamageFn(Gf=100)
+    mld = JirasekDamageFn()
     mld.configure_traits()

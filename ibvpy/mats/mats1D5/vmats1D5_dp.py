@@ -4,16 +4,16 @@ Created on Feb 14, 2019
 @author: rch
 '''
 
-from sqlalchemy.orm import state
-from traits.api import on_trait_change
-
 from bmcs.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
     MultilinearDamageFn, \
     FRPDamageFn
 from ibvpy.api import MATSEval
-import numpy as np
 from simulator.i_model import IModel
+from sqlalchemy.orm import state
+from traits.api import on_trait_change
+
+import numpy as np
 import traits.api as tr
 
 
@@ -42,10 +42,10 @@ class MATS1D5DP(MATSEval):
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    c = tr.Float(1, Label='c',
-                 desc='Damage accumulation parameter',
-                 MAT=True,
-                 enter_set=True, auto_set=False)
+    _c = tr.Float(1, Label='c',
+                  desc='Damage accumulation parameter',
+                  MAT=True,
+                  enter_set=True, auto_set=False)
 
     tau_bar = tr.Float(1, label='tau_bar',
                        desc='Reversibility limit',
@@ -63,7 +63,7 @@ class MATS1D5DP(MATSEval):
                            label='Uncoupled d-p'
                            )
 
-    s_0 = tr.Float(MAT=True,
+    s_0 = tr.Float(0.01, MAT=True,
                    desc='Elastic strain/displacement limit')
 
     def __init__(self, *args, **kw):

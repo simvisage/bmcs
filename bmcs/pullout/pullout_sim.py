@@ -507,12 +507,17 @@ class PullOutModelBase(Simulator):
     def _get_bc(self):
         return [self.fixed_bc, self.control_bc]
 
+    X_M = Property()
+
+    def _get_X_M(self):
+        return self.tstep.fe_domain[0].xdomain.X_M
+
     #=========================================================================
     #
     #=========================================================================
     def plot_u_C(self, ax, vot,
                  label_m='matrix', label_f='reinf'):
-        X_M = self.tstepper.X_M
+        X_M = self.X_M
         L = self.geometry.L_x
         u_C = self.get_u_C(vot).T
         ax.plot(X_M, u_C[0], linewidth=2, color='blue', label=label_m)
@@ -527,7 +532,7 @@ class PullOutModelBase(Simulator):
 
     def plot_eps_C(self, ax, vot,
                    label_m='matrix', label_f='reinf'):
-        X_M = self.tstepper.X_M
+        X_M = self.X_M
         L = self.geometry.L_x
         eps_C = self.get_eps_C(vot).T
         ax.plot(X_M, eps_C[0], linewidth=2, color='blue', label=label_m)
@@ -540,7 +545,7 @@ class PullOutModelBase(Simulator):
         return np.min(eps_C), np.max(eps_C)
 
     def plot_sig_C(self, ax, vot):
-        X_M = self.tstepper.X_M
+        X_M = self.X_M
         sig_C = self.get_sig_C(vot).T
 
         A_m = self.cross_section.A_m
@@ -560,7 +565,7 @@ class PullOutModelBase(Simulator):
         return F_min, F_max
 
     def plot_s(self, ax, vot):
-        X_J = self.tstepper.X_J
+        X_J = self.X_J
         s = self.get_s(vot)
         ax.fill_between(X_J, 0, s, facecolor='lightcoral', alpha=0.3)
         ax.plot(X_J, s, linewidth=2, color='lightcoral')
@@ -569,7 +574,7 @@ class PullOutModelBase(Simulator):
         return np.min(s), np.max(s)
 
     def plot_sf(self, ax, vot):
-        X_J = self.tstepper.X_J
+        X_J = self.X_J
         sf = self.get_sf(vot)
         ax.fill_between(X_J, 0, sf, facecolor='lightcoral', alpha=0.3)
         ax.plot(X_J, sf, linewidth=2, color='lightcoral')
@@ -578,7 +583,7 @@ class PullOutModelBase(Simulator):
         return np.min(sf), np.max(sf)
 
     def plot_omega(self, ax, vot):
-        X_J = self.tstepper.X_J
+        X_J = self.X_J
         omega = self.get_omega(vot)
         ax.fill_between(X_J, 0, omega, facecolor='lightcoral', alpha=0.3)
         ax.plot(X_J, omega, linewidth=2, color='lightcoral', label='bond')

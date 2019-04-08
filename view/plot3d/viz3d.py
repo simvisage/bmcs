@@ -29,14 +29,15 @@ class Vis3D(tr.HasTraits):
 
 class Viz3D(tr.HasTraits):
 
-    label = tr.Str('<unnambed>')
     vis3d = tr.WeakRef
 
-    def set_tloop(self, tloop):
-        self.tloop = tloop
+    name = tr.Property()
+
+    def _get_name(self):
+        return self.vis3d.var
 
     def setup(self):
-        raise NotImplementedError
+        pass
 
     def plot(self, vot):
-        raise NotImplementedError
+        pass

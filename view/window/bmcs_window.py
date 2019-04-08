@@ -88,7 +88,7 @@ class BMCSWindow(BMCSStudy):
     view = View(
         HSplit(
             VGroup(
-                Item('model',
+                Item('sim',
                      id='bmcs.hsplit.left.tree.id',
                      dock='tab',
                      editor=tree_editor,
@@ -140,7 +140,7 @@ class BMCSWindow(BMCSStudy):
 
 if __name__ == '__main__':
     from view.examples.response_tracer import ResponseTracer
-    from simulator import Simulator
+    from simulator.api import Simulator
     from ibvpy.core.bcond_mngr import BCondMngr
     from ibvpy.bcond import BCDof, BCSlice
     bc_mngr = BCondMngr()
@@ -148,7 +148,7 @@ if __name__ == '__main__':
         BCDof(),
         BCSlice()]
     rt = ResponseTracer()
-    bm = Simulator(node_name='model',
+    bm = Simulator(node_name='sim',
                    tree_node_list=[BMCSTreeNode(node_name='subnode 1'),
                                    BMCSTreeNode(node_name='subnode 2'),
                                    rt,

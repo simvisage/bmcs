@@ -5,8 +5,9 @@ Created on Feb 14, 2019
 '''
 
 from ibvpy.api import MATSEval
-import numpy as np
 from simulator.i_model import IModel
+
+import numpy as np
 import traits.api as tr
 
 
@@ -122,9 +123,9 @@ class MATS1D5DPCumPress(MATSEval):
 
         z[I] += delta_lambda_I
 
-        # Algorithmic Stiffness
+        # Secant stiffness
 
-        #E_alg_T = (1 - omega) * self.E_T
+        E_alg_T = (1 - omega) * self.E_T
 
         # Consistent tangent operator
         if False:
@@ -137,18 +138,19 @@ class MATS1D5DPCumPress(MATSEval):
                 ((self.E_T / (1 - omega)) + self.gamma + self.K)
             )
 
-        # if False:
-        E_alg_T = (
-            (1 - omega) * self.E_T -
-            ((self.E_T**2 * (1 - omega)) /
-             (self.E_T + (self.gamma + self.K) * (1 - omega)))
-            -
-            ((1 - omega)**self.c *
-             (Y / self.S)**self.r *
-             self.E_T**2 * (s - s_pi) * self.tau_bar /
-             (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) /
-            (self.E_T / (1 - omega) + self.gamma + self.K)
-        )
+        if False:
+            print('DONT COME HERE')
+            E_alg_T = (
+                (1 - omega) * self.E_T -
+                ((self.E_T**2 * (1 - omega)) /
+                 (self.E_T + (self.gamma + self.K) * (1 - omega)))
+                -
+                ((1 - omega)**self.c *
+                 (Y / self.S)**self.r *
+                 self.E_T**2 * (s - s_pi) * self.tau_bar /
+                 (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) /
+                (self.E_T / (1 - omega) + self.gamma + self.K)
+            )
 
         sig = np.zeros_like(u_r)
         sig[..., 0] = sig_T
