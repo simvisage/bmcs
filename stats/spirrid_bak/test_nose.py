@@ -24,11 +24,13 @@
   @todo: add C-code tests.
 '''
 
-from etsproxy.traits.api import implements, Str
-from stats.spirrid_bak import SPIRRIDLAB, Heaviside, SPIRRID, RV, RF, IRF
-import nose
-import numpy as np
 import unittest
+
+import nose
+from stats.spirrid_bak import SPIRRIDLAB, Heaviside, SPIRRID, RV, RF, IRF
+
+from etsproxy.traits.api import Str
+import numpy as np
 
 
 #===========================================================================
@@ -54,11 +56,13 @@ class fiber_tt_2p(RF):
             }
         '''
 
+
 class SPIRRIDAlgTest(unittest.TestCase):
     '''
     Test functionality connected with the application of
     boundary conditions.
     '''
+
     @classmethod
     def setup_class(cls):
 
@@ -76,12 +80,12 @@ class SPIRRIDAlgTest(unittest.TestCase):
         # Randomization
         #===========================================================================
 
-        cls.s = SPIRRID(q = fiber_tt_2p(),
-                         evars = {'e':e_arr},
-                         codegen_type = 'numpy',
-                         n_int = 10,
-                         tvars = dict(la = RV('norm', cls.m_la, cls.std_la),
-                                      xi = RV('norm', cls.m_xi, cls.std_xi)
+        cls.s = SPIRRID(q=fiber_tt_2p(),
+                         evars={'e':e_arr},
+                         codegen_type='numpy',
+                         n_int=10,
+                         tvars=dict(la=RV('norm', cls.m_la, cls.std_la),
+                                      xi=RV('norm', cls.m_xi, cls.std_xi)
                                       ),
                          )
 
@@ -139,7 +143,7 @@ class SPIRRIDAlgTest(unittest.TestCase):
     def test_c_tgrid01(self):
         '''Check the C-implementation for TGrid'''
         self.s.codegen_type = 'c'
-        self.s.codegen.set(cached_dG = False, compiled_eps = False)
+        self.s.codegen.set(cached_dG=False, compiled_eps=False)
         self.s.sampling_type = 'TGrid'
         max_mu_q = np.max(self.s.mu_q_arr)
         self.assertAlmostEqual(max_mu_q, 0.11999724956278124, 10)
@@ -147,7 +151,7 @@ class SPIRRIDAlgTest(unittest.TestCase):
     def test_c_tgrid02(self):
         '''Check the C-implementation for TGrid'''
         self.s.codegen_type = 'c'
-        self.s.codegen.set(cached_dG = True, compiled_eps = False)
+        self.s.codegen.set(cached_dG=True, compiled_eps=False)
         self.s.sampling_type = 'TGrid'
         max_mu_q = np.max(self.s.mu_q_arr)
         self.assertAlmostEqual(max_mu_q, 0.11999724956278124, 10)
@@ -155,7 +159,7 @@ class SPIRRIDAlgTest(unittest.TestCase):
     def test_c_tgrid03(self):
         '''Check the C-implementation for TGrid'''
         self.s.codegen_type = 'c'
-        self.s.codegen.set(cached_dG = False, compiled_eps = True)
+        self.s.codegen.set(cached_dG=False, compiled_eps=True)
         self.s.sampling_type = 'TGrid'
         max_mu_q = np.max(self.s.mu_q_arr)
         self.assertAlmostEqual(max_mu_q, 0.11999724956278124, 10)
@@ -163,7 +167,7 @@ class SPIRRIDAlgTest(unittest.TestCase):
     def test_c_tgrid04(self):
         '''Check the C-implementation for TGrid'''
         self.s.codegen_type = 'c'
-        self.s.codegen.set(cached_dG = True, compiled_eps = True)
+        self.s.codegen.set(cached_dG=True, compiled_eps=True)
         self.s.sampling_type = 'TGrid'
         max_mu_q = np.max(self.s.mu_q_arr)
         self.assertAlmostEqual(max_mu_q, 0.11999724956278124, 10)
@@ -176,11 +180,13 @@ class SPIRRIDAlgTest(unittest.TestCase):
         max_mu_q = np.max(self.s.mu_q_arr)
         self.assertAlmostEqual(max_mu_q, 0.12000000000000001, 10)
 
+
 class SPIRRIDChangeTest(unittest.TestCase):
     '''
     Test functionality connected with the application of
     boundary conditions.
     '''
+
     def setUp(self):
 
         np.random.seed(2356)
@@ -200,12 +206,12 @@ class SPIRRIDChangeTest(unittest.TestCase):
         # Randomization
         #===========================================================================
 
-        s = SPIRRID(q = fiber_tt_2p(),
-                         e_arr = e_arr,
-                         codegen_type = 'numpy',
-                         n_int = 10,
-                         tvars = dict(la = m_la,
-                                      xi = m_xi
+        s = SPIRRID(q=fiber_tt_2p(),
+                         e_arr=e_arr,
+                         codegen_type='numpy',
+                         n_int=10,
+                         tvars=dict(la=m_la,
+                                      xi=m_xi
                                       ),
                          )
 

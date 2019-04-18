@@ -4,68 +4,61 @@ Created on Mar 29, 2009
 @author: jakub
 '''
 
-from traits.api import \
-     Array, Bool, Callable, Enum, Float, HasTraits, \
-     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-     implements, Dict, Property, cached_property, Delegate
+from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
 
-from traitsui.api import \
-     Item, View, HSplit, VSplit, VGroup, Group, Spring
-
-# Chaco imports
-from etsproxy.chaco.chaco_plot_editor import \
-     ChacoPlotEditor, \
-     ChacoPlotItem
-from etsproxy.enable.component_editor import \
-     ComponentEditor
-from etsproxy.chaco.tools.api import \
-     PanTool, SimpleZoom
-from etsproxy.chaco.api import \
-     Plot, AbstractPlotData, ArrayPlotData
-
-#from dacwt import DAC
-
+from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
+from ibvpy.core.tstepper import \
+     TStepper as TS
+from ibvpy.mats.mats_eval import IMATSEval, MATSEval
+from mathkit.mfn import MFnLineArray
 from numpy import \
      array, ones, zeros, outer, inner, transpose, dot, frompyfunc, \
      fabs, sqrt, linspace, vdot, identity, tensordot, \
      sin as nsin, meshgrid, float_, ix_, \
      vstack, hstack, sqrt as arr_sqrt
-
-from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
-
 from scipy.linalg import eig, inv
+from traits.api import \
+     Array, Bool, Callable, Enum, Float, HasTraits, \
+     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
+     Dict, Property, cached_property, Delegate
+from traitsui.api import \
+     Item, View, HSplit, VSplit, VGroup, Group, Spring
 
-from ibvpy.core.tstepper import \
-     TStepper as TS
-
-from ibvpy.mats.mats_eval import IMATSEval, MATSEval
-
-from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
-from mathkit.mfn import MFnLineArray
+from etsproxy.chaco.api import \
+     Plot, AbstractPlotData, ArrayPlotData
+from etsproxy.chaco.chaco_plot_editor import \
+     ChacoPlotEditor, \
+     ChacoPlotItem
+from etsproxy.chaco.tools.api import \
+     PanTool, SimpleZoom
+from etsproxy.enable.component_editor import \
+     ComponentEditor
 
 from .mats1D5bond import MATS1D5Bond
 
+
+# Chaco imports
+# from dacwt import DAC
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
-
 class MATS1D5BondAC(MATS1D5Bond):
     '''
     Adhesive Cohesive Bond Model
     '''
 
-    s_cr = Float(1., #34e+3,
-                 label = "s_cr",
-                 desc = "Critical Slip",
-                 auto_set = False)
-    tau_max = Float(1., #34e+3,
-                 label = "T_max",
-                 desc = "maximal shear stress",
-                 auto_set = False)
-    tau_fr = Float(1., #34e+3,
-                 label = "T_fr",
-                 desc = "Frictional shear stress",
-                 auto_set = False)
+    s_cr = Float(1.,  # 34e+3,
+                 label="s_cr",
+                 desc="Critical Slip",
+                 auto_set=False)
+    tau_max = Float(1.,  # 34e+3,
+                 label="T_max",
+                 desc="maximal shear stress",
+                 auto_set=False)
+    tau_fr = Float(1.,  # 34e+3,
+                 label="T_fr",
+                 desc="Frictional shear stress",
+                 auto_set=False)
 
     # This event can be used by the clients to trigger an action upon
     # the completed reconfiguration of the material model
@@ -95,13 +88,13 @@ class MATS1D5BondAC(MATS1D5Bond):
         Return number of number to be stored in state array
         @param sctx:spatial context
         '''
-        return 2 #TODO: works just with linear element
+        return 2  # TODO: works just with linear element
 
     def new_cntl_var(self):
-        return zeros(4, float_)#TODO: adapt for 4-5..
+        return zeros(4, float_)  # TODO: adapt for 4-5..
 
     def new_resp_var(self):
-        return zeros(4, float_)#TODO: adapt for 4-5..
+        return zeros(4, float_)  # TODO: adapt for 4-5..
 
     #-----------------------------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
@@ -132,14 +125,14 @@ class MATS1D5BondAC(MATS1D5Bond):
 
         if omega_l or eps_app_eng[0] > self.s_cr:
             D_mtx[0, 0] = 0
-            sigma[0] = self.tau_fr #tau_l
+            sigma[0] = self.tau_fr  # tau_l
         else:
             D_mtx[0, 0] = self.tau_max / self.s_cr
             sigma[0] = D_mtx[0, 0] * eps_app_eng[0]
 
         if omega_r or eps_app_eng[1] > self.s_cr:
             D_mtx[1, 1] = 0.
-            sigma[1] = self.tau_fr #tau_r
+            sigma[1] = self.tau_fr  # tau_r
         else:
             D_mtx[1, 1] = self.tau_max / self.s_cr
             sigma[1] = D_mtx[1, 1] * eps_app_eng[1]
@@ -147,8 +140,8 @@ class MATS1D5BondAC(MATS1D5Bond):
         D_mtx[-2, -2] = self.Ef * self.Af
         D_mtx[-1, -1] = self.Em * self.Am
 
-        sigma[-2] = self.Ef * self.Af * eps_app_eng[-2]#sig_f
-        sigma[-1] = self.Em * self.Am * eps_app_eng[-1]#sig_m
+        sigma[-2] = self.Ef * self.Af * eps_app_eng[-2]  # sig_f
+        sigma[-1] = self.Em * self.Am * eps_app_eng[-1]  # sig_m
 
         # You print the stress you just computed and the value of the apparent E
 
@@ -158,16 +151,15 @@ class MATS1D5BondAC(MATS1D5Bond):
     # Subsidiary methods realizing configurable features
     #---------------------------------------------------------------------------------------------
 
-
     #---------------------------------------------------------------------------------------------
     # Response trace evaluators
     #---------------------------------------------------------------------------------------------
-
 
     # Declare and fill-in the rte_dict - it is used by the clients to
     # assemble all the available time-steppers.
     #
     rte_dict = Trait(Dict)
+
     def _rte_dict_default(self):
         return {'sig_app_t1d'      : self.get_sig_app,
                 'eps_app_t1d'      : self.get_eps_app,

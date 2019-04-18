@@ -1,5 +1,11 @@
 
 from math import sqrt as scalar_sqrt
+
+from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
+from ibvpy.core.tstepper import \
+    TStepper as TS
+from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
+from ibvpy.mats.mats_eval import IMATSEval
 from numpy import \
     array, zeros, transpose, dot, frompyfunc, \
     fabs, sqrt, linspace, vdot, identity, tensordot, \
@@ -9,15 +15,9 @@ from scipy.linalg import eig, inv
 from traits.api import \
     Array, Bool, Callable, Enum, Float, HasTraits, \
     Int, Trait, Range, HasTraits, on_trait_change, Event, \
-    implements, Dict, Property, cached_property, Delegate
+    Dict, Property, cached_property, Delegate
 from traitsui.api import \
     Item, View, HSplit, VSplit, VGroup, Group, Spring
-
-from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
-from ibvpy.core.tstepper import \
-    TStepper as TS
-from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
-from ibvpy.mats.mats_eval import IMATSEval
 
 
 # Chaco imports
@@ -30,7 +30,7 @@ class MATS2DConduction(MATS2DEval):
     Elastic Model.
     '''
 
-    #implements(IMATSEval)
+    # implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)
@@ -118,6 +118,7 @@ class MATS2DConduction(MATS2DEval):
                 'eps_app': self.get_eps_app,
                 'sig_norm': self.get_sig_norm,
                 'strain_energy': self.get_strain_energy}
+
 
 if __name__ == '__main__':
     #-------------------------------------------------------------------------

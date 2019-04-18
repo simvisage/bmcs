@@ -12,15 +12,18 @@
 #
 # Created on Sep 8, 2011 by: rch
 
-from etsproxy.traits.api import implements, Str
-from scipy.interpolate import interp1d
-from stats.spirrid.extras import SPIRRIDLAB
-from stats.spirrid import  SPIRRID, RV, RF, IRF, Heaviside
 import math
-import numpy as np
 import os
 
+from scipy.interpolate import interp1d
+
+from etsproxy.traits.api import Str
+import numpy as np
+from stats.spirrid import  SPIRRID, RV, RF, IRF, Heaviside
+from stats.spirrid.extras import SPIRRIDLAB
+
 file_dir = os.path.dirname(os.path.abspath(__file__))
+
 
 #===========================================================================
 # Response function
@@ -106,9 +109,10 @@ and 1 for :math:`\eta > 0`.
             }
         '''
 
+
 def create_demo_object():
 
-    D = 26 * 1.0e-6 # m
+    D = 26 * 1.0e-6  # m
     A = (D / 2.0) ** 2 * math.pi
 
     # set the mean and standard deviation of the two random variables
@@ -185,36 +189,37 @@ def create_demo_object():
 
     # n_int range for sampling efficiency test
     powers = np.linspace(1, math.log(20, 10), 15)
-    n_int_range = np.array(np.power(10, powers), dtype = int)
+    n_int_range = np.array(np.power(10, powers), dtype=int)
 
     #===========================================================================
     # Randomization
     #===========================================================================
-    s = SPIRRID(q = fiber_tt_5p(),
-                e_arr = e_arr,
-                n_int = 10,
-                tvars = dict(lambd = g_la, xi = g_xi, E_mod = g_E, theta = g_th, A = g_A),
+    s = SPIRRID(q=fiber_tt_5p(),
+                e_arr=e_arr,
+                n_int=10,
+                tvars=dict(lambd=g_la, xi=g_xi, E_mod=g_E, theta=g_th, A=g_A),
                 )
 
     # Exact solution
     def mu_q_ex(e):
-        data = np.loadtxt(mu_ex_file, delimiter = delimiter)
+        data = np.loadtxt(mu_ex_file, delimiter=delimiter)
         x, y = data[:, 0], data[:, 1]
-        f = interp1d(x, y, kind = 'linear')
+        f = interp1d(x, y, kind='linear')
         return f(e)
 
     #===========================================================================
     # Lab
     #===========================================================================
-    slab = SPIRRIDLAB(s = s, save_output = False, show_output = True, dpi = 300,
-                      exact_arr = mu_q_ex(e_arr),
-                      plot_mode = 'subplots',
-                      n_int_range = n_int_range,
-                      extra_compiler_args = True,
-                      le_sampling_lst = ['LHS', 'PGrid'],
-                      le_n_int_lst = [25, 30])
+    slab = SPIRRIDLAB(s=s, save_output=False, show_output=True, dpi=300,
+                      exact_arr=mu_q_ex(e_arr),
+                      plot_mode='subplots',
+                      n_int_range=n_int_range,
+                      extra_compiler_args=True,
+                      le_sampling_lst=['LHS', 'PGrid'],
+                      le_n_int_lst=[25, 30])
 
     return slab
+
 
 if __name__ == '__main__':
 
@@ -230,21 +235,21 @@ if __name__ == '__main__':
 #    powers = np.linspace(1, math.log(20, 10), 15)
 #    n_int_range = np.array(np.power(10, powers), dtype = int)
 
-    #slab.sampling_efficiency(n_int_range = n_int_range)
+    # slab.sampling_efficiency(n_int_range = n_int_range)
 
     #===========================================================================
     # Compare the structure of sampling
     #===========================================================================
 
-    #slab.sampling_structure( ylim = 1.1, xlim = 0.04 )
+    # slab.sampling_structure( ylim = 1.1, xlim = 0.04 )
 
     #===========================================================================
     # Compare the code efficiency
     #===========================================================================
 
-    #s.set(e_arr = np.linspace(0, 0.04, 20), n_int = 40)
-    #s.sampling_type = 'PGrid'
-    #slab.codegen_efficiency()
+    # s.set(e_arr = np.linspace(0, 0.04, 20), n_int = 40)
+    # s.sampling_type = 'PGrid'
+    # slab.codegen_efficiency()
 
     #===========================================================================
     # Compare the language efficiency
@@ -256,5 +261,4 @@ if __name__ == '__main__':
 #    slab.codegen_language_efficiency(extra_compiler_args = False,
 #                                     sampling_list = ['LHS'], # 'PGrid'],
 #                                     n_int_list = [25]) # , 30])
-
 
