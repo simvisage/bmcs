@@ -83,7 +83,6 @@ class BMCSStudy(ReportStudy):
     '''
 
     def _start_event_fired(self):
-        print('START EVENT FIRED')
         self.viz_sheet.run_started()
 
     finish_event = tr.Event
@@ -91,15 +90,14 @@ class BMCSStudy(ReportStudy):
     '''
 
     def _finish_event_fired(self):
-        print('FINISH EVENT FIRED')
         self.viz_sheet.run_finished()
 
     def run(self):
-        self.sim.run()
+        self.sim.run_thread()
         self.enable_stop = True
 
     def join(self):
-        self.sim.join()
+        self.sim.join_thread()
 
     def pause(self):
         self.sim.pause()

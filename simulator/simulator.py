@@ -32,27 +32,29 @@ class RunTimeLoopThread(Thread):
         self.sim = simulator
 
     def run(self):
-        self.sim.running = True
-
-        if self.sim.ui:
-            # inform ui that the simulation is running in a thread
-            self.sim.ui.start_event = True
-            self.sim.ui.running = True
-
-        try:
-            # start the calculation
-            self.sim.tloop()
-        except Exception as e:
-            self.sim.running = False
-            self.sim.ui.running = False
-            raise e  # re-raise exception
-
-        self.sim.running = False
-
-        if self.sim.ui:
-            # cleanup ui and send the finish event
-            self.sim.ui.running = False
-            self.sim.ui.finish_event = True
+        self.sim.run()
+        return
+#         self.sim.running = True
+#
+#         if self.sim.ui:
+#             # inform ui that the simulation is running in a thread
+#             self.sim.ui.start_event = True
+#             self.sim.ui.running = True
+#
+#         try:
+#             # start the calculation
+#             self.sim.tloop()
+#         except Exception as e:
+#             self.sim.running = False
+#             self.sim.ui.running = False
+#             raise e  # re-raise exception
+#
+#         self.sim.running = False
+#
+#         if self.sim.ui:
+#             # cleanup ui and send the finish event
+#             self.sim.ui.running = False
+#             self.sim.ui.finish_event = True
 
 
 @provides(ISimulator)
@@ -72,7 +74,6 @@ class Simulator(BMCSRootNode):
         ]
 
     def _update_node_list(self):
-        print('updating MATS explore', self.dim)
         self.tree_node_list = [
             self.tline,
             # self.domains,
@@ -169,24 +170,49 @@ class Simulator(BMCSRootNode):
     #=========================================================================
     # COMPUTATION THREAD
     #=========================================================================
-    run_thread = Instance(RunTimeLoopThread)
-    running = Bool(False)
+    _run_thread = Instance(RunTimeLoopThread)
+    _running = Bool(False)
 
     def run(self):
         r'''Run a thread if it does not exist - do nothing otherwise
         '''
-        if self.running:
+        self._running = True
+
+        if self.ui:
+            # inform ui that the simulation is running in a thread
+            self.ui.start_event = True
+            self.ui.running = True
+
+        try:
+            # start the calculation
+            self.tloop()
+        except Exception as e:
+            self._running = False
+            self.ui.running = False
+            raise e  # re-raise exception
+
+        self._running = False
+
+        if self.ui:
+            # cleanup ui and send the finish event
+            self.ui.running = False
+            self.ui.finish_event = True
+
+    def run_thread(self):
+        r'''Run a thread if it does not exist - do nothing otherwise
+        '''
+        if self._running:
             return
 
-        self.run_thread = RunTimeLoopThread(self)
-        self.run_thread.start()
+        self._run_thread = RunTimeLoopThread(self)
+        self._run_thread.start()
 
-    def join(self):
+    def join_thread(self):
         r'''Wait until the thread finishes
         '''
-        self.run_thread.join()
+        self._run_thread.join()
 
-    @on_trait_change('MAT,ALG,CS,GEO,BC,+BC')
+    @on_trait_change(itags_str)
     def signal_reset(self):
         '''Upon the change of the model parameters,
         signal the user interface that further calculation

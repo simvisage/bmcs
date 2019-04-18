@@ -256,7 +256,6 @@ class BMCSVizSheet(ROutputSection):
             self.reference_viz2d.reset(ax)
 
     def run_finished(self):
-        print('RUN FINISHED')
         self.skipped_steps = self.monitor_chunk_size
         # self.update_pipeline(1.0)
         self.replot()
@@ -269,14 +268,11 @@ class BMCSVizSheet(ROutputSection):
 
     @on_trait_change('vot,n_cols')
     def replot(self):
-        print('REPLOT CALLED')
         if self.offline:
-            print('REPLOT OFFLINE')
             return
         if self.running and self.mode == 'monitor' and \
                 self.skipped_steps < (self.monitor_chunk_size - 1):
             self.skipped_steps += 1
-            print('REPLOT SKIPPED')
             return
         for ax, viz2d in zip(self.axes, self.visible_viz2d_list):
             ax.clear()

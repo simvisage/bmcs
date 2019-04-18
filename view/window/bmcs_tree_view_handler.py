@@ -157,19 +157,19 @@ class BMCSTreeViewHandler(Handler):
     #=========================================================================
 
     def run_action(self, info):
-        print('Running action')
+        #print('Running action')
         info.object.run()
 
     def pause_action(self, info):
-        print('Running pause')
+        #print('Running pause')
         info.object.pause()
 
     def stop_action(self, info):
-        print('Running stop')
+        #print('Running stop')
         info.object.stop()
 
     def replot(self, info):
-        print('Running continue')
+        #print('Running continue')
         info.object.replot()
 
     def clear(self, info):
