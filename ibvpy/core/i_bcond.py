@@ -3,7 +3,7 @@ from traits.api import Array, Bool, Enum, Float, HasTraits, \
                                  Instance, Int, Trait, Str, Enum, \
                                  Callable, List, TraitDict, Any, Range, \
                                  Delegate, Event, on_trait_change, Button, \
-                                 Interface, implements, Property, cached_property
+                                 Interface, Property, cached_property
 
 class IBCond( Interface ):
     '''
