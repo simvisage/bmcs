@@ -34,27 +34,6 @@ class RunTimeLoopThread(Thread):
     def run(self):
         self.sim.run()
         return
-#         self.sim.running = True
-#
-#         if self.sim.ui:
-#             # inform ui that the simulation is running in a thread
-#             self.sim.ui.start_event = True
-#             self.sim.ui.running = True
-#
-#         try:
-#             # start the calculation
-#             self.sim.tloop()
-#         except Exception as e:
-#             self.sim.running = False
-#             self.sim.ui.running = False
-#             raise e  # re-raise exception
-#
-#         self.sim.running = False
-#
-#         if self.sim.ui:
-#             # cleanup ui and send the finish event
-#             self.sim.ui.running = False
-#             self.sim.ui.finish_event = True
 
 
 @provides(ISimulator)
@@ -188,7 +167,8 @@ class Simulator(BMCSRootNode):
             self.tloop()
         except Exception as e:
             self._running = False
-            self.ui.running = False
+            if self.ui:
+                self.ui.running = False
             raise e  # re-raise exception
 
         self._running = False

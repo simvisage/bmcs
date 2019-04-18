@@ -603,7 +603,7 @@ def run_bending3pt_sdamage(*args, **kw):
     bt.loading_scenario.trait_set(loading_type='monotonic')
     bt.tloop.k_max = 400
     print('SETTING KMAX', bt.tloop.k_max)
-    w = BMCSWindow(model=bt)
+    w = BMCSWindow(sim=bt)
 #    bt.add_viz2d('F-w', 'load-displacement')
 
     bt.record['Pw'] = PulloutResponse()
@@ -645,7 +645,7 @@ def run_bending3pt_sdamage_viz3d(*args, **kw):
     w = run_bending3pt_sdamage()
 #     w.run()
     w.offline = True
-    bt = w.model
+    bt = w.sim
     bt.record['damage'] = Vis3DStateField(var='omega')
     viz3d_damage = Viz3DScalarField(vis3d=bt.hist['damage'])
     w.viz_sheet.add_viz3d(viz3d_damage)

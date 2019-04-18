@@ -4,12 +4,6 @@ Created on 12.01.2016
 
 @todo: derive the size of the state array.
 '''
-from traits.api import \
-    Property, Instance, cached_property, \
-    List, Float, Trait, Int, on_trait_change
-from traitsui.api import \
-    View, Item
-
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
@@ -25,12 +19,18 @@ from ibvpy.mats.mats3D.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
 from ibvpy.mats.mats3D.viz3d_stress_field import \
     Vis3DStressField, Viz3DStressField
-import numpy as np
 from simulator.api import Simulator
-import traits.api as tr
+from traits.api import \
+    Property, Instance, cached_property, \
+    List, Float, Trait, Int, on_trait_change
+from traitsui.api import \
+    View, Item
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.window import BMCSWindow
+
+import numpy as np
+import traits.api as tr
 
 
 class Viz2DForceDeflectionX(Viz2D):
@@ -353,6 +353,7 @@ def run_bending3pt_mic_odf(*args, **kw):
                           #mats_eval_type='microplane damage (eeq)'
                           #mats_eval_type='microplane damage (odf)'
                           )
+    print(bt.mats_eval_type)
     bt.mats_eval.trait_set(
         # stiffness='algorithmic',
         epsilon_0=0.005,
@@ -366,7 +367,7 @@ def run_bending3pt_mic_odf(*args, **kw):
     bt.cross_section.h = 100
     bt.geometry.L = 800
     bt.loading_scenario.trait_set(loading_type='monotonic')
-    w = BMCSWindow(model=bt)
+    w = BMCSWindow(sim=bt)
     bt.add_viz2d('load function', 'load-time')
     bt.add_viz2d('F-w', 'load-displacement')
 
