@@ -64,7 +64,7 @@ class TStepBC(HasStrictTraits):
     # Boundary condition manager
     #
     bcond_mngr = Property(Instance(BCondMngr),
-                          depends='bc,bc_items, model_structure_changed')
+                          depends_on='bc,bc_items,model_structure_changed')
 
     @cached_property
     def _get_bcond_mngr(self):
@@ -129,26 +129,6 @@ class TStepBC(HasStrictTraits):
         self.K.apply_constraints(R)
         return R, self.K, F_int
 
-    @cached_property
-    def _get_xcorr_pred(self):
-        self.K.reset_mtx()
-        # Get the field representation of the primary variable
-        U_k_field = self.xdomain.map_U_to_field(self.U_k)
-        self.state_k = copy.deepcopy(self.state_n)
-        sig_k, D_k = self.model.get_corr_pred(
-            U_k_field, self.t_n1, **self.state_k
-        )
-        K_k = self.xdomain.map_field_to_K(D_k)
-        self.K.sys_mtx_arrays.append(K_k)
-        F_ext = np.zeros_like(self.U_k)
-        self.bcond_mngr.apply(
-            self.step_flag, None, self.K, F_ext, self.t_n, self.t_n1
-        )
-        F_int = self.xdomain.map_field_to_F(sig_k).flatten()
-        R = F_ext - F_int
-        self.K.apply_constraints(R)
-        return R, self.K, F_int
-
     def make_iter(self):
         '''Perform a single iteration
         '''
@@ -161,9 +141,8 @@ class TStepBC(HasStrictTraits):
         '''Update the control, primary and state variables..
         '''
         self.U_n[:] = self.U_k[:]
-        for s in self.fe_domain:
-            s.record_state(self.t_n1, self.U_k, self.F_k)
-#        self.hist.record_timestep(self.t_n1, self.U_k, self.F_k, self.state_n)
+        states = [state.state_k for state in self.fe_domain]
+        self.hist.record_timestep(self.t_n1, self.U_k, self.F_k, states)
         self.t_n = self.t_n1
         self.step_flag = 'predictor'
 

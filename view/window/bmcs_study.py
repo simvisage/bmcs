@@ -83,6 +83,7 @@ class BMCSStudy(ReportStudy):
     '''
 
     def _start_event_fired(self):
+        print('START EVENT FIRED')
         self.viz_sheet.run_started()
 
     finish_event = tr.Event
@@ -90,6 +91,7 @@ class BMCSStudy(ReportStudy):
     '''
 
     def _finish_event_fired(self):
+        print('FINISH EVENT FIRED')
         self.viz_sheet.run_finished()
 
     def run(self):

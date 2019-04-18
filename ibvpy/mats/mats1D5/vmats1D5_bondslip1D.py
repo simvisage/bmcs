@@ -97,7 +97,7 @@ class MATSBondSlipMultiLinear(Model, MATSEval, BMCSTreeNode):
     of the domain.
     '''
 
-    node_name = 'Desmorat model'
+    node_name = 'multiply_linear bond'
 
     def get_corr_pred(self, s, t_n1):
 

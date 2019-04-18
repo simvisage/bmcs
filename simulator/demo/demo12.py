@@ -37,10 +37,10 @@ from .viz2d_fw import Viz2DFW, Vis2DFW
 
 #from .mlab_decorators import decorate_figure
 ds = 14
-n_x_e = 15
+n_x_e = 30
 n_y_concrete = 8
 n_y_steel = 1
-L_x = 3 * ds
+L_x = 10 * ds
 R_steel = ds / 2
 R_concrete = 7 * ds
 xd_steel_1 = XDomainFEGridAxiSym(coord_min=(0, 0),
@@ -65,17 +65,17 @@ xd12 = XDomainFEInterface(
     integ_factor=np.pi * ds
 )
 
-u_max = 0.1
+u_max = 0.01
 right_x_s = BCSlice(slice=xd_steel_1.mesh[-1, :, -1, :],
                     var='u', dims=[0], value=u_max)
-right_x_c = BCSlice(slice=xd_concrete_2.mesh[-1, :, -1, :],
+right_x_c = BCSlice(slice=xd_concrete_2.mesh[0, 3:, 0, :],
                     var='u', dims=[0], value=0)
 
 bc1 = [right_x_c, right_x_s]
 
 m_interface = MATS1D5D(omega_fn_type='jirasek')
 m_interface.omega_fn.trait_set(
-    s_0=0.0004, s_f=0.001
+    s_0=0.0002, s_f=0.005
 )
 
 s = Simulator(

@@ -147,7 +147,7 @@ class BMCSLauncher(HasTraits):
                       ),
                 UItem('pullout_model_multilinear',
                       full_size=True, resizable=True,
-                      enabled_when='False'
+                      enabled_when='True'
                       ),
                 #                 UItem('pullout_model_frp_damage',
                 #                       full_size=True, resizable=True),

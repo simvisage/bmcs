@@ -16,13 +16,23 @@ class XDomainFEInterface1D(XDomainFEGrid):
     '''
 
     def _get_A(self):
-        return np.array([self.fets.A_m, self.fets.P_b,
+        return np.array([self.fets.A_m,
+                         self.fets.P_b,
                          self.fets.A_f])
 
     DELTA_p = Array()
 
     def _DELTA_p_default(self):
         return np.array([-1, 1], np.float_)
+
+    o_Epia = Property(depends_on='+input')
+    '''For a given element, layer, node number and dimension
+    return the dof number
+    '''
+    @cached_property
+    def _get_o_Epia(self):
+        dof_Eipd = self.mesh.dof_grid.cell_dof_map[..., np.newaxis]
+        return np.einsum('Eipd->Epid', dof_Eipd)
 
     dim_u = Int(2)
 
@@ -102,8 +112,8 @@ class XDomainFEInterface1D(XDomainFEGrid):
     def map_field_to_F(self, sig_Emab):
         _, _, n_i, _, n_a = self.B_Eimabc.shape
         f_Eic = self.integ_factor * np.einsum(
-            'm,Emisd,Ems,Em->Eid',
-            self.fets.w_m, self.B_Eimabc, sig_Emab, self.det_J_Em
+            's,m,Emisd,Ems,Em->Eid',
+            self.A, self.fets.w_m, self.B_Eimabc, sig_Emab, self.det_J_Em
         )
         n_o = n_i * n_a
         f_Ei = f_Eic.reshape(-1, n_o)

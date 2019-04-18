@@ -3,7 +3,7 @@
 '''
 
 from traits.api import \
-    Int, Float, Type
+    Int, Float, Type, Bool
 from .tloop import \
     TLoop
 from .tstep_bc import TStepBC
@@ -16,22 +16,31 @@ class TLoopImplicit(TLoop):
 
     tstep_type = Type(TStepBC)
 
-    k_max = Int(30, enter_set=True, auto_set=False)
+    k_max = Int(100, enter_set=True, auto_set=False)
 
     acc = Float(1e-4, enter_set=True, auto_set=False)
+
+    verbose = Bool(True, enter_set=True, auto_set=False)
 
     def eval(self):
         t_n1 = self.tline.val
         t_max = self.tline.max
         dt = self.tline.step
+
+        if self.verbose:
+            print('t:', end='')
+
         while t_n1 <= (t_max + 1e-8):
-            print('\ttime: %g' % t_n1, end='')
+            if self.verbose:
+                print('%5.2f' % t_n1, end='')
+
             k = 0
             self.tstep.t_n1 = t_n1
             # run the iteration loop
             while (k < self.k_max) and not self.user_wants_abort:
                 if self.tstep.R_norm < self.acc:
-                    print('\titer: %g' % k)
+                    if self.verbose:
+                        print('(%g), ' % k, end='')
                     break
                 self.tstep.make_iter()
                 k += 1
@@ -39,8 +48,9 @@ class TLoopImplicit(TLoop):
                 if k >= self.k_max:  # add step size reduction
                     # no success abort the simulation
                     self.restart = True
-                    print('Warning: '
-                          'convergence not reached in %g iterations' % k)
+                    print('')
+                    raise StopIteration('Warning: '
+                                        'convergence not reached in %g iterations' % k)
                 return
             # accept the time step and record the state in history
             self.tstep.make_incr()
@@ -48,4 +58,8 @@ class TLoopImplicit(TLoop):
             self.tline.val = min(t_n1, self.tline.max)
             # set a new target time
             t_n1 += dt
+
+        if self.verbose:
+            print('')
+
         return

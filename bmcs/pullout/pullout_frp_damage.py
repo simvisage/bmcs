@@ -3,7 +3,6 @@ Created on 12.01.2016
 @author: ABaktheer, RChudoba, Yingxiong
 '''
 
-from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSBondSlipDP, MATSBondSlipMultiLinear, MATSBondSlipFRPDamage
 from bmcs.mats.tloop_dp import TLoop
 from bmcs.mats.tstepper_dp import TStepper
@@ -11,6 +10,7 @@ from bmcs.time_functions import \
     Viz2DLoadControlFunction
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
+from ibvpy.fets.fets1D5 import FETS1D52ULRH
 from scipy import interpolate as ip
 from traits.api import \
     Property, Instance, cached_property, \
@@ -20,6 +20,7 @@ from traitsui.api import \
 from view.window import BMCSWindow
 
 import numpy as np
+
 from .pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     PullOutModelBase, Viz2DEnergyPlot, Viz2DEnergyReleasePlot
 
@@ -48,7 +49,7 @@ class PullOutModel(PullOutModelBase):
     def _get_material(self):
         return self.mats_eval
 
-    fets_eval = Property(Instance(FETS1D52ULRHFatigue),
+    fets_eval = Property(Instance(FETS1D52ULRH),
                          depends_on='CS')
     '''Finite element time stepper implementing the corrector
     predictor operators at the element level'''

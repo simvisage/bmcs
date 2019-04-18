@@ -23,17 +23,15 @@ class TLoop(HasStrictTraits):
         #calculation
 
     '''
+    sim = WeakRef
+
     tline = WeakRef(TLine)
 
     tstep = WeakRef(ITStep)
 
-    hist = WeakRef(Hist)
-
     model = DelegatesTo('tstep')
 
-    @cached_property
-    def _get_hist(self):
-        return Hist()
+    hist = WeakRef(Hist)
 
     paused = Bool(False)
 
@@ -50,6 +48,7 @@ class TLoop(HasStrictTraits):
         if self.restart:
             self.tline.val = self.tline.min
             self.tstep.init_state()
+            self.hist.init_state()
             self.restart = False
 
     def eval(self):

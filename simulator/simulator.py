@@ -6,12 +6,12 @@ Simulator implementation
 '''
 from threading import Thread
 
-from simulator.hist import Hist
 from traits.api import \
     Instance, on_trait_change, Str, \
     Property, cached_property, Bool, List, Dict, provides
-from view.ui.bmcs_tree_node import BMCSRootNode
+from view.ui.bmcs_tree_node import BMCSRootNode, itags_str
 
+from .hist import Hist
 from .i_hist import IHist
 from .i_simulator import ISimulator
 from .i_tloop import ITLoop
@@ -29,16 +29,30 @@ class RunTimeLoopThread(Thread):
     def __init__(self, simulator, *args, **kw):
         super(RunTimeLoopThread, self).__init__(*args, **kw)
         self.daemon = True
-        self.simulator = simulator
+        self.sim = simulator
 
     def run(self):
+        self.sim.running = True
+
+        if self.sim.ui:
+            # inform ui that the simulation is running in a thread
+            self.sim.ui.start_event = True
+            self.sim.ui.running = True
+
         try:
             # start the calculation
-            self.simulator.tloop()
+            self.sim.tloop()
         except Exception as e:
-            self.simulator.running = False
+            self.sim.running = False
+            self.sim.ui.running = False
             raise e  # re-raise exception
-        self.simulator.running = False
+
+        self.sim.running = False
+
+        if self.sim.ui:
+            # cleanup ui and send the finish event
+            self.sim.ui.running = False
+            self.sim.ui.finish_event = True
 
 
 @provides(ISimulator)
@@ -68,6 +82,10 @@ class Simulator(BMCSRootNode):
     title = Str
 
     desc = Str
+
+    @on_trait_change(itags_str)
+    def _model_structure_changed(self):
+        self.tloop.restart = True
 
     #=========================================================================
     # Spatial domain
@@ -111,7 +129,8 @@ class Simulator(BMCSRootNode):
     '''
     @cached_property
     def _get_tloop(self):
-        return TLoopImplicit(tstep=self.tstep,
+        return TLoopImplicit(sim=self,
+                             tstep=self.tstep,
                              hist=self.hist,
                              tline=self.tline)
 
@@ -140,11 +159,11 @@ class Simulator(BMCSRootNode):
     #=========================================================================
     # HISTORY
     #=========================================================================
-    hist = Instance(IHist)
+    hist = Property(Instance(IHist))
     r'''History representation of the model response.
     '''
-
-    def _hist_default(self):
+    @cached_property
+    def _get_hist(self):
         return Hist(sim=self)
 
     #=========================================================================
@@ -158,28 +177,9 @@ class Simulator(BMCSRootNode):
         '''
         if self.running:
             return
-        self.running = True
-
-        print('RUN', self.ui)
-        if self.ui:
-            # inform ui that the simulation is running in a thread
-            self.ui.start_event = True
-            self.ui.running = True
 
         self.run_thread = RunTimeLoopThread(self)
-
-        try:
-            # start the calculation process
-            self.run_thread.start()
-        except Exception as e:
-            if self.ui:
-                self.ui.running = False
-            raise e  # re-raise exception
-
-        if self.ui:
-            # cleanup ui and send the finish event
-            self.ui.running = False
-            self.ui.finish_event = True
+        self.run_thread.start()
 
     def join(self):
         r'''Wait until the thread finishes

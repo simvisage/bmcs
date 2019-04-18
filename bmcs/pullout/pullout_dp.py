@@ -4,14 +4,6 @@ Created on 12.01.2016
 '''
 
 
-from scipy import interpolate as ip
-from traits.api import \
-    Property, Instance, cached_property, \
-    List, Float, Int, Trait, on_trait_change, Enum
-from traitsui.api import \
-    View, Item, Group
-
-from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSBondSlipDP, MATSBondSlipMultiLinear
 from bmcs.mats.tloop_dp import TLoop
 from bmcs.mats.tstepper_dp import TStepper
@@ -19,10 +11,18 @@ from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
+from ibvpy.fets.fets1D5 import FETS1D52ULRH
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-import numpy as np
+from scipy import interpolate as ip
+from traits.api import \
+    Property, Instance, cached_property, \
+    List, Float, Int, Trait, on_trait_change, Enum
+from traitsui.api import \
+    View, Item, Group
 from view.plot2d import Vis2D, Viz2D
 from view.window import BMCSModel, BMCSWindow, TLine
+
+import numpy as np
 
 from .pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     Viz2DEnergyPlot, Viz2DEnergyReleasePlot, \
@@ -52,7 +52,7 @@ class PullOutModel(PullOutModelBase):
     def _get_material(self):
         return self.mats_eval
 
-    fets_eval = Property(Instance(FETS1D52ULRHFatigue),
+    fets_eval = Property(Instance(FETS1D52ULRH),
                          depends_on='CS')
     '''Finite element time stepper implementing the corrector
     predictor operators at the element level'''

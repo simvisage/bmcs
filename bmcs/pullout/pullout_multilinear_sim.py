@@ -3,8 +3,8 @@ Created on 12.01.2016
 @author: ABaktheer, RChudoba, Yingxiong
 '''
 
+import copy
 import time
-
 from bmcs.time_functions import \
     Viz2DLoadControlFunction
 from scipy import interpolate as ip
@@ -12,6 +12,7 @@ from traits.api import \
     Property
 from traitsui.api import \
     View, Item
+from view.plot2d.vis2d import Vis2D
 from view.window import BMCSWindow
 
 import numpy as np
@@ -23,58 +24,67 @@ from .pullout_sim import Viz2DPullOutFW, Viz2DPullOutField, \
 
 class PullOutModel(PullOutModelBase):
 
-    def get_d_ECid(self, vot):
-        '''Get the displacements as a four-dimensional array 
-        corresponding to element, material component, node, spatial dimension
-        '''
-        idx = self.tloop.get_time_idx(vot)
-        d = self.tloop.U_record[idx]
-        dof_ECid = self.tstepper.dof_ECid
-        return d[dof_ECid]
-
     X_M = Property
 
     def _get_X_M(self):
-        return self.tstepper.X_M
+        state = self.tstep.fe_domain[0]
+        return state.xdomain.x_Ema[..., 0].flatten()
 
-    def get_u_C(self, vot):
+    def get_u_p(self, vot):
         '''Displacement field
         '''
-        d_ECid = self.get_d_ECid(vot)
-        N_mi = self.fets_eval.N_mi
-        u_EmdC = np.einsum('mi,ECid->EmdC', N_mi, d_ECid)
-        return u_EmdC.reshape(-1, 2)
+        idx = self.hist.get_time_idx(vot)
+        U = self.hist.U_t[idx]
+        state = self.tstep.fe_domain[0]
+        dof_Epia = state.xdomain.o_Epia
+        fets = state.xdomain.fets
+        u_Epia = U[dof_Epia]
+        N_mi = fets.N_mi
+        u_Emap = np.einsum('mi,Epia->Emap', N_mi, u_Epia)
+        return u_Emap.reshape(-1, 2)
 
-    def get_eps_C(self, vot):
+    def get_eps_Ems(self, vot):
         '''Epsilon in the components'''
-        d_ECid = self.get_d_ECid(vot)
-        eps_EmdC = np.einsum('Eimd,ECid->EmdC', self.tstepper.dN_Eimd, d_ECid)
-        return eps_EmdC.reshape(-1, 2)
+        state = self.tstep.fe_domain[0]
+        idx = self.hist.get_time_idx(vot)
+        U = self.hist.U_t[idx]
+        return state.xdomain.map_U_to_field(U)
 
-    def get_sig_C(self, vot):
-        '''Get streses in the components 
-        @todo: unify the index protocol
-        for eps and sig. Currently eps uses multi-layer indexing, sig
-        is extracted from the material model format.
-        '''
-        idx = self.tloop.get_time_idx(vot)
-        return self.tloop.sig_EmC_record[idx].reshape(-1, 2)
+    def get_eps_p(self, vot):
+        '''Epsilon in the components'''
+        eps_Ems = self.get_eps_Ems(vot)
+        return eps_Ems[..., (0, 2)].reshape(-1, 2)
 
     def get_s(self, vot):
         '''Slip between the two material phases'''
-        d_ECid = self.get_d_ECid(vot)
-        s_Emd = np.einsum('Cim,ECid->Emd', self.tstepper.sN_Cim, d_ECid)
-        return s_Emd.flatten()
+        eps_Ems = self.get_eps_Ems(vot)
+        return eps_Ems[..., 1].flatten()
+
+    def get_sig_Ems(self, vot):
+        '''Get streses in the components 
+        '''
+        txdomain = self.tstep.fe_domain[0]
+        idx = self.hist.get_time_idx(vot)
+        U = self.hist.U_t[idx]
+        t_n1 = self.hist.t[idx]
+        eps_Ems = txdomain.xdomain.map_U_to_field(U)
+        state_vars_t = self.tstep.hist.state_vars[idx]
+        state_k = copy.deepcopy(state_vars_t)
+        sig_Ems, _ = txdomain.tmodel.get_corr_pred(
+            eps_Ems, t_n1, **state_k[0]
+        )
+        return sig_Ems
+
+    def get_sig_p(self, vot):
+        '''Epsilon in the components'''
+        sig_Ems = self.get_sig_Ems(vot)
+        return sig_Ems[..., (0, 2)].reshape(-1, 2)
 
     def get_sf(self, vot):
         '''Get the shear flow in the interface
-        @todo: unify the index protocol
-        for eps and sig. Currently eps uses multi-layer indexing, sig
-        is extracted from the material model format.
         '''
-        idx = self.tloop.get_time_idx(vot)
-        sf = self.tloop.sf_Em_record[idx].flatten()
-        return sf
+        sig_Ems = self.get_sig_Ems(vot)
+        return sig_Ems[..., 1].flatten()
 
     def get_shear_integ(self):
         #         d_ECid = self.get_d_ECid(vot)
@@ -117,11 +127,18 @@ class PullOutModel(PullOutModelBase):
         tck = ip.splrep(t, G, s=0, k=1)
         return ip.splev(t, tck, der=1)
 
-    def get_P_t(self):
-        F_array = np.array(self.tloop.F_record, dtype=np.float_)
-        return F_array[:, self.controlled_dof]
+    def get_Pw_t(self):
+        sim = self
+        c_dof = sim.controlled_dof
+        f_dof = sim.free_end_dof
+        U_ti = sim.hist.U_t
+        F_ti = sim.hist.F_t
+        P = F_ti[:, c_dof]
+        w_L = U_ti[:, c_dof]
+        w_0 = U_ti[:, f_dof]
+        return P, w_0, w_L
 
-    def get_w_t(self):
+    def xget_w_t(self):
         d_t = self.tloop.U_record
         dof_ECid = self.tstepper.dof_ECid
         d_t_ECid = d_t[:, dof_ECid]
@@ -129,26 +146,26 @@ class PullOutModel(PullOutModelBase):
         w_L = d_t_ECid[:, -1, 1, -1, -1]
         return w_0, w_L
 
-    def get_wL_t(self):
+    def xget_wL_t(self):
         _, w_L = self.get_w_t()
         return w_L
 
-    t = Property
+    xt = Property
 
-    def _get_t(self):
+    def _xget_t(self):
         return self.get_t()
 
-    def get_t(self):
+    def xget_t(self):
         return np.array(self.tloop.t_record, dtype=np.float_)
 
-    n_t = Property
+    xn_t = Property
 
-    def _get_n_t(self):
+    def x_get_n_t(self):
         return len(self.tloop.t_record)
 
-    sig_tC = Property
+    xsig_tC = Property
 
-    def _get_sig_tC(self):
+    def x_get_sig_tC(self):
         n_t = self.n_t
         sig_tEmC = np.array(self.tloop.sig_EmC_record, dtype=np.float_)
         sig_tC = sig_tEmC.reshape(n_t, -1, 2)
@@ -168,31 +185,43 @@ class PullOutModel(PullOutModelBase):
 def run_pullout_multilinear(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
                       title='Multi-linear bond slip law',
-                      n_e_x=20, k_max=1000, w_max=1.5)
+                      n_e_x=50, w_max=1.0)
+    po.tloop.k_max = 1000
     po.tline.step = 0.05
-    po.geometry.L_x = 200.0
-    po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(s_data='0, 0.1, 0.4, 1.7',
-                     tau_data='0, 70, 0, 0')
+    po.geometry.L_x = 100.0
+    po.loading_scenario.trait_set(loading_type='monotonic')
+
+#     po.cross_section.trait_set(A_f=100, P_b=1000, A_m=10000)
+#     po.mats_eval.set(E_m=28000,
+#                      E_f=170000,
+#                      s_data='0, 0.1',
+#                      tau_data='0, 100')
+#    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
+    po.cross_section.set(A_f=153, P_b=44, A_m=15240.0)
+    po.mats_eval.set(E_m=28000,
+                     E_f=170000,
+                     s_data='0, 0.1, 0.4, 4',
+                     tau_data='0, 800, 0, 0')
     po.mats_eval.update_bs_law = True
+
     po.record['Pw'] = PulloutResponse()
     fw = Viz2DPullOutFW(name='Pw', vis2d=po.hist['Pw'])
-    sf = Viz2DPullOutField(name='sf', vis2d=po.hist['fields'])
+    u_p = Viz2DPullOutField(plot_fn='u_p', vis2d=po)
+    eps_p = Viz2DPullOutField(plot_fn='eps_p', vis2d=po)
+    sig_p = Viz2DPullOutField(plot_fn='sig_p', vis2d=po)
+    s = Viz2DPullOutField(plot_fn='s', vis2d=po)
+    sf = Viz2DPullOutField(plot_fn='sf', vis2d=po)
 
-    po.run()
-    time.sleep(4)
-    w = BMCSWindow(model=po)
+    w = BMCSWindow(sim=po)
     w.viz_sheet.viz2d_list.append(fw)
+    w.viz_sheet.viz2d_list.append(u_p)
+    w.viz_sheet.viz2d_list.append(eps_p)
+    w.viz_sheet.viz2d_list.append(sig_p)
+    w.viz_sheet.viz2d_list.append(s)
+    w.viz_sheet.viz2d_list.append(sf)
 
 #    po.add_viz2d('load function', 'load-time')
-#     po.add_viz2d('F-w', 'load-displacement')
-#     po.add_viz2d('field', 'u_C', plot_fn='u_C')
 #     po.add_viz2d('dissipation', 'dissipation')
-#     po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
-#     po.add_viz2d('field', 's', plot_fn='s')
-#     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-#     po.add_viz2d('field', 'sf', plot_fn='sf')
 #     po.add_viz2d('dissipation rate', 'dissipation rate')
 
 #     w.viz_sheet.viz2d_dict['u_C'].visible = False
@@ -201,33 +230,86 @@ def run_pullout_multilinear(*args, **kw):
 #     w.viz_sheet.monitor_chunk_size = 10
 #     w.viz_sheet.reference_viz2d_name = 'load-displacement'
 
-    w.run()
-    w.offline = True
-    w.configure_traits(*args, **kw)
+#    w.run()
+#    w.offline = True
+#    time.sleep(1)
+    w.configure_traits()
+
+
+def run_31():
+    w_max = 0.1  # [mm]
+    d = 16.0  # [mm]
+    E_f = 210000  # [MPa]
+    E_m = 28000  # [MPa]
+    A_f = (d / 2.)**2 * np.pi  # [mm^2]
+    P_b = d * np.pi
+    A_m = 100 * 100  # [mm^2]
+    L_x = 5 * d
+    pm = PullOutModel(mats_eval_type='multilinear',
+                      n_e_x=50, w_max=w_max)
+    pm.loading_scenario.loading_type = 'monotonic'
+    pm.mats_eval.trait_set(E_m=E_m, E_f=E_f,
+                           s_data='0, 0.001, 0.1',
+                           tau_data='0, 5, 8')
+    pm.mats_eval.update_bs_law = True
+    pm.cross_section.trait_set(A_m=A_m, P_b=P_b, A_f=A_f)
+    pm.geometry.L_x = L_x
+    pm.record['Pw'] = PulloutResponse()
+    fw = Viz2DPullOutFW(name='Pw', vis2d=pm.hist['Pw'])
+    u_p = Viz2DPullOutField(plot_fn='u_p', vis2d=pm)
+    eps_p = Viz2DPullOutField(plot_fn='eps_p', vis2d=pm)
+    sig_p = Viz2DPullOutField(plot_fn='sig_p', vis2d=pm)
+    s = Viz2DPullOutField(plot_fn='s', vis2d=pm)
+    sf = Viz2DPullOutField(plot_fn='sf', vis2d=pm)
+
+    w = BMCSWindow(sim=pm)
+    w.viz_sheet.viz2d_list.append(fw)
+    w.viz_sheet.viz2d_list.append(u_p)
+    w.viz_sheet.viz2d_list.append(eps_p)
+    w.viz_sheet.viz2d_list.append(sig_p)
+    w.viz_sheet.viz2d_list.append(s)
+    w.viz_sheet.viz2d_list.append(sf)
+    w.configure_traits()
 
 
 def run_pullout_multi(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=100, k_max=1000, w_max=2.0)
+                      n_e_x=100, w_max=2.0)
+    po.tloop.k_max = 1000
     po.tline.step = 0.02
     po.geometry.L_x = 200.0
     po.loading_scenario.set(loading_type='monotonic')
     po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
     po.mats_eval.set(s_data='0, 0.1, 0.4, 4.0',
-                     tau_data='0, 70.0, 0, 0')
+                     tau_data='0, 7.0, 0, 0')
     po.mats_eval.update_bs_law = True
-    po.run()
+#     po.run()
 
-    w = BMCSWindow(model=po)
-    po.add_viz2d('load function', 'load-time')
-    po.add_viz2d('F-w', 'load-displacement')
-    po.add_viz2d('field', 'u_C', plot_fn='u_C')
-    po.add_viz2d('dissipation', 'dissipation')
-    po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
-    po.add_viz2d('field', 's', plot_fn='s')
-    po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
-    po.add_viz2d('field', 'sf', plot_fn='sf')
-    po.add_viz2d('dissipation rate', 'dissipation rate')
+    po.record['Pw'] = PulloutResponse()
+    fw = Viz2DPullOutFW(name='Pw', vis2d=po.hist['Pw'])
+    u_p = Viz2DPullOutField(plot_fn='u_p', vis2d=po)
+    eps_p = Viz2DPullOutField(plot_fn='eps_p', vis2d=po)
+    sig_p = Viz2DPullOutField(plot_fn='sig_p', vis2d=po)
+    s = Viz2DPullOutField(plot_fn='s', vis2d=po)
+    sf = Viz2DPullOutField(plot_fn='sf', vis2d=po)
+    w = BMCSWindow(sim=po)
+    w.viz_sheet.viz2d_list.append(fw)
+    w.viz_sheet.viz2d_list.append(u_p)
+    w.viz_sheet.viz2d_list.append(eps_p)
+    w.viz_sheet.viz2d_list.append(sig_p)
+    w.viz_sheet.viz2d_list.append(s)
+    w.viz_sheet.viz2d_list.append(sf)
+#
+#     w = BMCSWindow(sim=po)
+#     po.add_viz2d('load function', 'load-time')
+#     po.add_viz2d('F-w', 'load-displacement')
+#     po.add_viz2d('field', 'u_C', plot_fn='u_C')
+#     po.add_viz2d('dissipation', 'dissipation')
+#     po.add_viz2d('field', 'eps_C', plot_fn='eps_C')
+#     po.add_viz2d('field', 's', plot_fn='s')
+#     po.add_viz2d('field', 'sig_C', plot_fn='sig_C')
+#     po.add_viz2d('field', 'sf', plot_fn='sf')
+#     po.add_viz2d('dissipation rate', 'dissipation rate')
 
     w.offline = False
     #w.finish_event = True
@@ -315,5 +397,6 @@ def run_po_paper2_4layers(*args, **kw):
 
 
 if __name__ == '__main__':
-    run_pullout_multilinear()
+    run_31()
+    # run_pullout_multilinear()
     # run_po_paper2_4layers()

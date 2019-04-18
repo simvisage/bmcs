@@ -1,6 +1,6 @@
 '''
 Created on 12.01.2016
-@author: Yingxiong, ABaktheer, RChudoba
+@author: ABaktheer, RChudoba
 
 @todo: enable recalculation after the initial offline run
 @todo: reset viz adapters upon recalculation to forget their axes lims
@@ -192,14 +192,14 @@ class Viz2DPullOutField(Viz2D):
     def _get_label(self):
         return 'field: %s' % self.plot_fn
 
-    plot_fn = Trait('u_C',
-                    {'eps_C': 'plot_eps_C',
-                     'sig_C': 'plot_sig_C',
-                     'u_C': 'plot_u_C',
+    plot_fn = Trait('eps_p',
+                    {'eps_p': 'plot_eps_p',
+                     'sig_p': 'plot_sig_p',
+                     'u_p': 'plot_u_p',
                      's': 'plot_s',
                      'sf': 'plot_sf',
                      'omega': 'plot_omega',
-                     'Fint_C': 'plot_Fint_C',
+                     'Fint_p': 'plot_Fint_p',
                      'eps_f(s)': 'plot_eps_s',
                      },
                     label='Field',
@@ -420,11 +420,12 @@ class PullOutModelBase(Simulator):
     @cached_property
     def _get_dots_grid(self):
         geo = self.geometry
+        cs = self.cross_section
         return XDomainFEInterface1D(
             dim_u=2,
             coord_max=[geo.L_x],
             shape=[self.n_e_x],
-            fets=FETS1D52ULRH()
+            fets=self.fets_eval
         )
 
     fe_grid = Property
@@ -432,8 +433,9 @@ class PullOutModelBase(Simulator):
     def _get_fe_grid(self):
         return self.dots_grid.mesh
 
-    domains = Property(depends_on='CS,MAT,GEO,MESH,FE')
+    domains = Property(depends_on='BC,CS,MAT,GEO,MESH,FE')
 
+    @cached_property
     def _get_domains(self):
         return [(self.dots_grid, self.mats_eval)]
 
@@ -446,7 +448,7 @@ class PullOutModelBase(Simulator):
                   desc='maximum pullout slip',
                   auto_set=False, enter_set=True)
 
-    u_f0_max = Property(depends_on='u_f0_max')
+    u_f0_max = Property(depends_on='BC')
 
     @cached_property
     def _get_u_f0_max(self):
@@ -482,7 +484,7 @@ class PullOutModelBase(Simulator):
     free_end_dof = Property
 
     def _get_free_end_dof(self):
-        return self.n_e_x + 1
+        return 1
 
     fixed_bc = Property(depends_on='BC,MESH')
     '''Foxed boundary condition'''
@@ -515,44 +517,44 @@ class PullOutModelBase(Simulator):
     #=========================================================================
     #
     #=========================================================================
-    def plot_u_C(self, ax, vot,
+    def plot_u_p(self, ax, vot,
                  label_m='matrix', label_f='reinf'):
         X_M = self.X_M
         L = self.geometry.L_x
-        u_C = self.get_u_C(vot).T
-        ax.plot(X_M, u_C[0], linewidth=2, color='blue', label=label_m)
-        ax.fill_between(X_M, 0, u_C[0], facecolor='blue', alpha=0.2)
-        ax.plot(X_M, u_C[1], linewidth=2, color='orange', label=label_f)
-        ax.fill_between(X_M, 0, u_C[1], facecolor='orange', alpha=0.2)
+        u_p = self.get_u_p(vot).T
+        ax.plot(X_M, u_p[0], linewidth=2, color='blue', label=label_m)
+        ax.fill_between(X_M, 0, u_p[0], facecolor='blue', alpha=0.2)
+        ax.plot(X_M, u_p[1], linewidth=2, color='orange', label=label_f)
+        ax.fill_between(X_M, 0, u_p[1], facecolor='orange', alpha=0.2)
         ax.plot([0, L], [0, 0], color='black')
         ax.set_ylabel('displacement')
         ax.set_xlabel('bond length')
         ax.legend(loc=2)
-        return np.min(u_C), np.max(u_C)
+        return np.min(u_p), np.max(u_p)
 
-    def plot_eps_C(self, ax, vot,
+    def plot_eps_p(self, ax, vot,
                    label_m='matrix', label_f='reinf'):
         X_M = self.X_M
         L = self.geometry.L_x
-        eps_C = self.get_eps_C(vot).T
-        ax.plot(X_M, eps_C[0], linewidth=2, color='blue', label=label_m)
-        ax.fill_between(X_M, 0, eps_C[0], facecolor='blue', alpha=0.2)
-        ax.plot(X_M, eps_C[1], linewidth=2, color='orange', label=label_f)
-        ax.fill_between(X_M, 0, eps_C[1], facecolor='orange', alpha=0.2)
+        eps_p = self.get_eps_p(vot).T
+        ax.plot(X_M, eps_p[0], linewidth=2, color='blue', label=label_m)
+        ax.fill_between(X_M, 0, eps_p[0], facecolor='blue', alpha=0.2)
+        ax.plot(X_M, eps_p[1], linewidth=2, color='orange', label=label_f)
+        ax.fill_between(X_M, 0, eps_p[1], facecolor='orange', alpha=0.2)
         ax.plot([0, L], [0, 0], color='black')
         ax.set_ylabel('strain')
         ax.set_xlabel('bond length')
-        return np.min(eps_C), np.max(eps_C)
+        return np.min(eps_p), np.max(eps_p)
 
-    def plot_sig_C(self, ax, vot):
+    def plot_sig_p(self, ax, vot):
         X_M = self.X_M
-        sig_C = self.get_sig_C(vot).T
+        sig_p = self.get_sig_p(vot).T
 
         A_m = self.cross_section.A_m
         A_f = self.cross_section.A_f
         L = self.geometry.L_x
-        F_m = sig_C[0]
-        F_f = sig_C[1]
+        F_m = sig_p[0]
+        F_f = sig_p[1]
         ax.plot(X_M, F_m, linewidth=2, color='blue', )
         ax.fill_between(X_M, 0, F_m, facecolor='blue', alpha=0.2)
         ax.plot(X_M, F_f, linewidth=2, color='orange')
@@ -565,7 +567,7 @@ class PullOutModelBase(Simulator):
         return F_min, F_max
 
     def plot_s(self, ax, vot):
-        X_J = self.X_J
+        X_J = self.X_M
         s = self.get_s(vot)
         ax.fill_between(X_J, 0, s, facecolor='lightcoral', alpha=0.3)
         ax.plot(X_J, s, linewidth=2, color='lightcoral')
@@ -574,7 +576,7 @@ class PullOutModelBase(Simulator):
         return np.min(s), np.max(s)
 
     def plot_sf(self, ax, vot):
-        X_J = self.X_J
+        X_J = self.X_M
         sf = self.get_sf(vot)
         ax.fill_between(X_J, 0, sf, facecolor='lightcoral', alpha=0.3)
         ax.plot(X_J, sf, linewidth=2, color='lightcoral')
@@ -593,8 +595,8 @@ class PullOutModelBase(Simulator):
         return 0.0, 1.05
 
     def plot_eps_s(self, ax, vot):
-        eps_C = self.get_eps_C(vot).T
+        eps_p = self.get_eps_p(vot).T
         s = self.get_s(vot)
-        ax.plot(eps_C[1], s, linewidth=2, color='lightcoral')
+        ax.plot(eps_p[1], s, linewidth=2, color='lightcoral')
         ax.set_ylabel('reinforcement strain')
         ax.set_xlabel('slip')

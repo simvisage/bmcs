@@ -43,6 +43,7 @@ class Vis2DField(Vis2D):
         target_file = os.path.join(
             self.dir, file_name.replace('.', '_') + '.npy'
         )
+        print('r', r_Eia[..., :-1])
         np.save(target_file, r_Eia[..., :-1])
         self.x_file = target_file
 
@@ -64,8 +65,9 @@ class Vis2DField(Vis2D):
         )
 
         target_file = self.filename(t)
-        np.save(target_file, s_Emr)
-        #np.save(target_file, sig_k)
+
+        #np.save(target_file, s_Emr)
+        np.save(target_file, sig_k)
         self.file_list.append(target_file)
 
     def filename(self, t):

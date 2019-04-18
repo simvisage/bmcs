@@ -41,6 +41,13 @@ class Hist(HasStrictTraits):
 
     state_vars = List()
 
+    def init_state(self):
+        self.timesteps = []
+        self.U_list = []
+        self.F_list = []
+        self.state_vars = []
+        print('cleared state')
+
     def record_timestep(self, t, U, F,
                         state_vars=None):
         '''Add the time step and record the 
@@ -63,7 +70,7 @@ class Hist(HasStrictTraits):
 
     @cached_property
     def _get_F_t(self):
-        return np.array(self.U_list, dtype=np.float_)
+        return np.array(self.F_list, dtype=np.float_)
 
     t = Property(depends_on='timesteps_items')
 
@@ -80,6 +87,9 @@ class Hist(HasStrictTraits):
         idx = np.array(np.arange(len(t)), dtype=np.float_)
         t_idx = np.interp(vot, t, idx)
         return np.array(t_idx, np.int_)
+
+    def get_time(self, vot):
+        return self.t[self.get_time_idx(vot)]
 
     def get_time_idx(self, vot):
         return int(self.get_time_idx_arr(vot))

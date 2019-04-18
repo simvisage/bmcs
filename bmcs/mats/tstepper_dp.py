@@ -2,14 +2,14 @@
 Created on 12.01.2016
 @author: Yingxiong
 '''
+from ibvpy.api import BCDof, IMATSEval, IFETSEval
+from ibvpy.core.bcond_mngr import BCondMngr
+from ibvpy.fets.fets1D5 import FETS1D52ULRH
+from ibvpy.mesh.fe_grid import FEGrid
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 from traits.api import HasTraits, Instance, \
     Property, cached_property, Float, List
 
-from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
-from ibvpy.api import BCDof, IMATSEval, IFETSEval
-from ibvpy.core.bcond_mngr import BCondMngr
-from ibvpy.mesh.fe_grid import FEGrid
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 import numpy as np
 
 from .mats_bondslip import MATSBondSlipDP
@@ -41,7 +41,7 @@ class TStepper(HasTraits):
     '''
 
     def _fets_eval_default(self):
-        return FETS1D52ULRHFatigue()
+        return FETS1D52ULRH()
 
     A = Property()
     '''array containing the A_m, L_b, A_f

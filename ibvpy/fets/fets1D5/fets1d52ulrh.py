@@ -42,14 +42,10 @@ class FETS1D52ULRH(FETSEval):
 
     debug_on = True
 
-#     A_m = Float(100 * 8 - 9 * 1.85, desc='matrix area [mm2]')
-#     A_f = Float(9 * 1.85, desc='reinforcement area [mm2]')
-#     P_b = Float(9 * np.sqrt(np.pi * 4 * 1.85),
-#                 desc='perimeter of the bond interface [mm]')
-
-    A_m = Float(1)
-    A_f = Float(1)
-    P_b = Float(1)
+    A_m = Float(1, desc='matrix area [mm2]')
+    A_f = Float(1, desc='reinforcement area [mm2]')
+    P_b = Float(1,
+                desc='perimeter of the bond interface [mm]')
 
     # Dimensional mapping
     dim_slice = slice(0, 1)

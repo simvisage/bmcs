@@ -3,14 +3,6 @@ Created on 12.01.2016
 @author: ABaktheer, RChudoba, Yingxiong
 '''
 
-from scipy import interpolate as ip
-from traits.api import \
-    Property, Instance, cached_property, \
-    Trait, on_trait_change
-from traitsui.api import \
-    View, Item
-
-from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_bondslip import MATSBondSlipDP, MATSBondSlipMultiLinear
 from bmcs.mats.tloop_dp import TLoop
 from bmcs.mats.tstepper_dp import TStepper
@@ -18,8 +10,16 @@ from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.core.bcond_mngr import BCondMngr
-import numpy as np
+from ibvpy.fets.fets1D5 import FETS1D52ULRH
+from scipy import interpolate as ip
+from traits.api import \
+    Property, Instance, cached_property, \
+    Trait, on_trait_change
+from traitsui.api import \
+    View, Item
 from view.window import BMCSWindow
+
+import numpy as np
 
 from .pullout import Viz2DPullOutFW, Viz2DPullOutField, \
     Viz2DEnergyPlot, Viz2DEnergyReleasePlot, \
@@ -55,15 +55,15 @@ class PullOutModel(PullOutModelBase):
     def _get_material(self):
         return self.mats_eval
 
-    fets_eval = Property(Instance(FETS1D52ULRHFatigue),
+    fets_eval = Property(Instance(FETS1D52ULRH),
                          depends_on='CS')
     '''Finite element time stepper implementing the corrector
     predictor operators at the element level'''
     @cached_property
     def _get_fets_eval(self):
-        return FETS1D52ULRHFatigue(A_m=self.cross_section.A_m,
-                                   P_b=self.cross_section.P_b,
-                                   A_f=self.cross_section.A_f)
+        return FETS1D52ULRH(A_m=self.cross_section.A_m,
+                            P_b=self.cross_section.P_b,
+                            A_f=self.cross_section.A_f)
 
     fixed_bcs = Property(depends_on='BC,MESH')
     '''Foxed boundary condition'''

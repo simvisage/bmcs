@@ -96,6 +96,13 @@ class XDomainFEGrid(BMCSTreeNode):
         x_Eia = x_Ia[I_Ei, :]
         return x_Eia
 
+    x_Ema = Property(depends_on='MESH,GEO,CS,FE')
+
+    def _get_x_Ema(self):
+        return np.einsum(
+            'im,Eia->Ema', self.fets.N_im, self.x_Eia
+        )
+
     o_Ia = Property(depends_on='MESH,GEO,CS,FE')
 
     @cached_property
