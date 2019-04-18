@@ -4,15 +4,15 @@ Created on 20.10.2018
 @author: Mario Aguilar
 '''
 
-from traits.api import implements,  \
-    Constant, Float, WeakRef, List, Str, Property, cached_property, \
-    Trait, on_trait_change, Instance, Callable
-from traitsui.api import View, VGroup, Item, UItem, Group
-
 from bmcs.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     FRPDamageFn
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from traits.api import  \
+    Constant, Float, WeakRef, List, Str, Property, cached_property, \
+    Trait, on_trait_change, Instance, Callable
+from traitsui.api import View, VGroup, Item, UItem, Group
+
 import matplotlib.pyplot as plt
 import numpy as np
 
