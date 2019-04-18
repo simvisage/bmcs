@@ -1,34 +1,27 @@
 
-from traits.api import \
-     Array, Bool, Callable, Enum, Float, HasTraits, \
-     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-     implements, Dict, Property, cached_property, Delegate
+from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
 
-from traitsui.api import \
-     Item, View, HSplit, VSplit, VGroup, Group, Spring
-
-#from dacwt import DAC
-
+from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
+from ibvpy.core.tstepper import \
+     TStepper as TS
+from ibvpy.mats.mats_eval import IMATSEval, MATSEval
+from mathkit.mfn import MFnLineArray
+from mathkit.mfn.mfn_line.mfn_matplotlib_editor import MFnMatplotlibEditor
+from mathkit.mfn.mfn_line.mfn_plot_adapter import MFnPlotAdapter
 from numpy import \
      array, ones, zeros, outer, inner, transpose, dot, frompyfunc, \
      fabs, sqrt, linspace, vdot, identity, tensordot, \
      sin as nsin, meshgrid, float_, ix_, \
      vstack, hstack, sqrt as arr_sqrt
-
-from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
-
 from scipy.linalg import eig, inv
+from traits.api import \
+     Array, Bool, Callable, Enum, Float, HasTraits, \
+     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
+     Dict, Property, cached_property, Delegate
+from traitsui.api import \
+     Item, View, HSplit, VSplit, VGroup, Group, Spring
 
-from ibvpy.core.tstepper import \
-     TStepper as TS
-
-from ibvpy.mats.mats_eval import IMATSEval, MATSEval
-
-from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
-from mathkit.mfn import MFnLineArray
-from mathkit.mfn.mfn_line.mfn_matplotlib_editor import MFnMatplotlibEditor
-from mathkit.mfn.mfn_line.mfn_plot_adapter import MFnPlotAdapter
-
+# from dacwt import DAC
 mpl_matplotlib_editor = MFnMatplotlibEditor(
                     adapter=MFnPlotAdapter(label_x='slip',
                                               label_y='shear stress'))
@@ -37,35 +30,37 @@ mpl_matplotlib_editor = MFnMatplotlibEditor(
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
 
+
 class MATS1D5Bond(MATSEval):
     '''
     Scalar Damage Model.
     '''
-    #implements(IMATSEval)
+    # implements(IMATSEval)
 
-    Ef = Float(1., #34e+3,
+    Ef = Float(1.,  # 34e+3,
                  label="E",
                  desc="Young's Modulus Fiber",
                  auto_set=False, enter_set=True)
-    Af = Float(1., #34e+3,
+    Af = Float(1.,  # 34e+3,
                  label="A",
                  desc="Cross Section Fiber",
                  auto_set=False, enter_set=True)
-    Em = Float(1., #34e+3,
+    Em = Float(1.,  # 34e+3,
                  label="E",
                  desc="Young's Modulus Matrix",
                  auto_set=False, enter_set=True)
-    Am = Float(1., #34e+3,
+    Am = Float(1.,  # 34e+3,
                  label="A",
                  desc="Cross Section Matrix",
                  auto_set=False, enter_set=True)
 
-    s_cr = Float(1., #34e+3,
+    s_cr = Float(1.,  # 34e+3,
                  label="s_cr",
                  desc="Critical slip",
                  auto_set=False, enter_set=True)
 
     perimeter = Property(depends_on='A')
+
     def _get_perimeter(self):
         return sqrt(4 * self.Af * Pi)
 
@@ -73,11 +68,11 @@ class MATS1D5Bond(MATSEval):
     #---------------------------------------------------------------------------------
     # Bond stress (unit area)
     #---------------------------------------------------------------------------------
-    tau_max = Float(1., #34e+3,
+    tau_max = Float(1.,  # 34e+3,
                  label="tau_max",
                  desc="maximum shear stress",
                  auto_set=False, enter_set=True)
-    tau_fr = Float(1., #34e+3,
+    tau_fr = Float(1.,  # 34e+3,
                  label="tau_fr",
                  desc="Frictional shear stress",
                  auto_set=False, enter_set=True)
@@ -86,11 +81,13 @@ class MATS1D5Bond(MATSEval):
     # Bond flow (per unit length) - under the assumption of circular cross section
     #---------------------------------------------------------------------------------
     T_max = Property(depends_on='tau_max, Af')
+
     @cached_property
     def _get_T_max(self):
         return self.tau_max * self.perimeter
 
     T_fr = Property(depends_on='tau_fr, Af')
+
     @cached_property
     def _get_T_fr(self):
         return self.tau_fr * self.perimeter
@@ -99,6 +96,7 @@ class MATS1D5Bond(MATSEval):
     # Bond flow (per unit length) - under the assumption of circular cross section
     #---------------------------------------------------------------------------------
     bond_fn = Property(depends_on='s_cr, tau_max, tau_fr, Af')
+
     @cached_property
     def _get_bond_fn(self):
         return MFnLineArray(ydata=[ 0., self.T_max, self.T_fr, self.T_fr ],
@@ -153,10 +151,10 @@ class MATS1D5Bond(MATSEval):
         return 2
 
     def new_cntl_var(self):
-        return zeros(4, float_)#TODO: adapt for 4-5..
+        return zeros(4, float_)  # TODO: adapt for 4-5..
 
     def new_resp_var(self):
-        return zeros(4, float_)#TODO: adapt for 4-5..
+        return zeros(4, float_)  # TODO: adapt for 4-5..
 
     #-----------------------------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
@@ -194,30 +192,30 @@ class MATS1D5Bond(MATSEval):
                 sigma[2] = self.T_fr
             else:
                 D_mtx[2, 2] = self.bond_fn.get_diff(eps_app_eng[2])
-                sigma[2] = self.bond_fn.get_value(eps_app_eng[2])#tau_m
+                sigma[2] = self.bond_fn.get_value(eps_app_eng[2])  # tau_m
         else:
             D_mtx = zeros((4, 4))
             sigma = zeros(4)
 
-        if dbond[0] > 0.:#bond_l  
+        if dbond[0] > 0.:  # bond_l  
             D_mtx[0, 0] = 0.
             sigma[0] = self.T_fr
         else:
             D_mtx[0, 0] = self.bond_fn.get_diff(eps_app_eng[0])
-            sigma[0] = self.bond_fn.get_value(eps_app_eng[0])#tau_l
+            sigma[0] = self.bond_fn.get_value(eps_app_eng[0])  # tau_l
 
-        if dbond[1] > 0.:#bond_r  
+        if dbond[1] > 0.:  # bond_r  
             D_mtx[1, 1] = 0.
             sigma[1] = self.T_fr
         else:
             D_mtx[1, 1] = self.bond_fn.get_diff(eps_app_eng[1])
-            sigma[1] = self.bond_fn.get_value(eps_app_eng[1])#tau_r
+            sigma[1] = self.bond_fn.get_value(eps_app_eng[1])  # tau_r
 
         D_mtx[-2, -2] = self.Ef * self.Af
         D_mtx[-1, -1] = self.Em * self.Am
 
-        sigma[-2] = self.Ef * self.Af * eps_app_eng[-2]#sig_f
-        sigma[-1] = self.Em * self.Am * eps_app_eng[-1]#sig_m
+        sigma[-2] = self.Ef * self.Af * eps_app_eng[-2]  # sig_f
+        sigma[-1] = self.Em * self.Am * eps_app_eng[-1]  # sig_m
 
         # You print the stress you just computed and the value of the apparent E
 
@@ -276,7 +274,6 @@ class MATS1D5Bond(MATSEval):
                 sig_pos = [sig_eng[2]]
         return sig_pos
 
-
     def get_eps_app(self, sctx, eps_app_eng):
         r_pnt = sctx.loc
         if r_pnt[1] >= 0.:
@@ -321,11 +318,11 @@ class MATS1D5Bond(MATSEval):
     # Response trace evaluators
     #---------------------------------------------------------------------------------------------
 
-
     # Declare and fill-in the rte_dict - it is used by the clients to
     # assemble all the available time-steppers.
     #
     rte_dict = Trait(Dict)
+
     def _rte_dict_default(self):
         return {'sig_app_t1d'      : self.get_sig_app,
                 'eps_app_t1d'      : self.get_eps_app,
@@ -334,6 +331,7 @@ class MATS1D5Bond(MATSEval):
                 'debonding'      : self.get_debonding,
                 'msig_pos'     : self.get_msig_pos,
                 'msig_pm'      : self.get_msig_pm}
+
 
 if __name__ == '__main__':
      mats_bond = MATS1D5Bond()

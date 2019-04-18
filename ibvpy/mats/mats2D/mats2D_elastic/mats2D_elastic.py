@@ -1,12 +1,12 @@
 from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.mats_eval import IMATSEval
-from numpy import array,  zeros,  dot, float_, copy
+from numpy import array, zeros, dot, float_, copy
 from scipy.linalg import eig, inv
 from traits.api import \
     Array, Bool, Callable, Enum, Float, HasTraits, \
     Trait, Range, HasTraits, Event, \
-    implements, Dict, Property, cached_property, Constant, Tuple
+    Dict, Property, cached_property, Constant, Tuple
 from traitsui.api import \
     Item, View, VSplit, Group, Spring
 from view.ui import BMCSLeafNode
@@ -21,7 +21,7 @@ class MATS2DElastic(MATS2DEval, BMCSLeafNode):
     Elastic Model.
     '''
 
-    #implements(IMATSEval)
+    # implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)

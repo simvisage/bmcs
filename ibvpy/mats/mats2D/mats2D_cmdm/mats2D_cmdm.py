@@ -17,7 +17,7 @@ from math import \
 
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.mats2D.mats2D_tensor import \
-    map2d_tns2_to_tns4,\
+    map2d_tns2_to_tns4, \
     get_D_plane_stress, get_D_plane_strain, get_C_plane_stress, get_C_plane_strain
 from ibvpy.mats.mats3D.mats3D_tensor import \
     map3d_tns4_to_tns2
@@ -27,10 +27,10 @@ from ibvpy.mats.mats_eval import \
     IMATSEval
 from mathkit.mfn.mfn_polar.mfn_polar import MFnPolar
 from numpy import \
-    array,  ones,  outer,   \
+    array, ones, outer, \
     identity
 from traits.api import \
-    Enum, Property, cached_property,  Constant, Type, implements, \
+    Enum, Property, cached_property, Constant, Type, \
     Int
 from traitsui.api import \
     View, Include
@@ -41,7 +41,7 @@ import numpy as np
 # @todo parameterize - should be specialized in the dimensional subclasses
 class MATS2DMicroplaneDamage(MATSXDMicroplaneDamage, MATS2DEval):
 
-    #implements(IMATSEval)
+    # implements(IMATSEval)
 
     # number of spatial dimensions
     #

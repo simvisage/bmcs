@@ -12,29 +12,25 @@
 #
 # Created on Sep 8, 2009 by: rch
 from envisage.ui.workbench.api import WorkbenchApplication
-
-from traits.api import \
-    Instance, Property, cached_property, implements, List, \
-    Callable, String, Int, HasTraits
-
-from traitsui.api import \
-    View, Item
-
-from util.traits.either_type import \
-    EitherType
-
-from ibvpy.mats.mats1D5.mats1D5_eval import MATS1D5Eval
-from ibvpy.mats.mats_eval import IMATSEval
 from ibvpy.mats.mats1D import \
     MATS1DElastic, MATS1DPlastic, MATS1DDamage
-
+from ibvpy.mats.mats1D5.mats1D5_eval import MATS1D5Eval
+from ibvpy.mats.mats_eval import IMATSEval
 from numpy import zeros, zeros_like, array
+from traits.api import provides, \
+    Instance, Property, cached_property, List, \
+    Callable, String, Int, HasTraits
+from traitsui.api import \
+    View, Item
+from util.traits.either_type import \
+    EitherType
 
 mats_klasses = [MATS1DElastic,
                 MATS1DPlastic,
                 MATS1DDamage]
 
 
+@provides(IMATSEval)
 class MATS1D5Bond(MATS1D5Eval):
 
     '''Bond model for two phases interacting over an interface with zero thickness.
@@ -42,7 +38,6 @@ class MATS1D5Bond(MATS1D5Eval):
     Both phases can be associated with arbitrary 1D mats model.
     Interface behavior can be defined for both sliding and opening using 1D mats models.
     '''
-    #implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Submodels constituting the interface behavior
@@ -232,6 +227,7 @@ class RTE1D5Bond(HasTraits):
         sctx.mats_state_array = mats_state_array
 
         return result
+
 
 if __name__ == '__main__':
 

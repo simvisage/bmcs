@@ -14,15 +14,15 @@
 
 import math
 
+from ibvpy.mats.mats1D5.mats1D5_eval import MATS1D5Eval
+from ibvpy.mats.mats_eval import IMATSEval
+from mathkit.numpy.numpy_func import Heaviside
 from traits.api import \
-    Instance, Property, cached_property, implements, List, \
+    Instance, Property, cached_property, List, \
     Callable, String, Int, HasTraits, Float
 from traitsui.api import \
     View, Item
 
-from ibvpy.mats.mats1D5.mats1D5_eval import MATS1D5Eval
-from ibvpy.mats.mats_eval import IMATSEval
-from mathkit.numpy.numpy_func import Heaviside
 import numpy as np
 
 
@@ -216,7 +216,7 @@ and
         w = u_r[..., 1]
         s_p_n = slip_p
 
-        f_separate = (Heaviside(w) * self.G_open +
+        f_separate = (Heaviside(w) * self.G_open + 
                       Heaviside(-w) * self.G_penalty) * w
 
         f_r = np.zeros_like(u_r)

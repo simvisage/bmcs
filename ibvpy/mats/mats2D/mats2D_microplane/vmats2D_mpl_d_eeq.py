@@ -7,15 +7,14 @@ Microplane damage model 2D - Jirasek [1999]
 '''
 
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
-from ibvpy.mats.mats_eval import \
-    IMATSEval
+from ibvpy.mats.mats2D.vmats2D_eval import \
+    MATS2D
 from numpy import \
     array, einsum, identity, sqrt
 from traits.api import \
-    Constant, implements,\
+    Constant, \
     Float, Property, cached_property
-from ibvpy.mats.mats2D.vmats2D_eval import \
-    MATS2D
+
 import numpy as np
 import traits.api as tr
 
@@ -55,6 +54,7 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
     state_array_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
     '''
+
     @cached_property
     def _get_state_array_shapes(self):
         return {'kappa': (self.n_mp,),
@@ -81,8 +81,8 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
     def _get__MPTT(self):
         # Third order tangential tensor for each microplane
         delta = identity(2)
-        MPTT_nijr = 0.5 * (einsum('ni,jr -> nijr', self._MPN, delta) +
-                           einsum('nj,ir -> njir', self._MPN, delta) - 2.0 *
+        MPTT_nijr = 0.5 * (einsum('ni,jr -> nijr', self._MPN, delta) + 
+                           einsum('nj,ir -> njir', self._MPN, delta) - 2.0 * 
                            einsum('ni,nj,nr -> nijr', self._MPN, self._MPN, self._MPN))
         return MPTT_nijr
 
@@ -140,8 +140,8 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         epsilon_f = self.epsilon_f
         kappa_idx = np.where(kappa_Emn >= epsilon_0)
         omega_Emn[kappa_idx] = (
-            1.0 - (epsilon_0 / kappa_Emn[kappa_idx] *
-                   np.exp(-1.0 * (kappa_Emn[kappa_idx] - epsilon_0) /
+            1.0 - (epsilon_0 / kappa_Emn[kappa_idx] * 
+                   np.exp(-1.0 * (kappa_Emn[kappa_idx] - epsilon_0) / 
                           (epsilon_f - epsilon_0))
                    ))
         return omega_Emn
@@ -160,9 +160,9 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         (cf. [Jir99], Eq.(21))
         '''
         delta = identity(2)
-        beta_Emijkl = 0.25 * (einsum('Emik,jl->Emijkl', phi_Emab, delta) +
-                              einsum('Emil,jk->Emijkl', phi_Emab, delta) +
-                              einsum('Emjk,il->Emijkl', phi_Emab, delta) +
+        beta_Emijkl = 0.25 * (einsum('Emik,jl->Emijkl', phi_Emab, delta) + 
+                              einsum('Emil,jk->Emijkl', phi_Emab, delta) + 
+                              einsum('Emjk,il->Emijkl', phi_Emab, delta) + 
                               einsum('Emjl,ik->Emijkl', phi_Emab, delta))
 
         return beta_Emijkl
@@ -218,7 +218,7 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
 
 class MATS2DMplDamageEEQ(MATSXDMicroplaneDamageJir, MATS2DEval):
 
-    #implements(IMATSEval)
+    # implements(IMATSEval)
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D
@@ -279,6 +279,7 @@ class MATS2DMplDamageEEQ(MATSXDMicroplaneDamageJir, MATS2DEval):
     D_ab = tr.Property(tr.Array, depends_on='+input')
     '''Elasticity matrix (shape: (3,3))
     '''
+
     @tr.cached_property
     def _get_D_ab(self):
         if self.stress_state == 'plane_stress':
