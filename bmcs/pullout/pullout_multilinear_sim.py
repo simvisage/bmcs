@@ -241,7 +241,7 @@ def run_31():
     d = 16.0  # [mm]
     E_f = 210000  # [MPa]
     E_m = 28000  # [MPa]
-    A_f = (d / 2.)**2 * np.pi  # [mm^2]
+    A_f = (d / 2.) ** 2 * np.pi  # [mm^2]
     P_b = d * np.pi
     A_m = 100 * 100  # [mm^2]
     L_x = 5 * d
@@ -312,7 +312,7 @@ def run_pullout_multi(*args, **kw):
 #     po.add_viz2d('dissipation rate', 'dissipation rate')
 
     w.offline = False
-    #w.finish_event = True
+    # w.finish_event = True
     w.configure_traits(*args, **kw)
 
 
@@ -358,13 +358,13 @@ def run_po_paper2_4layers(*args, **kw):
     P_b4 = tt4_n_layers
     E_f = 180000.0
     E_m = 30000.0
-    s_arr = np.array([0., 0.004,  0.0063,  0.0165,
-                      0.0266,  0.0367,  0.0468,  0.057,
-                      0.0671,  0.3,
+    s_arr = np.array([0., 0.004, 0.0063, 0.0165,
+                      0.0266, 0.0367, 0.0468, 0.057,
+                      0.0671, 0.3,
                       1.0], dtype=np.float_)
-    tau_arr = 0.7 * np.array([0., 40,  62.763,  79.7754,
-                              63.3328,  53.0229,  42.1918,
-                              28.6376,  17,   3, 1], dtype=np.float)
+    tau_arr = 0.7 * np.array([0., 40, 62.763, 79.7754,
+                              63.3328, 53.0229, 42.1918,
+                              28.6376, 17, 3, 1], dtype=np.float)
     po = PullOutModel(name='t33_pullout_multilinear',
                       n_e_x=100, k_max=1000, w_max=2.0)
     po.fixed_boundary = 'clamped left'
