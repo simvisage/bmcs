@@ -12,15 +12,18 @@
 #
 # Created on Jun 2, 2010 by: rch
 
-from etsproxy.traits.api import Float, Str, implements
-from .i_rf import IRF
 from matplotlib import pyplot as plt
 from numpy import sign, linspace
+
+from etsproxy.traits.api import Float, Str
+
+from .i_rf import IRF
 from .rf import RF
 
 
 def Heaviside(x):
     return (sign(x) + 1.0) / 2.0
+
 
 class Filament(RF):
     '''Linear elastic, brittle filament.
@@ -30,28 +33,28 @@ class Filament(RF):
 
     title = Str('brittle filament')
 
-    xi = Float(0.017857, auto_set = False, enter_set = True,
-                distr = ['weibull_min', 'uniform'],
-                scale = 0.0178, shape = 4.0,
+    xi = Float(0.017857, auto_set=False, enter_set=True,
+                distr=['weibull_min', 'uniform'],
+                scale=0.0178, shape=4.0,
                 )
 
-    theta = Float(0.01, auto_set = False, enter_set = True,
-                   distr = ['uniform', 'norm'],
-                   loc = 0.01, scale = 0.001)
+    theta = Float(0.01, auto_set=False, enter_set=True,
+                   distr=['uniform', 'norm'],
+                   loc=0.01, scale=0.001)
 
-    lambd = Float(0.2, auto_set = False, enter_set = True,
-                   distr = ['uniform'],
-                   loc = 0.0, scale = 0.1)
+    lambd = Float(0.2, auto_set=False, enter_set=True,
+                   distr=['uniform'],
+                   loc=0.0, scale=0.1)
 
-    A = Float(5.30929158457e-10, auto_set = False, enter_set = True,
-               distr = ['weibull_min', 'uniform', 'norm'],
-               scale = 5.3e-10, shape = 8)
+    A = Float(5.30929158457e-10, auto_set=False, enter_set=True,
+               distr=['weibull_min', 'uniform', 'norm'],
+               scale=5.3e-10, shape=8)
 
-    E_mod = Float(70.0e9, auto_set = False, enter_set = True,
-                   distr = ['weibull_min', 'uniform', 'norm'],
-                   scale = 70e9, shape = 8)
+    E_mod = Float(70.0e9, auto_set=False, enter_set=True,
+                   distr=['weibull_min', 'uniform', 'norm'],
+                   scale=70e9, shape=8)
 
-    eps = Float(ctrl_range = (0, 0.1, 100), auto_set = False, enter_set = True)
+    eps = Float(ctrl_range=(0, 0.1, 100), auto_set=False, enter_set=True)
 
     C_code = '''
             double eps_ = ( eps - theta * ( 1 + lambd ) ) /
@@ -105,12 +108,12 @@ if __name__ == '__main__':
     print(('keys', f.param_keys))
     print(('values', f.param_list))
 
-    print(('uniform', f.traits(distr = lambda x: x != None and 'uniform' in x)))
+    print(('uniform', f.traits(distr=lambda x: x != None and 'uniform' in x)))
 
     X = linspace(0, 0.05, 100)
     Y = []
     for eps in X:
         Y.append(f(eps, .017, .01, .2, 5.30929158457e-10, 70.e9))
-    plt.plot(X, Y, linewidth = 2, color = 'navy')
+    plt.plot(X, Y, linewidth=2, color='navy')
     plt.show()
 

@@ -12,12 +12,16 @@
 #
 # Created on Sep 8, 2011 by: rch
 
-from etsproxy.traits.api import implements, Str
+import math
+import types
+
 from scipy.special import erf
+
+from etsproxy.traits.api import Str
+import numpy as np
 from stats.spirrid import SPIRRID, Heaviside, RV, RF, IRF
 from stats.spirrid.extras import SPIRRIDLAB
-import math
-import numpy as np
+
 
 #===========================================================================
 # Response function
@@ -64,6 +68,7 @@ breaking strain are considered random and normally distributed. The function
             }
             '''
 
+
 def create_demo_object():
 
     m_la, std_la = 10., 1.0
@@ -74,16 +79,16 @@ def create_demo_object():
 
     # n_int range for sampling efficiency test
     powers = np.linspace(1, math.log(500, 10), 50)
-    n_int_range = np.array(np.power(10, powers), dtype = int)
+    n_int_range = np.array(np.power(10, powers), dtype=int)
 
     #===========================================================================
     # Randomization
     #===========================================================================
-    s = SPIRRID(q = fiber_tt_2p(),
-                e_arr = e_arr,
-                n_int = 10,
-                tvars = dict(la = RV('norm', m_la, std_la),
-                             xi = RV('norm', m_xi, std_xi)
+    s = SPIRRID(q=fiber_tt_2p(),
+                e_arr=e_arr,
+                n_int=10,
+                tvars=dict(la=RV('norm', m_la, std_la),
+                             xi=RV('norm', m_xi, std_xi)
                              ),
                 )
 
@@ -91,24 +96,23 @@ def create_demo_object():
     # Exact solution
     #===========================================================================
     def mu_q_ex(e, m_xi, std_xi, m_la):
-        return e * (0.5 - 0.5 *
+        return e * (0.5 - 0.5 * 
                     erf(0.5 * math.sqrt(2) * (e - m_xi) / std_xi)) * m_la
 
     #===========================================================================
     # Lab
     #===========================================================================
-    slab = SPIRRIDLAB(s = s, save_output = False, show_output = True,
-                      dpi = 300,
-                      exact_arr = mu_q_ex(e_arr, m_xi, std_xi, m_la),
-                      plot_mode = 'subplots',
-                      n_int_range = n_int_range,
-                      extra_compiler_args = True,
-                      le_sampling_lst = ['LHS', 'PGrid'],
-                      le_n_int_lst = [440, 5000])
+    slab = SPIRRIDLAB(s=s, save_output=False, show_output=True,
+                      dpi=300,
+                      exact_arr=mu_q_ex(e_arr, m_xi, std_xi, m_la),
+                      plot_mode='subplots',
+                      n_int_range=n_int_range,
+                      extra_compiler_args=True,
+                      le_sampling_lst=['LHS', 'PGrid'],
+                      le_n_int_lst=[440, 5000])
 
     return slab
 
-import types
 
 if __name__ == '__main__':
 
@@ -131,7 +135,7 @@ if __name__ == '__main__':
     # Compare the structure of sampling
     #===========================================================================
 
-    #slab.sampling_structure(ylim = 18.0, xlim = 1.2,)
+    # slab.sampling_structure(ylim = 18.0, xlim = 1.2,)
 
     #===========================================================================
     # Compare the language efficiency

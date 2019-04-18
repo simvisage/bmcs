@@ -12,21 +12,21 @@
 #
 # Created on Sep 4, 2009 by: rch
 
-from traits.api import \
-    Instance, \
-    Dict,  WeakRef, List, implements, \
-    DelegatesTo, Bool
-from traitsui.api import \
-    Item, View
-
 from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.core.tstepper import TStepper
 from ibvpy.mats.mats_eval import IMATSEval
-import numpy as np
+from traits.api import \
+    Instance, \
+    Dict, WeakRef, List, \
+    DelegatesTo, Bool
+from traitsui.api import \
+    Item, View
 from view.ui import BMCSTreeNode
 
+import numpy as np
 
-#from pyglet.media.drivers.alsa.asound import u_int16_t
+
+# from pyglet.media.drivers.alsa.asound import u_int16_t
 class MATSXDExplore(TStepper):
 
     '''
