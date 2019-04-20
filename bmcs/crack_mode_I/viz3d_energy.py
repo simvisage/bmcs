@@ -5,10 +5,10 @@ Created on May 30, 2018
 '''
 
 from scipy import interpolate as ip
+from view.plot2d import Viz2D, Vis2D
 
 import numpy as np
 import traits.api as tr
-from view.plot2d import Viz2D, Vis2D
 
 
 class Vis2DEnergy(Vis2D):
@@ -19,7 +19,7 @@ class Vis2DEnergy(Vis2D):
         self.U_bar_t = []
 
     def update(self):
-        mats = self.sim.model
+        mats = self.sim.mats
         tstep = self.sim.tstep
         xdomain = self.sim.xdomain
         U = tstep.U_k
@@ -33,7 +33,8 @@ class Vis2DEnergy(Vis2D):
             'Eimabc,Eic->Emab',
             xdomain.B_Eimabc, U_Eia
         )
-        sig_Emab, _ = mats.get_corr_pred(eps_Emab, t, **tstep.state_n)
+        sig_Emab, _ = mats.get_corr_pred(
+            eps_Emab, t, **tstep.fe_domain[0].state_n)
         w_m = fets.w_m
         det_J_Em = xdomain.det_J_Em
         U_bar = d / 2.0 * np.einsum(
@@ -51,8 +52,6 @@ class Vis2DEnergy(Vis2D):
 
     def get_W_t(self):
         P, w = self.sim.hist['Pw'].Pw
-        print(P)
-        print(w)
         return [
             np.trapz(P[:i + 1], w[:i + 1])
             for i, _ in enumerate(w)
@@ -82,7 +81,6 @@ class Viz2DEnergy(Viz2D):
         t = self.vis2d.get_t()
         U_bar_t = self.vis2d.U_bar_t
         W_t = self.vis2d.get_W_t()
-        print('W_t', W_t)
         ax.plot(t, W_t, color=color_W, label=label_W)
         ax.plot(t, U_bar_t, color=color_U, label=label_U)
         ax.fill_between(t, W_t, U_bar_t, facecolor='gray', alpha=0.5,

@@ -27,6 +27,7 @@ from traitsui.api import \
 from traitsui.ui_editors.array_view_editor import ArrayViewEditor
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
+from view.ui.bmcs_tree_node import itags_str
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -417,7 +418,7 @@ class PullOutModelBase(Simulator):
                             A_f=self.cross_section.A_f)
 
     dots_grid = Property(Instance(XDomainFEInterface1D),
-                         depends_on='CS,MAT,GEO,MESH,FE')
+                         depends_on=itags_str)
     '''Discretization object.
     '''
     @cached_property
@@ -436,7 +437,7 @@ class PullOutModelBase(Simulator):
     def _get_fe_grid(self):
         return self.dots_grid.mesh
 
-    domains = Property(depends_on='BC,CS,MAT,GEO,MESH,FE')
+    domains = Property(depends_on=itags_str)
 
     @cached_property
     def _get_domains(self):

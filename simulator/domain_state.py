@@ -3,7 +3,7 @@ import copy
 
 from traits.api import \
     HasStrictTraits, Bool, \
-    Property, cached_property, \
+    Property, Instance, cached_property, \
     Dict, DelegatesTo, WeakRef, Array, Str
 
 import numpy as np
@@ -18,9 +18,9 @@ class DomainState(HasStrictTraits):
 
     hist = DelegatesTo('tstep')
 
-    xdomain = WeakRef(IXDomain)
+    xdomain = Instance(IXDomain)
 
-    tmodel = WeakRef(IModel)
+    tmodel = Instance(IModel)
 
     state_n = Property(Dict(Str, Array),
                        depends_on='model_structure_changed')

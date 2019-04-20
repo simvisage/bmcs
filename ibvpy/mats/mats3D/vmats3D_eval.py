@@ -4,9 +4,12 @@ Created on Feb 8, 2018
 @author: rch
 '''
 
+import copy
+
+from view.ui import BMCSTreeNode
+
 import numpy as np
 import traits.api as tr
-from view.ui import BMCSTreeNode
 
 
 class MATS3D(BMCSTreeNode):
@@ -46,7 +49,23 @@ class MATS3D(BMCSTreeNode):
 
         return D_abef
 
-    state_array_shapes = tr.Property(tr.Dict())
+    state_var_shapes = tr.Property(tr.Dict())
 
-    def _get_state_array_shapes(self):
+    def _get_state_var_shapes(self):
         raise NotImplementedError
+
+    var_dict = tr.Property()
+
+    def _get_var_dict(self):
+        return dict(eps_ab=self.get_eps_ab,
+                    sig_ab=self.get_sig_ab)
+
+    def get_eps_ab(self, eps_ab, tn1, **state):
+        return eps_ab
+
+    def get_sig_ab(self, eps_ab, tn1, **state):
+        state_copy = copy.deepcopy(state)
+        sig_ab, _ = self.get_corr_pred(
+            eps_ab, tn1, **state_copy
+        )
+        return sig_ab

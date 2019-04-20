@@ -20,8 +20,6 @@ from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
 from ibvpy.mats.viz2d_field import \
     Vis2DField, Viz2DField
-from ibvpy.mats.viz3d_scalar_field import \
-    Vis3DStateField, Viz3DScalarField
 from ibvpy.mats.viz3d_tensor_field import \
     Vis3DStrainField, Vis3DStressField, Viz3DTensorField
 from simulator.api import \

@@ -11,27 +11,32 @@ from ibvpy.mats.mats2D.vmats2D_eval import \
     MATS2D
 from numpy import \
     array, einsum, identity, sqrt
+from simulator.i_model import IModel
 from traits.api import \
-    Constant, \
+    Constant, provides, \
     Float, Property, cached_property
 
 import numpy as np
 import traits.api as tr
 
 
+@provides(IModel)
 class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
 
-    E = Float(34000,
-              label="E",
-              desc="Elastic modulus",
-              enter_set=True,
-              auto_set=False)
+    #-------------------------------------------------------------------------
+    # Material parameters
+    #-------------------------------------------------------------------------
+    E = tr.Float(34e+3,
+                 label="E",
+                 desc="Young's Modulus",
+                 auto_set=False,
+                 input=True)
 
-    nu = Float(0.2,
-               label="G",
-               desc="poisson's ratio",
-               enter_set=True,
-               auto_set=False)
+    nu = tr.Float(0.2,
+                  label='nu',
+                  desc="Poison ratio",
+                  auto_set=False,
+                  input=True)
 
     epsilon_0 = Float(59e-6,
                       label="a",
@@ -51,14 +56,14 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
                 enter_set=True,
                 auto_set=False)
 
-    state_array_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
+    state_var_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
     '''
 
     @cached_property
-    def _get_state_array_shapes(self):
-        return {'kappa': (self.n_mp,),
-                'omega': (self.n_mp,)}
+    def _get_state_var_shapes(self):
+        return dict(kappa=(self.n_mp,),
+                    omega=(self.n_mp,))
 
     #-------------------------------------------------------------------------
     # MICROPLANE-Kinematic constraints
@@ -81,8 +86,8 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
     def _get__MPTT(self):
         # Third order tangential tensor for each microplane
         delta = identity(2)
-        MPTT_nijr = 0.5 * (einsum('ni,jr -> nijr', self._MPN, delta) + 
-                           einsum('nj,ir -> njir', self._MPN, delta) - 2.0 * 
+        MPTT_nijr = 0.5 * (einsum('ni,jr -> nijr', self._MPN, delta) +
+                           einsum('nj,ir -> njir', self._MPN, delta) - 2.0 *
                            einsum('ni,nj,nr -> nijr', self._MPN, self._MPN, self._MPN))
         return MPTT_nijr
 
@@ -140,8 +145,8 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         epsilon_f = self.epsilon_f
         kappa_idx = np.where(kappa_Emn >= epsilon_0)
         omega_Emn[kappa_idx] = (
-            1.0 - (epsilon_0 / kappa_Emn[kappa_idx] * 
-                   np.exp(-1.0 * (kappa_Emn[kappa_idx] - epsilon_0) / 
+            1.0 - (epsilon_0 / kappa_Emn[kappa_idx] *
+                   np.exp(-1.0 * (kappa_Emn[kappa_idx] - epsilon_0) /
                           (epsilon_f - epsilon_0))
                    ))
         return omega_Emn
@@ -160,9 +165,9 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         (cf. [Jir99], Eq.(21))
         '''
         delta = identity(2)
-        beta_Emijkl = 0.25 * (einsum('Emik,jl->Emijkl', phi_Emab, delta) + 
-                              einsum('Emil,jk->Emijkl', phi_Emab, delta) + 
-                              einsum('Emjk,il->Emijkl', phi_Emab, delta) + 
+        beta_Emijkl = 0.25 * (einsum('Emik,jl->Emijkl', phi_Emab, delta) +
+                              einsum('Emil,jk->Emijkl', phi_Emab, delta) +
+                              einsum('Emjk,il->Emijkl', phi_Emab, delta) +
                               einsum('Emjl,ik->Emijkl', phi_Emab, delta))
 
         return beta_Emijkl
@@ -171,21 +176,10 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1, update_state,
-                      kappa, omega):
+    def get_corr_pred(self, eps_Emab, tn1, kappa, omega):
 
-        if update_state:
-
-            eps_Emab_n = eps_Emab_n1 - deps_Emab
-
-            kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
-                eps_Emab_n, kappa, omega)
-
-            kappa[...] = kappa_Emn[...]
-            omega[...] = omega_Emn[...]
-
-        kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
-            eps_Emab_n1, kappa, omega)
+        kappa[...], omega[...], f_idx = self._get_state_variables(
+            eps_Emab, kappa, omega)
 
         #----------------------------------------------------------------------
         # if the regularization using the crack-band concept is on calculate the
@@ -198,7 +192,7 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         #------------------------------------------------------------------
         # Damage tensor (2th order):
         #------------------------------------------------------------------
-        phi_Emab = self._get_phi_Emab(kappa_Emn)
+        phi_Emab = self._get_phi_Emab(kappa)
 
         #------------------------------------------------------------------
         # Damage tensor (4th order) using product- or sum-type symmetrization:
@@ -209,16 +203,16 @@ class MATSXDMicroplaneDamageJir(MATS2DEval, MATS2D):
         # Damaged stiffness tensor calculated based on the damage tensor beta4:
         #------------------------------------------------------------------
         D_Emijab = einsum(
-            'Emijab, abef, Emcdef -> Emijcd', beta_Emabcd, self.D_abef, beta_Emabcd)
+            'Emijab, abef, Emcdef -> Emijcd',
+            beta_Emabcd, self.D_abef, beta_Emabcd
+        )
 
-        sig_Emab = einsum('Emabef,Emef -> Emab', D_Emijab, eps_Emab_n1)
+        sig_Emab = einsum('Emabef,Emef -> Emab', D_Emijab, eps_Emab)
 
         return D_Emijab, sig_Emab
 
 
 class MATS2DMplDamageEEQ(MATSXDMicroplaneDamageJir, MATS2DEval):
-
-    # implements(IMATSEval)
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D
@@ -254,21 +248,6 @@ class MATS2DMplDamageEEQ(MATSXDMicroplaneDamageJir, MATS2DEval):
     # Cached elasticity tensors
     #-------------------------------------------------------------------------
     stress_state = tr.Enum("plane_stress", "plane_strain", input=True)
-
-    #-------------------------------------------------------------------------
-    # Material parameters
-    #-------------------------------------------------------------------------
-    E = tr.Float(34e+3,
-                 label="E",
-                 desc="Young's Modulus",
-                 auto_set=False,
-                 input=True)
-
-    nu = tr.Float(0.2,
-                  label='nu',
-                  desc="Poison ratio",
-                  auto_set=False,
-                  input=True)
 
     def _get_lame_params(self):
         la = self.E * self.nu / ((1 + self.nu) * (1 - 2 * self.nu))

@@ -6,20 +6,22 @@ Created on 15.02.2018
 Microplane damage model 2D - Jirasek [1999]
 '''
 
-from numpy import \
-    array, einsum, identity, sqrt
-from traits.api import \
-    Constant,\
-    Float, Property, cached_property
-
 from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
-import numpy as np
+from numpy import \
+    array, einsum, identity, sqrt
+from simulator.api import IModel
 from simulator.api import \
     Model, TLoopImplicit, TStepBC
+from traits.api import \
+    Constant, provides, \
+    Float, Property, cached_property
+
+import numpy as np
 import traits.api as tr
 
 
+@provides(IModel)
 class MATS3DMplDamageEEQ(Model, MATS3DEval, MATS3D):
     # To use the model directly in the simulator specify the
     # time stepping classes
@@ -186,7 +188,6 @@ class MATS3DMplDamageEEQ(Model, MATS3DEval, MATS3D):
         e_T_na = e_na - e_N_na
         # squared tangential strain vector for each microplane
         e_TT_n = einsum('...ni,...ni -> ...n', e_T_na, e_T_na)
-
         # equivalent strain for each microplane
         e_equiv_n = sqrt(e_N_pos_n * e_N_pos_n + c_T * e_TT_n)
         return e_equiv_n
@@ -195,10 +196,10 @@ class MATS3DMplDamageEEQ(Model, MATS3DEval, MATS3D):
         e_na = self._get_e_na(eps_ab)
         eps_eq_n = self._get_e_equiv_n(e_na)
         f_trial_n = eps_eq_n - self.epsilon_0
-        f_idx = np.where(f_trial_n > 0)
-        k_n = np.max(np.array([kappa_n[f_idx], eps_eq_n[f_idx]]), axis=0)
-        kappa_n[f_idx] = k_n
-        omega_n[f_idx] = self._get_omega(k_n)
+        I = np.where(f_trial_n > 0)
+        k_n = np.max(np.array([kappa_n[I], eps_eq_n[I]]), axis=0)
+        kappa_n[I] = k_n
+        omega_n[I] = self._get_omega(k_n)
 
     def _get_omega(self, kappa_n):
         '''
@@ -208,10 +209,10 @@ class MATS3DMplDamageEEQ(Model, MATS3DEval, MATS3D):
         omega_n = np.zeros_like(kappa_n)
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
-        kappa_idx = np.where(kappa_n >= epsilon_0)
-        omega_n[kappa_idx] = (
-            1.0 - (epsilon_0 / kappa_n[kappa_idx] *
-                   np.exp(-1.0 * (kappa_n[kappa_idx] - epsilon_0) /
+        I = np.where(kappa_n >= epsilon_0)
+        omega_n[I] = (
+            1.0 - (epsilon_0 / kappa_n[I] *
+                   np.exp(-1.0 * (kappa_n[I] - epsilon_0) /
                           (epsilon_f - epsilon_0))
                    ))
         return omega_n
@@ -312,3 +313,19 @@ class MATS3DMplDamageEEQ(Model, MATS3DEval, MATS3D):
                   einsum(',il,jk->ijkl', mu, delta, delta))
 
         return D_abef
+
+    def _get_var_dict(self):
+        var_dict = super(MATS3DMplDamageEEQ, self)._get_var_dict()
+        var_dict.update(
+            phi_ab=self.get_phi_ab
+        )
+        return var_dict
+
+    def get_phi_ab(self, eps_ab, tn1, kappa_n, omega_n):
+        return self._get_phi_ab(kappa_n)
+
+
+if __name__ == '__main__':
+
+    mm = MATS3DMplDamageEEQ()
+    print(mm.var_dict)

@@ -6,17 +6,18 @@ Created on 15.02.2018
 Microplane damage model 2D - ODFS (Wu [2009])
 '''
 
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
+from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
+from simulator.api import Model
 from traits.api import \
     Constant,\
     Float, Property, cached_property
 
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 import numpy as np
 import traits.api as tr
 
 
-class MATS3DMplDamageODF(MATS3DEval, MATS3D):
+class MATS3DMplDamageODF(Model, MATS3DEval, MATS3D):
 
     # implements(IMATSEval)
 
@@ -56,11 +57,11 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
                   auto_set=False,
                   input=True)
 
-    state_array_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
+    state_var_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
     '''
     @cached_property
-    def _get_state_array_shapes(self):
+    def _get_state_var_shapes(self):
         return {'kappa': (self.n_mp,),
                 'omega': (self.n_mp,)}
 
@@ -134,18 +135,15 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
         e_equiv_Emn = np.sqrt(e_N_pos_Emn * e_N_pos_Emn + c_T * e_TT_Emn)
         return e_equiv_Emn
 
-    def _get_state_variables(self, eps_Emab, kappa, omega):
+    def update_state_variables(self, eps_Emab, kappa, omega):
 
-        kappa_Emn = np.copy(kappa)
-        omega_Emn = np.copy(omega)
         e_Emna = self._get_e_Emna(eps_Emab)
         eps_eq_Emn = self._get_e_equiv_Emn(e_Emna)
         f_trial_Emn = eps_eq_Emn - self.epsilon_0
-        f_idx = np.where(f_trial_Emn > 0)
-        kappa_Emn[f_idx] = eps_eq_Emn[f_idx]
-        omega_Emn[f_idx] = self._get_omega(eps_eq_Emn[f_idx])
-
-        return kappa_Emn, omega_Emn, f_idx
+        I = np.where(f_trial_Emn > 0)
+        kappa[I] = eps_eq_Emn[I]
+        omega[I] = self._get_omega(eps_eq_Emn[I])
+        return I
 
     def _get_omega(self, kappa_Emn):
         '''
@@ -155,10 +153,10 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
         omega_Emn = np.zeros_like(kappa_Emn)
         epsilon_0 = self.epsilon_0
         epsilon_f = self.epsilon_f
-        kappa_idx = np.where(kappa_Emn >= epsilon_0)
-        omega_Emn[kappa_idx] = (
-            1.0 - (epsilon_0 / kappa_Emn[kappa_idx] *
-                   np.exp(-1.0 * (kappa_Emn[kappa_idx] - epsilon_0) /
+        I = np.where(kappa_Emn >= epsilon_0)
+        omega_Emn[I] = (
+            1.0 - (epsilon_0 / kappa_Emn[I] *
+                   np.exp(-1.0 * (kappa_Emn[I] - epsilon_0) /
                           (epsilon_f - epsilon_0))
                    ))
         return omega_Emn
@@ -168,7 +166,10 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
         # scalar integrity factor for each microplane
         phi_Emn = 1.0 - self._get_omega(kappa_Emn)
         # integration terms for each microplanes
-        phi_Emab = np.einsum('Emn,n,nab->Emab', phi_Emn, self._MPW, self._MPNN)
+        phi_Emab = np.einsum(
+            'Emn,n,nab->Emab',
+            phi_Emn, self._MPW, self._MPNN
+        )
 
         return phi_Emab
 
@@ -225,16 +226,15 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
     # Returns the inner product of P_dev
     #----------------------------------------------------------------
     def _get_PP_dev_nabcd(self):
-
         delta = np.identity(3)
-        PP_dev_nabcd = 0.5 * (0.5 * (np.einsum('na,nc,bd -> nabcd', self._MPN, self._MPN, delta) +
-                                     np.einsum('na,nd,bc -> nabcd', self._MPN, self._MPN, delta)) +
-                              0.5 * (np.einsum('ac,nb,nd -> nabcd',  delta, self._MPN, self._MPN) +
-                                     np.einsum('ad,nb,nc -> nabcd',  delta, self._MPN, self._MPN))) -\
+        PP_dev_nabcd = 0.5 * (
+            0.5 * (np.einsum('na,nc,bd -> nabcd', self._MPN, self._MPN, delta) +
+                   np.einsum('na,nd,bc -> nabcd', self._MPN, self._MPN, delta)) +
+            0.5 * (np.einsum('ac,nb,nd -> nabcd',  delta, self._MPN, self._MPN) +
+                   np.einsum('ad,nb,nc -> nabcd',  delta, self._MPN, self._MPN))) -\
             (1.0 / 3.0) * (np.einsum('na,nb,cd -> nabcd', self._MPN, self._MPN, delta) +
                            np.einsum('ab,nc,nd -> nabcd', delta, self._MPN, self._MPN)) +\
             (1.0 / 9.0) * np.einsum('ab,cd -> abcd', delta, delta)
-
         return PP_dev_nabcd
 
     def _get_I_vol_4(self):
@@ -272,10 +272,11 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
     def _get_PP_dev_4(self):
         # inner product of P_dev
         delta = np.identity(3)
-        PP_dev_nijkl = 0.5 * (0.5 * (np.einsum('ni,nk,jl -> nijkl', self._MPN, self._MPN, delta) +
-                                     np.einsum('ni,nl,jk -> nijkl', self._MPN, self._MPN, delta)) +
-                              0.5 * (np.einsum('ik,nj,nl -> nijkl',  delta, self._MPN, self._MPN) +
-                                     np.einsum('il,nj,nk -> nijkl',  delta, self._MPN, self._MPN))) -\
+        PP_dev_nijkl = 0.5 * (
+            0.5 * (np.einsum('ni,nk,jl -> nijkl', self._MPN, self._MPN, delta) +
+                   np.einsum('ni,nl,jk -> nijkl', self._MPN, self._MPN, delta)) +
+            0.5 * (np.einsum('ik,nj,nl -> nijkl',  delta, self._MPN, self._MPN) +
+                   np.einsum('il,nj,nk -> nijkl',  delta, self._MPN, self._MPN))) -\
             (1 / 3.) * (np.einsum('ni,nj,kl -> nijkl', self._MPN, self._MPN, delta) +
                         np.einsum('ij,nk,nl -> nijkl', delta, self._MPN, self._MPN)) +\
             (1 / 9.) * np.einsum('ij,kl -> ijkl', delta, delta)
@@ -300,7 +301,8 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
 #         PP_dev_nabcd = self._get_PP_dev_4()
 #         I_dev_abcd = self._get_I_dev_4()
 
-        S_1_Emabcd = K0 * np.einsum('Emn, n, abcd-> Emabcd', phi_Emn, self._MPW, PP_vol_abcd) + \
+        S_1_Emabcd = K0 * \
+            np.einsum('Emn, n, abcd-> Emabcd', phi_Emn, self._MPW, PP_vol_abcd) + \
             G0 * 2.0 * self.zeta_G * np.einsum('Emn, n, nabcd-> Emabcd',
                                                phi_Emn, self._MPW, PP_dev_nabcd) - (1.0 / 3.0) * (
                 2.0 * self.zeta_G - 1.0) * G0 * np.einsum('Emn, n, abcd-> Emabcd',
@@ -459,27 +461,16 @@ class MATS3DMplDamageODF(MATS3DEval, MATS3D):
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1,
-                      update_state, algorithmic, kappa, omega):
+    def get_corr_pred(self, eps_Emab, tn1, kappa, omega):
 
-        if update_state:
+        I = self.update_state_variables(eps_Emab, kappa, omega)
+        D_Emabcd = self._get_S_4_Emabcd(eps_Emab, kappa, omega)
+        sig_Emab = np.einsum(
+            'Emabcd,Emcd -> Emab',
+            D_Emabcd, eps_Emab
+        )
 
-            eps_Emab_n = eps_Emab_n1 - deps_Emab
-
-            kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
-                eps_Emab_n, kappa, omega)
-
-            kappa[...] = kappa_Emn[...]
-            omega[...] = omega_Emn[...]
-
-        kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
-            eps_Emab_n1, kappa, omega)
-
-        D_Emabcd = self._get_S_4_Emabcd(eps_Emab_n1, kappa, omega)
-
-        sig_Emab = np.einsum('Emabcd,Emcd -> Emab', D_Emabcd, eps_Emab_n1)
-
-        return D_Emabcd, sig_Emab
+        return sig_Emab, D_Emabcd
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D

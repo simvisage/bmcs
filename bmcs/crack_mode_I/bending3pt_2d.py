@@ -18,9 +18,9 @@ from ibvpy.mats.mats2D import \
 from ibvpy.mats.viz3d_scalar_field import \
     Vis3DStateField, Viz3DScalarField
 from ibvpy.mats.viz3d_tensor_field import \
-    Vis3DStrainField, Vis3DStressField, Viz3DTensorField
+    Vis3DTensorField, Viz3DTensorField
 from scipy import interpolate as ip
-from simulator.api import Simulator, Model, XDomainFEGrid
+from simulator.api import Simulator, IModel, XDomainFEGrid
 from traits.api import \
     Property, Instance, cached_property, \
     List, Float, Trait, Int, on_trait_change, Tuple
@@ -28,6 +28,7 @@ from traitsui.api import \
     View, Item, UItem, VGroup
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
+from view.ui.bmcs_tree_node import itags_str
 from view.window import BMCSWindow
 
 import numpy as np
@@ -123,16 +124,16 @@ class Vis2DCrackBand(Vis2D):
         t = self.sim.tstep.t_n1
         tstep = self.sim.tstep
         xdomain = self.sim.xdomain
-        mats = self.sim.model
+        mats = self.sim.mats
         fets = xdomain.fets
         n_c = fets.n_nodal_dofs
         U_Ia = U.reshape(-1, n_c)
         U_Eia = U_Ia[xdomain.I_Ei]
         eps_Enab = np.einsum(
-            'Einabc,Eic->Enab', xdomain.B_Einabc, U_Eia
+            'Einabc,Eic->Enab', xdomain.B_Eimabc, U_Eia
         )
         sig_Enab, _ = mats.get_corr_pred(
-            eps_Enab, t, ** tstep.state_n
+            eps_Enab, t, ** tstep.fe_domain[0].state_n
         )
         crack_band = xdomain.mesh[0, bt.n_a + 1:]
         E = crack_band.elems
@@ -399,7 +400,7 @@ class BendingTestModel(Simulator):
 
         return [
             self.tline,
-            self.model,
+            self.mats,
             self.cross_section,
             self.geometry
         ]
@@ -407,7 +408,7 @@ class BendingTestModel(Simulator):
     def _update_node_list(self):
         self.tree_node_list = [
             self.tline,
-            self.model,
+            self.mats,
             self.cross_section,
             self.geometry
         ]
@@ -450,31 +451,27 @@ class BendingTestModel(Simulator):
     #=========================================================================
     # Material model
     #=========================================================================
-    model_type = Trait('microplane damage (eeq)',
-                       {'elastic': MATS2DElastic,
-                        'microplane damage (eeq)': MATS2DMplDamageEEQ,
-                        'microplane CSD (eeq)': MATS2DMplCSDEEQ,
-                        #'microplane CSD (odf)': MATS2DMplCSDODF,
-                        'scalar damage': MATS2DScalarDamage
-                        },
-                       MAT=True
-                       )
+    mats_type = Trait('microplane damage (eeq)',
+                      {'elastic': MATS2DElastic,
+                       'microplane damage (eeq)': MATS2DMplDamageEEQ,
+                       'microplane CSD (eeq)': MATS2DMplCSDEEQ,
+                       #'microplane CSD (odf)': MATS2DMplCSDODF,
+                       'scalar damage': MATS2DScalarDamage
+                       },
+                      MAT=True
+                      )
 
-    @on_trait_change('model_type')
-    def _set_model(self):
-        self.model = self.model_type_()
+    @on_trait_change('mats_type')
+    def _set_mats(self):
+        self.mats = self.mats_type_()
         self._update_node_list()
 
-#     @on_trait_change('BC,MAT,MESH')
-#     def reset_node_list(self):
-#         self._update_node_list()
-
-    model = Instance(Model,
-                     report=True)
+    mats = Instance(IModel,
+                    report=True)
     '''Material model'''
 
-    def _model_default(self):
-        return self.model_type_()
+    def _mats_default(self):
+        return self.mats_type_()
 
     #=========================================================================
     # Finite element type
@@ -551,6 +548,12 @@ class BendingTestModel(Simulator):
     def _get_fe_grid(self):
         return self.xdomain.mesh
 
+    domains = Property(depends_on=itags_str)
+
+    @cached_property
+    def _get_domains(self):
+        return [(self.xdomain, self.mats)]
+
     traits_view = View(
         VGroup(
             Item('w_max', full_size=True, resizable=True),
@@ -569,7 +572,7 @@ class BendingTestModel(Simulator):
 
 def run_bending3pt_sdamage(*args, **kw):
     bt = BendingTestModel(n_e_x=20, n_e_y=30,
-                          model_type='scalar damage'
+                          mats_type='scalar damage'
                           #mats_eval_type='microplane damage (eeq)'
                           #mats_eval_type='microplane CSD (eeq)'
                           #mats_eval_type='microplane CSD (odf)'
@@ -578,12 +581,12 @@ def run_bending3pt_sdamage(*args, **kw):
     E = 30000.0
     f_t = 2.5
     G_f = 0.09
-    bt.model.trait_set(
+    bt.mats.trait_set(
         stiffness='algorithmic',
         E=E,
         nu=0.2
     )
-    bt.model.omega_fn.trait_set(
+    bt.mats.omega_fn.trait_set(
         f_t=f_t,
         G_f=G_f,
         L_s=L_c
@@ -602,7 +605,6 @@ def run_bending3pt_sdamage(*args, **kw):
     )
     bt.loading_scenario.trait_set(loading_type='monotonic')
     bt.tloop.k_max = 400
-    print('SETTING KMAX', bt.tloop.k_max)
     w = BMCSWindow(sim=bt)
 #    bt.add_viz2d('F-w', 'load-displacement')
 
@@ -613,8 +615,10 @@ def run_bending3pt_sdamage(*args, **kw):
     fw = Viz2DForceDeflection(name='Pw', vis2d=bt.hist['Pw'])
     viz2d_energy = Viz2DEnergy(name='dissipation',
                                vis2d=bt.hist['energy'])
-    viz2d_energy_rates = Viz2DEnergyReleasePlot(name='dissipated energy',
-                                                vis2d=bt.hist['energy'])
+    viz2d_energy_rates = Viz2DEnergyReleasePlot(
+        name='dissipated energy',
+        vis2d=bt.hist['energy']
+    )
     w.viz_sheet.viz2d_list.append(fw)
     w.viz_sheet.viz2d_list.append(viz2d_energy)
     w.viz_sheet.viz2d_list.append(viz2d_energy_rates)
@@ -636,22 +640,22 @@ def run_bending3pt_sdamage(*args, **kw):
 
 def run_bending3pt_sdamage_viz2d(*args, **kw):
     w = run_bending3pt_sdamage()
-    w.run()
     w.offline = True
+    w.run()
+    w.offline = False
     w.configure_traits(*args, **kw)
 
 
 def run_bending3pt_sdamage_viz3d(*args, **kw):
     w = run_bending3pt_sdamage()
-#     w.run()
     w.offline = True
     bt = w.sim
     bt.record['damage'] = Vis3DStateField(var='omega')
     viz3d_damage = Viz3DScalarField(vis3d=bt.hist['damage'])
     w.viz_sheet.add_viz3d(viz3d_damage)
-    w.offline = False
+    w.run()
     w.configure_traits(*args, **kw)
 
 
 if __name__ == '__main__':
-    run_bending3pt_sdamage_viz3d()
+    run_bending3pt_sdamage_viz3d()()

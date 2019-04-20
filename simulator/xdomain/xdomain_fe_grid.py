@@ -226,7 +226,8 @@ class XDomainFEGrid(BMCSTreeNode):
 
     def map_field_to_K(self, D_Emabef):
         K_Eicjd = self.integ_factor * np.einsum(
-            'Emicjdabef,Emabef->Eicjd', self.BB_Emicjdabef, D_Emabef
+            'Emicjdabef,Emabef->Eicjd',
+            self.BB_Emicjdabef, D_Emabef
         )
         _, n_i, n_c, n_j, n_d = K_Eicjd.shape
         K_Eij = K_Eicjd.reshape(-1, n_i * n_c, n_j * n_d)
