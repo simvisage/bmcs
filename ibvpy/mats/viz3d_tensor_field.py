@@ -15,6 +15,7 @@ from tvtk.api import write_data
 
 import numpy as np
 import traits.api as tr
+import traitsui.api as ui
 
 from .viz3d_field import Vis3DField, Viz3DField
 
@@ -144,3 +145,7 @@ class Viz3DTensorField(Viz3DField):
             italic=False,
             bold=False
         )
+
+    traits_view = ui.View(
+        ui.Item('src')
+    )

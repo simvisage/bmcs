@@ -20,15 +20,14 @@ Test two independent domains.
 '''
 
 import time
-from mayavi import mlab
 
-from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from bmcs.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
     MultilinearDamageFn, \
     FRPDamageFn
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
+from ibvpy.fets.fets1D5.fets1d52ulrh import FETS1D52ULRH
 from ibvpy.mats.mats1D5.vmats1D5_dp import \
     MATS1D5DP
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
@@ -37,11 +36,15 @@ from ibvpy.mats.viz3d_scalar_field import \
     Vis3DStateField, Viz3DScalarField
 from ibvpy.mats.viz3d_tensor_field import \
     Vis3DStrainField, Vis3DStressField, Viz3DTensorField
-import numpy as np
+from mayavi import mlab
 from simulator.api import \
     Simulator
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
+
+import numpy as np
+
+from .mlab_decorators import decorate_figure
 
 
 n_x_e = 30
@@ -64,7 +67,7 @@ m2 = MATS3DDesmorat(tau_bar=2.0)
 xd12 = XDomainFEInterface(
     I=xd1.mesh.I[:, -1],
     J=xd2.mesh.I[:, 0],
-    fets=FETS1D52ULRHFatigue()
+    fets=FETS1D52ULRH()
 )
 
 u_max = 0.6 * 3
@@ -97,9 +100,10 @@ s = Simulator(
 s.tloop.k_max = 1000
 s.tline.step = 0.01
 s.tstep.fe_domain.serialized_subdomains
+s.tloop.verbose = True
 
 xd12.hidden = True
-s.run()
+s.run_thread()
 time.sleep(3)
 
 mlab.options.backend = 'envisage'
@@ -128,7 +132,6 @@ damage_viz.setup()
 damage_viz.warp_vector.filter.scale_factor = 100.0
 damage_viz.plot(s.tstep.t_n)
 
-from .mlab_decorators import decorate_figure
 
 decorate_figure(f_strain, strain_viz)
 decorate_figure(f_stress, stress_viz)

@@ -38,7 +38,7 @@ from .viz2d_fw import Viz2DFW, Vis2DFW
 #from .mlab_decorators import decorate_figure
 ds = 14
 n_e_ds = 12
-phi = 2.5
+phi = 5
 L_b = phi * ds
 n_b = phi * n_e_ds
 L_e = ds / n_e_ds
@@ -62,10 +62,12 @@ xd_concrete_2 = XDomainFEGridAxiSym(coord_min=(0, R_steel),
                                     integ_factor=2 * np.pi,
                                     fets=FETS2D4Q())
 
+E_c = 28000 * 1
+E_s = 210000 * 1
 # m_steel = MATS3DDesmorat(E_1=210000, nu=0.3, tau_bar=2000.0)
 # m_concrete = MATS3DDesmorat(tau_bar=2.0)
-m_steel = MATS3DElastic(E=210000, nu=0.2)
-m_concrete = MATS3DElastic(E=28000, nu=0.3)
+m_steel = MATS3DElastic(E=E_s, nu=0.2)
+m_concrete = MATS3DElastic(E=E_c, nu=0.3)
 
 xd12 = XDomainFEInterface(
     I=xd_steel_1.mesh.I[n_ex:-n_ex, -1],
@@ -74,7 +76,15 @@ xd12 = XDomainFEInterface(
     integ_factor=np.pi * ds
 )
 
-u_max = 0.3
+tau_bar = 2.0
+E_T = 1000
+s_0 = tau_bar / E_T
+print('s_0', s_0)
+m_interface = MATS1D5D(E_T=E_T, E_N=1000000, omega_fn_type='jirasek',
+                       algorithmic=True)
+m_interface.omega_fn.trait_set(s_0=s_0, s_f=2000 * s_0)
+
+u_max = 1
 right_x_s = BCSlice(slice=xd_steel_1.mesh[-1, :, -1, :],
                     var='u', dims=[0], value=u_max)
 right_x_c = BCSlice(slice=xd_concrete_2.mesh[0, 1:, 0, :],
@@ -83,14 +93,6 @@ left_x_s = BCSlice(slice=xd_steel_1.mesh[0, :, 0, :],
                    var='f', dims=[0], value=0)
 
 bc1 = [right_x_c, right_x_s]
-
-tau_bar = 2.0
-E_T = 1000
-s_0 = tau_bar / E_T
-print('s_0', s_0)
-m_interface = MATS1D5D(E_T=E_T, E_N=1000000, omega_fn_type='jirasek',
-                       algorithmic=True)
-m_interface.omega_fn.trait_set(s_0=s_0, s_f=1000 * s_0)
 
 s = Simulator(
     domains=[(xd_steel_1, m_steel),

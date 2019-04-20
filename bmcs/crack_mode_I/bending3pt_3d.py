@@ -196,7 +196,7 @@ class BendingTestModel(Simulator, Vis2D):
     #=========================================================================
     # Material model
     #=========================================================================
-    mats_eval_type = Trait('microplane damage (eeg)',
+    mats_eval_type = Trait('microplane damage (eeq)',
                            {'elastic': MATS3DElastic,
                             'microplane damage (eeq)': MATS3DMplDamageEEQ,
                             'microplane damage (odf)': MATS3DMplDamageODF,

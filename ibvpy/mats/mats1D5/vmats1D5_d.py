@@ -13,6 +13,7 @@ from simulator.i_model import IModel
 from traits.api import on_trait_change
 import numpy as np
 import traits.api as tr
+import traitsui.api as ui
 
 
 @tr.provides(IModel)
@@ -59,7 +60,7 @@ class MATS1D5D(MATSEval):
     def omega_derivative(self, k):
         return self.omega_fn.diff(k)
 
-    def init(self, s_pi, alpha, z, omega, kappa):
+    def init(self, omega, kappa):
         r'''
         Initialize the state variables.
         '''
@@ -80,12 +81,16 @@ class MATS1D5D(MATSEval):
         omega[...] = self.omega(kappa)
         tau = (1 - omega) * self.E_T * s
         domega_ds = self.omega_derivative(kappa)
-        E_alg_T = ((1 - omega) - domega_ds * s) * self.E_T
+
+        if self.algorithmic:
+            E_alg_T = ((1 - omega) - domega_ds * s) * self.E_T
+        else:
+            E_alg_T = (1 - omega) * self.E_T
 
         sig = np.zeros_like(u_r)
         sig[..., 0] = tau
         sig[..., 1] = sig_N
-        E_TN = np.einsum('abEm->Emab',
+        E_TN = np.einsum('ab...->...ab',
                          np.array(
                              [
                                  [E_alg_T, np.zeros_like(E_alg_T)],
@@ -93,3 +98,34 @@ class MATS1D5D(MATSEval):
                              ])
                          )
         return sig, E_TN
+
+    traits_view = ui.View(
+        ui.Item('E_T'),
+        ui.Item('E_N')
+    )
+
+
+if __name__ == '__main__':
+    tau_bar = 3.0
+    s_max = 0.1
+    E_T = 10000
+    s_0 = tau_bar / E_T
+    m = MATS1D5D(E_T=E_T, omega_fn_type='jirasek', algorithmic=True)
+    m.omega_fn.trait_set(s_0=s_0, s_f=100 * s_0)
+    s_r = np.linspace(0, s_max, 60)
+    w_r = np.linspace(0.0, 0.0, 60)
+    u_r = np.vstack([s_r, w_r]).T
+    state_arr = {var: np.zeros(s_r.shape + var_shape, dtype=np.float_)
+                 for var, var_shape in m.state_var_shapes.items()}
+    m.init(**state_arr)
+    sig, D = m.get_corr_pred(u_r, 0.0, **state_arr)
+    D1 = D[..., 0, 0]
+
+    delta_s = s_max / 100
+    delta_sig = np.array([sig[..., 0], sig[..., 0] + D1 * delta_s])
+    delta_u = np.array([s_r, s_r + delta_s])
+
+    import pylab as p
+    p.plot(s_r, sig)
+    p.plot(delta_u, delta_sig, color='red')
+    p.show()

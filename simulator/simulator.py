@@ -130,11 +130,11 @@ class Simulator(BMCSRootNode):
 
     def pause(self):
         self.tloop.paused = True
-        self.join()
+        self.join_thread()
 
     def stop(self):
         self.tloop.restart = True
-        self.join()
+        self.join_thread()
 
     #=========================================================================
     # HISTORY
@@ -190,6 +190,9 @@ class Simulator(BMCSRootNode):
     def join_thread(self):
         r'''Wait until the thread finishes
         '''
+        if self._run_thread == None:
+            self._running = False
+            return
         self._run_thread.join()
 
     @on_trait_change(itags_str)

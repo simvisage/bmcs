@@ -1,6 +1,5 @@
 import time
 
-from mayavi import mlab
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
@@ -9,10 +8,15 @@ from ibvpy.mats.viz3d_scalar_field import \
     Vis3DStateField, Viz3DScalarField
 from ibvpy.mats.viz3d_tensor_field import \
     Vis3DStrainField, Viz3DTensorField
-import numpy as np
+from mayavi import mlab
 from simulator.api import \
     Simulator
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
+
+import numpy as np
+
+from .mlab_decorators import decorate_figure
+
 
 xdomain = XDomainFEGridAxiSym(coord_max=(150, 50),
                               shape=(15, 5),
@@ -42,7 +46,7 @@ s = Simulator(
 )
 s.tloop.k_max = 1000
 s.tline.step = 0.05
-s.run()
+s.run_thread()
 time.sleep(5)
 
 mlab.options.backend = 'envisage'
@@ -63,7 +67,6 @@ damage_viz.warp_vector.filter.scale_factor = 100.0
 damage_viz.plot(s.tstep.t_n)
 damage_viz.plot(0.0)
 
-from .mlab_decorators import decorate_figure
 
 decorate_figure(f_strain, strain_viz, 200, [70, 20, 0])
 decorate_figure(f_damage, damage_viz, 200, [70, 20, 0])

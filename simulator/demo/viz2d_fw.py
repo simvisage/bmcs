@@ -8,7 +8,7 @@ from traits.api import \
     Bool, \
     Button
 from traits.api import \
-    Tuple, HasStrictTraits, Array, WeakRef
+    Tuple, HasStrictTraits, Array, WeakRef, List
 from traitsui.api import \
     View, Item, Group
 from traitsui.ui_editors.array_view_editor import ArrayViewEditor
@@ -40,19 +40,22 @@ class DataSheet(HasStrictTraits):
 class Vis2DFW(Vis2D):
 
     Pw = Tuple()
-    bc = WeakRef(IBCond)
+    bc_right = WeakRef(IBCond)
+    bc_left = WeakRef(IBCond)
 
     def _Pw_default(self):
-        return ([0], [0])
+        return ([0], [0], [0])
 
     def update(self):
         sim = self.sim
-        dofs = self.bc.dofs
+        dofs_right = self.bc_right.dofs
+        dofs_left = self.bc_left.dofs
         U_ti = sim.hist.U_t
         F_ti = sim.hist.F_t
-        P = np.sum(F_ti[:, dofs], axis=1)
-        w = np.average(U_ti[:, dofs], axis=1)
-        self.Pw = P, w
+        P = np.sum(F_ti[:, dofs_right], axis=1)
+        w = np.average(U_ti[:, dofs_right], axis=1)
+        w0 = np.average(U_ti[:, dofs_left], axis=1)
+        self.Pw = P, w, w0
 
 
 class Viz2DFW(Viz2D):
@@ -64,17 +67,19 @@ class Viz2DFW(Viz2D):
 
     def plot(self, ax, vot, *args, **kw):
         sim = self.vis2d.sim
-        P_t, u_t = sim.hist['Pw'].Pw
+        P_t, w_t, w0_t = sim.hist['Pw'].Pw
         ymin, ymax = np.min(P_t), np.max(P_t)
         L_y = ymax - ymin
         ymax += 0.05 * L_y
         ymin -= 0.05 * L_y
-        xmin, xmax = np.min(u_t), np.max(u_t)
+        xmin, xmax = np.min(w_t), np.max(w_t)
         L_x = xmax - xmin
         xmax += 0.03 * L_x
         xmin -= 0.03 * L_x
-        ax.plot(u_t, P_t, linewidth=2, color='black', alpha=0.4,
+        ax.plot(w_t, P_t, linewidth=2, color='black', alpha=0.4,
                 label='P(w;x=L)')
+        ax.plot(w0_t, P_t, linewidth=2, color='orange', alpha=0.4,
+                label='P(w;x=0)')
         ax.set_ylim(ymin=ymin, ymax=ymax)
         ax.set_xlim(xmin=xmin, xmax=xmax)
         ax.set_ylabel('pull-out force P [N]')
@@ -85,16 +90,17 @@ class Viz2DFW(Viz2D):
 
     def plot_marker(self, ax, vot):
         sim = self.vis2d.sim
-        P_t, u_t = sim.hist['Pw'].Pw
+        P_t, w_t, w0_t = sim.hist['Pw'].Pw
         idx = sim.hist.get_time_idx(vot)
-        P, w = P_t[idx], u_t[idx]
+        P, w, w0 = P_t[idx], w_t[idx], w0_t[idx]
         ax.plot([w], [P], 'o', color='black', markersize=10)
+        ax.plot([w0], [P], 'o', color='orange', markersize=10)
 
     show_data = Button()
 
     def _show_data_fired(self):
         sim = self.vis2d.sim
-        P_t, u_t = sim.hist['Pw'].Pw
+        P_t, u_t = sim.hist['Pw'].Pw_right
         data = np.vstack([u_t, P_t]).T
         show_data = DataSheet(data=data)
         show_data.edit_traits()

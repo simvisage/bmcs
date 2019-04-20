@@ -296,13 +296,14 @@ class PullOutModelBase(Simulator):
         self.tree_node_list = [
             self.tline,
             self.loading_scenario,
-            self.tmodel,
+            self.mats_eval,
             self.cross_section,
             self.geometry,
         ]
 
     tree_view = View(
         Group(
+            Item('mats_eval_type', resizable=True, full_size=True),
             Item('control_variable', resizable=True, full_size=True),
             Item('w_max', resizable=True, full_size=True),
             Item('n_e_x', resizable=True, full_size=True),
@@ -375,7 +376,8 @@ class PullOutModelBase(Simulator):
                       ALG=True)
 
     mats_eval_type = Trait('multilinear',
-                           {'multilinear': MATSBondSlipMultiLinear},
+                           {'multilinear': MATSBondSlipMultiLinear,
+                            'multilinear2': MATSBondSlipMultiLinear},
                            MAT=True,
                            desc='material model type')
 
@@ -388,6 +390,7 @@ class PullOutModelBase(Simulator):
     '''Material model'''
 
     def _mats_eval_default(self):
+        print('new material model', self.mats_eval_type_)
         return self.mats_eval_type_()
 
     mm = Property

@@ -248,10 +248,12 @@ def run_31():
     pm = PullOutModel(mats_eval_type='multilinear',
                       n_e_x=50, w_max=w_max)
     pm.loading_scenario.loading_type = 'monotonic'
+    pm.mats_eval_type = 'multilinear2'
     pm.mats_eval.trait_set(E_m=E_m, E_f=E_f,
                            s_data='0, 0.001, 0.1',
                            tau_data='0, 5, 8')
     pm.mats_eval.update_bs_law = True
+    pm.mats_eval_type = 'multilinear'
     pm.cross_section.trait_set(A_m=A_m, P_b=P_b, A_f=A_f)
     pm.geometry.L_x = L_x
     pm.record['Pw'] = PulloutResponse()

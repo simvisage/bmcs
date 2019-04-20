@@ -32,7 +32,7 @@ class TLoopImplicit(TLoop):
 
         while t_n1 <= (t_max + 1e-8):
             if self.verbose:
-                print('%5.2f' % t_n1, end='')
+                print('\t%5.2f' % t_n1, end='')
 
             k = 0
             self.tstep.t_n1 = t_n1
@@ -40,7 +40,7 @@ class TLoopImplicit(TLoop):
             while (k < self.k_max) and not self.user_wants_abort:
                 if self.tstep.R_norm < self.acc:
                     if self.verbose:
-                        print('(%g), ' % k, end='')
+                        print('(%g), ' % k, end='\n')
                     break
                 self.tstep.make_iter()
                 k += 1

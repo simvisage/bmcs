@@ -36,14 +36,15 @@ class Vis2DField(Vis2D):
         domain = fe_domain[2]
         xdomain = domain.xdomain
         r_Eia = np.einsum(
-            'Emra,Eia->Eir',
+            'Eira,Eia->Eir',
             xdomain.T_Emra[..., :xdomain.x_Eia.shape[-1]], xdomain.x_Eia
         )
+
         file_name = 'slice_x_%s' % (self.var,)
         target_file = os.path.join(
             self.dir, file_name.replace('.', '_') + '.npy'
         )
-        print('r', r_Eia[..., :-1])
+        #print('r', r_Eia[..., :-1])
         np.save(target_file, r_Eia[..., :-1])
         self.x_file = target_file
 

@@ -450,7 +450,7 @@ class BendingTestModel(Simulator):
     #=========================================================================
     # Material model
     #=========================================================================
-    model_type = Trait('microplane damage (eeg)',
+    model_type = Trait('microplane damage (eeq)',
                        {'elastic': MATS2DElastic,
                         'microplane damage (eeq)': MATS2DMplDamageEEQ,
                         'microplane CSD (eeq)': MATS2DMplCSDEEQ,
