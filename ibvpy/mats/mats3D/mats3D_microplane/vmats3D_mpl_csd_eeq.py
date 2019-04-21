@@ -11,6 +11,7 @@ Microplane Fatigue model 3D
 Using Jirasek homogenization approach [1999]
 '''
 
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from numpy import array,\
     einsum, zeros_like, identity, sign,\
     sqrt
@@ -18,31 +19,15 @@ from traits.api import Constant,\
     Float, Property, cached_property, Dict
 from traitsui.api import \
     View, VGroup, Item
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
+
 import numpy as np
 import traits.api as tr
 
 
-class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
+class MATS3DMplCSDEEQ(MATS3DEval):
 
     node_name = 'Microplane CSD model (EEQ)'
     # implements(IMATSEval)
-
-    #--------------------------
-    # material model parameters
-    #--------------------------
-    E = Float(34000.,
-              label="E",
-              desc="Young modulus",
-              enter_set=True,
-              auto_set=False)
-
-    nu = Float(0.2,
-               label="nu",
-               desc="poission ratio",
-               enter_set=True,
-               auto_set=False)
 
     #---------------------------------------
     # Tangential constitutive law parameters
@@ -171,11 +156,11 @@ class MATS3DMplCSDEEQ(MATS3DEval, MATS3D):
                         enter_set=True,
                         auto_set=False)
 
-    state_array_shapes = Property(Dict(), depends_on='n_mp')
+    state_var_shapes = Property(Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
     '''
     @cached_property
-    def _get_state_array_shapes(self):
+    def _get_state_var_shapes(self):
         return {'omegaN': (self.n_mp,),
                 'z_N_Emn': (self.n_mp,),
                 'alpha_N_Emn': (self.n_mp,),

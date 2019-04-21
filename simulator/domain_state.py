@@ -32,6 +32,7 @@ class DomainState(HasStrictTraits):
     def _get_state_n(self):
         xmodel_shape = self.xdomain.state_var_shape
         tmodel_shapes = self.tmodel.state_var_shapes
+        print('STATE NEWLY CONSTRUCTED')
         return {
             name: np.zeros(xmodel_shape + mats_sa_shape, dtype=np.float_)
             for name, mats_sa_shape
@@ -54,9 +55,9 @@ class DomainState(HasStrictTraits):
         dof_E, f_Ei = self.xdomain.map_field_to_F(sig_k)
         return f_Ei, K_k, dof_E
 
-    def record_state(self, t_n1, U_k, F_k):
-        '''Update the control, primary and state variables..
+    def record_state(self):
+        '''The trial state k becomes a fundamental state n.
         '''
         for name, s_k in self.state_k.items():
             self.state_n[name] = s_k
-        self.hist.record_timestep(t_n1, U_k, F_k, self.state_n)
+        return self.state_n

@@ -6,14 +6,17 @@ Created on 12.01.2016
 @todo: reset viz adapters upon recalculation to forget their axes lims
 @todo: introduce a switch for left and right supports
 '''
+import copy
 
 from bmcs.time_functions import \
     LoadingScenario
 from ibvpy.api import BCDof, IMATSEval
 from ibvpy.fets.fets1D5 import FETS1D52ULRH
 from ibvpy.mats.mats1D5.vmats1D5_bondslip1D import \
-    MATSBondSlipMultiLinear
+    MATSBondSlipMultiLinear, MATSBondSlipDP, \
+    MATSBondSlipD, MATSBondSlipFatigue
 from reporter import RInputRecord
+from scipy import interpolate as ip
 from simulator.api import \
     Simulator, XDomainFEInterface1D
 from traits.api import \
@@ -33,12 +36,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-class PulloutResponse(Vis2D):
+class PulloutRecord(Vis2D):
 
     Pw = Tuple()
 
     def _Pw_default(self):
         return ([0], [0], [0])
+
+    sig_t = List([])
+    eps_t = List([])
+
+    def setup(self):
+        self.Pw = ([0], [0], [0])
+        self.eps_t = []
+        self.sig_t = []
 
     def update(self):
         sim = self.sim
@@ -50,6 +61,46 @@ class PulloutResponse(Vis2D):
         w_L = U_ti[:, c_dof]
         w_0 = U_ti[:, f_dof]
         self.Pw = P, w_0, w_L
+
+        t = self.sim.tstep.t_n1
+        self.eps_t.append(
+            self.sim.get_eps_Ems(t)
+        )
+        self.sig_t.append(
+            self.sim.get_sig_Ems(t)
+        )
+
+    def get_t(self):
+        return self.sim.hist.t
+
+    def get_U_bar_t(self):
+        sim = self.sim
+        xdomain = sim.tstep.fe_domain[0].xdomain
+        fets = xdomain.fets
+        A = xdomain.A
+        sig_t = np.array(self.sig_t)
+        eps_t = np.array(self.eps_t)
+        w_ip = fets.ip_weights
+        J_det = xdomain.det_J_Em
+        U_bar_t = 0.5 * np.einsum('m,Em,s,tEms,tEms->t',
+                                  w_ip, J_det, A, sig_t, eps_t)
+        return U_bar_t
+
+    def get_W_t(self):
+        P_t, _, w_L = self.sim.get_Pw_t()
+        W_t = []
+        for i, _ in enumerate(w_L):
+            W_t.append(np.trapz(P_t[:i + 1], w_L[:i + 1]))
+        return W_t
+
+    def get_dG_t(self):
+        sim = self.sim
+        t = sim.hist.t
+        U_bar_t = self.get_U_bar_t()
+        W_t = self.get_W_t()
+        G = W_t - U_bar_t
+        tck = ip.splrep(t, G, s=0, k=1)
+        return ip.splev(t, tck, der=1)
 
 
 class Viz2DPullOutFW(Viz2D):
@@ -108,6 +159,98 @@ class Viz2DPullOutFW(Viz2D):
         Item('show_legend'),
         Item('show_data')
     )
+
+
+class Viz2DPullOutField(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = Property(depends_on='plot_fn')
+
+    @cached_property
+    def _get_label(self):
+        return 'field: %s' % self.plot_fn
+
+    plot_fn = Trait('eps_p',
+                    {'eps_p': 'plot_eps_p',
+                     'sig_p': 'plot_sig_p',
+                     'u_p': 'plot_u_p',
+                     's': 'plot_s',
+                     'sf': 'plot_sf',
+                     'omega': 'plot_omega',
+                     'Fint_p': 'plot_Fint_p',
+                     'eps_f(s)': 'plot_eps_s',
+                     },
+                    label='Field',
+                    tooltip='Select the field to plot'
+                    )
+
+    def plot(self, ax, vot, *args, **kw):
+        ymin, ymax = getattr(self.vis2d, self.plot_fn_)(ax, vot, *args, **kw)
+        if self.adaptive_y_range:
+            if self.initial_plot:
+                self.y_max = ymax
+                self.y_min = ymin
+                self.initial_plot = False
+                return
+        self.y_max = max(ymax, self.y_max)
+        self.y_min = min(ymin, self.y_min)
+        ax.set_ylim(ymin=self.y_min, ymax=self.y_max)
+
+    def savefig(self, fname):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        for vot in [0.25, 0.5, 0.75, 1.0]:
+            self.plot(ax, vot)
+        fig.savefig(fname)
+
+    y_max = Float(1.0, label='Y-max value',
+                  auto_set=False, enter_set=True)
+    y_min = Float(0.0, label='Y-min value',
+                  auto_set=False, enter_set=True)
+
+    adaptive_y_range = Bool(True)
+    initial_plot = Bool(True)
+
+    traits_view = View(
+        Item('plot_fn', resizable=True, full_size=True),
+        Item('y_min', ),
+        Item('y_max', ),
+        Item('adaptive_y_range')
+    )
+
+
+class Viz2DEnergyPlot(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = 'line plot'
+
+    def plot(self, ax, vot,
+             label_U='U(t)', label_W='W(t)',
+             color_U='blue', color_W='red'):
+
+        t = self.vis2d.get_t()
+        U_bar_t = self.vis2d.get_U_bar_t()
+        W_t = self.vis2d.get_W_t()
+        ax.plot(t, W_t, color=color_W, label=label_W)
+        ax.plot(t, U_bar_t, color=color_U, label=label_U)
+        ax.fill_between(t, W_t, U_bar_t, facecolor='gray', alpha=0.5,
+                        label='G(t)')
+        ax.set_ylabel('energy [Nmm]')
+        ax.set_xlabel('time [-]')
+        ax.legend()
+
+
+class Viz2DEnergyReleasePlot(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = 'line plot'
+
+    def plot(self, ax, vot, *args, **kw):
+        t = self.vis2d.get_t()
+        dG = self.vis2d.get_dG_t()
+        ax.plot(t, dG, color='black', label='dG/dt')
+        ax.fill_between(t, 0, dG, facecolor='blue', alpha=0.2)
+        ax.legend()
 
 
 class CrossSection(BMCSLeafNode, RInputRecord):
@@ -184,100 +327,7 @@ class DataSheet(HasStrictTraits):
     )
 
 
-class Viz2DPullOutField(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = Property(depends_on='plot_fn')
-
-    @cached_property
-    def _get_label(self):
-        return 'field: %s' % self.plot_fn
-
-    plot_fn = Trait('eps_p',
-                    {'eps_p': 'plot_eps_p',
-                     'sig_p': 'plot_sig_p',
-                     'u_p': 'plot_u_p',
-                     's': 'plot_s',
-                     'sf': 'plot_sf',
-                     'omega': 'plot_omega',
-                     'Fint_p': 'plot_Fint_p',
-                     'eps_f(s)': 'plot_eps_s',
-                     },
-                    label='Field',
-                    tooltip='Select the field to plot'
-                    )
-
-    def plot(self, ax, vot, *args, **kw):
-        ymin, ymax = getattr(self.vis2d, self.plot_fn_)(ax, vot, *args, **kw)
-        if self.adaptive_y_range:
-            if self.initial_plot:
-                self.y_max = ymax
-                self.y_min = ymin
-                self.initial_plot = False
-                return
-        self.y_max = max(ymax, self.y_max)
-        self.y_min = min(ymin, self.y_min)
-        ax.set_ylim(ymin=self.y_min, ymax=self.y_max)
-
-    def savefig(self, fname):
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        for vot in [0.25, 0.5, 0.75, 1.0]:
-            self.plot(ax, vot)
-        fig.savefig(fname)
-
-    y_max = Float(1.0, label='Y-max value',
-                  auto_set=False, enter_set=True)
-    y_min = Float(0.0, label='Y-min value',
-                  auto_set=False, enter_set=True)
-
-    adaptive_y_range = Bool(True)
-    initial_plot = Bool(True)
-
-    traits_view = View(
-        Item('plot_fn', resizable=True, full_size=True),
-        Item('y_min', ),
-        Item('y_max', ),
-        Item('adaptive_y_range')
-    )
-
-
-class Viz2DEnergyPlot(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = 'line plot'
-
-    def plot(self, ax, vot,
-             label_U='U(t)', label_W='W(t)',
-             color_U='blue', color_W='red'):
-        t = self.vis2d.get_t()
-        U_bar_t = self.vis2d.get_U_bar_t()
-        W_t = self.vis2d.get_W_t()
-        ax.plot(t, W_t, color=color_W, label=label_W)
-        ax.plot(t, U_bar_t, color=color_U, label=label_U)
-        ax.fill_between(t, W_t, U_bar_t, facecolor='gray', alpha=0.5,
-                        label='G(t)')
-        ax.set_ylabel('energy [Nmm]')
-        ax.set_xlabel('time [-]')
-        ax.legend()
-
-
-class Viz2DEnergyReleasePlot(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = 'line plot'
-
-    def plot(self, ax, vot, *args, **kw):
-        t = self.vis2d.get_t()
-
-        dG = self.vis2d.get_dG_t()
-
-        ax.plot(t, dG, color='black', label='dG/dt')
-        ax.fill_between(t, 0, dG, facecolor='blue', alpha=0.2)
-        ax.legend()
-
-
-class PullOutModelBase(Simulator):
+class PullOutModel(Simulator):
 
     node_name = 'pull out simulation'
 
@@ -378,7 +428,9 @@ class PullOutModelBase(Simulator):
 
     mats_eval_type = Trait('multilinear',
                            {'multilinear': MATSBondSlipMultiLinear,
-                            'multilinear2': MATSBondSlipMultiLinear},
+                            'damage': MATSBondSlipD,
+                            'damage-plasticity': MATSBondSlipDP,
+                            'cumulative fatigue': MATSBondSlipFatigue},
                            MAT=True,
                            desc='material model type')
 
@@ -503,7 +555,8 @@ class PullOutModelBase(Simulator):
     '''
     @cached_property
     def _get_control_bc(self):
-        return BCDof(node_name='pull-out displacement', var='u',
+        return BCDof(node_name='pull-out displacement',
+                     var=self.control_variable,
                      dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
@@ -516,10 +569,95 @@ class PullOutModelBase(Simulator):
     X_M = Property()
 
     def _get_X_M(self):
-        return self.tstep.fe_domain[0].xdomain.X_M
+        state = self.tstep.fe_domain[0]
+        return state.xdomain.x_Ema[..., 0].flatten()
 
     #=========================================================================
-    #
+    # Getter functions @todo move to the PulloutStateRecord
+    #=========================================================================
+
+    def get_u_p(self, vot):
+        '''Displacement field
+        '''
+        idx = self.hist.get_time_idx(vot)
+        U = self.hist.U_t[idx]
+        state = self.tstep.fe_domain[0]
+        dof_Epia = state.xdomain.o_Epia
+        fets = state.xdomain.fets
+        u_Epia = U[dof_Epia]
+        N_mi = fets.N_mi
+        u_Emap = np.einsum('mi,Epia->Emap', N_mi, u_Epia)
+        return u_Emap.reshape(-1, 2)
+
+    def get_eps_Ems(self, vot):
+        '''Epsilon in the components'''
+        state = self.tstep.fe_domain[0]
+        idx = self.hist.get_time_idx(vot)
+        U = self.hist.U_t[idx]
+        return state.xdomain.map_U_to_field(U)
+
+    def get_eps_p(self, vot):
+        '''Epsilon in the components'''
+        eps_Ems = self.get_eps_Ems(vot)
+        return eps_Ems[..., (0, 2)].reshape(-1, 2)
+
+    def get_s(self, vot):
+        '''Slip between the two material phases'''
+        eps_Ems = self.get_eps_Ems(vot)
+        return eps_Ems[..., 1].flatten()
+
+    def get_sig_Ems(self, vot):
+        '''Get streses in the components 
+        '''
+        txdomain = self.tstep.fe_domain[0]
+        idx = self.hist.get_time_idx(vot)
+        U = self.hist.U_t[idx]
+        t_n1 = self.hist.t[idx]
+        eps_Ems = txdomain.xdomain.map_U_to_field(U)
+        state_vars_t = self.tstep.hist.state_vars[idx]
+        state_k = copy.deepcopy(state_vars_t)
+        sig_Ems, _ = txdomain.tmodel.get_corr_pred(
+            eps_Ems, t_n1, **state_k[0]
+        )
+        return sig_Ems
+
+    def get_sig_p(self, vot):
+        '''Epsilon in the components'''
+        sig_Ems = self.get_sig_Ems(vot)
+        return sig_Ems[..., (0, 2)].reshape(-1, 2)
+
+    def get_sf(self, vot):
+        '''Get the shear flow in the interface
+        '''
+        sig_Ems = self.get_sig_Ems(vot)
+        return sig_Ems[..., 1].flatten()
+
+    def get_shear_integ(self):
+        #         d_ECid = self.get_d_ECid(vot)
+        #         s_Emd = np.einsum('Cim,ECid->Emd', self.tstepper.sN_Cim, d_ECid)
+        #         idx = self.tloop.get_time_idx(vot)
+        #         sf = self.tloop.sf_Em_record[idx]
+
+        sf_t_Em = np.array(self.tloop.sf_Em_record)
+        w_ip = self.fets_eval.ip_weights
+        J_det = self.tstepper.J_det
+        P_b = self.cross_section.P_b
+        shear_integ = np.einsum('tEm,m,em->t', sf_t_Em, w_ip, J_det) * P_b
+        return shear_integ
+
+    def get_Pw_t(self):
+        sim = self
+        c_dof = sim.controlled_dof
+        f_dof = sim.free_end_dof
+        U_ti = sim.hist.U_t
+        F_ti = sim.hist.F_t
+        P = F_ti[:, c_dof]
+        w_L = U_ti[:, c_dof]
+        w_0 = U_ti[:, f_dof]
+        return P, w_0, w_L
+
+    #=========================================================================
+    # Plot functions
     #=========================================================================
     def plot_u_p(self, ax, vot,
                  label_m='matrix', label_f='reinf'):

@@ -1,24 +1,22 @@
 
+from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
+from simulator.api import \
+    TLoopImplicit, TStepBC
 from traits.api import on_trait_change, Bool
 from traitsui.api import UItem, \
     Item, View, Group, Spring
 
-from bmcs.mats.mats_damage_fn import \
+from ibvpy.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     PlottableFn, DamageFn, GfDamageFn
-from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
-from ibvpy.mats.mats2D.vmats2D_eval import MATS2D
 import numpy as np
-from simulator.api import \
-    Model, TLoopImplicit, TStepBC
 import traits.api as tr
 
 from .vstrain_norm2d import StrainNorm2D, SN2DRankine
 
 
-class MATS2DScalarDamage(Model, MATS2DEval, MATS2D):
-    r'''
-    Isotropic damage model.
+class MATS2DScalarDamage(MATS2DEval):
+    r'''Isotropic damage model.
     '''
 
     tloop_type = TLoopImplicit

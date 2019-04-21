@@ -4,13 +4,14 @@ Created on Feb 14, 2019
 @author: rch
 '''
 
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
-    MultilinearDamageFn, \
-    FRPDamageFn
 from ibvpy.api import MATSEval
 from simulator.i_model import IModel
 from traits.api import on_trait_change
+
+from ibvpy.mats.mats_damage_fn import \
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
+    MultilinearDamageFn, \
+    FRPDamageFn
 import numpy as np
 import traits.api as tr
 import traitsui.api as ui

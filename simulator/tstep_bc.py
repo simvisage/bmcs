@@ -143,7 +143,7 @@ class TStepBC(HasStrictTraits):
         '''Update the control, primary and state variables..
         '''
         self.U_n[:] = self.U_k[:]
-        states = [state.state_k for state in self.fe_domain]
+        states = [d.record_state() for d in self.fe_domain]
         self.hist.record_timestep(self.t_n1, self.U_k, self.F_k, states)
         self.t_n = self.t_n1
         self.step_flag = 'predictor'

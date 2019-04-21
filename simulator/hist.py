@@ -46,6 +46,8 @@ class Hist(HasStrictTraits):
         self.U_list = []
         self.F_list = []
         self.state_vars = []
+        for vis in self.record_dict.values():
+            vis.setup()
 
     def record_timestep(self, t, U, F,
                         state_vars=None):

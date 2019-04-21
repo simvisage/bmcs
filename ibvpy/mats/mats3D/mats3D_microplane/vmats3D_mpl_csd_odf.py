@@ -11,37 +11,20 @@ Microplane Fatigue model 2D
 Using Jirasek homogenization approach [1999]
 '''
 
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from numpy import array,\
     einsum, zeros_like, identity, sign,\
     sqrt
 from traits.api import Constant,\
     Float, Property, cached_property
 
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 import numpy as np
 import traits.api as tr
 
 
-class MATS3DMplCSDODF(MATS3DEval, MATS3D):
-    #--------------------------
-    # material model parameters
-    #--------------------------
-    E = Float(34000.,
-              label="E",
-              desc="Young modulus",
-              enter_set=True,
-              auto_set=False)
-
-    nu = Float(0.2,
-               label="nu",
-               desc="poission ratio",
-               enter_set=True,
-               auto_set=False)
-
-    #---------------------------------------
-    # Tangential constitutive law parameters
-    #---------------------------------------
+class MATS3DMplCSDODF(MATS3DEval):
+    '''Tangential constitutive law parameters
+    '''
     gamma_T = Float(5000.,
                     label="Gamma",
                     desc=" Tangential Kinematic hardening modulus",
@@ -132,11 +115,11 @@ class MATS3DMplCSDODF(MATS3DEval, MATS3D):
                    enter_set=True,
                    auto_set=False)
 
-    state_array_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
+    state_var_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
     '''
     @cached_property
-    def _get_state_array_shapes(self):
+    def _get_state_shapes(self):
         return {'w_N_Emn': (self.n_mp,),
                 'z_N_Emn': (self.n_mp,),
                 'alpha_N_Emn': (self.n_mp,),
@@ -151,7 +134,8 @@ class MATS3DMplCSDODF(MATS3DEval, MATS3D):
     #--------------------------------------------------------------
     # microplane constitutive law (normal behavior CP + TD)
     #--------------------------------------------------------------
-    def get_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
+    def get_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn,
+                       alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
 
         E_N = self.E / (1.0 - 2.0 * self.nu)
 
@@ -198,7 +182,8 @@ class MATS3DMplCSDODF(MATS3DEval, MATS3D):
     #-------------------------------------------------------------------------
     # microplane constitutive law (Tangential CSD)-(Pressure sensitive cumulative damage)
     #-------------------------------------------------------------------------
-    def get_tangential_law(self, eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_kk):
+    def get_tangential_law(self, eps_T_Emna, w_T_Emn, z_T_Emn,
+                           alpha_T_Emna, eps_T_pi_Emna, sigma_kk):
 
         E_T = self.E / (1.0 + self.nu)
 
@@ -795,7 +780,8 @@ class MATS3DMplCSDODF(MATS3DEval, MATS3D):
         G0 = self.E / (1.0 + self.nu)
 
         delta = identity(3)
-        phi_Emab = self._get_phi_Emab(kappa)
+        # commented out - @rch, @abdul please check
+        # phi_Emab = self._get_phi_Emab(kappa)
 
         # damaged stiffness without simplification
         S_5_Emabcd = (1.0 / 3.0) * (K0 - G0) * 0.5 * ((einsum('ij,Emkl -> Emijkl', delta, phi_Emab) +
@@ -892,38 +878,3 @@ class MATS3DMplCSDODF(MATS3DEval, MATS3D):
                       .0204744730, .0158350505, .0158350505, .0158350505, .0158350505,
                       .0158350505, .0158350505, .0158350505, .0158350505, .0158350505,
                       .0158350505, .0158350505, .0158350505]) * 6.0
-
-    #-------------------------------------------------------------------------
-    # Cached elasticity tensors
-    #-------------------------------------------------------------------------
-
-    E = tr.Float(34e+3,
-                 label="E",
-                 desc="Young's Modulus",
-                 auto_set=False,
-                 input=True)
-
-    nu = tr.Float(0.2,
-                  label='nu',
-                  desc="Poison ratio",
-                  auto_set=False,
-                  input=True)
-
-    def _get_lame_params(self):
-        la = self.E * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
-        # second Lame parameter (shear modulus)
-        mu = self.E / (2. + 2. * self.nu)
-        return la, mu
-
-    D_abef = tr.Property(tr.Array, depends_on='+input')
-
-    @tr.cached_property
-    def _get_D_abef(self):
-        la = self._get_lame_params()[0]
-        mu = self._get_lame_params()[1]
-        delta = identity(3)
-        D_abef = (einsum(',ij,kl->ijkl', la, delta, delta) +
-                  einsum(',ik,jl->ijkl', mu, delta, delta) +
-                  einsum(',il,jk->ijkl', mu, delta, delta))
-
-        return D_abef

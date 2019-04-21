@@ -5,13 +5,14 @@ Created on Feb 14, 2019
 '''
 
 from ibvpy.api import MATSEval
-import numpy as np
 from simulator.i_model import IModel
+
+import numpy as np
 import traits.api as tr
 
 
 @tr.provides(IModel)
-class MATS1D5Elastic(MATSEval):
+class MATS1D5P(MATSEval):
 
     node_name = "multilinear bond law"
 

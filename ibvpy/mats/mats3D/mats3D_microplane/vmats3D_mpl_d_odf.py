@@ -7,7 +7,6 @@ Microplane damage model 2D - ODFS (Wu [2009])
 '''
 
 from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 from simulator.api import Model
 from traits.api import \
     Constant,\
@@ -17,9 +16,7 @@ import numpy as np
 import traits.api as tr
 
 
-class MATS3DMplDamageODF(Model, MATS3DEval, MATS3D):
-
-    # implements(IMATSEval)
+class MATS3DMplDamageODF(MATS3DEval):
 
     epsilon_0 = Float(59.0e-6,
                       label="a",

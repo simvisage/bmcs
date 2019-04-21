@@ -1,11 +1,13 @@
 
+
 from simulator.api import Model
 from traits.api import \
-    provides, Float, \
+    provides,  \
     Int, Str, Callable, \
     Tuple, Property, cached_property, \
-    Dict, Constant, Interface
+    Dict, Interface
 from view.ui import BMCSTreeNode
+
 import numpy as np
 
 
@@ -29,51 +31,17 @@ class IMATSEval(Interface):
 @provides(IMATSEval)
 class MATSEval(Model, BMCSTreeNode):
 
-    n_dims = Constant(Float)
-    '''Number of spatial dimensions of an integration 
-    cell for the material model
-    '''
-
-    E = tr.Float(34e+3,
-                 label="E",
-                 desc="Young's Modulus",
-                 auto_set=False,
-                 input=True)
-
-    nu = tr.Float(0.2,
-                  label='nu',
-                  desc="Poison's ratio",
-                  auto_set=False,
-                  input=True)
-
-    def _get_lame_params(self):
-        # First Lame parameter (bulk modulus)
-        la = self.E * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
-        # second Lame parameter (shear modulus)
-        mu = self.E / (2. + 2. * self.nu)
-        return la, mu
-
-    D_abef = tr.Property(tr.Array, depends_on='+input')
-    '''Material stiffness - rank 4 tensor
-    '''
-    @tr.cached_property
-    def _get_D_abef(self):
-        la, mu = self._get_lame_params()
-        delta = np.identity(self.n_dims)
-        return (
-            np.einsum(',ij,kl->ijkl', la, delta, delta) +
-            np.einsum(',ik,jl->ijkl', mu, delta, delta) +
-            np.einsum(',il,jk->ijkl', mu, delta, delta)
-        )
-
     state_var_shapes = Dict(Str, Tuple, {})
     '''Shape of state variables
     '''
 
     var_dict = Dict(Str, Callable, {})
-    '''Dictionary of response variables
-    '''
+    #-------------------------------------------------------------------------
+    # View specification
+    #-------------------------------------------------------------------------
 
+
+class NotUsed:
     # Callable specifying spatial profile of an initial strain field
     # the parameter is X - global coordinates of the material point
     #

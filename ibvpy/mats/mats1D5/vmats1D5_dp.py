@@ -4,15 +4,14 @@ Created on Feb 14, 2019
 @author: rch
 '''
 
-from bmcs.mats.mats_damage_fn import \
+from ibvpy.api import MATSEval
+from simulator.i_model import IModel
+from traits.api import on_trait_change
+
+from ibvpy.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
     MultilinearDamageFn, \
     FRPDamageFn
-from ibvpy.api import MATSEval
-from simulator.i_model import IModel
-from sqlalchemy.orm import state
-from traits.api import on_trait_change
-
 import numpy as np
 import traits.api as tr
 
@@ -147,6 +146,7 @@ class MATS1D5DP(MATSEval):
         s_p[I] += delta_lamda_I * np.sign(sig_pi_trial[I] - X[I])
         z[I] += delta_lamda_I
         alpha[I] += delta_lamda_I * np.sign(sig_pi_trial[I] - X[I])
+
         kappa[...] = np.max(np.array([kappa, np.fabs(s)]), axis=0)
         omega[...] = self.omega(kappa)
         tau = (1 - omega) * self.E_T * (s - s_p)

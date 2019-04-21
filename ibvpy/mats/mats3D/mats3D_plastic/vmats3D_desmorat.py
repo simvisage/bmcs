@@ -3,20 +3,19 @@ Created on 30.10.2018
 
 @author: abaktheer
 '''
+from ibvpy.mats.mats3D.mats3D_eval import \
+    MATS3DEval
+from simulator.api import \
+    TLoopImplicit, TStepBC
 from traits.api import \
     Float, List
 from traitsui.api import View, VGroup, Item
-from ibvpy.mats.mats3D.mats3D_eval import \
-    MATS3DEval
-from ibvpy.mats.mats3D.vmats3D_eval import \
-    MATS3D
+
 import numpy as np
-from simulator.api import \
-    Model, TLoopImplicit, TStepBC
 import traits.api as tr
 
 
-class MATS3DDesmorat(Model, MATS3DEval, MATS3D):
+class MATS3DDesmorat(MATS3DEval):
     '''Damage - plasticity model by Desmorat.
     '''
     # To use the model directly in the simulator specify the

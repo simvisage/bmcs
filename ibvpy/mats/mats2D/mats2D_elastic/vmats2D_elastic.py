@@ -4,17 +4,16 @@ Created on Feb 8, 2018
 @author: rch
 '''
 
-from ibvpy.mats.mats2D.vmats2D_eval import MATS2D
+from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 import numpy as np
 
 
-class MATS2DElastic(MATS2D):
+class MATS2DElastic(MATS2DEval):
     '''Elastic material model.
     '''
-    state_array_shapes = {}
+    state_var_shapes = {}
 
-    def get_corr_pred(self, eps_Emcd, deps_Emcd, t_n, t_n1,
-                      update_state):
+    def get_corr_pred(self, eps_Emcd, t_n1):
         D_Emabcd = self.D_abcd[None, None, :, :, :, :]
-        sig_Emab = np.einsum('...abcd,...cd->...ab', D_Emabcd, eps_Emcd)
+        sig_Emab = np.einsum('abcd,...cd->...ab', self.D_abcd, eps_Emcd)
         return D_Emabcd, sig_Emab

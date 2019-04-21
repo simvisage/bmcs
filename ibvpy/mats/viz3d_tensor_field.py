@@ -55,7 +55,7 @@ class Vis3DTensorField(Vis3DField):
         self.ug.point_data.vectors.name = 'displacement'
         self.ug.point_data.tensors = np.vstack(var_Encd_tensor_fields)
         self.ug.point_data.tensors.name = self.var
-        fname = '%s_step_%8.4f' % (self.var, t_n1)
+        fname = '%s_step_%08.4f' % (self.var, t_n1)
         target_file = os.path.join(
             self.dir, fname.replace('.', '_')
         ) + '.vtu'

@@ -76,6 +76,7 @@ class IDamageFn(Interface):
 class DamageFn(BMCSLeafNode, PlottableFn):
 
     mats = WeakRef
+
     s_0 = Float(0.0004,
                 MAT=True,
                 input=True,
@@ -456,7 +457,13 @@ class FRPDamageFn(DamageFn):
         super(FRPDamageFn, self).__init__(*args, **kw)
         self._update_dependent_params()
 
-    E_b = Float
+    E_b = Property(Float)
+
+    def _get_E_b(self):
+        return self.mats.E_b
+
+    def _set_E_b(self, value):
+        self.mats.E_b = value
 
     @on_trait_change('B, Gf')
     def _update_dependent_params(self):
@@ -485,11 +492,12 @@ class FRPDamageFn(DamageFn):
 #         s_0 = newton(f_s, 0.00000001, tol=1e-5, maxiter=20)
 
         omega = np.zeros_like(kappa, dtype=np.float_)
-        d_idx = np.where(kappa >= s_0)[0]
-        k = kappa[d_idx]
+        I = np.where(kappa >= s_0)[0]
+        kappa_I = kappa[I]
 
-        omega[d_idx] = 1 - \
-            (2.0 * b * Gf * (np.exp(-b * k) - np.exp(-2.0 * b * k))) / (k * Eb)
+        omega[I] = 1 - \
+            (2.0 * b * Gf * (np.exp(-b * kappa_I)
+                             - np.exp(-2.0 * b * kappa_I))) / (kappa_I * Eb)
 
         return omega
 

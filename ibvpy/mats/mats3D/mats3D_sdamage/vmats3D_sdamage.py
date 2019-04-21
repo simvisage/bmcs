@@ -1,8 +1,5 @@
 
 from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
-from ibvpy.mats.mats_eval import IMATSEval
-from simulator.api import Model
 from traitsui.api import \
     Item, View, VSplit, Group, Spring
 from util.traits.either_type import \
@@ -19,7 +16,7 @@ from .vstrain_norm2d import Rankine
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
-class MATS3DScalarDamage(Model, MATS3DEval, MATS3D):
+class MATS3DScalarDamage(MATS3DEval):
     r'''
     Isotropic damage model.
     '''

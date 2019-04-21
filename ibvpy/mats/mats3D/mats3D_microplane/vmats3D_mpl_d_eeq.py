@@ -7,12 +7,11 @@ Microplane damage model 2D - Jirasek [1999]
 '''
 
 from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-from ibvpy.mats.mats3D.vmats3D_eval import MATS3D
 from numpy import \
     array, einsum, identity, sqrt
 from simulator.api import IModel
 from simulator.api import \
-    Model, TLoopImplicit, TStepBC
+    TLoopImplicit, TStepBC
 from traits.api import \
     Constant, provides, \
     Float, Property, cached_property
@@ -22,26 +21,11 @@ import traits.api as tr
 
 
 @provides(IModel)
-class MATS3DMplDamageEEQ(MATS3DEval, MATS3D):
+class MATS3DMplDamageEEQ(MATS3DEval):
     # To use the model directly in the simulator specify the
     # time stepping classes
     tloop_type = TLoopImplicit
     tstep_type = TStepBC
-
-    #-------------------------------------------------------------------------
-    # Material parameters
-    #-------------------------------------------------------------------------
-    E = tr.Float(34e+3,
-                 label="E",
-                 desc="Young's Modulus",
-                 auto_set=False,
-                 input=True)
-
-    nu = tr.Float(0.2,
-                  label='nu',
-                  desc="Poison ratio",
-                  auto_set=False,
-                  input=True)
 
     epsilon_0 = Float(59.0e-6,
                       label="a",

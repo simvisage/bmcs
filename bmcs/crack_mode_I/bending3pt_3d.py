@@ -334,14 +334,18 @@ def run_bending3pt_mic_odf(*args, **kw):
                           #mats_eval_type='microplane damage (eeq)'
                           #mats_eval_type='microplane damage (odf)'
                           )
+    E_c = 28000  # MPa
+    f_ct = 3.0  # MPa
+    epsilon_0 = f_ct / E_c  # [-]
+
     print(bt.mats_eval_type)
     bt.mats_eval.trait_set(
         # stiffness='algorithmic',
-        epsilon_0=0.005,
-        epsilon_f=0.05
+        epsilon_0=epsilon_0,
+        epsilon_f=epsilon_0 * 3
     )
 
-    bt.w_max = 100
+    bt.w_max = 1
     bt.tline.step = 0.02
     bt.cross_section.h = 100
     bt.geometry.L = 800
@@ -366,10 +370,10 @@ def run_bending3pt_mic_odf(*args, **kw):
     w.viz_sheet.add_viz3d(viz_stress)
     w.viz_sheet.add_viz3d(viz_strain)
     w.viz_sheet.add_viz3d(viz_damage)
-    w.viz_sheet.monitor_chunk_size = 5
+    w.viz_sheet.monitor_chunk_size = 1
 
     w.run()
-    time.sleep(2)
+    time.sleep(10)
     w.offline = False
 #    w.finish_event = True
     w.configure_traits()
