@@ -3,24 +3,42 @@ Created on Sep 3, 2009
 
 '''
 
+import copy
 from math import pi
-
-from traits.api import Callable, Constant
 
 from ibvpy.mats.mats3D.mats3D_tensor import \
     map3d_eps_eng_to_mtx, map3d_sig_eng_to_mtx, map3d_eps_mtx_to_eng, map3d_sig_mtx_to_eng, \
     map3d_ijkl2mn, map3d_tns2_to_tns4, map3d_tns4_to_tns2, compliance_mapping3d
 from ibvpy.mats.mats_eval import MATSEval
-
-# @todo parameterize - should be specialized in the dimensional subclasses
+from traits.api import Callable, Constant, Property
 
 
 class MATS3DEval(MATSEval):
+    '''Base class for 3D models
+    '''
+
+    var_dict = Property()
+
+    def _get_var_dict(self):
+        return dict(eps_ab=self.get_eps_ab,
+                    sig_ab=self.get_sig_ab)
+
+    def get_eps_ab(self, eps_ab, tn1, **state):
+        return eps_ab
+
+    def get_sig_ab(self, eps_ab, tn1, **state):
+        state_copy = copy.deepcopy(state)
+        sig_ab, _ = self.get_corr_pred(
+            eps_ab, tn1, **state_copy
+        )
+        return sig_ab
 
     # number of spatial dimensions of an integration cell for the material model
     #
     n_dims = Constant(3)
 
+
+class NotUsedAnyMore:
     # dimension dependent tensor mappings
     #
     map_tns4_to_tns2 = Callable(map3d_tns4_to_tns2, transient=True)

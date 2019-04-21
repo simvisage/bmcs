@@ -22,7 +22,7 @@ import traits.api as tr
 
 
 @provides(IModel)
-class MATS3DMplDamageEEQ(Model, MATS3DEval, MATS3D):
+class MATS3DMplDamageEEQ(MATS3DEval, MATS3D):
     # To use the model directly in the simulator specify the
     # time stepping classes
     tloop_type = TLoopImplicit

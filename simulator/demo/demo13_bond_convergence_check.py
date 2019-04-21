@@ -1,5 +1,5 @@
 '''
-Created on 25.03.2019
+Created on 25.03.2019    
 
 @author: fseemab
 '''
@@ -21,7 +21,7 @@ from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
 from ibvpy.mats.viz2d_field import \
     Vis2DField, Viz2DField
 from ibvpy.mats.viz3d_tensor_field import \
-    Vis3DStrainField, Vis3DStressField, Viz3DTensorField
+    Vis3DTensorField, Viz3DTensorField
 from simulator.api import \
     Simulator
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
@@ -101,8 +101,8 @@ s = Simulator(
     record={
         'Pw': Vis2DFW(bc_right=right_x_s, bc_left=left_x_s),
         'slip': Vis2DField(var='slip'),
-        'strain': Vis3DStrainField(var='eps_ab'),
-        'stress': Vis3DStressField(var='sig_ab'),
+        'strain': Vis3DTensorField(var='eps_ab'),
+        'stress': Vis3DTensorField(var='sig_ab'),
         #       'damage': Vis3DStateField(var='omega_a'),
         #        'kinematic hardening': Vis3DStateField(var='z_a')
     }
