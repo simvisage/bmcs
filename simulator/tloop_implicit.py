@@ -20,7 +20,7 @@ class TLoopImplicit(TLoop):
 
     acc = Float(1e-4, enter_set=True, auto_set=False)
 
-    verbose = Bool(True, enter_set=True, auto_set=False)
+    verbose = Bool(False, enter_set=True, auto_set=False)
 
     def eval(self):
         t_n1 = self.tline.val

@@ -4,9 +4,6 @@ Created on 05.12.2016
 @author: abaktheer
 '''
 
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
-    FRPDamageFn
 from ibvpy.api import MATSEval, IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import provides,  \
@@ -15,6 +12,9 @@ from traits.api import provides,  \
 from traitsui.api import View, VGroup, Item, UItem, Group
 from view.ui import BMCSTreeNode
 
+from ibvpy.mats.mats_damage_fn import \
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
+    FRPDamageFn
 import numpy as np
 
 
@@ -369,51 +369,6 @@ class MATSBondSlipDP(MATSBondSlipBase):
         width=0.4,
         height=0.5,
     )
-
-#     def get_corr_pred(self, s, d_s, tau, t_n, t_n1, s_vars):
-#
-#         s_p, alpha, z, kappa, omega = s_vars
-#
-#         n_e, n_ip, n_s = s.shape
-#         D = np.zeros((n_e, n_ip, n_s, n_s))
-#         D[:, :, 0, 0] = self.E_m
-#         D[:, :, 2, 2] = self.E_f
-#
-#         sig_pi_trial = self.E_b * (s[:, :, 1] - s_p)
-#
-#         Z = self.K * z
-#         X = self.gamma * alpha
-#         f = np.fabs(sig_pi_trial - X) - self.tau_bar - Z
-#
-#         elas = f <= 1e-6
-#         plas = f > 1e-6
-#
-#         d_tau = np.einsum('...st,...t->...s', D, d_s)
-#         tau += d_tau
-#
-#         # Return mapping
-#         delta_lamda = f / (self.E_b + self.gamma + self.K) * plas
-#         # update all the state variables
-#
-#         s_p = s_p + delta_lamda * np.sign(sig_pi_trial - X)
-#         z = z + delta_lamda
-#         alpha = alpha + delta_lamda * np.sign(sig_pi_trial - X)
-#
-#         kappa = np.max(np.array([kappa, np.fabs(s)]), axis=0)
-#         omega = self.g_fn(kappa)
-#
-#         tau[:, :, 1] = (1 - omega) * self.E_b * (s[:, :, 1] - s_p)
-#
-#         # Consistent tangent operator
-#
-#         g_fn = self.g_fn_get_function()
-#         D_ed = -self.E_b / (self.E_b + self.K + self.gamma) * derivative(g_fn, kappa, dx=1e-6) * self.E_b * (s[:, :, 1] - s_p) \
-#             + (1 - omega) * self.E_b * (self.K + self.gamma) / \
-#             (self.E_b + self.K_bar + self.H_bar)
-#
-#         D[:, :, 1, 1] = (1 - omega) * self.E_b * elas + D_ed * plas
-#
-#         return tau, D, s_p, alpha, z, kappa, omega
 
 
 if __name__ == '__main__':

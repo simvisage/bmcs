@@ -443,7 +443,6 @@ class PullOutModel(Simulator):
     '''Material model'''
 
     def _mats_eval_default(self):
-        print('new material model', self.mats_eval_type_)
         return self.mats_eval_type_()
 
     mm = Property

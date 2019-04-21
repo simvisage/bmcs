@@ -13,9 +13,6 @@ Created on 12.12.2016
 
 from bmcs.bond_slip.mats_bondslip import \
     MATSBondSlipD, MATSBondSlipDP, MATSBondSlipEP
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, \
-    LiDamageFn, JirasekDamageFn, AbaqusDamageFn, FRPDamageFn
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
@@ -33,6 +30,9 @@ from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSTreeNode
 from view.window.bmcs_window import BMCSWindow
 
+from ibvpy.mats.mats_damage_fn import \
+    IDamageFn, \
+    LiDamageFn, JirasekDamageFn, AbaqusDamageFn, FRPDamageFn
 import numpy as np
 
 

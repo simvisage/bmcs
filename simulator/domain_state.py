@@ -32,7 +32,6 @@ class DomainState(HasStrictTraits):
     def _get_state_n(self):
         xmodel_shape = self.xdomain.state_var_shape
         tmodel_shapes = self.tmodel.state_var_shapes
-        print('STATE NEWLY CONSTRUCTED')
         return {
             name: np.zeros(xmodel_shape + mats_sa_shape, dtype=np.float_)
             for name, mats_sa_shape

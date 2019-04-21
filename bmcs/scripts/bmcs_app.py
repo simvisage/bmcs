@@ -22,7 +22,8 @@ from bmcs.pullout import \
     run_pullout_const_shear, \
     run_pullout_dp, \
     run_pullout_multilinear, \
-    run_pullout_frp_damage
+    run_pullout_frp_damage, \
+    run_pullout_fatigue
 from ibvpy.mats.mats3D.mats3D_plastic.yield_face3D_explorer import run_explorer
 from traits.api import HasTraits, Button, Str, Constant
 from traitsui.api import \
@@ -81,6 +82,11 @@ class BMCSLauncher(HasTraits):
 
     def _pullout_model_dp_fired(self):
         run_pullout_dp(kind='live')
+
+    pullout_model_fatigue = Button(label='Damage-fatigue')
+
+    def _pullout_model_fatigue_fired(self):
+        run_pullout_fatigue(kind='live')
 
     #=========================================================================
     # Lecture #8
@@ -153,7 +159,11 @@ class BMCSLauncher(HasTraits):
                 #                       full_size=True, resizable=True),
                 UItem('pullout_model_dp',
                       full_size=True, resizable=True,
-                      enabled_when='False'
+                      enabled_when='True'
+                      ),
+                UItem('pullout_model_fatigue',
+                      full_size=True, resizable=True,
+                      enabled_when='True'
                       ),
                 label='Pull-out models, lecture #3-6'
             ),

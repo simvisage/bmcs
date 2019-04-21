@@ -101,12 +101,10 @@ class TStepBC(HasStrictTraits):
 
     @cached_property
     def _get_fe_domain(self):
-        print('fe_domain_called')
         domains = [
             DomainState(tstep=self, xdomain=xdomain, tmodel=tmodel)
             for xdomain, tmodel in self.sim.domains
         ]
-        print(domains[0].xdomain)
         return XDomain(domains)
 
     corr_pred = Property(depends_on='primary_var_changed,t_n1')
