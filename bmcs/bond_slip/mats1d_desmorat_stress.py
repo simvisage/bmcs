@@ -4,11 +4,9 @@ Created on 07.12.2018
 @author: Mario Aguilar Rueda
 '''
 
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import \
-    Constant, Float, WeakRef, List, Str, Property, cached_property, \
-    Trait, on_trait_change, Instance, Callable
-from traitsui.api import View, VGroup, Item, UItem, Group
+    Float, List
+from traitsui.api import View, VGroup, Item, Group
 
 import numpy as np
 

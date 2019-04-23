@@ -4,13 +4,10 @@ Example script of bond - pullout evaluation.
 
 from os.path import join
 
-from bmcs.pullout.pullout_dp import PullOutModel
-from reporter import ReportStudy, Reporter
-from traits.api import Instance, Array, Float, List, Str
+from bmcs.api import PullOutModel
 from view.window.bmcs_window import BMCSWindow
 
 import numpy as np
-import pylab as p
 
 
 def get_pullout_model_carbon_concrete(w_max=5.0):
@@ -31,14 +28,16 @@ def get_pullout_model_carbon_concrete(w_max=5.0):
                             )
     po.geometry.L_x = 100.0
     po.cross_section.set(A_f=16.67, P_b=9.0, A_m=1540.0)
+    po.mats_eval_type = 'damage-plasticity'
     po.mats_eval.set(E_m=28480, E_f=170000)
     po.mats_eval.set(gamma=1.5, K=0.0, tau_bar=5.0)
+    po.mats_eval.omega_fn_type = 'li'
     po.mats_eval.omega_fn.set(alpha_1=1.0, alpha_2=1, plot_max=2.8)
     return po
 
 
 def show(po):
-    w = BMCSWindow(model=po)
+    w = BMCSWindow(sim=po)
     po.add_viz2d('load function', 'load-time')
     po.add_viz2d('F-w', 'load-displacement')
     po.add_viz2d('field', 'u_C', plot_fn='u_C')
@@ -74,8 +73,7 @@ def e42_compare_two_simulations():
     for L in L_array:
         po.geometry.L_x = L
         po.run()
-        P = po.get_P_t()
-        w0, wL = po.get_w_t()
+        P, w0, wL = po.get_Pw_t()
         pylab.plot(wL, P, label='L=%d [mm]' % L)
 
     pylab.legend(loc=2)
@@ -88,7 +86,7 @@ def e43_study_length_dependence():
     po.loading_scenario.loading_type = 'monotonic'
     po.tline.step = 0.005
 
-    L_array = np.array([100],  # 150, 200, 250, 300, 350],
+    L_array = np.array([100, 150, 200, 250, 300, 350],
                        dtype=np.float_)
     L_trait = po.geometry.traits()
     print(L_trait)
@@ -98,8 +96,7 @@ def e43_study_length_dependence():
         print('calculating length', L)
         po.geometry.L_x = L
         po.run()
-        P = po.get_P_t()
-        w0, wL = po.get_w_t()
+        P, _, wL = po.get_Pw_t()
         P_u_record.append((L, P, wL))
 
     import pylab
@@ -129,6 +126,6 @@ def e43_study_length_dependence():
 
 
 if __name__ == "__main__":
-    # e41_preconfigure_and_start_app()
+    e41_preconfigure_and_start_app()
     # e42_compare_two_simulations()
-    e43_study_length_dependence()
+    # e43_study_length_dependence()

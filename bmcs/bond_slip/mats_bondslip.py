@@ -5,16 +5,15 @@ Created on 05.12.2016
 '''
 
 from ibvpy.api import MATSEval, IMATSEval
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from traits.api import provides,  \
-    Constant, Float, WeakRef, List, Str, Property, cached_property, \
-    Trait, on_trait_change, Instance, Callable
-from traitsui.api import View, VGroup, Item, UItem, Group
-from view.ui import BMCSTreeNode
-
 from ibvpy.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     FRPDamageFn
+from traits.api import provides,  \
+    Constant, Float, List, Str, \
+    Trait, on_trait_change, Instance
+from traitsui.api import View, VGroup, Item, UItem, Group
+from view.ui import BMCSTreeNode
+
 import numpy as np
 
 

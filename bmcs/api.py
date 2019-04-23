@@ -1,3 +1,3 @@
 
-from bmcs.pullout.pullout_multilinear_sim import \
+from bmcs.pullout.pullout_sim import \
     PullOutModel

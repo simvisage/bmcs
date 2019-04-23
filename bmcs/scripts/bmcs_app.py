@@ -149,14 +149,16 @@ class BMCSLauncher(HasTraits):
             Group(
                 UItem('pullout_model_const_shear',
                       full_size=True, resizable=True,
-                      enabled_when='False'
+                      enabled_when='True'
                       ),
                 UItem('pullout_model_multilinear',
                       full_size=True, resizable=True,
                       enabled_when='True'
                       ),
-                #                 UItem('pullout_model_frp_damage',
-                #                       full_size=True, resizable=True),
+                UItem('pullout_model_frp_damage',
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
                 UItem('pullout_model_dp',
                       full_size=True, resizable=True,
                       enabled_when='True'

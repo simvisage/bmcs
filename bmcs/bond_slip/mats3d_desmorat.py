@@ -3,19 +3,19 @@ Created on 30.10.2018
 
 @author: aguilar
 '''
-from traits.api import provides,  \
-    Constant, Float, WeakRef, List, Str, Property, cached_property, \
-    Trait, on_trait_change, Instance, Callable
-from traitsui.api import View, VGroup, Item, UItem, Group
-
-from bmcs.mats.mats_damage_fn import \
+from ibvpy.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     FRPDamageFn
 from ibvpy.mats.mats_eval import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from traits.api import provides,  \
+    Constant, Float, WeakRef, List, Str, Property, cached_property, \
+    Trait, on_trait_change, Instance, Callable
+from traitsui.api import View, VGroup, Item, UItem, Group
+from view.ui import BMCSTreeNode
+
 import numpy as np
 import traits.api as tr
-from view.ui import BMCSTreeNode
 
 from .mats_bondslip import MATSBondSlipBase
 

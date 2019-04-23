@@ -3,7 +3,7 @@ Created on 10.12.2018
 
 @author: Mario Aguilar Rueda
 '''
-from bmcs.mats.mats_damage_fn import \
+from ibvpy.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     FRPDamageFn
 from ibvpy.mats.mats_eval import IMATSEval
@@ -18,6 +18,7 @@ import numpy as np
 import traits.api as tr
 
 from .mats_bondslip import MATSBondSlipBase
+
 
 @provides(IMATSEval)
 class MATS3DDesmorat(MATSBondSlipBase):
@@ -194,7 +195,7 @@ if __name__ == '__main__':
 
         for i in range(len(s)):
             eps[i][0][0] = s[i]
-        print eps
+        print(eps)
 
         sigma = np.array([np.zeros((3, 3)) for _ in range(len(s))])
         eps_pos = np.array([np.zeros((3, 3)) for _ in range(len(s))])

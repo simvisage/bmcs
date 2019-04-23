@@ -9,8 +9,6 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    from io import StringIO
     import os
 
     home_dir = os.path.expanduser('~')

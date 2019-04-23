@@ -5,9 +5,9 @@ Created on Jul 12, 2017
 '''
 from os.path import join
 
-from bmcs.pullout.pullout_analytical_model import PullOutModel
 from view.window import BMCSWindow
 
+from bmcs.pullout.pullout_analytical_sim import PullOutModel
 import pylab as p
 
 
@@ -21,7 +21,7 @@ class PullOutConstantBondStudy(BMCSWindow):
 
     def __init__(self, *args, **kw):
         self.model = PullOutModel(name='e31_pullout_frictional',
-                                  n_x=200, u_f0_max=1.5)
+                                  n_x_e=200, w_max=1.5)
         self.model.geometry.set(L_x=800)
     #     self.cross_section.set(A_f=4.5, P_b=1.0)
     #     self.material.set(E_f=9 * 180000.0, tau_pi_bar=2.77 * 9)

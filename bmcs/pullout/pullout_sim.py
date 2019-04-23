@@ -31,7 +31,7 @@ from traitsui.ui_editors.array_view_editor import ArrayViewEditor
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.ui.bmcs_tree_node import itags_str
-
+from view.window import BMCSWindow
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -475,7 +475,6 @@ class PullOutModel(Simulator):
     @cached_property
     def _get_dots_grid(self):
         geo = self.geometry
-        cs = self.cross_section
         return XDomainFEInterface1D(
             dim_u=2,
             coord_max=[geo.L_x],
@@ -691,8 +690,8 @@ class PullOutModel(Simulator):
         X_M = self.X_M
         sig_p = self.get_sig_p(vot).T
 
-        A_m = self.cross_section.A_m
-        A_f = self.cross_section.A_f
+#        A_m = self.cross_section.A_m
+#        A_f = self.cross_section.A_f
         L = self.geometry.L_x
         F_m = sig_p[0]
         F_f = sig_p[1]
@@ -741,3 +740,25 @@ class PullOutModel(Simulator):
         ax.plot(eps_p[1], s, linewidth=2, color='lightcoral')
         ax.set_ylabel('reinforcement strain')
         ax.set_xlabel('slip')
+
+    def get_window(self):
+        self.record['Pw'] = PulloutRecord()
+        fw = Viz2DPullOutFW(name='Pw', vis2d=self.hist['Pw'])
+        u_p = Viz2DPullOutField(plot_fn='u_p', vis2d=self)
+        eps_p = Viz2DPullOutField(plot_fn='eps_p', vis2d=self)
+        sig_p = Viz2DPullOutField(plot_fn='sig_p', vis2d=self)
+        s = Viz2DPullOutField(plot_fn='s', vis2d=self)
+        sf = Viz2DPullOutField(plot_fn='sf', vis2d=self)
+        energy = Viz2DEnergyPlot(vis2d=self.hist['Pw'])
+        dissipation = Viz2DEnergyReleasePlot(vis2d=self.hist['Pw'])
+        w = BMCSWindow(sim=self)
+        w.viz_sheet.viz2d_list.append(fw)
+        w.viz_sheet.viz2d_list.append(u_p)
+        w.viz_sheet.viz2d_list.append(eps_p)
+        w.viz_sheet.viz2d_list.append(sig_p)
+        w.viz_sheet.viz2d_list.append(s)
+        w.viz_sheet.viz2d_list.append(sf)
+        w.viz_sheet.viz2d_list.append(energy)
+        w.viz_sheet.viz2d_list.append(dissipation)
+        w.viz_sheet.monitor_chunk_size = 10
+        return w

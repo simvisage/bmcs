@@ -9,11 +9,11 @@ studies presented in the associated wiki pages.
 The scripts are grouped into lectures.
 '''
 
-from . import scripts.part1_debonding.lecture02_bond \
+from .scripts.part1_debonding import lecture02_bond \
     as lecture02
-from . import scripts.part1_debonding.lecture03_pullout \
+from .scripts.part1_debonding import lecture03_pullout \
     as lecture03
-from . import scripts.part1_debonding.lecture04_anchorage \
+from .scripts.part1_debonding import lecture04_anchorage \
     as lecture04
-from . import scripts.part1_debonding.lecture05_fracture \
+from .scripts.part1_debonding import lecture05_fracture \
     as lecture05

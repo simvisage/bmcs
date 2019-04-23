@@ -2,13 +2,11 @@
 Created on 12.01.2016
 @author: Yingxiong, ABaktheer, RChudoba
 
-@todo: enable recalculation after the initial offline run
-@todo: reset viz adapters upon recalculation to forget their axes lims
-@todo: introduce a switch for left and right supports
 '''
 
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
+from simulator.api import Simulator
 from traits.api import \
     Property, Instance, cached_property, \
     Bool, List, Float, Trait, Int, on_trait_change, \
@@ -17,9 +15,11 @@ from traitsui.api import \
     View, Item, VGroup, Group
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
-from view.window import BMCSModel, BMCSWindow, TLine
+from view.window import BMCSWindow, TLine
 
 import numpy as np
+
+from .pullout_sim import Geometry, CrossSection
 
 
 class MaterialParams(BMCSLeafNode):
@@ -49,49 +49,6 @@ class MaterialParams(BMCSLeafNode):
                              Item('tau_pi_bar'), show_border=True,
                              label='Material parameters'),
                        ))
-
-    tree_view = view
-
-
-class CrossSection(BMCSLeafNode):
-    '''Parameters of the pull-out cross section
-    '''
-    node_name = 'cross-section'
-
-    A_f = Float(153.9,
-                CS=True,
-                input=True,
-                auto_set=False, enter_set=True,
-                symbol='$A_\mathrm{f}$', unit='$\mathrm{mm}^2$',
-                desc='reinforcement area')
-    P_b = Float(44,
-                input=True,
-                CS=True,
-                auto_set=False, enter_set=True,
-                symbol='$P_\mathrm{b}$', unit='$\mathrm{mm}$',
-                desc='perimeter of the bond interface')
-
-    view = View(
-        Item('A_m', full_size=True, resizable=True),
-        Item('P_b')
-    )
-
-    tree_view = view
-
-
-class Geometry(BMCSLeafNode):
-
-    node_name = 'geometry'
-    L_x = Float(20,
-                GEO=True,
-                input=True,
-                symbol='$L$', unit='mm',
-                auto_set=False, enter_set=True,
-                desc='embedded length')
-
-    view = View(
-        Item('L_x', full_size=True, resizable=True),
-    )
 
     tree_view = view
 
@@ -181,7 +138,7 @@ class Viz2DPullOutField(Viz2D):
     )
 
 
-class PullOutModel(BMCSModel, Vis2D):
+class PullOutModel(Simulator, Vis2D):
 
     node_name = 'pull out simulation'
 
@@ -219,29 +176,6 @@ class PullOutModel(BMCSModel, Vis2D):
         print('sv_hist_reset')
         for sv_name in self.sv_names:
             self.sv_hist[sv_name] = []
-
-    def paused(self):
-        self._paused = True
-
-    def stop(self):
-        self._sv_hist_reset()
-        self._restart = True
-        self.loading_scenario.reset()
-
-    _paused = Bool(False)
-    _restart = Bool(True)
-
-    n_steps = Int(100, ALG=True,
-                  symbol='$n_\mathrm{E}$', unit='-',
-                  desc='number of time steps',
-                  enter_set=True, auto_set=False)
-
-    def init(self):
-        if self._paused:
-            self._paused = False
-        if self._restart:
-            self.tline.val = self.tline.min
-            self._restart = False
 
     x = Property(depends_on='GEO')
 
@@ -324,36 +258,6 @@ class PullOutModel(BMCSModel, Vis2D):
     def _geometry_default(self):
         return Geometry()
 
-    n_x = Int(100, auto_set=False, enter_set=True)
-
-    w_max = Float(1,
-                  BC=True,
-                  symbol='$u_{\mathrm{f},0}$',
-                  unit='mm',
-                  desc='control displacement',
-                  auto_set=False, enter_set=True)
-
-    tline = Instance(TLine)
-
-    def _tline_default(self):
-        # assign the parameters for solver and loading_scenario
-        t_max = 1.0  # self.loading_scenario.t_max
-        d_t = 0.1  # self.loading_scenario.d_t
-        return TLine(min=0.0, step=d_t, max=t_max,
-                     time_change_notifier=self.time_changed,
-                     )
-
-    def get_time_idx_arr(self, vot):
-        '''Get the index corresponding to visual time
-        '''
-        x = self.get_sv_hist('t').T[0]
-        idx = np.array(np.arange(len(x)), dtype=np.float_)
-        t_idx = np.interp(vot, x, idx)
-        return np.array(t_idx + 0.5, np.int_)
-
-    def get_time_idx(self, vot):
-        return int(self.get_time_idx_arr(vot))
-
     def get_P_t(self):
         Ef = self.material.E_f
         Af = self.cross_section.A_f
@@ -425,13 +329,6 @@ class PullOutModel(BMCSModel, Vis2D):
         ax.set_xlabel('bond length: x [mm]')
         return np.min(sf_x), np.max(sf_x)
 
-#     tree_view = View(
-#         VGroup(
-#             Group(
-#                 Item('w_max', full_size=True, resizable=True),
-#             ),
-#         )
-#     )
     viz2d_classes = {'field': Viz2DPullOutField,
                      'F-w': Viz2DPullOutFW,
                      'load function': Viz2DLoadControlFunction,
@@ -445,7 +342,7 @@ def run_pullout_const_shear(*args, **kw):
 #     po.material.trait_set(E_f=9 * 180000.0, tau_pi_bar=2.77 * 9)
     po.tline.step = 0.01
 
-    w = BMCSWindow(model=po)
+    w = BMCSWindow(sim=po)
     # po.add_viz2d('load function')
     po.add_viz2d('F-w', 'load-displacement')
     po.add_viz2d('field', 'shear flow', plot_fn='sf')

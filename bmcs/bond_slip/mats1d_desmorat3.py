@@ -4,16 +4,8 @@ Created on 20.10.2018
 @author: Mario Aguilar
 '''
 
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
-    FRPDamageFn
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from traits.api import  \
-    Constant, Float, WeakRef, List, Str, Property, cached_property, \
-    Trait, on_trait_change, Instance, Callable
-from traitsui.api import View, VGroup, Item, UItem, Group
-
-import matplotlib.pyplot as plt
+    Float, List
 import numpy as np
 
 from .mats_bondslip import MATSBondSlipBase
@@ -188,6 +180,7 @@ if __name__ == '__main__':
     d = np.zeros(20)
     s_max_1 = np.zeros(20)
     auxN = 0
+    points = []  # added to avoid error
     for j in range(points):
         m = MATS1DDesmorat()
         s_max_1[j] = 0.0022 - 0.002 * j / (j + 1)

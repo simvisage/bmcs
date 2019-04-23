@@ -11,27 +11,26 @@ Created on 12.12.2016
 '''
 
 
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, \
-    LiDamageFn, JirasekDamageFn, AbaqusDamageFn, FRPDamageFn
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from bmcs.time_functions.tfun_pwl_interactive import TFunPWLInteractive
 from ibvpy.api import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
+from simulator.api import Simulator
 from traits.api import \
     Property, Instance, cached_property, Str, \
     List, Float, Trait, on_trait_change, Bool, Dict,\
     Int, Tuple
 from traitsui.api import \
-    View, Item, UItem, Group, VGroup, VSplit
+    View, Item, Group, VSplit
 from traitsui.editors.enum_editor import EnumEditor
 from view.plot2d import Vis2D, Viz2D
 from view.ui import BMCSTreeNode
-from view.window.bmcs_window import BMCSModel, BMCSWindow
+from view.window.bmcs_window import BMCSWindow
+
+import numpy as np
 
 from .mats1d_desmorat import MATS1DDesmorat
-import numpy as np
 
 
 class Material(BMCSTreeNode):
@@ -142,7 +141,7 @@ class Viz2DBondHistory(Viz2D):
     )
 
 
-class DesmoratModel(BMCSModel, Vis2D):
+class DesmoratModel(Simulator, Vis2D):
 
     node_name = Str('Bond slip model')
 

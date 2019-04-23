@@ -5,10 +5,7 @@ Created on 12.01.2016
 
 from reporter import Reporter
 from view.window import BMCSWindow
-
-from .pullout_sim import Viz2DPullOutFW, Viz2DPullOutField, \
-    Viz2DEnergyPlot, Viz2DEnergyReleasePlot, \
-    PullOutModel, PulloutRecord
+from .pullout_sim import PullOutModel
 
 
 def run_pullout_fatigue(*args, **kw):
@@ -17,13 +14,12 @@ def run_pullout_fatigue(*args, **kw):
     po.tloop.k_max = 1000
     po.geometry.L_x = 82.0
     po.loading_scenario.set(loading_type='cyclic')
-    po.loading_scenario.set(number_of_cycles=20)
-    po.loading_scenario.set(maximum_loading=10000)  # 19200)
-    po.loading_scenario.set(unloading_ratio=0.1)
-    po.loading_scenario.set(amplitude_type="constant")
-    po.loading_scenario.set(loading_range="non-symmetric")
+    po.loading_scenario.trait_set(number_of_cycles=20,
+                                  maximum_loading=10000,  # 19200)
+                                  unloading_ratio=0.1,
+                                  amplitude_type="constant",
+                                  loading_range="non-symmetric")
     po.cross_section.set(A_f=153.9, P_b=44, A_m=15400.0)
-
     po.mats_eval_type = 'cumulative fatigue'
     po.mats_eval.trait_set(
         E_b=12900,
@@ -34,27 +30,7 @@ def run_pullout_fatigue(*args, **kw):
         r=0.51,
         c=8.8
     )
-
-    po.record['Pw'] = PulloutRecord()
-    fw = Viz2DPullOutFW(name='Pw', vis2d=po.hist['Pw'])
-    u_p = Viz2DPullOutField(plot_fn='u_p', vis2d=po)
-    eps_p = Viz2DPullOutField(plot_fn='eps_p', vis2d=po)
-    sig_p = Viz2DPullOutField(plot_fn='sig_p', vis2d=po)
-    s = Viz2DPullOutField(plot_fn='s', vis2d=po)
-    sf = Viz2DPullOutField(plot_fn='sf', vis2d=po)
-    energy = Viz2DEnergyPlot(vis2d=po.hist['Pw'])
-    dissipation = Viz2DEnergyReleasePlot(vis2d=po.hist['Pw'])
-    w = BMCSWindow(sim=po)
-    w.viz_sheet.viz2d_list.append(fw)
-    w.viz_sheet.viz2d_list.append(u_p)
-    w.viz_sheet.viz2d_list.append(eps_p)
-    w.viz_sheet.viz2d_list.append(sig_p)
-    w.viz_sheet.viz2d_list.append(s)
-    w.viz_sheet.viz2d_list.append(sf)
-    w.viz_sheet.viz2d_list.append(energy)
-    w.viz_sheet.viz2d_list.append(dissipation)
-    w.viz_sheet.monitor_chunk_size = 10
-
+    w = po.get_window()
     w.configure_traits(*args, **kw)
 
 
