@@ -7,6 +7,10 @@ Created on 05.12.2016
 from os.path import join
 
 from ibvpy.api import MATSEval
+from ibvpy.mats.mats_damage_fn import \
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
+    MultilinearDamageFn, \
+    FRPDamageFn
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 from simulator.api import \
     TLoopImplicit, TStepBC
@@ -14,10 +18,6 @@ from traits.api import  \
     Float, Tuple, List, on_trait_change, \
     Instance, Trait, Bool, Str, Button, Property
 
-from ibvpy.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
-    MultilinearDamageFn, \
-    FRPDamageFn
 import numpy as np
 import traitsui.api as ui
 
@@ -507,7 +507,6 @@ class MATSBondSlipFatigue(MATSEval):
         s_n1 = eps_n1[..., 1]
 
         tau_pi_trial = self.E_b * (s_n1 - xs_pi)
-
         X = self.gamma * alpha
         Z = self.K * z
 

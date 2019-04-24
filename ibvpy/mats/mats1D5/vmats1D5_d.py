@@ -5,13 +5,13 @@ Created on Feb 14, 2019
 '''
 
 from ibvpy.api import MATSEval
-from simulator.i_model import IModel
-from traits.api import on_trait_change
-
 from ibvpy.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
     MultilinearDamageFn, \
     FRPDamageFn
+from simulator.i_model import IModel
+from traits.api import on_trait_change
+
 import numpy as np
 import traits.api as tr
 import traitsui.api as ui
@@ -47,7 +47,6 @@ class MATS1D5D(MATSEval):
 
     @on_trait_change('omega_fn_type')
     def _reset_omega_fn(self):
-        print('RESETTING')
         self.omega_fn = self.omega_fn_type_()
 
     omega_fn = tr.Instance(IDamageFn, report=True)

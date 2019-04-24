@@ -3,8 +3,6 @@ Created on 12.01.2016
 @author: ABaktheer, RChudoba, Yingxiong
 '''
 
-from reporter import Reporter
-from view.window import BMCSWindow
 from .pullout_sim import PullOutModel
 
 
@@ -35,6 +33,8 @@ def run_pullout_fatigue(*args, **kw):
 
 
 def test_reporter():
+    from reporter import Reporter
+    from view.window import BMCSWindow
     po = PullOutModel(n_e_x=100, k_max=500, w_max=1.0)
     po.tline.step = 0.01
     po.geometry.L_x = 500.0

@@ -17,6 +17,7 @@ def run_pullout_multilinear(*args, **kw):
     po.loading_scenario.trait_set(loading_type='monotonic')
 #    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
     po.cross_section.set(A_f=153, P_b=44, A_m=15240.0)
+    po.mats_eval_type = 'multilinear'
     po.mats_eval.set(E_m=28000,
                      E_f=170000,
                      s_data='0, 0.1, 0.4, 4',

@@ -9,10 +9,6 @@ Toplevel script to start BMCS
 
 import sys
 
-from bmcs.bond_slip import \
-    run_bond_slip_model_p, \
-    run_bond_slip_model_d, \
-    run_bond_slip_model_dp
 from bmcs.crack_mode_I import \
     run_bending3pt_mic_odf, \
     run_bending3pt_sdamage_viz2d, \
@@ -48,17 +44,20 @@ class BMCSLauncher(HasTraits):
     bond_slip_model_d = Button(label='Damage')
 
     def _bond_slip_model_d_fired(self):
-        run_bond_slip_model_d(kind='live')
+        pass
+        # run_bond_slip_model_d(kind='live')
 
     bond_slip_model_p = Button(label='Plasticity')
 
     def _bond_slip_model_p_fired(self):
-        run_bond_slip_model_p(kind='live')
+        pass
+        # run_bond_slip_model_p(kind='live')
 
     bond_slip_model_dp = Button(label='Damage-plasticity')
 
     def _bond_slip_model_dp_fired(self):
-        run_bond_slip_model_dp(kind='live')
+        pass
+        # run_bond_slip_model_dp(kind='live')
 
     #=========================================================================
     # Lecture #3
