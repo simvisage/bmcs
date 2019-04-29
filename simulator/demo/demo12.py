@@ -63,8 +63,8 @@ xd_concrete_2 = XDomainFEGridAxiSym(coord_min=(0, R_steel),
                                     fets=FETS2D4Q())
 
 # m_steel = MATS3DDesmorat(E_1=210000, nu=0.3, tau_bar=2000.0)
-# m_concrete = MATS3DDesmorat(tau_bar=2.0)
 m_steel = MATS3DElastic(E=210000, nu=0.2)
+# m_concrete = MATS3DDesmorat(tau_bar=2.0)
 m_concrete = MATS3DElastic(E=28000, nu=0.3)
 
 xd12 = XDomainFEInterface(
@@ -75,6 +75,7 @@ xd12 = XDomainFEInterface(
 )
 
 u_max = 0.3
+f_max = 4000.0
 right_x_s = BCSlice(slice=xd_steel_1.mesh[-1, :, -1, :],
                     var='u', dims=[0], value=u_max)
 right_x_c = BCSlice(slice=xd_concrete_2.mesh[0, 1:, 0, :],

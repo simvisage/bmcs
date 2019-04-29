@@ -19,6 +19,9 @@ import pandas as pd
 
 name = 'CT80-42_3610_Zykl'
 name2 = 'CT80-42_3610_Zykl'
+
+name = 'CT80-39_6322_Zykl'
+name2 = 'CT80-39_6322_Zykl'
 home_dir = os.path.expanduser('~')
 path_master = os.path.join(home_dir, 'Data Processing')
 path_master = os.path.join(path_master, 'CT')
@@ -54,7 +57,7 @@ temp = np.empty((1, 1))
 f = open(path)
 l = sum(1 for row in f)
 # obtains number of data chunks, 1e5 rows per chunk
-num_iter = np.int(np.floor(l / 100000))
+num_iter = np.int(np.floor(l / 10000))
 
 
 # First chunk

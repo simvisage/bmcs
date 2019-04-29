@@ -4,80 +4,91 @@ Created on 15.02.2019
 @author: Mario Aguilar Rueda
 '''
 
-import csv
 import os
+import string
 
-import h5py
-from pykalman import KalmanFilter
-
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-#np.loadtxt("bio_1.asc", skiprows=6)
 
-name = 'CT80-42_3610_Zykl'
-name2 = 'CT80-42_3610_Zykl'
-home_dir = os.path.expanduser('~')
-path_master = os.path.join(home_dir, 'Data Processing')
-path_master = os.path.join(path_master, 'CT')
-path_master = os.path.join(path_master, 'C80')
-path_master = os.path.join(path_master, name)
+def read_csv(path):
+    '''Read the csv file and transform it to the hdf5 forma.
+    The output file has the same name as the input csv file
+    with an extension hdf5
+    '''
+    basename = path.split('.')
+    path2 = ''.join(basename[:-1]) + '.hdf5'
 
-path = os.path.join(path_master, name2 + '.csv')
+    chunk_size = 10000
+    skip_rows = 4
+    n_rows = chunk_size - 1 - skip_rows
 
-path2 = os.path.join(path_master, name2 + '.hdf5')
-
-f = open(path)
-l = sum(1 for row in f)
-num_iter = np.int(np.floor(l / 100000))
-
-f = pd.read_csv(path, sep=';', skiprows=4, nrows=99995)
-nf = np.array(f)
-df = pd.DataFrame(nf, columns=['a', 'b', 'c', 'd', 'e', 'f'])
-print(df)
-
-df['a'] = [x.replace(',', '.') for x in df['a']]
-df['b'] = [x.replace(',', '.') for x in df['b']]
-df['c'] = [x.replace(',', '.') for x in df['c']]
-df['d'] = [x.replace(',', '.') for x in df['d']]
-df['e'] = [x.replace(',', '.') for x in df['e']]
-df['f'] = [x.replace(',', '.') for x in df['f']]
-df['f'] = [x.replace(',', '.') for x in df['f']]
-# df['g'] = [x.replace(',', '.') for x in df['g']]
-df.to_hdf(path2, 'first', mode='w', format='table')
-del df
-del f
-
-for iter_num in range(num_iter - 1):
-    print(iter_num)
-    f = np.array(pd.read_csv(path, skiprows=(
-        iter_num + 1) * 100000 - 1, nrows=100000, sep=';'))
+    f = open(path)
+    l = sum(1 for row in f)
+    n_chunks = np.int(np.floor(l / chunk_size))
+    f = pd.read_csv(path, sep=';', skiprows=skip_rows, nrows=n_rows)
     nf = np.array(f)
-    df = pd.DataFrame(f.astype(str), columns=[
-                      'a', 'b', 'c', 'd', 'e', 'f'])
+    df = pd.DataFrame(nf, columns=['a', 'b', 'c', 'd', 'e', 'f'])
+    print(df)
+
     df['a'] = [x.replace(',', '.') for x in df['a']]
     df['b'] = [x.replace(',', '.') for x in df['b']]
     df['c'] = [x.replace(',', '.') for x in df['c']]
     df['d'] = [x.replace(',', '.') for x in df['d']]
     df['e'] = [x.replace(',', '.') for x in df['e']]
     df['f'] = [x.replace(',', '.') for x in df['f']]
-#     df['g'] = [x.replace(',', '.') for x in df['g']]
-    df.to_hdf(path2, 'middle' + np.str(iter_num), append=True)
+    df['f'] = [x.replace(',', '.') for x in df['f']]
+    # df['g'] = [x.replace(',', '.') for x in df['g']]
+    df.to_hdf(path2, 'first', mode='w', format='table')
     del df
     del f
 
-f = np.array(pd.read_csv(path, skiprows=num_iter *
-                         100000 - 1, nrows=l - num_iter * 100000, sep=';'))
-nf = np.array(f)
-df = pd.DataFrame(nf, columns=['a', 'b', 'c', 'd', 'e', 'f'])
-df['a'] = [x.replace(',', '.') for x in df['a']]
-df['b'] = [x.replace(',', '.') for x in df['b']]
-df['c'] = [x.replace(',', '.') for x in df['c']]
-df['d'] = [x.replace(',', '.') for x in df['d']]
-df['e'] = [x.replace(',', '.') for x in df['e']]
-df['f'] = [x.replace(',', '.') for x in df['f']]
-# df['g'] = [x.replace(',', '.') for x in df['g']]
-df.to_hdf(path2, 'last', append=True)
-del df
-del f
+    for iter_num in range(n_chunks - 1):
+        print(iter_num)
+        f = np.array(pd.read_csv(path, skiprows=(
+            iter_num + 1) * chunk_size - 1, nrows=chunk_size, sep=';'))
+        nf = np.array(f)
+        df = pd.DataFrame(f.astype(str), columns=[
+                          'a', 'b', 'c', 'd', 'e', 'f'])
+        df['a'] = [x.replace(',', '.') for x in df['a']]
+        df['b'] = [x.replace(',', '.') for x in df['b']]
+        df['c'] = [x.replace(',', '.') for x in df['c']]
+        df['d'] = [x.replace(',', '.') for x in df['d']]
+        df['e'] = [x.replace(',', '.') for x in df['e']]
+        df['f'] = [x.replace(',', '.') for x in df['f']]
+    #     df['g'] = [x.replace(',', '.') for x in df['g']]
+        df.to_hdf(path2, 'middle' + np.str(iter_num), append=True)
+        del df
+        del f
+
+    f = np.array(pd.read_csv(path, skiprows=n_chunks *
+                             chunk_size - 1, nrows=l - n_chunks * chunk_size, sep=';'))
+    nf = np.array(f)
+    df = pd.DataFrame(nf, columns=['a', 'b', 'c', 'd', 'e', 'f'])
+    df['a'] = [x.replace(',', '.') for x in df['a']]
+    df['b'] = [x.replace(',', '.') for x in df['b']]
+    df['c'] = [x.replace(',', '.') for x in df['c']]
+    df['d'] = [x.replace(',', '.') for x in df['d']]
+    df['e'] = [x.replace(',', '.') for x in df['e']]
+    df['f'] = [x.replace(',', '.') for x in df['f']]
+    # df['g'] = [x.replace(',', '.') for x in df['g']]
+    df.to_hdf(path2, 'last', append=True)
+    del df
+    del f
+
+
+if __name__ == '__main__':
+    #np.loadtxt("bio_1.asc", skiprows=6)
+    name = 'CT80-42_3610_Zykl'
+    name2 = 'CT80-42_3610_Zykl'
+    name = 'CT80-39_6322_Zykl'
+    name2 = 'CT80-39_6322_Zykl'
+
+    name = 'CT80-39_6322_Zykl'
+    home_dir = os.path.expanduser('~')
+    path_master = os.path.join(home_dir, 'Data Processing')
+    path_master = os.path.join(path_master, 'CT')
+    path_master = os.path.join(path_master, 'C80')
+    path_master = os.path.join(path_master, name, name + '.csv')
+
+    read_csv(path_master)

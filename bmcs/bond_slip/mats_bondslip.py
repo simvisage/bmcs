@@ -93,17 +93,17 @@ class MATSBondSlipEP(MATSBondSlipBase):
         tau = tau_e_trial
 
         # identify values beyond the elastic limit
-        plas_idx = np.where(f_trial > self.ZERO_THRESHOLD)[0]
+        I = np.where(f_trial > self.ZERO_THRESHOLD)[0]
 
         # plastic multiplier
-        d_lambda = f_trial[plas_idx] / (self.E_b + abs(self.K) + self.gamma)
+        d_lambda = f_trial[I] / (self.E_b + abs(self.K) + self.gamma)
 
         # return mapping for isotropic and kinematic hardening
-        grad_f = np.sign(tau_e_trial[plas_idx] - X)
-        s_p[plas_idx] += d_lambda * grad_f
-        z[plas_idx] += d_lambda
-        alpha[plas_idx] += d_lambda * grad_f
-        tau[plas_idx] = self.E_b * (s[plas_idx] - s_p[plas_idx])
+        grad_f = np.sign(tau_e_trial[I] - X)
+        s_p[I] += d_lambda * grad_f
+        z[I] += d_lambda
+        alpha[I] += d_lambda * grad_f
+        tau[I] = self.E_b * (s[I] - s_p[I])
 
         return tau, tau_e, z, alpha, s_p
 

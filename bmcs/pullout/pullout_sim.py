@@ -743,14 +743,21 @@ class PullOutModel(Simulator):
 
     def get_window(self):
         self.record['Pw'] = PulloutRecord()
-        fw = Viz2DPullOutFW(name='Pw', vis2d=self.hist['Pw'])
-        u_p = Viz2DPullOutField(plot_fn='u_p', vis2d=self)
-        eps_p = Viz2DPullOutField(plot_fn='eps_p', vis2d=self)
-        sig_p = Viz2DPullOutField(plot_fn='sig_p', vis2d=self)
-        s = Viz2DPullOutField(plot_fn='s', vis2d=self)
-        sf = Viz2DPullOutField(plot_fn='sf', vis2d=self)
-        energy = Viz2DEnergyPlot(vis2d=self.hist['Pw'])
-        dissipation = Viz2DEnergyReleasePlot(vis2d=self.hist['Pw'])
+        fw = Viz2DPullOutFW(name='pullout-curve', vis2d=self.hist['Pw'])
+        u_p = Viz2DPullOutField(name='displacement along the bond',
+                                plot_fn='u_p', vis2d=self)
+        eps_p = Viz2DPullOutField(name='strain along the bond',
+                                  plot_fn='eps_p', vis2d=self)
+        sig_p = Viz2DPullOutField(name='stress along the bond',
+                                  plot_fn='sig_p', vis2d=self)
+        s = Viz2DPullOutField(name='slip along the bond',
+                              plot_fn='s', vis2d=self)
+        sf = Viz2DPullOutField(name='shear flow along the bond',
+                               plot_fn='sf', vis2d=self)
+        energy = Viz2DEnergyPlot(name='energy',
+                                 vis2d=self.hist['Pw'])
+        dissipation = Viz2DEnergyReleasePlot(name='energy release',
+                                             vis2d=self.hist['Pw'])
         w = BMCSWindow(sim=self)
         w.viz_sheet.viz2d_list.append(fw)
         w.viz_sheet.viz2d_list.append(u_p)

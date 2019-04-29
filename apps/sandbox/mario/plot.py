@@ -13,6 +13,8 @@ if __name__ == '__main__':
     import os
 
     name = 'CT80-42_3610_Zykl'
+    name = 'CT80-39_6322_Zykl'
+
     home_dir = os.path.expanduser('~')
     path_master = os.path.join(home_dir, 'Data Processing')
     path_master = os.path.join(path_master, 'CT')
@@ -115,11 +117,11 @@ if __name__ == '__main__':
     plt.plot(N_min1, abs(disp_min2), 'k')
     plt.plot(N_max1, abs(disp_max2), 'k')
 
-#     plt.plot(N_min1, abs(disp_min3), 'r')
-#     plt.plot(N_max1, abs(disp_max3), 'r')
-#
-#     plt.plot(N_min1, abs(disp_min4), 'g')
-#     plt.plot(N_max1, abs(disp_max4), 'g')
+    plt.plot(N_min1, abs(disp_min3), 'r')
+    plt.plot(N_max1, abs(disp_max3), 'r')
+
+    plt.plot(N_min1, abs(disp_min4), 'g')
+    plt.plot(N_max1, abs(disp_max4), 'g')
 
     plt.xlabel('N')
     plt.ylabel('Displacement [mm]')

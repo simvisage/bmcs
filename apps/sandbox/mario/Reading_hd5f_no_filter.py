@@ -7,9 +7,6 @@ Created on 05.03.2019
 import csv
 import os
 
-import h5py
-from pykalman import KalmanFilter
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,6 +15,9 @@ import pandas as pd
 # obtaining data
 name = 'CT80-42_3610_Zykl'
 name2 = 'CT80-42_3610_Zykl'
+
+name = 'CT80-39_6322_Zykl'
+name2 = 'CT80-39_6322_Zykl'
 
 home_dir = os.path.expanduser('~')
 path_master = os.path.join(home_dir, 'Data Processing')
@@ -37,7 +37,7 @@ disp_4 = np.zeros((1, 1))
 f = open(path)
 l = sum(1 for row in f)
 # obtains number of data chunks, 1e5 rows per chunk
-num_iter = np.int(np.floor(l / 100000))
+num_iter = np.int(np.floor(l / 10000))
 
 
 # First chunk
