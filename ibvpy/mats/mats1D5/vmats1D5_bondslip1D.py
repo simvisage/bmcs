@@ -221,6 +221,9 @@ class MATSBondSlipD(MATSEval):
                 ui.Item('E_m', full_size=True, resizable=True),
                 ui.Item('E_f'),
             ),
+            ui.VGroup(
+                ui.Item('omega_fn_type'),
+            ),
             ui.UItem('omega_fn@')
         )
     )
@@ -411,6 +414,124 @@ class MATSBondSlipDP(MATSEval):
                 ui.Item('omega_fn_type'),
             ),
             ui.UItem('omega_fn@')
+        )
+    )
+
+
+class MATSBondSlipEP(MATSEval):
+
+    node_name = 'bond model: elasto-plasticity'
+
+    E_m = Float(30000.0, tooltip='Stiffness of the matrix [MPa]',
+                symbol='E_\mathrm{m}',
+                unit='MPa',
+                desc='Stiffness of the matrix',
+                MAT=True,
+                auto_set=True, enter_set=True)
+
+    E_f = Float(200000.0, tooltip='Stiffness of the reinforcement [MPa]',
+                symbol='E_\mathrm{f}',
+                unit='MPa',
+                desc='Stiffness of the reinforcement',
+                MAT=True,
+                auto_set=False, enter_set=False)
+
+    E_b = Float(12900.0,
+                symbol="E_\mathrm{b}",
+                unit='MPa',
+                desc="Bond stiffness",
+                MAT=True,
+                enter_set=True,
+                auto_set=False)
+
+    gamma = Float(100.0,
+                  symbol="\gamma",
+                  unit='MPa',
+                  desc="Kinematic hardening modulus",
+                  MAT=True,
+                  enter_set=True,
+                  auto_set=False)
+
+    K = Float(1000.0,
+              symbol="K",
+              unit='MPa',
+              desc="Isotropic hardening modulus",
+              MAT=True,
+              enter_set=True,
+              auto_set=False)
+
+    tau_bar = Float(5.0,
+                    symbol=r'\bar{\tau}',
+                    unite='MPa',
+                    desc="Reversibility limit",
+                    MAT=True,
+                    enter_set=True,
+                    auto_set=False)
+
+    state_var_shapes = dict(s_p_n=(),
+                            alpha_n=(),
+                            z_n=())
+
+    def get_corr_pred(self, eps_n1, t_n1,
+                      s_p_n, alpha_n, z_n):
+
+        D_shape = eps_n1.shape[:-1] + (3, 3)
+        D = np.zeros(D_shape, dtype=np.float_)
+        D[..., 0, 0] = self.E_m
+        D[..., 2, 2] = self.E_f
+
+        s_n1 = eps_n1[..., 1]
+
+        sig_pi_trial = self.E_b * (s_n1 - s_p_n)
+
+        Z = self.K * z_n
+
+        # for handling the negative values of isotropic hardening
+        h_1 = self.tau_bar + Z
+        pos_iso = h_1 > 1e-6
+
+        X = self.gamma * alpha_n
+
+        # for handling the negative values of kinematic hardening (not yet)
+#         h_2 = h * np.sign(sig_pi_trial - X) * \
+#             np.sign(sig_pi_trial) + X * np.sign(sig_pi_trial)
+#         pos_kin = h_2 > 1e-6
+
+        f_trial = np.fabs(sig_pi_trial - X) - h_1 * pos_iso
+
+        I = f_trial > 1e-6
+
+        tau = np.einsum('...st,...t->...s', D, eps_n1)
+        # Return mapping
+        delta_lamda_I = f_trial[I] / (self.E_b + self.gamma + np.fabs(self.K))
+
+        # update all the state variables
+        s_p_n[I] += delta_lamda_I * np.sign(sig_pi_trial[I] - X[I])
+        z_n[I] += delta_lamda_I
+        alpha_n[I] += delta_lamda_I * np.sign(sig_pi_trial[I] - X[I])
+
+        tau[..., 1] = self.E_b * (s_n1 - s_p_n)
+
+        # Consistent tangent operator
+        D_ed_I = (self.E_b * (self.K + self.gamma) /
+                  (self.E_b + self.K + self.gamma)
+                  )
+
+        D[..., 1, 1] = self.E_b
+        D[I, 1, 1] = D_ed_I
+
+        return tau, D
+
+    tree_view = ui.View(
+        ui.VGroup(
+            ui.VGroup(
+                ui.Item('E_m', full_size=True, resizable=True),
+                ui.Item('E_f'),
+                ui.Item('E_b'),
+                ui.Item('gamma'),
+                ui.Item('K'),
+                ui.Item('tau_bar'),
+            ),
         )
     )
 

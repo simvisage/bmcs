@@ -8,31 +8,22 @@ from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
 
 from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
 from ibvpy.core.tstepper import \
-     TStepper as TS
+    TStepper as TS
 from ibvpy.mats.mats_eval import IMATSEval, MATSEval
 from mathkit.mfn import MFnLineArray
 from numpy import \
-     array, ones, zeros, outer, inner, transpose, dot, frompyfunc, \
-     fabs, sqrt, linspace, vdot, identity, tensordot, \
-     sin as nsin, meshgrid, float_, ix_, \
-     vstack, hstack, sqrt as arr_sqrt
+    array, ones, zeros, outer, inner, transpose, dot, frompyfunc, \
+    fabs, sqrt, linspace, vdot, identity, tensordot, \
+    sin as nsin, meshgrid, float_, ix_, \
+    vstack, hstack, sqrt as arr_sqrt
 from scipy.linalg import eig, inv
 from traits.api import \
-     Array, Bool, Callable, Enum, Float, HasTraits, \
-     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-     Dict, Property, cached_property, Delegate
+    Array, Bool, Callable, Enum, Float, HasTraits, \
+    Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
+    Dict, Property, cached_property, Delegate
 from traitsui.api import \
-     Item, View, HSplit, VSplit, VGroup, Group, Spring
+    Item, View, HSplit, VSplit, VGroup, Group, Spring
 
-from etsproxy.chaco.api import \
-     Plot, AbstractPlotData, ArrayPlotData
-from etsproxy.chaco.chaco_plot_editor import \
-     ChacoPlotEditor, \
-     ChacoPlotItem
-from etsproxy.chaco.tools.api import \
-     PanTool, SimpleZoom
-from etsproxy.enable.component_editor import \
-     ComponentEditor
 
 from .mats1D5bond import MATS1D5Bond
 
@@ -52,30 +43,30 @@ class MATS1D5BondAC(MATS1D5Bond):
                  desc="Critical Slip",
                  auto_set=False)
     tau_max = Float(1.,  # 34e+3,
-                 label="T_max",
-                 desc="maximal shear stress",
-                 auto_set=False)
+                    label="T_max",
+                    desc="maximal shear stress",
+                    auto_set=False)
     tau_fr = Float(1.,  # 34e+3,
-                 label="T_fr",
-                 desc="Frictional shear stress",
-                 auto_set=False)
+                   label="T_fr",
+                   desc="Frictional shear stress",
+                   auto_set=False)
 
     # This event can be used by the clients to trigger an action upon
     # the completed reconfiguration of the material model
     #
     changed = Event
 
-    #---------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # View specification
-    #---------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Private initialization methods
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Setup for computation within a supplied spatial context
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
     def setup(self, sctx):
         '''
@@ -96,9 +87,9 @@ class MATS1D5BondAC(MATS1D5Bond):
     def new_resp_var(self):
         return zeros(4, float_)  # TODO: adapt for 4-5..
 
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
     def get_corr_pred(self, sctx, eps_app_eng, d_eps, tn, tn1):
         '''
@@ -143,17 +134,18 @@ class MATS1D5BondAC(MATS1D5Bond):
         sigma[-2] = self.Ef * self.Af * eps_app_eng[-2]  # sig_f
         sigma[-1] = self.Em * self.Am * eps_app_eng[-1]  # sig_m
 
-        # You print the stress you just computed and the value of the apparent E
+        # You print the stress you just computed and the value of the apparent
+        # E
 
-        return  sigma, D_mtx
+        return sigma, D_mtx
 
-    #---------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Subsidiary methods realizing configurable features
-    #---------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
-    #---------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Response trace evaluators
-    #---------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
     # Declare and fill-in the rte_dict - it is used by the clients to
     # assemble all the available time-steppers.
@@ -161,9 +153,9 @@ class MATS1D5BondAC(MATS1D5Bond):
     rte_dict = Trait(Dict)
 
     def _rte_dict_default(self):
-        return {'sig_app_t1d'      : self.get_sig_app,
-                'eps_app_t1d'      : self.get_eps_app,
-                'shear_s'          : self.get_shear,
-                'slip_s'           : self.get_slip,
-                'msig_pos'         : self.get_msig_pos,
-                'msig_pm'          : self.get_msig_pm}
+        return {'sig_app_t1d': self.get_sig_app,
+                'eps_app_t1d': self.get_eps_app,
+                'shear_s': self.get_shear,
+                'slip_s': self.get_slip,
+                'msig_pos': self.get_msig_pos,
+                'msig_pm': self.get_msig_pm}

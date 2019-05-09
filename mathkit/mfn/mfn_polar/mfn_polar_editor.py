@@ -4,45 +4,34 @@ traits.ui.wx.plot_editor.
 """
 
 # Enthought library imports
+import wx
+
+from chaco.abstract_plot_renderer import AbstractPlotRenderer
+from chaco.api import OverlayPlotContainer, PlotLabel, Label, \
+    DataLabel, TextBoxOverlay
+from chaco.array_data_source import ArrayDataSource
+from chaco.data_range_1d import DataRange1D
+from chaco.polar_line_renderer import PolarLineRenderer
+from chaco.polar_mapper import PolarMapper
 from enable.api import black_color_trait, LineStyle, ColorTrait, \
     white_color_trait
-
-# from etsproxy.enable.wx_backend.api import Window
-# <=== Unchange
-
+from numpy import frompyfunc, add, ndarray, arange, array, compress, \
+    concatenate, cos, pi, sin, transpose, zeros
+from pyface.api import FileDialog, OK
+from pyface.image_resource import ImageResource
 from traits.api import false, Str, Range, Float, Bool, Int, Any, \
     List, HasPrivateTraits, Instance
 from traitsui.api import Item, UI
+from traitsui.menu import Action, ToolBar, Menu
 from traitsui.wx.editor import Editor
 from traitsui.wx.editor_factory import EditorFactory
-from traitsui.menu import Action, ToolBar, Menu
-#from etsproxy.traits.ui.wx.helper import traits_ui_panel
 
-# Local relative imports
-from chaco.plot_containers import OverlayPlotContainer
-from chaco.plot_label import PlotLabel
 
-# Somewhat unorthodox...
-
-# from etsproxy.chaco.tools.api import SimpleZoom, DataLabelTool
+# from etsproxy.enable.wx_backend.api import Window
 # <=== Unchange
-
-from chaco.api import OverlayPlotContainer, PlotLabel, Label, \
-    DataLabel, TextBoxOverlay
-from chaco.polar_line_renderer import PolarLineRenderer
-from chaco.abstract_plot_renderer import AbstractPlotRenderer
-from chaco.polar_mapper import PolarMapper
-from chaco.array_data_source import ArrayDataSource
-from chaco.data_range_1d import DataRange1D
-
-from numpy import frompyfunc, add, ndarray, arange, array, compress, \
-    concatenate, cos, pi, sin, transpose, zeros
-
-import wx
-
-from pyface.image_resource import ImageResource
-from pyface.api import FileDialog, OK
-
+#from etsproxy.traits.ui.wx.helper import traits_ui_panel
+# Somewhat unorthodox...
+# <=== Unchange
 # Constant variable
 WindowColor = "lightgray"
 
@@ -604,8 +593,8 @@ class MFnPolarPlotEditorToolbar (HasPrivateTraits):
 
         actions = [self.save_data, self.save_fig]
         toolbar = ToolBar(image_size=(16, 16),
-                          show_tool_names = False,
-                          show_divider = False,
+                          show_tool_names=False,
+                          show_divider=False,
                           *actions)
         self.control = toolbar.create_tool_bar(parent, self)
         self.control.SetBackgroundColour(parent.GetBackgroundColour())

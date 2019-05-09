@@ -5,3 +5,4 @@ from bmcs.pullout.run_pullout_dp_sim import run_pullout_dp
 from bmcs.pullout.run_pullout_fatigue_sim import run_pullout_fatigue
 from bmcs.pullout.run_pullout_frp_sim import run_pullout_frp_damage
 from bmcs.pullout.run_pullout_multilinear_sim import run_pullout_multilinear
+from bmcs.pullout.run_pullout_ep_sim import run_pullout_ep_cyclic

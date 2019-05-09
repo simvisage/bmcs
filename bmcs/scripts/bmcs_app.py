@@ -9,6 +9,9 @@ Toplevel script to start BMCS
 
 import sys
 
+from bmcs.bond_slip import \
+    run_bond_sim_damage, \
+    run_bond_sim_elasto_plasticity
 from bmcs.crack_mode_I import \
     run_bending3pt_mic_odf, \
     run_bending3pt_sdamage_viz2d, \
@@ -17,6 +20,7 @@ from bmcs.crack_mode_I import \
 from bmcs.pullout import \
     run_pullout_const_shear, \
     run_pullout_dp, \
+    run_pullout_ep_cyclic, \
     run_pullout_multilinear, \
     run_pullout_frp_damage, \
     run_pullout_fatigue
@@ -44,14 +48,12 @@ class BMCSLauncher(HasTraits):
     bond_slip_model_d = Button(label='Damage')
 
     def _bond_slip_model_d_fired(self):
-        pass
-        # run_bond_slip_model_d(kind='live')
+        run_bond_sim_damage()
 
     bond_slip_model_p = Button(label='Plasticity')
 
     def _bond_slip_model_p_fired(self):
-        pass
-        # run_bond_slip_model_p(kind='live')
+        run_bond_sim_elasto_plasticity()
 
     bond_slip_model_dp = Button(label='Damage-plasticity')
 
@@ -76,6 +78,11 @@ class BMCSLauncher(HasTraits):
 
     def _pullout_model_frp_damage_fired(self):
         run_pullout_frp_damage(kind='live')
+
+    pullout_model_ep = Button(label='Elasto-plasticity')
+
+    def _pullout_model_ep_fired(self):
+        run_pullout_ep_cyclic()
 
     pullout_model_dp = Button(label='Damage-plasticity')
 
@@ -133,11 +140,11 @@ class BMCSLauncher(HasTraits):
             Group(
                 UItem('bond_slip_model_d',
                       full_size=True, resizable=True,
-                      enabled_when='False'
+                      enabled_when='True'
                       ),
                 UItem('bond_slip_model_p',
                       full_size=True, resizable=True,
-                      enabled_when='False'
+                      enabled_when='True'
                       ),
                 UItem('bond_slip_model_dp',
                       full_size=True, resizable=True,
@@ -151,6 +158,10 @@ class BMCSLauncher(HasTraits):
                       enabled_when='True'
                       ),
                 UItem('pullout_model_multilinear',
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
+                UItem('pullout_model_ep',
                       full_size=True, resizable=True,
                       enabled_when='True'
                       ),

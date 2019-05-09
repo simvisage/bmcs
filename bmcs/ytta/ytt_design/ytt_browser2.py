@@ -29,11 +29,6 @@ from os.path import exists
 from os.path import expanduser
 from string import replace
 
-from chaco.api import \
-    Plot, AbstractPlotData, ArrayPlotData, \
-    ArrayDataSource
-from chaco.tools.api import \
-    PanTool, ZoomTool
 from enable.component_editor import \
     ComponentEditor
 from numpy import \
@@ -47,12 +42,13 @@ from traits.api import \
 from traitsui.api import \
     View, Item, HSplit, VGroup, \
     TableEditor
-from traitsui.file_dialog  \
-    import open_file, FileInfo, TextInfo, ImageInfo
 from traitsui.menu import \
     OKButton, CancelButton
 from traitsui.table_column import \
     ObjectColumn
+
+from traitsui.file_dialog  \
+    import open_file, FileInfo, TextInfo, ImageInfo
 from traitsui.table_filter \
     import EvalFilterTemplate, MenuFilterTemplate, RuleFilterTemplate, \
     EvalTableFilter
@@ -267,6 +263,7 @@ class ExRun(HasTraits):
 #-------------------------------------------------------------------------
 # ExDesignReader
 #-------------------------------------------------------------------------
+
 
 exrun_table_editor = TableEditor(
     columns_name='exdesign_table_columns',

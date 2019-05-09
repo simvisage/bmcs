@@ -14,7 +14,7 @@ from ibvpy.api import BCDof, IMATSEval
 from ibvpy.fets.fets1D5 import FETS1D52ULRH
 from ibvpy.mats.mats1D5.vmats1D5_bondslip1D import \
     MATSBondSlipMultiLinear, MATSBondSlipDP, \
-    MATSBondSlipD, MATSBondSlipFatigue
+    MATSBondSlipD, MATSBondSlipEP, MATSBondSlipFatigue
 from reporter import RInputRecord
 from scipy import interpolate as ip
 from simulator.api import \
@@ -231,6 +231,8 @@ class Viz2DEnergyPlot(Viz2D):
         t = self.vis2d.get_t()
         U_bar_t = self.vis2d.get_U_bar_t()
         W_t = self.vis2d.get_W_t()
+        if len(W_t) == 0:
+            return
         ax.plot(t, W_t, color=color_W, label=label_W)
         ax.plot(t, U_bar_t, color=color_U, label=label_U)
         ax.fill_between(t, W_t, U_bar_t, facecolor='gray', alpha=0.5,
@@ -429,6 +431,7 @@ class PullOutModel(Simulator):
     mats_eval_type = Trait('multilinear',
                            {'multilinear': MATSBondSlipMultiLinear,
                             'damage': MATSBondSlipD,
+                            'elasto-plasticity': MATSBondSlipEP,
                             'damage-plasticity': MATSBondSlipDP,
                             'cumulative fatigue': MATSBondSlipFatigue},
                            MAT=True,

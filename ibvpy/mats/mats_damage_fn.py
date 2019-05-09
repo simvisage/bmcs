@@ -279,7 +279,7 @@ class LiDamageFn(DamageFn):
 
     node_name = 'Li damage function'
 
-    latex_eq = Str(r'''Damage function (Jirasek)
+    latex_eq = Str(r'''Damage function (Li)
         \begin{align}
         \omega = g(\kappa) = \frac{\alpha_1}{1 + \exp(-\alpha_2 \kappa + 6 )}
         \end{align}
@@ -353,7 +353,7 @@ class AbaqusDamageFn(DamageFn):
 
     node_name = 'Abaqus damage function'
 
-    latex_eq = Str(r'''Damage function (Jirasek)
+    latex_eq = Str(r'''Damage function (Abaqus)
         \begin{align}
         \omega = g(\kappa) = 1 -\left(\frac{s_0}{\kappa}\right)\left[ 1 - \frac{1 - \exp(- \alpha(\frac{\kappa - s_0}{s_u - s_0})}{1 - \exp(-\alpha)}  \right]
         \end{align}
@@ -382,6 +382,10 @@ class AbaqusDamageFn(DamageFn):
 
     plot_max = 1e-3
 
+    def get_f_trial(self, kappa):
+        s_0 = self.s_0
+        return np.where(kappa > s_0)[0]
+
     def __call__(self, kappa):
         s_0 = self.s_0
         s_u = self.s_u
@@ -402,18 +406,23 @@ class AbaqusDamageFn(DamageFn):
         s_0 = self.s_0
         s_u = self.s_u
         alpha = self.alpha
-        d_g_eps = (- s_0 * np.exp(alpha * (kappa - s_0) /
-                                  (s_u - s_0)) * ((s_u - s_0) *
-                                                  np.exp(alpha * (kappa - s_0) /
-                                                         (s_u - s_0)) + np.exp(alpha) * (alpha * kappa - s_u + s_0))
-                   / ((np.exp(alpha) - 1) * kappa**2 * (s_u - s_0)))
+        denom = ((np.exp(alpha) - 1) * kappa**2 * (s_u - s_0))
+        denom[np.where(np.fabs(denom) < 1e-5)] = 1e-8
+        d_g_eps = (
+            - s_0 * np.exp(alpha * (kappa - s_0) / (s_u - s_0))
+            * (
+                (s_u - s_0) * np.exp(alpha * (kappa - s_0) / (s_u - s_0))
+                + np.exp(alpha) * (alpha * kappa - s_u + s_0)
+            )
+            / denom
+        )
         d_g_eps[np.where(kappa - s_0 < 0)] = 0.0
         return d_g_eps
 
     traits_view = View(
         VGroup(
             VGroup(
-                Item('s_0', style='readonly',
+                Item('s_0',
                      full_size=True, resizable=True),
                 Item('s_u'),
                 Item('alpha'),
