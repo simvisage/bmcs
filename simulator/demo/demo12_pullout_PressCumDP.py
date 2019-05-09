@@ -75,7 +75,7 @@ xd12 = XDomainFEInterface(
 )
 
 u_max = 0.3
-f_max = 4000.0
+#f_max = 4000.0
 right_x_s = BCSlice(slice=xd_steel_1.mesh[-1, :, -1, :],
                     var='u', dims=[0], value=u_max)
 right_x_c = BCSlice(slice=xd_concrete_2.mesh[0, 1:, 0, :],
@@ -89,9 +89,9 @@ tau_bar = 2.0
 E_T = 1000
 s_0 = tau_bar / E_T
 print('s_0', s_0)
-m_interface = MATS1D5D(E_T=E_T, E_N=1000000, omega_fn_type='jirasek',
-                       algorithmic=True)
-m_interface.omega_fn.trait_set(s_0=s_0, s_f=1000 * s_0)
+m_interface = MATS1D5DPCumPress(  # E_T=E_T, E_N=1000000, omega_fn_type='jirasek',
+    algorithmic=True)
+#m_interface.omega_fn.trait_set(s_0=s_0, s_f=1000 * s_0)
 
 s = Simulator(
     domains=[(xd_steel_1, m_steel),
@@ -113,6 +113,7 @@ xd12.hidden = True
 
 s.tloop.k_max = 1000
 s.tline.step = 0.005
+s.tloop.verbose = True
 s.tstep.fe_domain.serialized_subdomains
 fw = Viz2DFW(name='Pw', vis2d=s.hist['Pw'])
 fslip = Viz2DField(name='slip', vis2d=s.hist['slip'])

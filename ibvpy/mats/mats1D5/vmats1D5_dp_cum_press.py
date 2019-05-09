@@ -36,21 +36,21 @@ class MATS1D5DPCumPress(MATSEval):
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    S = tr.Float(0.00048, label='S',
+    S = tr.Float(0.005, label='S',
                  desc='Damage accumulation parameter',
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    r = tr.Float(0.51, label='r',
+    r = tr.Float(1, label='r',
                  desc='Damage accumulation parameter',
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    c = tr.Float(2.8, Label='c',
+    c = tr.Float(1, Label='c',
                  desc='Damage accumulation parameter',
                  MAT=True,
                  enter_set=True, auto_set=False)
-    m = tr.Float(0.0, label='m',
+    m = tr.Float(0.3, label='m',
                  desc='Lateral Pressure Coefficient',
                  MAT=True,
                  enter_set=True, auto_set=False)
@@ -125,7 +125,7 @@ class MATS1D5DPCumPress(MATSEval):
 
         # Secant stiffness
 
-        E_alg_T = (1 - omega) * self.E_T
+        #E_alg_T = (1 - omega) * self.E_T
 
         # Consistent tangent operator
         if False:
@@ -138,19 +138,19 @@ class MATS1D5DPCumPress(MATSEval):
                 ((self.E_T / (1 - omega)) + self.gamma + self.K)
             )
 
-        if False:
-            print('DONT COME HERE')
-            E_alg_T = (
-                (1 - omega) * self.E_T -
-                ((self.E_T**2 * (1 - omega)) /
-                 (self.E_T + (self.gamma + self.K) * (1 - omega)))
-                -
-                ((1 - omega)**self.c *
-                 (Y / self.S)**self.r *
-                 self.E_T**2 * (s - s_pi) * self.tau_bar /
-                 (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) /
-                (self.E_T / (1 - omega) + self.gamma + self.K)
-            )
+        # if False:
+        #print('DONT COME HERE')
+        E_alg_T = (
+            (1 - omega) * self.E_T -
+            ((self.E_T**2 * (1 - omega)) /
+             (self.E_T + (self.gamma + self.K) * (1 - omega)))
+            -
+            ((1 - omega)**self.c *
+             (Y / self.S)**self.r *
+             self.E_T**2 * (s - s_pi) * self.tau_bar /
+             (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) /
+            (self.E_T / (1 - omega) + self.gamma + self.K)
+        )
 
         sig = np.zeros_like(u_r)
         sig[..., 0] = sig_T
