@@ -3,6 +3,8 @@ Created on 30.04.2019
  
 @author: fseemab 
 '''
+import time
+
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.fets.fets1D5 import FETS1D52ULRH
@@ -33,10 +35,10 @@ import numpy as np
 
 
 #from .mlab_decorators import decorate_figure
-u_max = 1
+u_max = 2
 #f_max = 30
 dx = 1
-#ds = 12
+# ds = 14
 ds = 1 / np.pi
 r_steel = ds / 2.0
 r_concrete = ds * 3
@@ -70,14 +72,20 @@ left_x_s = BCSlice(slice=xd_steel.mesh[0, :, 0, :],
                    var='f', dims=[0], value=0)
 bc1 = [right_x_s, right_x_c]
 
-#tau_bar = 2.0
-#E_T = 1000
-#s_0 = tau_bar / E_T
+tau_bar = 2.0
+E_T = 1000
+s_0 = tau_bar / E_T
 
-m_interface = MATS1D5DPCumPress(  # E_T=E_T, E_N=1000000,
-    # gamma=0.0,
-    # K=0.0,
-    # tau_bar=1.0,
+m_interface = MATS1D5DPCumPress(
+    E_T=1000000,
+    E_N=1000000,
+    gamma=55.0,
+    K=11.0,
+    tau_bar=4.2,
+    S=0.005,
+    r=1.0,
+    c=1.0,
+    m=0.0,
     algorithmic=True)  # omega_fn_type='li',
 
 s = Simulator(
@@ -140,7 +148,7 @@ w.viz_sheet.add_viz3d(stress_viz)
 # w.viz_sheet.add_viz3d(damage_viz)
 
 w.run()
-# time.sleep(1)
+time.sleep(1)
 # decorate_figure(f_strain, strain_viz)
 # decorate_figure(f_stress, stress_viz)
 # decorate_figure(f_damage, damage_viz)
