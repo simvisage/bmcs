@@ -4,7 +4,6 @@ Created on Feb 11, 2018
 @author: rch
 '''
 
-import copy
 import os
 
 from mayavi import mlab

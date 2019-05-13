@@ -29,7 +29,8 @@ class Vis3DField(Vis3D):
         cell_offset = 0
         for domain in fe_domain:
             xdomain = domain.xdomain
-            if xdomain.hidden:
+            var_function = domain.tmodel.var_dict.get(self.var, None)
+            if var_function == None or xdomain.hidden:
                 continue
             fets = xdomain.fets
             DELTA_x_ab = fets.vtk_expand_operator

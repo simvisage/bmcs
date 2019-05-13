@@ -1,5 +1,5 @@
 
-
+import copy
 from simulator.api import Model
 from traits.api import \
     provides,  \
@@ -35,10 +35,26 @@ class MATSEval(Model, BMCSTreeNode):
     '''Shape of state variables
     '''
 
-    var_dict = Dict(Str, Callable, {})
-    #-------------------------------------------------------------------------
-    # View specification
-    #-------------------------------------------------------------------------
+    #=========================================================================
+    # Response variables
+    #=========================================================================
+    def get_eps(self, eps, tn1, **state):
+        return eps
+
+    def get_sig(self, eps, tn1, **state):
+        state_copy = copy.deepcopy(state)
+        sig, _ = self.get_corr_pred(
+            eps, tn1, **state_copy
+        )
+        return sig
+
+    var_dict = Property(Dict(Str, Callable))
+    '''Dictionary of response variables
+    '''
+    @cached_property
+    def _get_var_dict(self):
+        return dict(eps=self.get_eps,
+                    sig=self.get_sig)
 
 
 class NotUsed:

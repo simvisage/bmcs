@@ -213,8 +213,7 @@ class PullOutAxiSym(Simulator):
         return w
 
 
-s = PullOutAxiSym(
-)
+s = PullOutAxiSym()
 s.m_ifc.trait_set(E_T=12900,
                   tau_bar=4,
                   K=0, gamma=10,

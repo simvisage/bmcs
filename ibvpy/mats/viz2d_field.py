@@ -60,15 +60,17 @@ class Vis2DField(Vis2D):
         t = ts.t_n1
         s_Emr = xdomain.map_U_to_field(U)
 
+        var_function = domain.tmodel.var_dict.get(self.var, None)
+        if var_function == None:
+            raise ValueError('no such variable' % self.var)
+
         state_k = copy.deepcopy(domain.state_n)
-        sig_k, _ = domain.tmodel.get_corr_pred(
-            s_Emr, ts.t_n1, **state_k
-        )
+        var_k = var_function(s_Emr, ts.t_n1, **state_k)
 
         target_file = self.filename(t)
 
         #np.save(target_file, s_Emr)
-        np.save(target_file, sig_k)
+        np.save(target_file, var_k)
         self.file_list.append(target_file)
 
     def filename(self, t):
@@ -98,7 +100,7 @@ class Viz2DField(Viz2D):
         X_Eir = self.vis2d.get_x_Eir()
         x_sorted = X_Eir[..., 0].flatten()
         var_Eir = np.load(file_name)
-        slip_sorted = var_Eir[..., 0].flatten()
+        slip_sorted = var_Eir.flatten()
         ax.plot(x_sorted, slip_sorted, linewidth=2, color='blue')
         ax.fill_between(x_sorted, slip_sorted,
                         facecolor='blue', alpha=0.2)

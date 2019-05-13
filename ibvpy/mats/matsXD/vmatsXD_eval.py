@@ -72,11 +72,7 @@ class MATSXDEval(MATSEval):
         return eps_ab
 
     def get_sig_ab(self, eps_ab, tn1, **state):
-        state_copy = copy.deepcopy(state)
-        sig_ab, _ = self.get_corr_pred(
-            eps_ab, tn1, **state_copy
-        )
-        return sig_ab
+        return self.get_sig(eps_ab, tn1, **state)
 
     var_dict = Property(Dict(Str, Callable))
     '''Dictionary of response variables

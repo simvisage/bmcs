@@ -1,14 +1,6 @@
 
 from functools import reduce
 
-from numpy import copy, zeros, array_equal
-from traits.api import \
-    Instance, Array, Int, on_trait_change, Property, cached_property, \
-    List, Button, HasTraits, provides, WeakRef, Float,  \
-    Callable, Str, Event
-from traitsui.api import View, Item, HSplit, Group, TabularEditor
-from traitsui.tabular_adapter import TabularAdapter
-
 from ibvpy.fets.i_fets_eval import IFETSEval
 from ibvpy.mesh.cell_grid.cell_array import ICellView, CellView, CellArray, ICellArraySource
 from ibvpy.mesh.cell_grid.cell_grid import CellGrid
@@ -16,6 +8,13 @@ from ibvpy.mesh.cell_grid.cell_spec import CellSpec
 from ibvpy.mesh.cell_grid.dof_grid import DofCellGrid, DofCellView
 from ibvpy.mesh.cell_grid.geo_grid import GeoCellGrid, GeoCellView
 from ibvpy.rtrace.rt_domain import RTraceDomain
+from numpy import copy, zeros, array_equal
+from traits.api import \
+    Instance, Array, Int, on_trait_change, Property, cached_property, \
+    List, Button, HasTraits, provides, WeakRef, Float,  \
+    Callable, Str, Event
+from traitsui.api import View, Item, HSplit, Group, TabularEditor
+from traitsui.tabular_adapter import TabularAdapter
 
 from .fe_grid_activation_map import FEGridActivationMap
 from .fe_grid_idx_slice import FEGridIdxSlice
@@ -147,8 +146,8 @@ class FEGrid(FEGridActivationMap):
     idx = Int()
 
     # links within the dependency
-    prev_grid = WeakRef('ibvpy.mesh.fe_grid.FEGrid')
-    next_grid = WeakRef('ibvpy.mesh.fe_grid.FEGrid')
+    prev_grid = WeakRef('ibvpy.mesh.fe_grid.FEGrid', allow_none=True)
+    next_grid = WeakRef('ibvpy.mesh.fe_grid.FEGrid', allow_none=True)
 
     _name = Str('')
     name = Property

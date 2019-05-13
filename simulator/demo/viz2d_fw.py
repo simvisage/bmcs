@@ -6,11 +6,11 @@ Created on Apr 3, 2019
 from ibvpy.api import IBCond
 from traits.api import \
     Bool, \
-    Button
+    Button, Str
 from traits.api import \
-    Tuple, HasStrictTraits, Array, WeakRef, List
+    Tuple, HasStrictTraits, Array, WeakRef
 from traitsui.api import \
-    View, Item, Group
+    View, Item
 from traitsui.ui_editors.array_view_editor import ArrayViewEditor
 from view.plot2d import Viz2D, Vis2D
 
@@ -40,22 +40,27 @@ class DataSheet(HasStrictTraits):
 class Vis2DFW(Vis2D):
 
     Pw = Tuple()
-    bc_right = WeakRef(IBCond)
-    bc_left = WeakRef(IBCond)
+    bc_right = Str
+    bc_left = Str
 
     def _Pw_default(self):
-        return ([0], [0], [0])
+        return ([0], [0], [0], [0])
 
     def update(self):
         sim = self.sim
-        dofs_right = self.bc_right.dofs
-        dofs_left = self.bc_left.dofs
+        bc_right = sim.trait_get(self.bc_right)[self.bc_right]
+        bc_left = sim.trait_get(self.bc_left)[self.bc_left]
+        dofs_right = np.unique(bc_right.dofs)
+        dofs_left = np.unique(bc_left.dofs)
         U_ti = sim.hist.U_t
         F_ti = sim.hist.F_t
+        print('F-DOFS', dofs_right)
+        print('F-ti', F_ti[:, dofs_right])
         P = np.sum(F_ti[:, dofs_right], axis=1)
+        P0 = np.sum(F_ti[:, dofs_left], axis=1)
         w = np.average(U_ti[:, dofs_right], axis=1)
         w0 = np.average(U_ti[:, dofs_left], axis=1)
-        self.Pw = P, w, w0
+        self.Pw = P, P0, w, w0
 
 
 class Viz2DFW(Viz2D):
@@ -67,7 +72,7 @@ class Viz2DFW(Viz2D):
 
     def plot(self, ax, vot, *args, **kw):
         sim = self.vis2d.sim
-        P_t, w_t, w0_t = sim.hist['Pw'].Pw
+        P_t, P0_t, w_t, w0_t = sim.hist['Pw'].Pw
         ymin, ymax = np.min(P_t), np.max(P_t)
         L_y = ymax - ymin
         ymax += 0.05 * L_y
@@ -90,9 +95,9 @@ class Viz2DFW(Viz2D):
 
     def plot_marker(self, ax, vot):
         sim = self.vis2d.sim
-        P_t, w_t, w0_t = sim.hist['Pw'].Pw
+        P_t, P0_t, w_t, w0_t = sim.hist['Pw'].Pw
         idx = sim.hist.get_time_idx(vot)
-        P, w, w0 = P_t[idx], w_t[idx], w0_t[idx]
+        P, P0, w, w0 = P_t[idx], P0_t[idx], w_t[idx], w0_t[idx]
         ax.plot([w], [P], 'o', color='black', markersize=10)
         ax.plot([w0], [P], 'o', color='orange', markersize=10)
 

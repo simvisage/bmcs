@@ -9,6 +9,7 @@ from simulator.i_model import IModel
 
 import numpy as np
 import traits.api as tr
+import traitsui.api as ui
 
 
 @tr.provides(IModel)
@@ -165,3 +166,54 @@ class MATS1D5DPCumPress(MATSEval):
         #print('u_r =', u_r)
         #print('E_TN =', E_TN)
         return sig, E_TN
+
+    def _get_var_dict(self):
+        var_dict = super(MATS1D5DPCumPress, self)._get_var_dict()
+        var_dict.update(
+            slip=self.get_slip,
+            s_el=self.get_s_el,
+            shear=self.get_shear,
+            omega=self.get_omega,
+            s_pi=self.get_s_pi,
+            alpha=self.get_alpha,
+            z=self.get_z
+        )
+        return var_dict
+
+    def get_slip(self, u_r, tn1, **state):
+        return self.get_eps(u_r, tn1)[..., 0]
+
+    def get_shear(self, u_r, tn1, **state):
+        return self.get_sig(u_r, tn1, **state)[..., 0]
+
+    def get_omega(self, u_r, tn1, s_pi, alpha, z, omega):
+        return omega
+
+    def get_s_pi(self, u_r, tn1, s_pi, alpha, z, omega):
+        return s_pi
+
+    def get_alpha(self, u_r, tn1, s_pi, alpha, z, omega):
+        return alpha
+
+    def get_z(self, u_r, tn1, s_pi, alpha, z, omega):
+        return z
+
+    def get_s_el(self, u_r, tn1, **state):
+        s = self.get_slip(u_r, tn1, **state)
+        s_p = self.get_s_pi(u_r, tn1, **state)
+        s_e = s - s_p
+        return s_e
+
+    tree_view = ui.View(
+        ui.Item('E_N'),
+        ui.Item('E_T'),
+        ui.Item('gamma'),
+        ui.Item('K'),
+        ui.Item('S'),
+        ui.Item('r'),
+        ui.Item('c'),
+        ui.Item('m'),
+        ui.Item('tau_bar'),
+    )
+
+    trait_view = tree_view

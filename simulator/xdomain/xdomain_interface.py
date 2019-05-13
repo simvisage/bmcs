@@ -1,13 +1,13 @@
 
+from ibvpy.mesh.i_fe_grid_slice import IFENodeSlice
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
+from mathkit.tensor import EPS
+from simulator.api import IXDomain
 from traits.api import \
     provides, Tuple, \
     Array, Property, Instance, cached_property
 
-from ibvpy.mesh.i_fe_grid_slice import IFENodeSlice
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
-from mathkit.tensor import EPS
 import numpy as np
-from simulator.api import IXDomain
 
 from .xdomain_transform import XDomainFEGridTransform
 
