@@ -200,10 +200,10 @@ class PullOutAxiSym(Simulator):
 
 
 s = PullOutAxiSym()
-s.m_ifc.trait_set(E_T=12000,
+s.m_ifc.trait_set(E_T=12900,
                   tau_bar=4.0,
                   K=0, gamma=10,
-                  c=1, S=0.025, r=1)
+                  c=1, S=0.0025, r=1)
 s.tloop.k_max = 1000
 s.tloop.verbose = True
 s.tline.step = 0.005
