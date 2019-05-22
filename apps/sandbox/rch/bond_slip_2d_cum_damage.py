@@ -150,11 +150,18 @@ class PullOutAxiSym(Simulator):
         return BCSlice(slice=self.xd_steel.mesh[0, :, 0, :],
                        var='f', dims=[0], value=0)
 
+    bc_y_0 = tr.Property(depends_on=itags_str)
+
+    @tr.cached_property
+    def _get_bc_y_0(self):
+        return BCSlice(slice=self.xd_steel.mesh[:, -1, :, -1],
+                       var='u', dims=[1], value=0)
+
     bc = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_bc(self):
-        return [self.right_x_s, self.right_x_c]
+        return [self.right_x_s, self.right_x_c, self.bc_y_0]
 
     record = {
         'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),

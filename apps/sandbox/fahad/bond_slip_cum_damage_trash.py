@@ -39,13 +39,13 @@ import traits.api as tr
 
 
 #from .mlab_decorators import decorate_figure
-u_max = 0.1
+u_max = 1
 #f_max = 30
 ds = 14
 dx = 3 * ds
 r_steel = ds / 2
 r_concrete = ds * 5 - r_steel
-n_x = 10
+n_x = 20
 n_y = 1
 
 
@@ -205,8 +205,8 @@ class PullOutAxiSym(Simulator):
 s = PullOutAxiSym()
 s.m_ifc.trait_set(E_T=12900,
                   tau_bar=4.2,
-                  K=0, gamma=10,
-                  c=1, S=0.0025, r=1)
+                  K=11, gamma=55,
+                  c=2.8, S=0.00048, r=0.51)
 s.tloop.k_max = 1000
 s.tloop.verbose = True
 s.tline.step = 0.00005
