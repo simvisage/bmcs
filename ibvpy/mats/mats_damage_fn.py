@@ -32,13 +32,14 @@ class PlottableFn(RInputRecord):
         super(PlottableFn, self).__init__(*args, **kw)
         self.update()
 
-    def plot(self, ax):
+    def plot(self, ax, **kw):
         n_vals = 200
         xdata = np.linspace(self.plot_min, self.plot_max, n_vals)
         ydata = np.zeros_like(xdata)
         f_idx = self.get_f_trial(xdata)
         ydata[f_idx] = self.__call__(xdata[f_idx])
-        ax.plot(xdata, ydata, color='green')
+        color = kw.pop('color', 'green')
+        ax.plot(xdata, ydata, color=color, **kw)
 
     @on_trait_change('+input')
     def update(self):
@@ -261,7 +262,7 @@ class JirasekDamageFn(DamageFn):
     traits_view = View(
         VGroup(
             VGroup(
-                Item('s_0', style='readonly', full_size=True, resizable=True),
+                Item('s_0', full_size=True, resizable=True),
                 Item('s_f'),
                 Item('plot_max'),
             ),
@@ -466,12 +467,15 @@ class FRPDamageFn(DamageFn):
         super(FRPDamageFn, self).__init__(*args, **kw)
         self._update_dependent_params()
 
+    E_bond = Float(0.0)
+
     E_b = Property(Float)
 
     def _get_E_b(self):
         return self.mats.E_b
 
     def _set_E_b(self, value):
+        self.E_bond = value
         self.mats.E_b = value
 
     @on_trait_change('B, Gf')
@@ -546,7 +550,8 @@ class FRPDamageFn(DamageFn):
         VGroup(
             VGroup(
                 Item('s_0', style='readonly', full_size=True, resizable=True),
-                Item('E_b', style='readonly', full_size=True, resizable=True),
+                Item('E_bond', style='readonly',
+                     full_size=True, resizable=True),
                 Item('B'),
                 Item('Gf'),
                 Item('plot_max'),

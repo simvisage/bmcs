@@ -33,8 +33,6 @@ from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
 from view.ui.bmcs_tree_node import itags_str
 from view.window import BMCSWindow
-
-import numpy as np
 import traits.api as tr
 
 

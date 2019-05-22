@@ -220,6 +220,7 @@ class MATSBondSlipD(MATSEval):
             ui.VGroup(
                 ui.Item('E_m', full_size=True, resizable=True),
                 ui.Item('E_f'),
+                ui.Item('E_b'),
             ),
             ui.VGroup(
                 ui.Item('omega_fn_type'),

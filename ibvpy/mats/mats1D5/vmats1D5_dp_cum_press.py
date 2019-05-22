@@ -70,6 +70,7 @@ class MATS1D5DPCumPress(MATSEval):
 
     @tr.cached_property
     def _get_D_rs(self):
+        print('recalculating D_rs')
         return np.array([[self.E_T, 0],
                          [0, self.E_N]], dtype=np.float_)
 
@@ -89,7 +90,7 @@ class MATS1D5DPCumPress(MATSEval):
         s = u_r[..., 0]
         w = u_r[..., 1]
         # For normal
-        H_w_N = np.array(w <= 0.0, dtype=np.float_)
+        H_w_N = np.array(w <= 0.0, dtype=np.float_)  # CRIME
         E_alg_N = H_w_N * self.E_N
         sig_N = E_alg_N * w
 
@@ -214,6 +215,15 @@ class MATS1D5DPCumPress(MATSEval):
         ui.Item('c'),
         ui.Item('m'),
         ui.Item('tau_bar'),
+        ui.Item('D_rs', style='readonly')
     )
 
-    trait_view = tree_view
+    traits_view = tree_view
+
+
+if __name__ == '__main__':
+    m = MATS1D5DPCumPress()
+    print(m.D_rs)
+    m.E_T = 100
+    print(m.D_rs)
+    m.configure_traits()
