@@ -1,7 +1,7 @@
-''' 
-Created on 30.04.2019 
- 
-@author: fseemab 
+'''
+Created on 16.05.2019
+
+@author: fseemab
 '''
 import time
 
@@ -39,13 +39,14 @@ import traits.api as tr
 
 
 #from .mlab_decorators import decorate_figure
-u_max = 2
+u_max = 1
 #f_max = 30
-dx = 1
-# ds = 14
-r_steel = 1
-r_concrete = r_steel * 5
-n_x = 1
+ds = 14
+dx = 3 * ds
+r_steel = ds / 2
+r_concrete = ds * 5 - r_steel
+n_x = 20
+n_y = 1
 
 
 class PullOutAxiSym(Simulator):
@@ -91,7 +92,7 @@ class PullOutAxiSym(Simulator):
     def _get_xd_concrete(self):
         return XDomainFEGrid(coord_min=(0, r_steel),
                              coord_max=(dx, r_concrete),
-                             shape=(n_x, 1),
+                             shape=(n_x, n_y),
                              integ_factor=1,
                              fets=FETS2D4Q())
 
@@ -150,6 +151,11 @@ class PullOutAxiSym(Simulator):
         return BCSlice(slice=self.xd_steel.mesh[0, :, 0, :],
                        var='f', dims=[0], value=0)
 
+    #@tr.cached_property
+    # def _get_bottom_y_s(self):
+        # return BCSlice(slice=self.xd_steel.mesh[:, 0, :, 0],
+        # var='u', dims=[1], value=0)
+
     bc = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
@@ -203,9 +209,9 @@ class PullOutAxiSym(Simulator):
 
 s = PullOutAxiSym()
 s.m_ifc.trait_set(E_T=12900,
-                  tau_bar=4.0,
-                  K=0, gamma=10,
-                  c=1, S=0.0025, r=1)
+                  tau_bar=4.2,
+                  K=11, gamma=55,
+                  c=2.8, S=0.00048, r=0.51)
 s.tloop.k_max = 1000
 s.tloop.verbose = True
 s.tline.step = 0.005

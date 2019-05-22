@@ -41,7 +41,7 @@ u_max = 2
 #f_max = 30
 dx = 1
 # ds = 14
-ds = 1 / np.pi
+ds = 14 / np.pi
 r_steel = ds / 2.0
 np.pi * r_steel**2
 r_concrete = ds * 3
@@ -171,6 +171,65 @@ class PullOutAxiSym(Simulator):
     record = {
         'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),
         'Pw2': Vis2DFW(bc_right='right_x_c', bc_left='left_x_s'),
+    }
+
+
+xd_steel = XDomainFEGridAxiSym(coord_min=(0, 0),
+                               coord_max=(dx, r_steel),
+                               shape=(1, 1),
+                               integ_factor=2 * np.pi,
+                               fets=FETS2D4Q())
+
+xd_concrete = XDomainFEGridAxiSym(coord_min=(0, r_steel),
+                                  coord_max=(dx, r_concrete),
+                                  shape=(1, 1),
+                                  integ_factor=2 * np.pi,
+                                  fets=FETS2D4Q())
+
+m_steel = MATS3DElastic(E=200000, nu=0.3)
+m_concrete = MATS3DElastic(E=30000, nu=0.2)
+
+xd12 = XDomainFEInterface(
+    I=xd_steel.mesh.I[:, -1],
+    J=xd_concrete.mesh.I[:, 0],
+    fets=FETS1D52ULRH(),
+    integ_factor=np.pi * ds
+)
+
+right_x_s = BCSlice(slice=xd_steel.mesh[-1, :, -1, :],
+                    var='u', dims=[0], value=u_max)
+right_x_c = BCSlice(slice=xd_concrete.mesh[0, :, 0, :],
+                    var='u', dims=[0], value=0)
+left_x_s = BCSlice(slice=xd_steel.mesh[0, :, 0, :],
+                   var='f', dims=[0], value=0)
+bc1 = [right_x_s, right_x_c]
+
+tau_bar = 4.2
+E_T = 12900
+s_0 = tau_bar / E_T
+
+m_interface = MATS1D5DPCumPress(
+    E_T=12900,
+    E_N=30000,
+    gamma=55.0,
+    K=11.0,
+    tau_bar=4.2,
+    S=0.01,
+    r=1.0,
+    c=1.0,
+    m=0.0,
+    algorithmic=True)  # omega_fn_type='li',
+
+m_interface.get(omega=0)
+
+s = Simulator(
+    domains=[(xd_steel, m_steel),
+             (xd_concrete, m_concrete),
+             (xd12, m_interface),
+             ],
+    bc=bc1,  # + bc2,
+    record={
+        'Pw': Vis2DFW(bc_right=right_x_s, bc_left=left_x_s),
         'slip': Vis2DField(var='slip'),
         'shear': Vis2DField(var='shear'),
         'omega': Vis2DField(var='omega'),
@@ -183,34 +242,36 @@ class PullOutAxiSym(Simulator):
         #        'damage': Vis3DStateField(var='omega_a'),
         #        'kinematic hardening': Vis3DStateField(var='z_a')
     }
+)
 
-    def get_window(self):
 
-        fw = Viz2DFW(name='Pw', vis2d=self.hist['Pw'])
-        fw2 = Viz2DFW(name='Pw2', vis2d=self.hist['Pw2'])
-        fslip = Viz2DField(name='slip', vis2d=self.hist['slip'])
-        fshear = Viz2DField(name='shear', vis2d=self.hist['shear'])
-        fomega = Viz2DField(name='omega', vis2d=self.hist['omega'])
-        fs_pi = Viz2DField(name='s_pi', vis2d=self.hist['s_pi'])
-        fs_el = Viz2DField(name='s_el', vis2d=self.hist['s_el'])
-        falpha = Viz2DField(name='alpha', vis2d=self.hist['alpha'])
-        fz = Viz2DField(name='z', vis2d=self.hist['z'])
+def get_window(self):
 
-        w = BMCSWindow(sim=self)
-        w.viz_sheet.viz2d_list.append(fw)
+    fw = Viz2DFW(name='Pw', vis2d=self.hist['Pw'])
+    fw2 = Viz2DFW(name='Pw2', vis2d=self.hist['Pw2'])
+    fslip = Viz2DField(name='slip', vis2d=self.hist['slip'])
+    fshear = Viz2DField(name='shear', vis2d=self.hist['shear'])
+    fomega = Viz2DField(name='omega', vis2d=self.hist['omega'])
+    fs_pi = Viz2DField(name='s_pi', vis2d=self.hist['s_pi'])
+    fs_el = Viz2DField(name='s_el', vis2d=self.hist['s_el'])
+    falpha = Viz2DField(name='alpha', vis2d=self.hist['alpha'])
+    fz = Viz2DField(name='z', vis2d=self.hist['z'])
+
+    w = BMCSWindow(sim=self)
+    w.viz_sheet.viz2d_list.append(fw)
 #        w.viz_sheet.viz2d_list.append(fw2)
-        w.viz_sheet.viz2d_list.append(fslip)
-        w.viz_sheet.viz2d_list.append(fs_el)
-        w.viz_sheet.viz2d_list.append(fs_pi)
-        w.viz_sheet.viz2d_list.append(fshear)
-        w.viz_sheet.viz2d_list.append(fomega)
-        w.viz_sheet.viz2d_list.append(falpha)
-        w.viz_sheet.viz2d_list.append(fz)
-        strain_viz = Viz3DTensorField(vis3d=s.hist['strain'])
-        w.viz_sheet.add_viz3d(strain_viz)
-        stress_viz = Viz3DTensorField(vis3d=s.hist['stress'])
-        w.viz_sheet.add_viz3d(stress_viz)
-        return w
+    w.viz_sheet.viz2d_list.append(fslip)
+    w.viz_sheet.viz2d_list.append(fs_el)
+    w.viz_sheet.viz2d_list.append(fs_pi)
+    w.viz_sheet.viz2d_list.append(fshear)
+    w.viz_sheet.viz2d_list.append(fomega)
+    w.viz_sheet.viz2d_list.append(falpha)
+    w.viz_sheet.viz2d_list.append(fz)
+    strain_viz = Viz3DTensorField(vis3d=s.hist['strain'])
+    w.viz_sheet.add_viz3d(strain_viz)
+    stress_viz = Viz3DTensorField(vis3d=s.hist['stress'])
+    w.viz_sheet.add_viz3d(stress_viz)
+    return w
 
 
 s = PullOutAxiSym(

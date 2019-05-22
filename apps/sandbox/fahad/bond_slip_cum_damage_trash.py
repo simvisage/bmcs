@@ -39,13 +39,14 @@ import traits.api as tr
 
 
 #from .mlab_decorators import decorate_figure
-u_max = 2
+u_max = 0.1
 #f_max = 30
-dx = 1
-# ds = 14
-r_steel = 1
-r_concrete = r_steel * 5
-n_x = 1
+ds = 14
+dx = 3 * ds
+r_steel = ds / 2
+r_concrete = ds * 5 - r_steel
+n_x = 10
+n_y = 1
 
 
 class PullOutAxiSym(Simulator):
@@ -91,7 +92,7 @@ class PullOutAxiSym(Simulator):
     def _get_xd_concrete(self):
         return XDomainFEGrid(coord_min=(0, r_steel),
                              coord_max=(dx, r_concrete),
-                             shape=(n_x, 1),
+                             shape=(n_x, n_y),
                              integ_factor=1,
                              fets=FETS2D4Q())
 
@@ -203,12 +204,12 @@ class PullOutAxiSym(Simulator):
 
 s = PullOutAxiSym()
 s.m_ifc.trait_set(E_T=12900,
-                  tau_bar=4.0,
+                  tau_bar=4.2,
                   K=0, gamma=10,
                   c=1, S=0.0025, r=1)
 s.tloop.k_max = 1000
 s.tloop.verbose = True
-s.tline.step = 0.005
+s.tline.step = 0.00005
 s.tstep.fe_domain.serialized_subdomains
 w = s.get_window()
 w.configure_traits()
