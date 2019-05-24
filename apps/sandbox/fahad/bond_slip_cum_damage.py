@@ -229,7 +229,8 @@ s = Simulator(
              ],
     bc=bc1,  # + bc2,
     record={
-        'Pw': Vis2DFW(bc_right=right_x_s, bc_left=left_x_s),
+        'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),
+        'Pw2': Vis2DFW(bc_right='right_x_c', bc_left='left_x_s'),
         'slip': Vis2DField(var='slip'),
         'shear': Vis2DField(var='shear'),
         'omega': Vis2DField(var='omega'),
@@ -274,8 +275,7 @@ def get_window(self):
     return w
 
 
-s = PullOutAxiSym(
-)
+s = PullOutAxiSym()
 s.m_ifc.trait_set(E_T=12900,
                   tau_bar=4,
                   K=0, gamma=10,
