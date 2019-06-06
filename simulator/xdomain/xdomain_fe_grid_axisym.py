@@ -1,12 +1,12 @@
 
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
+from simulator.api import IXDomain
 from traits.api import \
     Property, cached_property, \
     provides, \
     Array
 
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
 import numpy as np
-from simulator.api import IXDomain
 
 from .xdomain_fe_grid import XDomainFEGrid
 
@@ -25,9 +25,9 @@ class XDomainFEGridAxiSym(XDomainFEGrid):
         D3D_33 = np.array([[0, 0, 0],
                            [0, 0, 0],
                            [0, 0, 1]], np.float_)
-        D2D_11 = np.array([[0, 0],
+        D2D_22 = np.array([[0, 0],
                            [0, 1]], np.float_)
-        return np.einsum('ab,cc->abc', D3D_33, D2D_11)
+        return np.einsum('ab,cc->abc', D3D_33, D2D_22)
 
     Diff1_abcd = Array(np.float)
 
@@ -37,6 +37,17 @@ class XDomainFEGridAxiSym(XDomainFEGrid):
             np.einsum('ac,bd->abcd', delta, delta) +
             np.einsum('ad,bc->abcd', delta, delta)
         )
+
+    det_J_Em = Property(depends_on='MESH,GEO,CS,FE')
+    '''Jacobi matrix in integration points
+    '''
+    @cached_property
+    def _get_det_J_Em(self):
+        r_Em = np.einsum(
+            'im,Eic->Emc',
+            self.fets.N_im, self.x_Eia
+        )[..., 1]
+        return r_Em * np.linalg.det(self.J_Emar)
 
     B0_Eimabc = Property(depends_on='+input')
 

@@ -47,6 +47,11 @@ class Vis3DField(Vis3D):
             vtk_cell_list.append(cells)
             vtk_cell_offset_list.append(cell_offsets)
             vtk_cell_types_list.append(cell_types)
+        if len(vtk_cell_types_list) == 0:
+            raise ValueError(
+                'Empty output for field variable %s in model %s' %
+                (self.var, domain.tmodel)
+            )
         vtk_cell_types = np.hstack(vtk_cell_types_list)
         vtk_cell_offsets = np.hstack(vtk_cell_offset_list)
         vtk_cells = np.hstack(vtk_cell_list)

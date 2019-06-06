@@ -5,6 +5,8 @@ Created on 12.01.2016
 @todo: derive the size of the state array.
 '''
 
+import time
+
 from bmcs.time_functions import \
     LoadingScenario
 from ibvpy.api import \
@@ -46,10 +48,7 @@ class PulloutResponse(Vis2D):
 
     def update(self):
         sim = self.sim
-        record_dofs = np.unique(
-            sim.fe_grid[
-                sim.controlled_elem, -1, :, -1].dofs[:, :, 1].flatten()
-        )
+        record_dofs = sim.control_bc.dofs
         U_ti = self.sim.hist.U_t
         F_ti = self.sim.hist.F_t
         P = -np.sum(F_ti[:, record_dofs], axis=1)
@@ -135,7 +134,7 @@ class Vis2DCrackBand(Vis2D):
         sig_Enab, _ = mats.get_corr_pred(
             eps_Enab, t, ** tstep.fe_domain[0].state_n
         )
-        crack_band = xdomain.mesh[0, bt.n_a + 1:]
+        crack_band = xdomain.mesh[0, :]  # bt.n_a + 1:]
         E = crack_band.elems
         X = crack_band.dof_X
         eps_Ey = eps_Enab[E, :, 0, 0]
@@ -451,7 +450,7 @@ class BendingTestModel(Simulator):
     #=========================================================================
     # Material model
     #=========================================================================
-    mats_type = Trait('microplane damage (eeq)',
+    mats_type = Trait('scalar damage',
                       {'elastic': MATS2DElastic,
                        'microplane damage (eeq)': MATS2DMplDamageEEQ,
                        'microplane CSD (eeq)': MATS2DMplCSDEEQ,
@@ -570,19 +569,62 @@ class BendingTestModel(Simulator):
     tree_view = traits_view
 
 
-def run_bending3pt_sdamage(*args, **kw):
-    bt = BendingTestModel(n_e_x=20, n_e_y=30,
-                          mats_type='scalar damage'
-                          #mats_eval_type='microplane damage (eeq)'
-                          #mats_eval_type='microplane CSD (eeq)'
-                          #mats_eval_type='microplane CSD (odf)'
-                          )
+class TensileTestModel(BendingTestModel):
+    bc = Property(Instance(BCondMngr),
+                  depends_on='GEO,CS,BC,MAT,MESH')
+    '''Boundary condition manager
+    '''
+    @cached_property
+    def _get_bc(self):
+        return [self.control_bc,
+                self.fixed_x,
+                self.fixed_y]
+
+    control_bc = Property(depends_on='CS,BC,GEO,MAT,MESH')
+    '''Foxed boundary condition'''
+    @cached_property
+    def _get_control_bc(self):
+        return BCSlice(slice=self.fe_grid[-1, :, -1, :],
+                       var='u', dims=[0], value=self.w_max)
+
+    n_a = Property
+    '''Element at the notch
+    '''
+
+    def _get_n_a(self):
+        a_L = self.geometry.a / self.geometry.H
+        return int(a_L * self.n_e_y)
+
+    fixed_x = Property(depends_on='CS,BC,GEO,MAT,MESH')
+    '''Foxed boundary condition'''
+    @cached_property
+    def _get_fixed_x(self):
+        return BCSlice(slice=self.fe_grid[0, self.n_a:-self.n_a, 0, :],
+                       var='u', dims=[0], value=0)
+
+    fixed_y = Property(depends_on='CS,BC,GEO,MAT,MESH')
+    '''Control boundary condition - make it accessible directly
+    for the visualization adapter as property
+    '''
+    @cached_property
+    def _get_fixed_y(self):
+        n_e_y = int(self.n_e_y / 2) + 1
+        print(self.n_e_y, n_e_y)
+        return BCSlice(slice=self.fe_grid[0, n_e_y, 0, 0],
+                       var='u', dims=[1], value=0)
+
+
+def run_tension_sdamage(*args, **kw):
+    bt = TensileTestModel(n_e_x=3, n_e_y=30,
+                          mats_type='scalar damage')
+    bt.tloop.k_max = 800
     L_c = 5.0
     E = 30000.0
     f_t = 2.5
     G_f = 0.09
+    bt.mats_type = 'scalar damage'
     bt.mats.trait_set(
-        stiffness='algorithmic',
+        algorithmic=True,
         E=E,
         nu=0.2
     )
@@ -591,10 +633,77 @@ def run_bending3pt_sdamage(*args, **kw):
         G_f=G_f,
         L_s=L_c
     )
-
     # print 'Gf', h_b * bt.mats_eval.get_G_f()
 
     bt.w_max = 0.2
+    bt.tline.step = 0.01
+    bt.cross_section.b = 100.
+    bt.geometry.trait_set(
+        L=450,
+        H=110,
+        a=10,
+        L_c=L_c
+    )
+    bt.loading_scenario.trait_set(loading_type='monotonic')
+    w = BMCSWindow(sim=bt)
+#    bt.add_viz2d('F-w', 'load-displacement')
+
+    bt.record['Pw'] = PulloutResponse()
+    bt.record['energy'] = Vis2DEnergy()
+    bt.record['crack band'] = Vis2DCrackBand()
+
+    fw = Viz2DForceDeflection(name='Pw', vis2d=bt.hist['Pw'])
+    viz2d_energy = Viz2DEnergy(name='dissipation',
+                               vis2d=bt.hist['energy'])
+    viz2d_energy_rates = Viz2DEnergyReleasePlot(
+        name='dissipated energy',
+        vis2d=bt.hist['energy']
+    )
+    w.viz_sheet.viz2d_list.append(fw)
+    w.viz_sheet.viz2d_list.append(viz2d_energy)
+    w.viz_sheet.viz2d_list.append(viz2d_energy_rates)
+    viz2d_cb_strain = Viz2DStrainInCrack(name='strain in crack',
+                                         vis2d=bt.hist['crack band'])
+    w.viz_sheet.viz2d_list.append(viz2d_cb_strain)
+    viz2d_cb_a = Viz2DTA(name='crack length',
+                         vis2d=bt.hist['crack band'],
+                         visible=False)
+    viz2d_cb_dGda = Viz2DdGdA(name='energy release per crack extension',
+                              vis2d=bt.hist['energy'],
+                              vis2d_cb=bt.hist['crack band'],
+                              visible=False)
+    w.viz_sheet.viz2d_list.append(viz2d_cb_a)
+    w.viz_sheet.viz2d_list.append(viz2d_cb_dGda)
+    w.viz_sheet.monitor_chunk_size = 1
+    return w
+
+
+def run_bending3pt_sdamage(*args, **kw):
+    bt = BendingTestModel(n_e_x=10, n_e_y=30,
+                          mats_type='scalar damage'
+                          #mats_eval_type='microplane damage (eeq)'
+                          #mats_eval_type='microplane CSD (eeq)'
+                          #mats_eval_type='microplane CSD (odf)'
+                          )
+    bt.tloop.k_max = 800
+    L_c = 5.0
+    E = 30000.0
+    f_t = 2.5
+    G_f = 0.09
+    bt.mats_type = 'scalar damage'
+    bt.mats.trait_set(
+        algorithmic=False,
+        E=E,
+        nu=0.2
+    )
+    bt.mats.omega_fn.trait_set(
+        f_t=f_t,
+        G_f=G_f,
+        L_s=L_c
+    )
+    # print 'Gf', h_b * bt.mats_eval.get_G_f()
+
+    bt.w_max = 0.8
     bt.tline.step = 0.02
     bt.cross_section.b = 100.
     bt.geometry.trait_set(
@@ -604,7 +713,6 @@ def run_bending3pt_sdamage(*args, **kw):
         L_c=L_c
     )
     bt.loading_scenario.trait_set(loading_type='monotonic')
-    bt.tloop.k_max = 400
     w = BMCSWindow(sim=bt)
 #    bt.add_viz2d('F-w', 'load-displacement')
 
@@ -648,14 +756,31 @@ def run_bending3pt_sdamage_viz2d(*args, **kw):
 
 def run_bending3pt_sdamage_viz3d(*args, **kw):
     w = run_bending3pt_sdamage()
-    w.offline = True
+#    w.offline = True
     bt = w.sim
+    bt.tloop.verbose = True
     bt.record['damage'] = Vis3DStateField(var='omega')
     viz3d_damage = Viz3DScalarField(vis3d=bt.hist['damage'])
     w.viz_sheet.add_viz3d(viz3d_damage)
+    time.sleep(0.1)
+#    print(bt.tstep.fe_domain[0].tmodel)
+    w.run()
+    w.configure_traits(*args, **kw)
+
+
+def run_tension_sdamage_viz3d(*args, **kw):
+    w = run_tension_sdamage()
+#    w.offline = True
+    bt = w.sim
+    bt.tloop.verbose = True
+    bt.record['damage'] = Vis3DStateField(var='omega')
+    viz3d_damage = Viz3DScalarField(vis3d=bt.hist['damage'])
+    w.viz_sheet.add_viz3d(viz3d_damage)
+    time.sleep(0.1)
+#    print(bt.tstep.fe_domain[0].tmodel)
     w.run()
     w.configure_traits(*args, **kw)
 
 
 if __name__ == '__main__':
-    run_bending3pt_sdamage_viz3d()()
+    run_tension_sdamage_viz3d()
