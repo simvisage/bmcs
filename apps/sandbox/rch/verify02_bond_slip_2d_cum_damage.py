@@ -14,6 +14,8 @@ from ibvpy.mats.mats1D5.vmats1D5_dp import \
     MATS1D5DP
 from ibvpy.mats.mats1D5.vmats1D5_dp_cum_press import \
     MATS1D5DPCumPress
+from ibvpy.mats.mats2D.mats2D_elastic.vmats2D_elastic import \
+    MATS2DElastic
 from ibvpy.mats.mats3D.mats3D_elastic.vmats3D_elastic import \
     MATS3DElastic
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
@@ -27,31 +29,23 @@ from ibvpy.mats.viz3d_tensor_field import \
 from simulator.api import \
     Simulator
 from simulator.demo.viz2d_fw import Viz2DFW, Vis2DFW
-from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
+from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
 from view.ui.bmcs_tree_node import itags_str
 from view.window import BMCSWindow
-
-import numpy as np
 import traits.api as tr
 
 
 #from .mlab_decorators import decorate_figure
-u_max = 2
+u_max = 0.001
 #f_max = 30
 dx = 1
-# ds = 14
-ds = 1 / np.pi
-r_steel = ds / 2.0
-np.pi * r_steel**2
-r_concrete = ds * 3
-tau_bar = 2.0
-E_T = 1000
-s_0 = tau_bar / E_T
-n_x = 10
+r_steel = 1
+r_concrete = r_steel * 5
+n_x = 1
 
 
-class PullOutAxiSym(Simulator):
+class PullOut2D(Simulator):
 
     tree_node_list = tr.List([])
 
@@ -76,44 +70,43 @@ class PullOutAxiSym(Simulator):
 
     @tr.cached_property
     def _get_xd_steel(self):
-        return XDomainFEGridAxiSym(coord_min=(0, 0),
-                                   coord_max=(dx, r_steel),
-                                   shape=(n_x, 1),
-                                   integ_factor=2 * np.pi,
-                                   fets=FETS2D4Q())
+        return XDomainFEGrid(coord_min=(0, 0),
+                             coord_max=(dx, r_steel),
+                             shape=(n_x, 1),
+                             integ_factor=1,
+                             fets=FETS2D4Q())
 
     m_steel = tr.Property()
 
     @tr.cached_property
     def _get_m_steel(self):
-        return MATS3DElastic(E=200000, nu=0.3)
+        return MATS2DElastic(E=200000, nu=0.3)
 
     xd_concrete = tr.Property()
 
     @tr.cached_property
     def _get_xd_concrete(self):
-        return XDomainFEGridAxiSym(coord_min=(0, r_steel),
-                                   coord_max=(dx, r_concrete),
-                                   shape=(n_x, 1),
-                                   integ_factor=2 * np.pi,
-                                   fets=FETS2D4Q())
+        return XDomainFEGrid(coord_min=(0, r_steel),
+                             coord_max=(dx, r_concrete),
+                             shape=(n_x, 1),
+                             integ_factor=1,
+                             fets=FETS2D4Q())
 
     m_concrete = tr.Property()
 
     @tr.cached_property
     def _get_m_concrete(self):
-        return MATS3DElastic(E=30000, nu=0.2)
+        return MATS2DElastic(E=30000, nu=0.2)
 
     xd_ifc = tr.Property()
 
     @tr.cached_property
     def _get_xd_ifc(self):
-        print(np.pi * ds)
         return XDomainFEInterface(
             I=self.xd_steel.mesh.I[:, -1],
             J=self.xd_concrete.mesh.I[:, 0],
             fets=FETS1D52ULRH(),
-            integ_factor=np.pi * ds / 2
+            integ_factor=1
         )
 
     m_ifc = tr.Property()
@@ -121,15 +114,8 @@ class PullOutAxiSym(Simulator):
     @tr.cached_property
     def _get_m_ifc(self):
         return MATS1D5DPCumPress(
-            E_T=1000000,
+            E_T=1000,
             E_N=1000000,
-            gamma=55.0,
-            K=11.0,
-            tau_bar=4.2,
-            S=0.005,
-            r=1.0,
-            c=1.0,
-            m=0.0,
             algorithmic=True)  # omega_fn_type='li',
 
     domains = tr.Property()
@@ -162,11 +148,18 @@ class PullOutAxiSym(Simulator):
         return BCSlice(slice=self.xd_steel.mesh[0, :, 0, :],
                        var='f', dims=[0], value=0)
 
+    bc_y_0 = tr.Property(depends_on=itags_str)
+
+    @tr.cached_property
+    def _get_bc_y_0(self):
+        return BCSlice(slice=self.xd_steel.mesh[:, -1, :, -1],
+                       var='u', dims=[1], value=0)
+
     bc = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_bc(self):
-        return [self.right_x_s, self.right_x_c]
+        return [self.right_x_s, self.right_x_c, self.bc_y_0]
 
     record = {
         'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),
@@ -198,7 +191,7 @@ class PullOutAxiSym(Simulator):
 
         w = BMCSWindow(sim=self)
         w.viz_sheet.viz2d_list.append(fw)
-#        w.viz_sheet.viz2d_list.append(fw2)
+        w.viz_sheet.viz2d_list.append(fw2)
         w.viz_sheet.viz2d_list.append(fslip)
         w.viz_sheet.viz2d_list.append(fs_el)
         w.viz_sheet.viz2d_list.append(fs_pi)
@@ -213,14 +206,14 @@ class PullOutAxiSym(Simulator):
         return w
 
 
-s = PullOutAxiSym()
-s.m_ifc.trait_set(E_T=12900,
-                  tau_bar=4,
-                  K=0, gamma=10,
-                  c=1, S=0.025, r=1)
+s = PullOut2D()
+s.m_ifc.trait_set(E_T=10000,  # 12900,
+                  tau_bar=1,  # 4.0,
+                  K=0, gamma=0,  # 10,
+                  c=1, S=0.0025, r=1)
 s.tloop.k_max = 1000
 s.tloop.verbose = True
-s.tline.step = 0.005
+s.tline.step = 0.5  # 0.005
 s.tstep.fe_domain.serialized_subdomains
 w = s.get_window()
 w.configure_traits()

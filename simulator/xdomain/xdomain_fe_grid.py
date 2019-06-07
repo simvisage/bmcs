@@ -143,7 +143,7 @@ class XDomainFEGrid(BMCSTreeNode):
     det_J_Em = Property(depends_on='MESH,GEO,CS,FE')
     '''Jacobi matrix in integration points
     '''
-
+    @cached_property
     def _get_det_J_Em(self):
         return np.linalg.det(self.J_Emar)
 
@@ -206,7 +206,6 @@ class XDomainFEGrid(BMCSTreeNode):
 
     def map_U_to_field(self, U):
         n_c = self.fets.n_nodal_dofs
-        #U_Ia = U.reshape(-1, n_c)
         U_Eia = U[self.o_Eia]
         eps_Emab = np.einsum(
             'Eimabc,Eic->Emab',

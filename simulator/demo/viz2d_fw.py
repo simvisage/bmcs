@@ -54,8 +54,6 @@ class Vis2DFW(Vis2D):
         dofs_left = np.unique(bc_left.dofs)
         U_ti = sim.hist.U_t
         F_ti = sim.hist.F_t
-        print('F-DOFS', dofs_right)
-        print('F-ti', F_ti[:, dofs_right])
         P = np.sum(F_ti[:, dofs_right], axis=1)
         P0 = np.sum(F_ti[:, dofs_left], axis=1)
         w = np.average(U_ti[:, dofs_right], axis=1)

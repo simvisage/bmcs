@@ -1,14 +1,14 @@
 
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
+from ibvpy.mats.mats_damage_fn import \
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
+    PlottableFn, DamageFn, GfDamageFn
 from simulator.api import \
     TLoopImplicit, TStepBC
 from traits.api import on_trait_change, Bool
 from traitsui.api import UItem, \
     Item, View, Group, Spring
 
-from ibvpy.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
-    PlottableFn, DamageFn, GfDamageFn
 import numpy as np
 import traits.api as tr
 
@@ -116,6 +116,16 @@ class MATS2DScalarDamage(MATS2DEval):
                 domega_I, deps_eq_cd_I, self.D_abcd, eps_ab[I]
             )
         return sig_ab, D_abcd
+
+    def _get_var_dict(self):
+        var_dict = super(MATS2DScalarDamage, self)._get_var_dict()
+        var_dict.update(
+            omega=self.get_omega
+        )
+        return var_dict
+
+    def get_omega(self, eps_ab, tn1, kappa, omega):
+        return omega
 
     traits_view = View(
         Group(

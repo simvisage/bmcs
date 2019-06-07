@@ -64,10 +64,6 @@ disp4 = disp4.astype(np.float)
 f = np.array(pd.read_hdf(path2, 'first', columns=['b']))
 f = f.astype(np.float)
 
-disp1_aux = np.reshape(
-    (np.array(np.concatenate((max(disp1), min(disp1))))), (2, 1))
-f_aux = np.reshape((np.array(np.concatenate((max(f), min(f))))), (2, 1))
-
 f_1 = np.concatenate((f_1, f))
 disp_1 = np.concatenate((disp_1, disp1))
 disp_2 = np.concatenate((disp_2, disp2))
@@ -82,8 +78,6 @@ del disp2
 del disp3
 del disp4
 # del disp5
-del disp1_aux
-del f_aux
 
 
 # Intermidiate chunks, same procedure

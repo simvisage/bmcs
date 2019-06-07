@@ -16,6 +16,7 @@ from bmcs.crack_mode_I import \
     run_bending3pt_mic_odf, \
     run_bending3pt_sdamage_viz2d, \
     run_bending3pt_sdamage_viz3d, \
+    run_tension_sdamage_viz3d, \
     run_tensile_test_sdamage
 from bmcs.pullout import \
     run_pullout_const_shear, \
@@ -101,7 +102,13 @@ class BMCSLauncher(HasTraits):
     tensile_test_2d_sdamage = Button(label='Tensile test - isotropic damage')
 
     def _tensile_test_2d_sdamage_fired(self):
-        run_tensile_test_sdamage(kind='live')
+        run_tension_sdamage_viz3d(kind='live')
+
+    bending3pt_2d_sdamage_viz2d = Button(
+        label='bending test 3Pt - isotropic damage (2D-light)')
+
+    def _bending3pt_2d_sdamage_viz2d_fired(self):
+        run_bending3pt_sdamage_viz2d(kind='live')
 
     bending3pt_3d = Button(label='Bending test (3D)')
 
@@ -182,19 +189,19 @@ class BMCSLauncher(HasTraits):
             Group(
                 UItem('tensile_test_2d_sdamage',
                       full_size=True, resizable=True,
-                      enabled_when='False'
+                      enabled_when='True'
                       ),
                 UItem('bending3pt_2d_sdamage_viz2d',
                       full_size=True, resizable=True,
-                      enabled_when='False'
+                      enabled_when='True'
                       ),
                 UItem('bending3pt_2d_sdamage_viz3d',
                       full_size=True, resizable=True,
-                      enabled_when='False'
+                      enabled_when='True'
                       ),
                 UItem('bending3pt_3d',
                       full_size=True, resizable=True,
-                      enabled_when='False'
+                      enabled_when='True'
                       ),
                 label='Bending, crack propagation, lecture #7-9'
             ),
