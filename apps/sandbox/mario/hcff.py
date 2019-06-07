@@ -5,7 +5,12 @@ Created on Apr 24, 2019
 '''
 import os
 
+from matplotlib.figure import \
+    Figure
+import path
 from pyface.api import FileDialog
+from util.traits.editors import \
+    MPLFigureEditor
 
 import numpy as np
 import pandas as pd
@@ -13,11 +18,17 @@ import traits.api as tr
 import traitsui.api as ui
 
 from .reading_csv import read_csv
+from .something_traits import Something
 
 
 class HCFF(tr.HasStrictTraits):
     '''High-Cycle Fatigue Filter
     '''
+
+    something = tr.Instance(Something)
+
+    def _something_default(self):
+        return Something()
 
     #=========================================================================
     # File management
@@ -56,13 +67,15 @@ class HCFF(tr.HasStrictTraits):
     def _chunk_size_changed(self):
         print('chunk_size changed - calling the named function')
 
+    data = tr.Array(dtype=np.float_)
+
     read_loadtxt_button = tr.Button()
 
     def _read_loadtxt_button_fired(self):
-        data = np.loadtxt(self.file_csv,
-                          skiprows=self.skip_rows,
-                          delimiter=';')
-        print('xx', data[1, :])
+        self.data = np.loadtxt(self.file_csv,
+                               skiprows=self.skip_rows,
+                               delimiter=';')
+        print(self.data.shape)
 
     read_csv_button = tr.Button
 
@@ -91,12 +104,16 @@ class HCFF(tr.HasStrictTraits):
         nf = np.array(f)
         df = pd.DataFrame(nf, columns=['a', 'b', 'c', 'd', 'e', 'f'])
 
-        df['a'] = [x.replace(',', '.') for x in df['a']]
-        df['b'] = [x.replace(',', '.') for x in df['b']]
-        df['c'] = [x.replace(',', '.') for x in df['c']]
-        df['d'] = [x.replace(',', '.') for x in df['d']]
-        df['e'] = [x.replace(',', '.') for x in df['e']]
-        df['f'] = [x.replace(',', '.') for x in df['f']]
+        print('xxx')
+        print(df)
+        print('xxx')
+
+#         df['a'] = [x.replace(',', '.') for x in df['a']]
+#         df['b'] = [x.replace(',', '.') for x in df['b']]
+#         df['c'] = [x.replace(',', '.') for x in df['c']]
+#         df['d'] = [x.replace(',', '.') for x in df['d']]
+#         df['e'] = [x.replace(',', '.') for x in df['e']]
+#         df['f'] = [x.replace(',', '.') for x in df['f']]
         # df['g'] = [x.replace(',', '.') for x in df['g']]
         df.to_hdf(path2, 'first', mode='w', format='table')
 
@@ -107,12 +124,12 @@ class HCFF(tr.HasStrictTraits):
             nf = np.array(f)
             df = pd.DataFrame(f.astype(str), columns=[
                               'a', 'b', 'c', 'd', 'e', 'f'])
-            df['a'] = [x.replace(',', '.') for x in df['a']]
-            df['b'] = [x.replace(',', '.') for x in df['b']]
-            df['c'] = [x.replace(',', '.') for x in df['c']]
-            df['d'] = [x.replace(',', '.') for x in df['d']]
-            df['e'] = [x.replace(',', '.') for x in df['e']]
-            df['f'] = [x.replace(',', '.') for x in df['f']]
+#             df['a'] = [x.replace(',', '.') for x in df['a']]
+#             df['b'] = [x.replace(',', '.') for x in df['b']]
+#             df['c'] = [x.replace(',', '.') for x in df['c']]
+#             df['d'] = [x.replace(',', '.') for x in df['d']]
+#             df['e'] = [x.replace(',', '.') for x in df['e']]
+#             df['f'] = [x.replace(',', '.') for x in df['f']]
         #     df['g'] = [x.replace(',', '.') for x in df['g']]
             df.to_hdf(path2, 'middle' + np.str(iter_num), append=True)
 
@@ -120,73 +137,81 @@ class HCFF(tr.HasStrictTraits):
                                  chunk_size - 1, nrows=l - n_chunks * chunk_size, sep=';'))
         nf = np.array(f)
         df = pd.DataFrame(nf, columns=['a', 'b', 'c', 'd', 'e', 'f'])
-        df['a'] = [x.replace(',', '.') for x in df['a']]
-        df['b'] = [x.replace(',', '.') for x in df['b']]
-        df['c'] = [x.replace(',', '.') for x in df['c']]
-        df['d'] = [x.replace(',', '.') for x in df['d']]
-        df['e'] = [x.replace(',', '.') for x in df['e']]
-        df['f'] = [x.replace(',', '.') for x in df['f']]
+#         df['a'] = [x.replace(',', '.') for x in df['a']]
+#         df['b'] = [x.replace(',', '.') for x in df['b']]
+#         df['c'] = [x.replace(',', '.') for x in df['c']]
+#         df['d'] = [x.replace(',', '.') for x in df['d']]
+#         df['e'] = [x.replace(',', '.') for x in df['e']]
+#         df['f'] = [x.replace(',', '.') for x in df['f']]
         # df['g'] = [x.replace(',', '.') for x in df['g']]
         df.to_hdf(path2, 'last', append=True)
 
+    figure = tr.Instance(Figure)
+
+    def _figure_default(self):
+        figure = Figure(facecolor='white')
+        figure.set_tight_layout(True)
+        return figure
+
+    x_axis = tr.Enum(0, 1, 2, 3, 4, 5)
+    y_axis = tr.Enum(0, 1, 2, 3, 4, 5)
+
+    plot = tr.Button
+
+    def _plot_fired(self):
+        ax = self.figure.add_subplot(111)
+        print('plotting figure')
+        print(type(self.x_axis), type(self.y_axis))
+        print(self.data[:, 1])
+        print(self.data[:, self.x_axis])
+        print(self.data[:, self.y_axis])
+        ax.plot(self.data[:, self.x_axis], self.data[:, self.y_axis])
+
     traits_view = ui.View(
-        ui.VSplit(
-            ui.HGroup(
-                ui.UItem('open_file_csv'),
-                ui.UItem('file_csv', style='readonly'),
-                label='Input data'
+        ui.HSplit(
+            ui.VSplit(
+                ui.HGroup(
+                    ui.UItem('open_file_csv'),
+                    ui.UItem('file_csv', style='readonly'),
+                    label='Input data'
+                ),
+                ui.VGroup(
+                    ui.Item('chunk_size'),
+                    ui.Item('skip_rows'),
+                    label='Filter parameters'
+                ),
+                ui.VGroup(
+                    ui.Item('read_loadtxt_button', show_label=False),
+                    ui.Item('read_csv_button', show_label=False),
+                    ui.Item('plot', show_label=False)
+                )
             ),
             ui.VGroup(
-                ui.Item('chunk_size'),
-                ui.Item('skip_rows'),
-                label='Filter parameters'
+                ui.Item('x_axis'),
+                ui.Item('y_axis'),
             ),
-            ui.VGroup(
-                ui.Item('read_loadtxt_button', show_label=False),
-                ui.Item('read_csv_button', show_label=False)
-            )
+            ui.UItem('figure', editor=MPLFigureEditor(),
+                     resizable=True,
+                     springy=True,
+                     label='2d plots'),
         ),
         resizable=True,
-        width=0.3,
-        height=0.4
+        width=0.8,
+        height=0.6
     )
 
 
 if __name__ == '__main__':
-    #np.loadtxt("bio_1.asc", skiprows=6)
-    name = 'CT80-42_3610_Zykl'
-    name2 = 'CT80-42_3610_Zykl'
-    name = 'CT80-39_6322_Zykl'
-    name2 = 'CT80-39_6322_Zykl'
-
     name = 'CT80-39_6322_Zykl_dot'
     home_dir = os.path.expanduser('~')
-    path_master = os.path.join(home_dir, 'Data Processing')
-    path_master = os.path.join(path_master, 'CT')
-    path_master = os.path.join(path_master, 'C80')
-    path_master = os.path.join(path_master, 'CT80-39_6322_Zykl', name + '.csv')
-
+    path_master = os.path.join(
+        home_dir, 'Data Processing', 'CT', 'C80', 'CT80-39_6322_Zykl',
+        name + '.csv'
+    )
+    print(path_master)
     hcff = HCFF(file_csv=path_master)
     # hcff._read_loadtxt_button_fired()
     hcff.configure_traits()
 
 
 # other traits imports
-
-
-class Something(tr.HasTraits):
-    txt_file_name = tr.File
-    openTxt = tr.Button('Open...')
-    traits_view = ui.View(
-        ui.VGroup(
-            ui.HGroup(
-                ui.Item('openTxt', show_label=False),
-                ui.Item('txt_file_name',
-                        style='readonly', width=200),
-            ),
-        )
-    )
-
-    def openTxtFile(self, path):
-        'do something'
-        print(path)
