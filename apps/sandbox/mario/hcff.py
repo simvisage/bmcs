@@ -2,6 +2,16 @@
 Created on Apr 24, 2019
 
 @author: rch
+
+Changes since Friday June 7 2019 - BMCS coding workshop
+    * refresh of MPLFigureEditor - the curve gets reploted
+      when the model object changes ist own event - data_changed.
+      If the model object has several Matplotlib instances
+      it must provide the trait event as its attribute 
+      issue the event if the replot should be done
+      
+      self.data_changed = True
+
 '''
 import os
 
@@ -25,15 +35,16 @@ class HCFF(tr.HasStrictTraits):
     '''High-Cycle Fatigue Filter
     '''
 
-    something = tr.Instance(Something)
-
-    def _something_default(self):
-        return Something()
-
     #=========================================================================
     # File management
     #=========================================================================
     file_csv = tr.File
+
+    file_basename = tr.Property(depends_on='file_csv')
+
+    @tr.cached_property
+    def _get_file_basename(self):
+        return os.path.basename(self.file_csv)
 
     open_file_csv = tr.Button('Input file')
 
@@ -153,35 +164,40 @@ class HCFF(tr.HasStrictTraits):
         figure.set_tight_layout(True)
         return figure
 
-    x_axis = tr.Enum(0, 1, 2, 3, 4, 5)
-    y_axis = tr.Enum(0, 1, 2, 3, 4, 5)
+    x_axis = tr.Enum(0, 1, 2, 3, 4, 5, replot_event=True)
+    y_axis = tr.Enum(0, 1, 2, 3, 4, 5, replot_event=True)
 
     plot = tr.Button
 
+    data_changed = tr.Event
+
+    @tr.on_trait_change('+replot_event')
     def _plot_fired(self):
         ax = self.figure.add_subplot(111)
+        ax.clear()
         print('plotting figure')
         print(type(self.x_axis), type(self.y_axis))
         print(self.data[:, 1])
         print(self.data[:, self.x_axis])
         print(self.data[:, self.y_axis])
         ax.plot(self.data[:, self.x_axis], self.data[:, self.y_axis])
+        self.data_changed = True
 
     traits_view = ui.View(
         ui.HSplit(
             ui.VSplit(
                 ui.HGroup(
                     ui.UItem('open_file_csv'),
-                    ui.UItem('file_csv', style='readonly'),
+                    ui.UItem('file_basename', style='readonly'),
                     label='Input data'
                 ),
+                ui.Item('read_loadtxt_button', show_label=False),
                 ui.VGroup(
                     ui.Item('chunk_size'),
                     ui.Item('skip_rows'),
                     label='Filter parameters'
                 ),
                 ui.VGroup(
-                    ui.Item('read_loadtxt_button', show_label=False),
                     ui.Item('read_csv_button', show_label=False),
                     ui.Item('plot', show_label=False)
                 )
@@ -192,6 +208,7 @@ class HCFF(tr.HasStrictTraits):
             ),
             ui.UItem('figure', editor=MPLFigureEditor(),
                      resizable=True,
+                     width=900,
                      springy=True,
                      label='2d plots'),
         ),
