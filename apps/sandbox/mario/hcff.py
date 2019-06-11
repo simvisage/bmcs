@@ -31,6 +31,28 @@ from .reading_csv import read_csv
 from .something_traits import Something
 
 
+class HCFFFilter(tr.HasStrictTraits):
+
+    def process(self):
+        raise NotImplementedError
+
+
+class HCFFFCutNoise(HCFFFilter):
+
+    source_data = tr.Instance(HCFFFilter)
+
+    output_data = tr.Property(depends_on='source_data')
+
+    def _get_output_data(self):
+        pass
+
+
+class HCFFFDetectMinMax(HCFFFilter):
+
+    def process(self):
+        pass
+
+
 class HCFF(tr.HasStrictTraits):
     '''High-Cycle Fatigue Filter
     '''
@@ -87,6 +109,28 @@ class HCFF(tr.HasStrictTraits):
                                skiprows=self.skip_rows,
                                delimiter=';')
         print(self.data.shape)
+
+    min_max_button = tr.Button()
+
+    def _min_max_button_fired(self):
+        f = self.F_input
+        f_diff = np.abs(f[1:]) - np.abs(f[:-1])
+        g_diff = np.array(f_diff[1:] * f_diff[:-1])
+        idx1 = np.array(np.where((g_diff) < 0))
+        idx1 = idx1[0] + 1
+
+        F_red = f[idx1]
+        U_red = self.U_input[idx1]
+
+        ax = self.figure.add_subplot(111)
+        ax.plot(U_red, F_red, 'ro')
+        self.data_changed = True
+
+
+#
+#         idx2 = idx1[1:] - idx1[0:-1]
+#         idx3 = np.where(np.abs(idx2) == 1)
+#         idx1 = list(idx1)
 
     read_csv_button = tr.Button
 
@@ -157,6 +201,8 @@ class HCFF(tr.HasStrictTraits):
         # df['g'] = [x.replace(',', '.') for x in df['g']]
         df.to_hdf(path2, 'last', append=True)
 
+    filter_list = tr.List(HCFFFilter)
+
     figure = tr.Instance(Figure)
 
     def _figure_default(self):
@@ -164,23 +210,36 @@ class HCFF(tr.HasStrictTraits):
         figure.set_tight_layout(True)
         return figure
 
-    x_axis = tr.Enum(0, 1, 2, 3, 4, 5, replot_event=True)
-    y_axis = tr.Enum(0, 1, 2, 3, 4, 5, replot_event=True)
+    clear_button = tr.Button
+
+    def _clear_button_fired(self):
+        ax = self.figure.subplot(111)
+        ax.clear()
 
     plot = tr.Button
+
+    def _plot_fired(self):
+        self._replot_input()
+
+    F_input = tr.Property(depends_on='file_csv')
+
+    @tr.cached_property
+    def _get_F_input(self):
+        return self.data[:, 1]
+
+    U_input = tr.Property(depends_on='file_csv')
+
+    @tr.cached_property
+    def _get_U_input(self):
+        return np.average(self.data[:, (3, 4, 5)], axis=1)
 
     data_changed = tr.Event
 
     @tr.on_trait_change('+replot_event')
-    def _plot_fired(self):
+    def _replot_input(self):
         ax = self.figure.add_subplot(111)
-        ax.clear()
-        print('plotting figure')
-        print(type(self.x_axis), type(self.y_axis))
-        print(self.data[:, 1])
-        print(self.data[:, self.x_axis])
-        print(self.data[:, self.y_axis])
-        ax.plot(self.data[:, self.x_axis], self.data[:, self.y_axis])
+#        ax.plot(self.data[:, self.x_axis], self.data[:, self.y_axis])
+        ax.plot(self.U_input, self.F_input)
         self.data_changed = True
 
     traits_view = ui.View(
@@ -191,7 +250,9 @@ class HCFF(tr.HasStrictTraits):
                     ui.UItem('file_basename', style='readonly'),
                     label='Input data'
                 ),
+                ui.Item('clear_button', show_label=False),
                 ui.Item('read_loadtxt_button', show_label=False),
+                ui.Item('min_max_button', show_label=False),
                 ui.VGroup(
                     ui.Item('chunk_size'),
                     ui.Item('skip_rows'),
@@ -201,10 +262,6 @@ class HCFF(tr.HasStrictTraits):
                     ui.Item('read_csv_button', show_label=False),
                     ui.Item('plot', show_label=False)
                 )
-            ),
-            ui.VGroup(
-                ui.Item('x_axis'),
-                ui.Item('y_axis'),
             ),
             ui.UItem('figure', editor=MPLFigureEditor(),
                      resizable=True,
