@@ -148,11 +148,18 @@ class PullOut2D(Simulator):
         return BCSlice(slice=self.xd_steel.mesh[0, :, 0, :],
                        var='f', dims=[0], value=0)
 
+    bc_y_0 = tr.Property(depends_on=itags_str)
+
+    @tr.cached_property
+    def _get_bc_y_0(self):
+        return BCSlice(slice=self.xd_steel.mesh[:, -1, :, -1],
+                       var='u', dims=[1], value=0)
+
     bc = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_bc(self):
-        return [self.right_x_s, self.right_x_c]
+        return [self.right_x_s, self.right_x_c, self.bc_y_0]
 
     record = {
         'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),
@@ -207,6 +214,7 @@ s.m_ifc.trait_set(E_T=10000,  # 12900,
 s.tloop.k_max = 1000
 s.tloop.verbose = True
 s.tline.step = 0.5  # 0.005
+s.tline.step = 0.1
 s.tstep.fe_domain.serialized_subdomains
 w = s.get_window()
 w.configure_traits()

@@ -37,12 +37,12 @@ import traits.api as tr
 
 
 #from .mlab_decorators import decorate_figure
-u_max = 0.1
-ds = 14  # / np.pi
-dx = 3 * ds
+u_max = 2
+dx = 1
+ds = 1 / np.pi
 r_steel = ds / 2.0
-A = np.pi * r_steel**2
-r_concrete = ds * 5
+np.pi * r_steel**2
+r_concrete = ds * 3
 tau_bar = 2.0
 E_T = 1000
 s_0 = tau_bar / E_T
@@ -213,9 +213,9 @@ class PullOutAxiSym(Simulator):
 
 s = PullOutAxiSym()
 s.m_ifc.trait_set(E_T=12900,
-                  tau_bar=4.2,
-                  K=11, gamma=55,
-                  c=2.8, S=0.00048, r=0.51)
+                  tau_bar=4,
+                  K=0, gamma=10,
+                  c=1, S=0.025, r=1)
 s.tloop.k_max = 1000
 s.tloop.verbose = True
 s.tline.step = 0.005
