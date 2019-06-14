@@ -6,6 +6,7 @@ Created on 30.04.2019
 import time
 
 from ibvpy.bcond import BCSlice
+from ibvpy.bcond.bc_dof import BCDof
 from ibvpy.fets import FETS2D4Q
 from ibvpy.fets.fets1D5 import FETS1D52ULRH
 from ibvpy.mats.mats1D5.vmats1D5_d import \
@@ -26,6 +27,7 @@ from ibvpy.mats.viz3d_scalar_field import \
     Vis3DStateField, Viz3DScalarField
 from ibvpy.mats.viz3d_tensor_field import \
     Vis3DTensorField, Viz3DTensorField
+from mathkit.mfn import MFnLineArray
 from simulator.api import \
     Simulator
 from simulator.demo.viz2d_fw import Viz2DFW, Vis2DFW
@@ -39,17 +41,15 @@ import traits.api as tr
 
 
 #from .mlab_decorators import decorate_figure
-u_max = 1
+u_max = 0.001
 #f_max = 30
-ds = 14
-dx = 3 * ds
-r_steel = ds / 2
-r_concrete = ds * 5 - r_steel
-n_x = 20
-n_y = 1
+dx = 1
+r_steel = 1
+r_concrete = r_steel * 5
+n_x = 1
 
 
-class PullOutAxiSym(Simulator):
+class PullOut2D(Simulator):
 
     tree_node_list = tr.List([])
 
@@ -92,7 +92,7 @@ class PullOutAxiSym(Simulator):
     def _get_xd_concrete(self):
         return XDomainFEGrid(coord_min=(0, r_steel),
                              coord_max=(dx, r_concrete),
-                             shape=(n_x, n_y),
+                             shape=(n_x, 1),
                              integ_factor=1,
                              fets=FETS2D4Q())
 
@@ -110,7 +110,7 @@ class PullOutAxiSym(Simulator):
             I=self.xd_steel.mesh.I[:, -1],
             J=self.xd_concrete.mesh.I[:, 0],
             fets=FETS1D52ULRH(),
-            integ_factor=0.5
+            integ_factor=1
         )
 
     m_ifc = tr.Property()
@@ -118,7 +118,8 @@ class PullOutAxiSym(Simulator):
     @tr.cached_property
     def _get_m_ifc(self):
         return MATS1D5DPCumPress(
-            E_N=1000000,
+            E_T=1000,
+            E_N=10000,
             algorithmic=True)  # omega_fn_type='li',
 
     domains = tr.Property()
@@ -151,11 +152,36 @@ class PullOutAxiSym(Simulator):
         return BCSlice(slice=self.xd_steel.mesh[0, :, 0, :],
                        var='f', dims=[0], value=0)
 
+    bc_y_0 = tr.Property(depends_on=itags_str)
+
+    @tr.cached_property
+    def _get_bc_y_0(self):
+        return BCSlice(slice=self.xd_steel.mesh[:, -1, :, -1],
+                       var='u', dims=[1], value=0)
+
+    bc_lateral_pressure = tr.Property(depends_on=itags_str)
+
+    @tr.cached_property
+    def _get_bc_lateral_pressure(self):
+        tf = MFnLineArray(xdata=[0, 1], ydata=[1, 1])
+        return BCSlice(slice=self.xd_concrete.mesh[:, -1, :, -1],
+                       var='f', dims=[1], value=10, time_function=tf)
+
+    bc_lateral_pressure_dofs = tr.Property(depends_on=itags_str)
+
+    @tr.cached_property
+    def _get_bc_lateral_pressure_dofs(self):
+        tf = MFnLineArray(xdata=[0, 1], ydata=[1, 1])
+        mesh_slice = self.xd_concrete.mesh[:, -1, :, -1]
+        dofs = np.unique(mesh_slice.dofs[:, :, 1].flatten())
+        return BCDof(dof=dofs[0],
+                     var='f', value=0.00001, time_function=tf)
+
     bc = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_bc(self):
-        return [self.right_x_s, self.right_x_c]
+        return [self.right_x_s, self.right_x_c, self.bc_y_0, self.bc_lateral_pressure_dofs]
 
     record = {
         'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),
@@ -202,14 +228,25 @@ class PullOutAxiSym(Simulator):
         return w
 
 
-s = PullOutAxiSym()
-s.m_ifc.trait_set(E_T=12900,
-                  tau_bar=4.2,
-                  K=11, gamma=55,
-                  c=2.8, S=0.00048, r=0.51)
+s = PullOut2D()
+s.m_ifc.trait_set(E_T=10000,
+                  E_N=1000,  # 12900,
+                  tau_bar=1,  # 4.0,
+                  K=0, gamma=0,  # 10,
+                  c=1, S=0.0025, r=1,
+                  m=0.3,
+                  algorithmic=False)
 s.tloop.k_max = 1000
 s.tloop.verbose = True
-s.tline.step = 0.00005
+s.tline.step = 0.5  # 0.005
+s.tline.step = 0.1
 s.tstep.fe_domain.serialized_subdomains
-w = s.get_window()
-w.configure_traits()
+
+
+s.run()
+print(s.bc_lateral_pressure.dofs)
+print(s.bc_y_0.dofs)
+print('f', s.hist.F_t[:, s.bc_y_0.dofs])
+print('u', s.hist.U_t[:, s.bc_y_0.dofs])
+#w = s.get_window()
+# w.configure_traits()

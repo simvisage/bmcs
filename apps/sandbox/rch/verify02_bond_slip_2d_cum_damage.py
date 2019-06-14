@@ -214,6 +214,7 @@ s.m_ifc.trait_set(E_T=10000,  # 12900,
 s.tloop.k_max = 1000
 s.tloop.verbose = True
 s.tline.step = 0.5  # 0.005
+s.tline.step = 0.1
 s.tstep.fe_domain.serialized_subdomains
 w = s.get_window()
 w.configure_traits()
