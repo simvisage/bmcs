@@ -59,8 +59,10 @@ class HCFF(tr.HasStrictTraits):
         self.file_csv = dialog.path
         
         """ Filling x_axis and y_axis with values """
-        headers = np.array(pd.read_csv(self.file_csv, delimiter=self.delimiter, decimal=self.decimal, nrows=1, header=None))
-        self.columns_headers_list = list(headers[0])
+        headers_array = np.array(pd.read_csv(self.file_csv, delimiter=self.delimiter, decimal=self.decimal, nrows=1, header=None))[0]
+        for i in range(len(headers_array)):
+            headers_array[i] = self.get_valid_file_name(headers_array[i])
+        self.columns_headers_list = list(headers_array)
 
     #=========================================================================
     # Parameters of the filter algorithm
@@ -187,9 +189,8 @@ class HCFF(tr.HasStrictTraits):
         self.file_name = os.path.splitext(os.path.basename(self.file_csv))[0]
 
         for i in range(len(self.columns_headers_list)):
-            saved_file_suffex = self.get_valid_file_name(self.columns_headers_list[i])
             column_array = np.array(pd.read_csv(self.file_csv, delimiter=self.delimiter, decimal=self.decimal, skiprows=self.skip_rows, usecols=[i]))
-            np.save(os.path.join(self.npy_folder_path, self.file_name + '_' + saved_file_suffex + '.npy'), column_array)
+            np.save(os.path.join(self.npy_folder_path, self.file_name + '_' + self.columns_headers_list[i] + '.npy'), column_array)
 
         print('Finsihed parsing csv into npy files.')
 
@@ -200,17 +201,15 @@ class HCFF(tr.HasStrictTraits):
     
     def _generate_filtered_npy_fired(self):
         
-        # Careful! the force name the user see may be different from the saved npy file name because of get_valid_file_name function
         force = np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.force_name + '.npy')) 
         force_filtered, initial_force_index, idx1 = skip_noise_of_ascending_branch_force(force, self.initial_force)
         np.save(os.path.join(self.npy_folder_path, self.file_name + '_' + self.force_name + '_filtered.npy'), force_filtered)
         
         for i in range(len(self.columns_headers_list)):
-            saved_file_suffex = self.get_valid_file_name(self.columns_headers_list[i])
-            if saved_file_suffex != str(self.force_name):
-                disp = np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + saved_file_suffex + '.npy'))
+            if self.columns_headers_list[i] != str(self.force_name):
+                disp = np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.columns_headers_list[i] + '.npy'))
                 filtered_disp = skip_noise_of_ascending_branch_disp(disp, initial_force_index, idx1)
-                np.save(os.path.join(self.npy_folder_path, self.file_name + '_' + saved_file_suffex + '_filtered.npy'), filtered_disp)
+                np.save(os.path.join(self.npy_folder_path, self.file_name + '_' + self.columns_headers_list[i] + '_filtered.npy'), filtered_disp)
         
         print('Filtered npy files are generated.')
         
@@ -295,11 +294,17 @@ class HCFF(tr.HasStrictTraits):
                 )
             ),
             ui.VGroup(
-                ui.HGroup(ui.Item('x_axis'), ui.Item('x_axis_multiplier')),
-                ui.HGroup(ui.Item('y_axis'), ui.Item('y_axis_multiplier')),
-                ui.HGroup(ui.Item('apply_filter'), ui.Item('force_name'), ui.Item('initial_force'), show_border=True, label='Filters'),
-                show_border=True,
-                label='Plotting settings'
+                ui.VGroup(
+                    ui.HGroup(ui.Item('x_axis'), ui.Item('x_axis_multiplier')),
+                    ui.HGroup(ui.Item('y_axis'), ui.Item('y_axis_multiplier')),
+                    show_border=True,
+                    label='Plotting settings'),
+                ui.VGroup(
+                    ui.Item('force_name'),
+                    ui.HGroup(ui.Item('apply_filter'), ui.Item('initial_force'), show_border=True, label='Skip noise of ascending branch filter'),
+                    ui.HGroup(show_border=True, label='Other filter'),
+                    show_border=True,
+                    label='Filters'),
             ),
             ui.UItem('figure', editor=MPLFigureEditor(),
                      resizable=True,

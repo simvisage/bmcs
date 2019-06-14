@@ -12,9 +12,7 @@ def prepend_zero(array):
 
 
 def skip_noise_of_ascending_branch_force(force, initial_force):
-    
-    initial_force = 30
-    
+       
     indices = np.where(np.abs(force) > initial_force)[0]
     initial_force_index = indices[0]
     
