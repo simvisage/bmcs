@@ -191,26 +191,8 @@ class HCFF(tr.HasStrictTraits):
                               show_border=True),
                     ui.HGroup(ui.Item('read_csv_button', show_label=False),
                               ui.Item('read_hdf5_button', show_label=False) ,
-                              show_border=True),
-                    ui.HGroup(ui.Item('parse_csv_to_npy', show_label=False),
-                              ui.Item('generate_filtered_npy', show_label=False),
-                              ui.Item('plot_from_npy_files', show_label=False),
-                              show_border=True),
-                    ui.Item('plot_directly', show_label=False)
+                              show_border=True)
                 )
-            ),
-            ui.VGroup(
-                ui.VGroup(
-                    ui.HGroup(ui.Item('x_axis'), ui.Item('x_axis_multiplier')),
-                    ui.HGroup(ui.Item('y_axis'), ui.Item('y_axis_multiplier')),
-                    show_border=True,
-                    label='Plotting settings'),
-                ui.VGroup(
-                    ui.Item('force_name'),
-                    ui.HGroup(ui.Item('apply_filter'), ui.Item('peak_force_before_cycles'), show_border=True, label='Skip noise of ascending branch filter'),
-                    ui.HGroup(show_border=True, label='Other filter'),
-                    show_border=True,
-                    label='Filters'),
             ),
             ui.UItem('figure', editor=MPLFigureEditor(),
                      resizable=True,
