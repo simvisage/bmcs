@@ -29,7 +29,9 @@ def read_csv(path):
     f = pd.read_csv(path, sep=';', skiprows=skip_rows, nrows=n_rows)
     nf = np.array(f)
     df = pd.DataFrame(nf, columns=['a', 'b', 'c', 'd', 'e', 'f'])
+    print('xxxx')
     print(df)
+    print('xxxx')
 
     df['a'] = [x.replace(',', '.') for x in df['a']]
     df['b'] = [x.replace(',', '.') for x in df['b']]
