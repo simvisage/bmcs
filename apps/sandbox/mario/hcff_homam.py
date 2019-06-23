@@ -7,7 +7,13 @@ Remarks to code
 import os
 import string
 
+<<<<<<< Updated upstream
 from matplotlib.figure import Figure
+=======
+#from bokeh.plotting import figure, show
+from matplotlib.figure import \
+    Figure
+>>>>>>> Stashed changes
 from pyface.api import FileDialog
 from scipy.signal import argrelextrema
 from scipy.signal import savgol_filter
@@ -32,6 +38,7 @@ class HCFF(tr.HasStrictTraits):
     #===========================================================================
     decimal = tr.Enum(',', '.')
     delimiter = tr.Str(';')
+<<<<<<< Updated upstream
     file_csv = tr.File
     open_file_csv = tr.Button('Input file')
     skip_rows = tr.Int(4, auto_set=False, enter_set=True)
@@ -57,6 +64,16 @@ class HCFF(tr.HasStrictTraits):
 #         can_move_all=False,
 #         left_column_title='List'))
     
+=======
+
+    path_hdf5 = tr.Str('')
+
+    data_changed = tr.Event
+
+    def _something_default(self):
+        return Something()
+
+>>>>>>> Stashed changes
     #=========================================================================
     # File management
     #=========================================================================
@@ -79,6 +96,7 @@ class HCFF(tr.HasStrictTraits):
         for i in range(len(headers_array)):
             headers_array[i] = self.get_valid_file_name(headers_array[i])
         self.columns_headers_list = list(headers_array)
+<<<<<<< Updated upstream
         
         """ Saving file name and path and creating NPY folder """
         dir_path = os.path.dirname(self.file_csv)
@@ -91,15 +109,149 @@ class HCFF(tr.HasStrictTraits):
     #=========================================================================
     # Parameters of the filter algorithm
     #=========================================================================
+=======
+
+    #=========================================================================
+    # Parameters of the filter algorithm
+    #=========================================================================
+
+    chunk_size = tr.Int(10000, auto_set=False, enter_set=True)
+
+    skip_rows = tr.Int(4, auto_set=False, enter_set=True)
+
+    # 1) use the decorator
+    @tr.on_trait_change('chunk_size, skip_rows')
+    def whatever_name_size_changed(self):
+        print('chunk-size changed')
+
+    # 2) use the _changed or _fired extension
+    def _chunk_size_changed(self):
+        print('chunk_size changed - calling the named function')
+
+    data = tr.Array(dtype=np.float_)
+
+    read_loadtxt_button = tr.Button()
+
+    def _read_loadtxt_button_fired(self):
+        self.data = np.loadtxt(
+            self.file_csv, skiprows=self.skip_rows, delimiter=self.delimiter)
+        print(self.data.shape)
+
+    read_csv_button = tr.Button
+    read_hdf5_button = tr.Button
+
+    def _read_csv_button_fired(self):
+        self.read_csv()
+
+    def _read_hdf5_button_fired(self):
+        self.read_hdf5_no_filter()
+
+    def read_csv(self):
+        '''Read the csv file and transform it to the hdf5 format.
+        The output file has the same name as the input csv file
+        with an extension hdf5
+        '''
+        path_csv = self.file_csv
+        # Following splitext splits the path into a pair (root, extension)
+        self.path_hdf5 = os.path.splitext(path_csv)[0] + '.hdf5'
+
+        for i, chunk in enumerate(pd.read_csv(path_csv, delimiter=self.delimiter, decimal=self.decimal, skiprows=self.skip_rows, chunksize=self.chunk_size)):
+            chunk_array = np.array(chunk)
+            chunk_data_frame = pd.DataFrame(
+                chunk_array, columns=['a', 'b', 'c', 'd', 'e', 'f'])
+            if i == 0:
+                chunk_data_frame.to_hdf(
+                    self.path_hdf5, 'all_data', mode='w', format='table')
+            else:
+                chunk_data_frame.to_hdf(
+                    self.path_hdf5, 'all_data', append=True)
+
+    def read_hdf5_no_filter(self):
+
+        # reading hdf files is really memory-expensive!
+        force = np.array(pd.read_hdf(self.path_hdf5, columns=['b']))
+        weg = np.array(pd.read_hdf(self.path_hdf5, columns=['c']))
+        disp1 = np.array(pd.read_hdf(self.path_hdf5, columns=['d']))
+        disp2 = np.array(pd.read_hdf(self.path_hdf5, columns=['e']))
+        disp3 = np.array(pd.read_hdf(self.path_hdf5, columns=['f']))
+
+        force = np.concatenate((np.zeros((1, 1)), force))
+        weg = np.concatenate((np.zeros((1, 1)), weg))
+        disp1 = np.concatenate((np.zeros((1, 1)), disp1))
+        disp2 = np.concatenate((np.zeros((1, 1)), disp2))
+        disp3 = np.concatenate((np.zeros((1, 1)), disp3))
+
+        dir_path = os.path.dirname(self.file_csv)
+        npy_folder_path = os.path.join(dir_path, 'NPY')
+        if os.path.exists(npy_folder_path) == False:
+            os.makedirs(npy_folder_path)
+
+        file_name = os.path.splitext(os.path.basename(self.file_csv))[0]
+
+        np.save(os.path.join(npy_folder_path,
+                             file_name + '_Force_nofilter.npy'), force)
+        np.save(os.path.join(npy_folder_path, file_name +
+                             '_Displacement_machine_nofilter.npy'), weg)
+        np.save(os.path.join(npy_folder_path, file_name +
+                             '_Displacement_sliding1_nofilter.npy'), disp1)
+        np.save(os.path.join(npy_folder_path, file_name +
+                             '_Displacement_sliding2_nofilter.npy'), disp2)
+        np.save(os.path.join(npy_folder_path, file_name +
+                             '_Displacement_crack1_nofilter.npy'), disp3)
+
+        # Defining chunk size for matplotlib points visualization
+        mpl.rcParams['agg.path.chunksize'] = 50000
+
+        plt.subplot(111)
+        plt.xlabel('Displacement [mm]')
+        plt.ylabel('kN')
+        plt.title('original data', fontsize=20)
+        plt.plot(disp2, force, 'k')
+        plt.show()
+
+    figure = tr.Instance(Figure)
+>>>>>>> Stashed changes
 
     def _figure_default(self):
         figure = Figure(facecolor='white')
         figure.set_tight_layout(True)
         return figure
+<<<<<<< Updated upstream
        
     def _parse_csv_to_npy_fired(self):
         print('Parsing csv into npy files...')
         
+=======
+
+    columns_headers_list = tr.List([])
+    x_axis = tr.Enum(values='columns_headers_list')
+    y_axis = tr.Enum(values='columns_headers_list')
+    x_axis_multiplier = tr.Trait(1, {1: 1, -1: -1})
+    y_axis_multiplier = tr.Trait(1, {1: 1, -1: -1})
+    npy_folder_path = tr.Str
+    file_name = tr.Str
+    apply_filter = tr.Bool
+    force_name = tr.Str('Kraft')
+    initial_force = tr.Float(30)
+
+    plot = tr.Button
+    parse_csv_to_npy = tr.Button
+    plot_from_npy_files = tr.Button
+    plot_directly = tr.Button
+    generate_filtered_npy = tr.Button
+
+    def _parse_csv_to_npy_fired(self):
+
+        print('Parsing csv into npy files...')
+
+        dir_path = os.path.dirname(self.file_csv)
+        self.npy_folder_path = os.path.join(dir_path, 'NPY')
+        if os.path.exists(self.npy_folder_path) == False:
+            os.makedirs(self.npy_folder_path)
+
+        self.file_name = os.path.splitext(os.path.basename(self.file_csv))[0]
+
+>>>>>>> Stashed changes
         for i in range(len(self.columns_headers_list)):
             column_array = np.array(pd.read_csv(
                 self.file_csv, delimiter=self.delimiter, decimal=self.decimal, skiprows=self.skip_rows, usecols=[i]))
@@ -116,6 +268,7 @@ class HCFF(tr.HasStrictTraits):
 
     def _generate_filtered_npy_fired(self):
 
+<<<<<<< Updated upstream
         # 1- Export filtered force
         force = np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.force_name + '.npy')).flatten()
         peak_force_before_cycles_index = np.where(abs((force)) > abs(self.peak_force_before_cycles))[0][0]
@@ -230,6 +383,40 @@ class HCFF(tr.HasStrictTraits):
 
     def _plot_fired(self):
         
+=======
+        force = np.load(os.path.join(self.npy_folder_path,
+                                     self.file_name + '_' + self.force_name + '.npy'))
+        force_filtered, initial_force_index, idx1 = skip_noise_of_ascending_branch_force(
+            force, self.initial_force)
+        np.save(os.path.join(self.npy_folder_path, self.file_name +
+                             '_' + self.force_name + '_filtered.npy'), force_filtered)
+
+        for i in range(len(self.columns_headers_list)):
+            if self.columns_headers_list[i] != str(self.force_name):
+                disp = np.load(os.path.join(
+                    self.npy_folder_path,
+                    self.file_name + '_' +
+                    self.columns_headers_list[i] + '.npy')
+                )
+                filtered_disp = skip_noise_of_ascending_branch_disp(
+                    disp, initial_force_index, idx1)
+                np.save(os.path.join(self.npy_folder_path, self.file_name + '_' +
+                                     self.columns_headers_list[i] + '_filtered.npy'), filtered_disp)
+
+        print('Filtered npy files are generated.')
+
+    def _plot_fired(self):
+        ax = self.figure.add_subplot(111)
+        print('plotting figure')
+        print(type(self.x_axis), type(self.y_axis))
+        print(self.data[:, 1])
+        print(self.data[:, self.x_axis])
+        print(self.data[:, self.y_axis])
+        ax.plot(self.data[:, self.x_axis], self.data[:, self.y_axis])
+
+    def _plot_from_npy_files_fired(self):
+
+>>>>>>> Stashed changes
         print('Loading npy files...')
 
         if self.apply_filter:
@@ -265,6 +452,7 @@ class HCFF(tr.HasStrictTraits):
 #
 #         plt.show()
         print('Finished plotting!')
+<<<<<<< Updated upstream
         
     def _plot_creep_fired(self):
         
@@ -282,6 +470,38 @@ class HCFF(tr.HasStrictTraits):
         plt.plot(np.arange(0, disp_min.size), disp_min, 'k', linewidth=0.8, color='green')
         
         plt.show()
+=======
+
+    def _plot_directly_fired(self):
+
+        print('Loading csv into numpy arrays...')
+        x_axis_index = self.columns_headers_list.index(self.x_axis)
+        y_axis_index = self.columns_headers_list.index(self.y_axis)
+        x_axis_array = float(self.x_axis_multiplier) * np.array(pd.read_csv(
+            self.file_csv, delimiter=self.delimiter, decimal=self.decimal,
+            skiprows=self.skip_rows, usecols=[x_axis_index])
+        )
+        y_axis_array = float(self.y_axis_multiplier) * np.array(pd.read_csv(
+            self.file_csv, delimiter=self.delimiter, decimal=self.decimal,
+            skiprows=self.skip_rows, usecols=[y_axis_index])
+        )
+
+        print('Plotting...')
+        mpl.rcParams['agg.path.chunksize'] = 50000
+        ax = self.figure.add_subplot(111)
+        ax.set_xlabel('Displacement [mm]')
+        ax.set_ylabel('kN')
+        ax.set_title('Original data', fontsize=20)
+        ax.plot(x_axis_array, y_axis_array, 'k', linewidth=0.8)
+        self.data_changed = True
+
+#         plt.xlabel('Displacement [mm]')
+#         plt.ylabel('kN')
+#         plt.title('Original data', fontsize=20)
+#         plt.plot(x_axis_array, y_axis_array, 'k', linewidth=0.8)
+#
+#         plt.show()
+>>>>>>> Stashed changes
         print('Finished plotting!')
     
     #===========================================================================
@@ -302,10 +522,25 @@ class HCFF(tr.HasStrictTraits):
                     label='Filter parameters'
                 ),
                 ui.VGroup(
+<<<<<<< Updated upstream
                     ui.Item('parse_csv_to_npy', show_label=False),
                     ui.Item('generate_filtered_npy', show_label=False),
                     ui.Item('plot', show_label=False),
                     ui.Item('plot_creep', show_label=False)
+=======
+                    ui.HGroup(ui.Item('read_loadtxt_button', show_label=False),
+                              ui.Item('plot', show_label=False),
+                              show_border=True),
+                    ui.HGroup(ui.Item('read_csv_button', show_label=False),
+                              ui.Item('read_hdf5_button', show_label=False),
+                              show_border=True),
+                    ui.HGroup(ui.Item('parse_csv_to_npy', show_label=False),
+                              ui.Item('generate_filtered_npy',
+                                      show_label=False),
+                              ui.Item('plot_from_npy_files', show_label=False),
+                              show_border=True),
+                    ui.Item('plot_directly', show_label=False)
+>>>>>>> Stashed changes
                 )
             ),
             ui.VGroup(
@@ -316,10 +551,15 @@ class HCFF(tr.HasStrictTraits):
                     label='Plotting settings'),
                 ui.VGroup(
                     ui.Item('force_name'),
+<<<<<<< Updated upstream
                     ui.HGroup(ui.Item('apply_filter'), ui.Item('peak_force_before_cycles'), show_border=True, label='Skip noise of ascending branch filter'),
                     ui.Item('force_max'),
                     ui.Item('force_min'),
 #                     ui.Item('plots_list'),
+=======
+                    ui.HGroup(ui.Item('apply_filter'), ui.Item(
+                        'initial_force'), show_border=True, label='Skip noise of ascending branch filter'),
+>>>>>>> Stashed changes
                     ui.HGroup(show_border=True, label='Other filter'),
                     show_border=True,
                     label='Filters'),
