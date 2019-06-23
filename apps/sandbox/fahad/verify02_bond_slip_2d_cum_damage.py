@@ -165,7 +165,7 @@ class PullOut2D(Simulator):
     def _get_bc_lateral_pressure(self):
         tf = MFnLineArray(xdata=[0, 1], ydata=[1, 1])
         return BCSlice(slice=self.xd_concrete.mesh[:, -1, :, -1],
-                       var='f', dims=[1], value=10, time_function=tf)
+                       var='f', dims=[1], value=0, time_function=tf)
 
     bc_lateral_pressure_dofs = tr.Property(depends_on=itags_str)
 
@@ -238,15 +238,15 @@ s.m_ifc.trait_set(E_T=10000,
                   algorithmic=False)
 s.tloop.k_max = 1000
 s.tloop.verbose = True
-s.tline.step = 0.5  # 0.005
+s.tline.step = 0.0005  # 0.005
 s.tline.step = 0.1
 s.tstep.fe_domain.serialized_subdomains
 
 
 s.run()
-print(s.bc_lateral_pressure.dofs)
-print(s.bc_y_0.dofs)
-print('f', s.hist.F_t[:, s.bc_y_0.dofs])
-print('u', s.hist.U_t[:, s.bc_y_0.dofs])
+# print(s.bc_lateral_pressure.dofs)
+# print(s.bc_y_0.dofs)
+#print('f', s.hist.F_t[:, s.bc_y_0.dofs])
+#print('u', s.hist.U_t[:, s.bc_y_0.dofs])
 #w = s.get_window()
 # w.configure_traits()
