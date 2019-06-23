@@ -1,7 +1,8 @@
 '''
 Created on Apr 24, 2019
 
-@author: rch
+Remarks to code
+ - Homam please keep the line length at the maximum 80 characters
 '''
 import os
 import string
@@ -71,9 +72,10 @@ class HCFF(tr.HasStrictTraits):
                             default_path=self.file_csv)
         dialog.open()
         self.file_csv = dialog.path
-        
+
         """ Filling x_axis and y_axis with values """
-        headers_array = np.array(pd.read_csv(self.file_csv, delimiter=self.delimiter, decimal=self.decimal, nrows=1, header=None))[0]
+        headers_array = np.array(pd.read_csv(
+            self.file_csv, delimiter=self.delimiter, decimal=self.decimal, nrows=1, header=None))[0]
         for i in range(len(headers_array)):
             headers_array[i] = self.get_valid_file_name(headers_array[i])
         self.columns_headers_list = list(headers_array)
@@ -99,16 +101,19 @@ class HCFF(tr.HasStrictTraits):
         print('Parsing csv into npy files...')
         
         for i in range(len(self.columns_headers_list)):
-            column_array = np.array(pd.read_csv(self.file_csv, delimiter=self.delimiter, decimal=self.decimal, skiprows=self.skip_rows, usecols=[i]))
-            np.save(os.path.join(self.npy_folder_path, self.file_name + '_' + self.columns_headers_list[i] + '.npy'), column_array)
+            column_array = np.array(pd.read_csv(
+                self.file_csv, delimiter=self.delimiter, decimal=self.decimal, skiprows=self.skip_rows, usecols=[i]))
+            np.save(os.path.join(self.npy_folder_path, self.file_name +
+                                 '_' + self.columns_headers_list[i] + '.npy'), column_array)
 
         print('Finsihed parsing csv into npy files.')
 
     def get_valid_file_name(self, original_file_name):
         valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
-        new_valid_file_name = ''.join(c for c in original_file_name if c in valid_chars)
+        new_valid_file_name = ''.join(
+            c for c in original_file_name if c in valid_chars)
         return new_valid_file_name
-    
+
     def _generate_filtered_npy_fired(self):
 
         # 1- Export filtered force
@@ -226,24 +231,39 @@ class HCFF(tr.HasStrictTraits):
     def _plot_fired(self):
         
         print('Loading npy files...')
-        
+
         if self.apply_filter:
-            x_axis_array = self.x_axis_multiplier * np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.x_axis + '_filtered.npy'))
-            y_axis_array = self.y_axis_multiplier * np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.y_axis + '_filtered.npy'))
+            x_axis_array = float(self.x_axis_multiplier) * \
+                np.load(os.path.join(self.npy_folder_path,
+                                     self.file_name + '_' + self.x_axis + '_filtered.npy'))
+            y_axis_array = float(self.y_axis_multiplier) * \
+                np.load(os.path.join(self.npy_folder_path,
+                                     self.file_name + '_' + self.y_axis + '_filtered.npy'))
         else:
-            x_axis_array = self.x_axis_multiplier * np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.x_axis + '.npy'))
-            y_axis_array = self.y_axis_multiplier * np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.y_axis + '.npy'))
-        
+            x_axis_array = float(self.x_axis_multiplier) * \
+                np.load(os.path.join(self.npy_folder_path,
+                                     self.file_name + '_' + self.x_axis + '.npy'))
+            y_axis_array = float(self.y_axis_multiplier) * \
+                np.load(os.path.join(self.npy_folder_path,
+                                     self.file_name + '_' + self.y_axis + '.npy'))
+
         print('Plotting...')
         mpl.rcParams['agg.path.chunksize'] = 50000
-        
-        plt.figure()
-        plt.xlabel('Displacement [mm]')
-        plt.ylabel('kN')
-        plt.title('Original data', fontsize=20)
-        plt.plot(x_axis_array, y_axis_array, 'k', linewidth=0.8)
-        
-        plt.show()
+
+        ax = self.figure.add_subplot(111)
+        ax.xlabel('Displacement [mm]')
+        ax.ylabel('kN')
+        ax.title('Original data', fontsize=20)
+        ax.plot(x_axis_array, y_axis_array, 'k', linewidth=0.8)
+        self.data_changed = True
+
+#         plt.figure()
+#         plt.xlabel('Displacement [mm]')
+#         plt.ylabel('kN')
+#         plt.title('Original data', fontsize=20)
+#         plt.plot(x_axis_array, y_axis_array, 'k', linewidth=0.8)
+#
+#         plt.show()
         print('Finished plotting!')
         
     def _plot_creep_fired(self):
