@@ -7,7 +7,8 @@ import os
 import string
 
 from matplotlib.figure import Figure
-from pyface.api import FileDialog
+from matplotlib.pyplot import figure
+from pyface.api import FileDialog, MessageDialog
 from scipy.signal import argrelextrema
 from scipy.signal import savgol_filter
 from util.traits.editors import MPLFigureEditor
@@ -19,7 +20,7 @@ import pandas as pd
 import traits.api as tr
 import traitsui.api as ui
 
-from .HCFFPlot import HCFFPlot
+from .ColumnsAverage import ColumnsAverage
 
 
 class HCFF(tr.HasStrictTraits):
@@ -42,20 +43,24 @@ class HCFF(tr.HasStrictTraits):
     y_axis_multiplier = tr.Enum(-1, 1)
     npy_folder_path = tr.Str
     file_name = tr.Str
-    apply_filter = tr.Bool
+    apply_filters = tr.Bool
     force_name = tr.Str('Kraft')
     peak_force_before_cycles = tr.Float(30)
-    plot_creep = tr.Button
-    parse_csv_to_npy = tr.Button
+    plots_num = tr.Enum(1, 2, 3, 4, 6, 9)
+    plot_list = tr.List()
     plot = tr.Button
+    add_plot = tr.Button
+    add_creep_plot = tr.Button
+    parse_csv_to_npy = tr.Button
     generate_filtered_npy = tr.Button
+    add_columns_average = tr.Button
     force_max = tr.Float(100)
     force_min = tr.Float(40)
 #     plots_list = tr.List(editor=ui.SetEditor(
 #         values=['kumquats', 'pomegranates', 'kiwi'],
 #         can_move_all=False,
 #         left_column_title='List'))
-    
+
     #=========================================================================
     # File management
     #=========================================================================
@@ -109,6 +114,11 @@ class HCFF(tr.HasStrictTraits):
         new_valid_file_name = ''.join(c for c in original_file_name if c in valid_chars)
         return new_valid_file_name
     
+    def _add_columns_average_fired(self):
+        columns_average = ColumnsAverage()
+#         columns_average.set_columns_headers_list(self.columns_headers_list)
+        columns_average.configure_traits()
+
     def _generate_filtered_npy_fired(self):
 
         # 1- Export filtered force
@@ -134,7 +144,9 @@ class HCFF(tr.HasStrictTraits):
                 disp = np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.columns_headers_list[i] + '.npy')).flatten()
                 disp_ascending = disp[0:peak_force_before_cycles_index]
                 disp_rest = disp[peak_force_before_cycles_index:]
-                filtered_disp = self.smooth_ascending_disp_branch(disp_ascending, disp_rest, force_max_min_indices)
+                disp_ascending = savgol_filter(disp_ascending, window_length=51, polyorder=2)
+                disp_rest = disp_rest[force_max_min_indices]
+                filtered_disp = np.concatenate((disp_ascending, disp_rest)) 
                 np.save(os.path.join(self.npy_folder_path, self.file_name + '_' + self.columns_headers_list[i] + '_filtered.npy'), filtered_disp)
                 
         # 3- Export creep for displacements
@@ -169,12 +181,6 @@ class HCFF(tr.HasStrictTraits):
             if abs(array[min_index]) < abs(range_lower_value):
                 cutted_min_indices.append(min_index)
         return cutted_max_indices, cutted_min_indices
-        
-    def smooth_ascending_disp_branch(self, disp_ascending, disp_rest, force_extrema_indices):
-        disp_ascending = savgol_filter(disp_ascending, window_length=51, polyorder=2)
-        disp_rest = disp_rest[force_extrema_indices]
-        disp = np.concatenate((disp_ascending, disp_rest)) 
-        return disp
 
     def get_array_max_and_min_indices(self, input_array):
 
@@ -191,8 +197,8 @@ class HCFF(tr.HasStrictTraits):
             force_min_indices = argrelextrema(input_array, np.greater_equal)[0]
         
         # Remove subsequent max/min indices (np.greater_equal will give 1,2 for [4, 8, 8, 1])
-        force_max_indices = self.remove_sequent_max_values(force_max_indices)
-        force_min_indices = self.remove_sequent_min_values(force_min_indices)
+        force_max_indices = self.remove_subsequent_max_values(force_max_indices)
+        force_min_indices = self.remove_subsequent_min_values(force_min_indices)
         
         # If size is not equal remove the last element from the big one
         if force_max_indices.size > force_min_indices.size:
@@ -202,7 +208,7 @@ class HCFF(tr.HasStrictTraits):
             
         return force_max_indices, force_min_indices
     
-    def remove_sequent_max_values(self, force_max_indices):
+    def remove_subsequent_max_values(self, force_max_indices):
         to_delete_from_maxima = []
         for i in range(force_max_indices.size - 1):
             if force_max_indices[i + 1] - force_max_indices[i] == 1:
@@ -210,8 +216,8 @@ class HCFF(tr.HasStrictTraits):
         
         force_max_indices = np.delete(force_max_indices, to_delete_from_maxima)
         return force_max_indices
-        
-    def remove_sequent_min_values(self, force_min_indices):
+
+    def remove_subsequent_min_values(self, force_min_indices):
         to_delete_from_minima = []
         for i in range(force_min_indices.size - 1):
             if force_min_indices[i + 1] - force_min_indices[i] == 1:
@@ -222,47 +228,91 @@ class HCFF(tr.HasStrictTraits):
     #===========================================================================
     # Plotting
     #===========================================================================
+    plot_figure_num = tr.Int(0)
 
     def _plot_fired(self):
+        self.plot_figure_num += 1
+        plt.draw()
+        plt.show()
+
+    def _add_plot_fired(self):
         
+        if (len(self.plot_list) >= self.plots_num):
+            dialog = MessageDialog(title='Attention!', message='Max plots number is {}'.format(self.plots_num))
+            dialog.open()
+            return
+
         print('Loading npy files...')
         
-        if self.apply_filter:
+        if self.apply_filters:
+            x_axis_name = self.x_axis + '_filtered'
+            y_axis_name = self.y_axis + '_filtered'
             x_axis_array = self.x_axis_multiplier * np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.x_axis + '_filtered.npy'))
             y_axis_array = self.y_axis_multiplier * np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.y_axis + '_filtered.npy'))
         else:
+            x_axis_name = self.x_axis
+            y_axis_name = self.y_axis
             x_axis_array = self.x_axis_multiplier * np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.x_axis + '.npy'))
             y_axis_array = self.y_axis_multiplier * np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.y_axis + '.npy'))
         
-        print('Plotting...')
+        print('Adding Plot...')
         mpl.rcParams['agg.path.chunksize'] = 50000
-        
-        plt.figure()
+
+        plt.figure(self.plot_figure_num)
+        self.applyNewSubplot()
+
         plt.xlabel('Displacement [mm]')
         plt.ylabel('kN')
         plt.title('Original data', fontsize=20)
         plt.plot(x_axis_array, y_axis_array, 'k', linewidth=0.8)
         
-        plt.show()
-        print('Finished plotting!')
+        self.plot_list.append('{}, {}'.format(x_axis_name, y_axis_name))
+
+        print('Finished adding plot!')
+    
+    def applyNewSubplot(self):
+        if (self.plots_num == 1):
+            plt.subplot(111)
+        elif (self.plots_num == 2):
+            plot_location = int('12' + str(len(self.plot_list) + 1))
+            plt.subplot(plot_location)
+        elif (self.plots_num == 3):
+            plot_location = int('13' + str(len(self.plot_list) + 1))
+            plt.subplot(plot_location)
+        elif (self.plots_num == 4):
+            plot_location = int('22' + str(len(self.plot_list) + 1))
+            plt.subplot(plot_location)
+        elif (self.plots_num == 6):
+            plot_location = int('23' + str(len(self.plot_list) + 1))
+            plt.subplot(plot_location)
+        elif (self.plots_num == 9):
+            plot_location = int('33' + str(len(self.plot_list) + 1))
+            plt.subplot(plot_location)
+    
+    def _add_creep_plot_fired(self):
         
-    def _plot_creep_fired(self):
+        if (len(self.plot_list) >= self.plots_num):
+            dialog = MessageDialog(title='Attention!', message='Max plots number is {}'.format(self.plots_num))
+            dialog.open()
+            return
         
         disp_max = self.x_axis_multiplier * np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.x_axis + '_max.npy'))
         disp_min = self.x_axis_multiplier * np.load(os.path.join(self.npy_folder_path, self.file_name + '_' + self.x_axis + '_min.npy'))
-        
-        print('Plotting...')
+         
+        print('Adding creep plot...')
         mpl.rcParams['agg.path.chunksize'] = 50000
-        
-        plt.figure()
+         
+        plt.figure(self.plot_figure_num)
+        self.applyNewSubplot()
         plt.xlabel('Cycles number')
         plt.ylabel('mm')
         plt.title('Fatigue creep curve', fontsize=20)
         plt.plot(np.arange(0, disp_max.size), disp_max, 'k', linewidth=0.8, color='red')
         plt.plot(np.arange(0, disp_min.size), disp_min, 'k', linewidth=0.8, color='green')
         
-        plt.show()
-        print('Finished plotting!')
+        self.plot_list.append('Plot {}'.format(len(self.plot_list) + 1))
+        
+        print('Finished adding creep plot!')
     
     #===========================================================================
     # Configuration of the view
@@ -275,46 +325,49 @@ class HCFF(tr.HasStrictTraits):
                     ui.UItem('file_csv', style='readonly'),
                     label='Input data'
                 ),
+                ui.Item('add_columns_average', show_label=False),
                 ui.VGroup(
                     ui.Item('skip_rows'),
                     ui.Item('decimal'),
                     ui.Item('delimiter'),
+                    ui.Item('parse_csv_to_npy', show_label=False),
                     label='Filter parameters'
                 ),
                 ui.VGroup(
-                    ui.Item('parse_csv_to_npy', show_label=False),
-                    ui.Item('generate_filtered_npy', show_label=False),
-                    ui.Item('plot', show_label=False),
-                    ui.Item('plot_creep', show_label=False)
-                )
-            ),
-            ui.VGroup(
-                ui.VGroup(
+                    ui.Item('plots_num'),
                     ui.HGroup(ui.Item('x_axis'), ui.Item('x_axis_multiplier')),
                     ui.HGroup(ui.Item('y_axis'), ui.Item('y_axis_multiplier')),
+                    ui.HGroup(ui.Item('add_plot', show_label=False), ui.Item('apply_filters')),
+                    ui.HGroup(ui.Item('add_creep_plot', show_label=False)),
+                    ui.Item('plot_list'),
+                    ui.Item('plot', show_label=False),
                     show_border=True,
                     label='Plotting settings'),
-                ui.VGroup(
+            ),
+            ui.VGroup(
                     ui.Item('force_name'),
-                    ui.HGroup(ui.Item('apply_filter'), ui.Item('peak_force_before_cycles'), show_border=True, label='Skip noise of ascending branch filter'),
-                    ui.Item('force_max'),
-                    ui.Item('force_min'),
+                    ui.HGroup(ui.Item('peak_force_before_cycles'), show_border=True, label='Skip noise of ascending branch:'),
 #                     ui.Item('plots_list'),
-                    ui.HGroup(show_border=True, label='Other filter'),
+                    ui.VGroup(ui.Item('force_max'),
+                              ui.Item('force_min'),
+                              show_border=True,
+                              label='Cut fake cycles for creep:'),
+                    ui.Item('generate_filtered_npy', show_label=False),
                     show_border=True,
-                    label='Filters'),
+                    label='Filters'
             ),
             ui.UItem('figure', editor=MPLFigureEditor(),
                      resizable=True,
                      springy=True,
+                     width=0.3,
                      label='2d plots'),
         ),
         resizable=True,
-        width=0.8,
+        width=0.6,
         height=0.6
     )
 
-
+        
 if __name__ == '__main__':
     hcff = HCFF(file_csv='C:\\Users\\hspartali\\Desktop\\')
     hcff.configure_traits()
