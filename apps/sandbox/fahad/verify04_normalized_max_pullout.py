@@ -17,10 +17,24 @@ from .verify02_bond_slip_2d_cum_damage import PullOut2D
 
 def verify_normalized_pullout_force():
 
-    f_list = [-10, -20]
+    ds = 16
+    r_steel = ds / 2
+    r_concrete = r_steel * 5
+    n_x = 1
+    n_y = 1
+
+    f_list = [0, -5, -10, -15, -20]
 
     for f in f_list:
         s = PullOut2D(u_max=0.1)
+        s._get_xd_steel(coord_min=(0, 0),
+                        coord_max=(ds, r_steel),
+                        shape=(n_x, 1)
+                        )
+        s._get_xd_concrete(coord_min=(0, r_steel),
+                           coord_max=(ds, r_concrete),
+                           shape=(n_x, n_y)
+                           )
         s.m_steel.trait_set(E=200000, nu=0.2)
         s.m_concrete.trait_set(E=28000, nu=0.3)
         s.m_ifc.trait_set(E_T=10000,
