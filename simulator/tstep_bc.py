@@ -92,6 +92,7 @@ class TStepBC(HasStrictTraits):
     '''
     @cached_property
     def _get_K(self):
+        print('K setup')
         K = SysMtxAssembly()
         self.bcond_mngr.setup(None)
         self.bcond_mngr.apply_essential(K)
