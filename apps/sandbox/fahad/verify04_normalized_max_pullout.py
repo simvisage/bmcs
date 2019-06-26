@@ -27,14 +27,14 @@ def verify_normalized_pullout_force():
 
     for f in f_list:
         s = PullOut2D(u_max=0.1)
-        s._get_xd_steel(coord_min=(0, 0),
-                        coord_max=(ds, r_steel),
-                        shape=(n_x, 1)
-                        )
-        s._get_xd_concrete(coord_min=(0, r_steel),
-                           coord_max=(ds, r_concrete),
-                           shape=(n_x, n_y)
-                           )
+        s.xd_steel.trait_set(coord_min=(0, 0),
+                             coord_max=(ds, r_steel),
+                             shape=(n_x, 1)
+                             )
+        s.xd_concrete.trait_set(coord_min=(0, r_steel),
+                                coord_max=(ds, r_concrete),
+                                shape=(n_x, n_y)
+                                )
         s.m_steel.trait_set(E=200000, nu=0.2)
         s.m_concrete.trait_set(E=28000, nu=0.3)
         s.m_ifc.trait_set(E_T=10000,
@@ -42,7 +42,7 @@ def verify_normalized_pullout_force():
                           m=0.3,
                           algorithmic=False)
         s.bc_lateral_pressure.trait_set(var='f', value=f)
-        s.tloop.verbose = True
+        s.tloop.verbose = False
         s.tstep.model_structure_changed = True
         s.run()
         p = np.max(s.record['Pw'].sim.hist.F_t)

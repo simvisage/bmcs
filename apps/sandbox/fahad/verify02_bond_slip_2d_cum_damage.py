@@ -38,7 +38,6 @@ u_max = 0.001
 dx = 1
 r_steel = 1
 r_concrete = r_steel * 5
-n_x = 1
 
 
 class PullOut2D(Simulator):
@@ -62,13 +61,17 @@ class PullOut2D(Simulator):
             self.m_concrete,
         ]
 
+    n_x = tr.Float(1, auto_set=False, enter_set=True, MESH=True)
+
+    L_x = tr.Float(1, auto_set=False, enter_set=True, GEO=True)
+
     xd_steel = tr.Property()
 
     @tr.cached_property
     def _get_xd_steel(self):
         return XDomainFEGrid(coord_min=(0, 0),
-                             coord_max=(dx, r_steel),
-                             shape=(n_x, 1),
+                             coord_max=(self.L_x, r_steel),
+                             shape=(self.n_x, 1),
                              integ_factor=1,
                              fets=FETS2D4Q())
 
@@ -83,8 +86,8 @@ class PullOut2D(Simulator):
     @tr.cached_property
     def _get_xd_concrete(self):
         return XDomainFEGrid(coord_min=(0, r_steel),
-                             coord_max=(dx, r_concrete),
-                             shape=(n_x, 1),
+                             coord_max=(self.L_x, r_concrete),
+                             shape=(self.n_x, 1),
                              integ_factor=1,
                              fets=FETS2D4Q())
 
@@ -111,7 +114,7 @@ class PullOut2D(Simulator):
     def _get_m_ifc(self):
         return MATS1D5DPCumPress(
             E_T=1000,
-            E_N=10000,
+            E_N=100000,
             algorithmic=True)  # omega_fn_type='li',
 
     domains = tr.Property()
@@ -152,6 +155,8 @@ class PullOut2D(Simulator):
 
     @tr.cached_property
     def _get_bc_y_0(self):
+        #         return BCSlice(slice=self.xd_concrete.mesh[:, 0, :, 0],
+        #                        var='u', dims=[1], value=0)
         return BCSlice(slice=self.xd_steel.mesh[:, -1, :, -1],
                        var='u', dims=[1], value=0)
 
@@ -161,7 +166,7 @@ class PullOut2D(Simulator):
 
     @tr.cached_property
     def _get_bc_lateral_pressure(self):
-        tf = MFnLineArray(xdata=[0, 1], ydata=[1, 1])
+        tf = MFnLineArray(xdata=[0, 1], ydata=[0, 1])
         return BCSlice(slice=self.xd_concrete.mesh[:, -1, :, -1],
                        var='f', dims=[1], value=self.f_lateral, time_function=tf)
 
@@ -180,8 +185,9 @@ class PullOut2D(Simulator):
 
     @tr.cached_property
     def _get_bc(self):
-        # + self.bc_lateral_pressure_dofs
-        return [self.right_x_s, self.right_x_c, self.bc_y_0]
+        self.bc_lateral_pressure_dofs
+        return [self.right_x_s, self.right_x_c, self.bc_y_0] + \
+            self.bc_lateral_pressure_dofs
 
     record = {
         'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),
@@ -228,25 +234,27 @@ class PullOut2D(Simulator):
         return w
 
 
-s = PullOut2D()
-s.m_ifc.trait_set(E_T=10000,
-                  E_N=1000,  # 12900,
-                  tau_bar=1,  # 4.0,
-                  K=0, gamma=0,  # 10,
-                  c=1, S=0.0025, r=1,
-                  m=0.3,
-                  algorithmic=False)
-s.tloop.k_max = 1000
-s.tloop.verbose = True
-s.tline.step = 0.0005  # 0.005
-s.tline.step = 0.1
-s.tstep.fe_domain.serialized_subdomains
+if __name__ == '__main__':
+    s = PullOut2D(n_x=10,)
+    s.m_ifc.trait_set(E_T=10000,
+                      E_N=1e9,
+                      tau_bar=1,  # 4.0,
+                      K=0, gamma=0,  # 10,
+                      c=1, S=0.0025, r=1,
+                      m=0.3,
+                      algorithmic=False)
+    s.f_lateral = -0.001
+    s.u_max = 0.01
+    s.tloop.k_max = 1000
+    s.tloop.verbose = True
+    s.tline.step = 0.0005  # 0.005
+    s.tline.step = 0.01
+    s.tstep.fe_domain.serialized_subdomains
+    s.run()
 
-
-s.run()
-# print(s.bc_lateral_pressure.dofs)
-# print(s.bc_y_0.dofs)
-#print('f', s.hist.F_t[:, s.bc_y_0.dofs])
-#print('u', s.hist.U_t[:, s.bc_y_0.dofs])
-#w = s.get_window()
-# w.configure_traits()
+    # print(s.bc_lateral_pressure.dofs)
+    # print(s.bc_y_0.dofs)
+    #print('f', s.hist.F_t[:, s.bc_y_0.dofs])
+    #print('u', s.hist.U_t[:, s.bc_y_0.dofs])
+    w = s.get_window()
+    w.configure_traits()
