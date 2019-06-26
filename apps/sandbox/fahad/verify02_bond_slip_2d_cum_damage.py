@@ -9,18 +9,10 @@ from ibvpy.bcond import BCSlice
 from ibvpy.bcond.bc_dof import BCDof
 from ibvpy.fets import FETS2D4Q
 from ibvpy.fets.fets1D5 import FETS1D52ULRH
-from ibvpy.mats.mats1D5.vmats1D5_d import \
-    MATS1D5D
-from ibvpy.mats.mats1D5.vmats1D5_dp import \
-    MATS1D5DP
 from ibvpy.mats.mats1D5.vmats1D5_dp_cum_press import \
     MATS1D5DPCumPress
 from ibvpy.mats.mats2D.mats2D_elastic.vmats2D_elastic import \
     MATS2DElastic
-from ibvpy.mats.mats3D.mats3D_elastic.vmats3D_elastic import \
-    MATS3DElastic
-from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
-    MATS3DDesmorat
 from ibvpy.mats.viz2d_field import \
     Vis2DField, Viz2DField
 from ibvpy.mats.viz3d_scalar_field import \
@@ -133,12 +125,16 @@ class PullOut2D(Simulator):
             (self.xd_ifc, self.m_ifc),
         ]
 
+    u_max = tr.Float(BC=True, auto_set=False, enter_set=True)
+    '''Radius of the pullout test
+    '''
+
     right_x_s = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_right_x_s(self):
         return BCSlice(slice=self.xd_steel.mesh[-1, :, -1, :],
-                       var='u', dims=[0], value=u_max)
+                       var='u', dims=[0], value=self.u_max)
     right_x_c = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
@@ -159,13 +155,15 @@ class PullOut2D(Simulator):
         return BCSlice(slice=self.xd_steel.mesh[:, -1, :, -1],
                        var='u', dims=[1], value=0)
 
+    f_lateral = tr.Float(0, auto_set=False, enter_set=True, BC=True)
+
     bc_lateral_pressure = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_bc_lateral_pressure(self):
         tf = MFnLineArray(xdata=[0, 1], ydata=[1, 1])
         return BCSlice(slice=self.xd_concrete.mesh[:, -1, :, -1],
-                       var='f', dims=[1], value=0, time_function=tf)
+                       var='f', dims=[1], value=self.f_lateral, time_function=tf)
 
     bc_lateral_pressure_dofs = tr.Property(depends_on=itags_str)
 
@@ -174,14 +172,16 @@ class PullOut2D(Simulator):
         tf = MFnLineArray(xdata=[0, 1], ydata=[1, 1])
         mesh_slice = self.xd_concrete.mesh[:, -1, :, -1]
         dofs = np.unique(mesh_slice.dofs[:, :, 1].flatten())
-        return BCDof(dof=dofs[0],
-                     var='f', value=0.00001, time_function=tf)
+        return [BCDof(dof=dof,
+                      var='f', value=self.f_lateral, time_function=tf)
+                for dof in dofs]
 
     bc = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_bc(self):
-        return [self.right_x_s, self.right_x_c, self.bc_y_0, self.bc_lateral_pressure_dofs]
+        # + self.bc_lateral_pressure_dofs
+        return [self.right_x_s, self.right_x_c, self.bc_y_0]
 
     record = {
         'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),
