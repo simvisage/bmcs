@@ -19,7 +19,7 @@ import pandas as pd
 import traits.api as tr
 import traitsui.api as ui
 
-from .hcff_filters.hcff_filter import HCFFilter
+from .hcff_filters.hcff_filter import HCFFilter, HCFFChild, HCFFParent
 
 
 class PlotOptions(tr.HasTraits):
@@ -107,19 +107,83 @@ class FileImportManager(tr.HasTraits):
         print('Finsihed parsing csv into npy files.')
 
 
-class HCF(tr.HasTraits):
-    file_import_manager = tr.List(FileImportManager)
-    filters = tr.List(HCFFilter)
+class HCFFRoot(HCFFParent):
+
+    name = tr.Str('root')
+
+    import_manager = tr.Instance(FileImportManager, ())
+
     plot_options = tr.List(PlotOptions)
 
+    output_npy = tr.Property()
 
-class HCFF2(tr.HasTraits):
+    tree_view = ui.View(
+        ui.VGroup(
+            ui.Item('import_manager', style='custom', show_label=False)
+        )
+    )
+
+    traits_view = tree_view
+
+
+tree_editor = ui.TreeEditor(
+    orientation='vertical',
+    nodes=[
+        # The first node specified is the top level one
+        ui.TreeNode(node_for=[HCFFRoot],
+                    auto_open=True,
+                    children='filters',
+                    label='=HCF',
+                    #                    view=ui.View()  # Empty view
+                    ),
+        #         ui.TreeNode(node_for=[HCF],
+        #                     auto_open=True,
+        #                     children='file_import_manager',
+        #                     label='=file_import_manager',
+        #                     view=ui.View()  # Empty view
+        #                     ),
+        #         ui.TreeNode(node_for=[HCF],
+        #                     auto_open=True,
+        #                     children='filters',
+        #                     label='=Filters',
+        #                     view=ui.View()  # Empty view
+        #                     ),
+        #         ui.TreeNode(node_for=[HCF],
+        #                     auto_open=True,
+        #                     children='plot_options',
+        #                     label='=plot_options',
+        #                     view=ui.View()  # Empty view
+        #                     ),
+        #         ui.TreeNode(node_for=[FileImportManager],
+        #                     auto_open=True,
+        #                     children='',
+        #                     label='=File Import',
+        #                     view='view'
+        #                     ),
+        ui.TreeNode(node_for=[HCFFilter],
+                    auto_open=True,
+                    children='filters',
+                    label='name',
+                    #                    view=ui.View()
+                    ),
+        ui.TreeNode(node_for=[PlotOptions],
+                    auto_open=True,
+                    children='',
+                    label='=Plot Options',
+                    view='view'
+                    )
+    ]
+)
+
+
+class HCFF2(tr.HasStrictTraits):
     '''High-Cycle Fatigue Filter
     '''
 
-    hcf = HCF(file_import_manager=[FileImportManager()],
-              filters=[HCFFilter(), HCFFilter(name='custom')],
-              plot_options=[PlotOptions()])
+    hcf = tr.Instance(HCFFRoot)
+
+    def _hcf_default(self):
+        return HCFFRoot(import_manager=FileImportManager())
 
     figure = tr.Instance(Figure)
 
@@ -127,55 +191,6 @@ class HCFF2(tr.HasTraits):
         figure = Figure(facecolor='white')
         figure.set_tight_layout(True)
         return figure
-
-    tree_editor = ui.TreeEditor(
-        orientation='vertical',
-        nodes=[
-            # The first node specified is the top level one
-            ui.TreeNode(node_for=[HCF],
-                        auto_open=True,
-                        children='',
-                        label='=HCF',
-                        view=ui.View()  # Empty view
-                        ),
-            ui.TreeNode(node_for=[HCF],
-                        auto_open=True,
-                        children='file_import_manager',
-                        label='=file_import_manager',
-                        view=ui.View()  # Empty view
-                        ),
-            ui.TreeNode(node_for=[HCF],
-                        auto_open=True,
-                        children='filters',
-                        label='=Filters',
-                        view=ui.View()  # Empty view
-                        ),
-            ui.TreeNode(node_for=[HCF],
-                        auto_open=True,
-                        children='plot_options',
-                        label='=plot_options',
-                        view=ui.View()  # Empty view
-                        ),
-            ui.TreeNode(node_for=[FileImportManager],
-                        auto_open=True,
-                        children='',
-                        label='=File Import',
-                        view='view'
-                        ),
-            ui.TreeNode(node_for=[HCFFilter],
-                        auto_open=True,
-                        children='',
-                        label='=Filters',
-                        view=ui.View()
-                        ),
-            ui.TreeNode(node_for=[PlotOptions],
-                        auto_open=True,
-                        children='',
-                        label='=Plot Options',
-                        view='view'
-                        )
-        ]
-    )
 
     traits_view = ui.View(
         ui.HSplit(
@@ -196,7 +211,7 @@ class HCFF2(tr.HasTraits):
     )
 
 
-class HCFF(tr.HasTraits):
+class HCFF(tr.HasStrictTraits):
     '''High-Cycle Fatigue Filter
     '''
 
@@ -597,4 +612,12 @@ class HCFF(tr.HasTraits):
 if __name__ == '__main__':
     #     hcff = HCFF(file_csv='C:\\Users\\hspartali\\Desktop\\BeamEnd_Results')
     hcff = HCFF2()
+    cut_initial = HCFFilter(name='cut')
+    cut_initial.add_filter(HCFFilter(name='custom'))
+    cut_initial.filters[0].add_filter(HCFFilter(name='average'))
+    cut_initial.add_filter(HCFFilter(name='custom differently'))
+    hcff.hcf.add_filter(cut_initial)
+
+
+#    plot_options = [PlotOptions()]
     hcff.configure_traits()
