@@ -252,6 +252,7 @@ def verify02_quasi_pullout(f_lateral=0.0):
                   r_steel=d_s / 2,
                   r_concrete=d_s * 10,
                   perimeter=d_s,
+                  u_max=0.5
                   )
     s.m_ifc.trait_set(E_T=12900,
                       E_N=1e9,
@@ -272,15 +273,15 @@ def verify02_quasi_pullout(f_lateral=0.0):
 
 if __name__ == '__main__':
     ax = p.subplot(111)
-    s = verify02_quasi_pullout(f_lateral=-10)
+    s = verify02_quasi_pullout(f_lateral=-200)
     s.run()
     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
     w = s.get_window()
     w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
 
     # s = verify02_quasi_pullout(f_lateral=-100)
-    s.f_lateral = -1000
-    s.tline.step = 0.01
+    s.f_lateral = -10
+    s.tline.step = 0.1
     s.run()
     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
     #w = s.get_window()
