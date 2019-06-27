@@ -122,7 +122,7 @@ class HCFF(tr.HasStrictTraits):
         F_red = f[idx1]
         U_red = self.U_input[idx1]
 
-        ax = self.figure.add_subplot(111)
+        ax = self.figure.add_subplot(223)
         ax.plot(U_red, F_red, 'ro')
         self.data_changed = True
 
