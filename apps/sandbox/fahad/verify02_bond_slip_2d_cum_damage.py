@@ -25,10 +25,11 @@ from simulator.api import \
 from simulator.demo.viz2d_fw import Viz2DFW, Vis2DFW
 from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
-from view.ui.bmcs_tree_node import itags_str, itags
+from view.ui.bmcs_tree_node import itags_str
 from view.window import BMCSWindow
 
 import numpy as np
+import pylab as p
 import traits.api as tr
 
 
@@ -155,20 +156,10 @@ class PullOut2D(Simulator):
 
     @tr.cached_property
     def _get_bc_y_0(self):
-        #         return BCSlice(slice=self.xd_concrete.mesh[:, 0, :, 0],
-        #                        var='u', dims=[1], value=0)
         return BCSlice(slice=self.xd_steel.mesh[:, -1, :, -1],
                        var='u', dims=[1], value=0)
 
     f_lateral = tr.Float(0, auto_set=False, enter_set=True, BC=True)
-
-    bc_lateral_pressure = tr.Property(depends_on=itags_str)
-
-    @tr.cached_property
-    def _get_bc_lateral_pressure(self):
-        tf = MFnLineArray(xdata=[0, 1], ydata=[0, 1])
-        return BCSlice(slice=self.xd_concrete.mesh[:, -1, :, -1],
-                       var='f', dims=[1], value=self.f_lateral, time_function=tf)
 
     bc_lateral_pressure_dofs = tr.Property(depends_on=itags_str)
 
@@ -254,7 +245,7 @@ def verify01_unit_length_test():
     return s
 
 
-def verify02_quasi_pullout():
+def verify02_quasi_pullout(f_lateral=0.0):
     d_s = 14
     L_x = 5 * d_s
     s = PullOut2D(n_x=30, L_x=L_x,
@@ -269,17 +260,29 @@ def verify02_quasi_pullout():
                       c=2.6, S=4.8e-4, r=0.51,
                       m=0.3,
                       algorithmic=False)
-    s.f_lateral = -0.2
-    s.u_max = 0.4
+    s.f_lateral = f_lateral
+    s.u_max = 0.3
     s.tloop.k_max = 10000
     s.tloop.verbose = True
     s.tline.step = 0.0005  # 0.005
-    s.tline.step = 0.01
+    s.tline.step = 0.1
     s.tstep.fe_domain.serialized_subdomains
     return s
 
 
 if __name__ == '__main__':
-    s = verify02_quasi_pullout()
+    ax = p.subplot(111)
+    s = verify02_quasi_pullout(f_lateral=-10)
+    s.run()
+    print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
     w = s.get_window()
-    w.configure_traits()
+    w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+
+    # s = verify02_quasi_pullout(f_lateral=-100)
+    s.f_lateral = -1000
+    s.tline.step = 0.01
+    s.run()
+    print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
+    #w = s.get_window()
+    w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+    p.show()
