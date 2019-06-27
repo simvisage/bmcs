@@ -227,10 +227,10 @@ class PullOut2D(Simulator):
         w.viz_sheet.viz2d_list.append(fomega)
         w.viz_sheet.viz2d_list.append(falpha)
         w.viz_sheet.viz2d_list.append(fz)
-        strain_viz = Viz3DTensorField(vis3d=s.hist['strain'])
-        w.viz_sheet.add_viz3d(strain_viz)
-        stress_viz = Viz3DTensorField(vis3d=s.hist['stress'])
-        w.viz_sheet.add_viz3d(stress_viz)
+#         strain_viz = Viz3DTensorField(vis3d=s.hist['strain'])
+#         w.viz_sheet.add_viz3d(strain_viz)
+#         stress_viz = Viz3DTensorField(vis3d=s.hist['stress'])
+#         w.viz_sheet.add_viz3d(stress_viz)
         return w
 
 
