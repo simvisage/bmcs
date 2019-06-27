@@ -346,23 +346,28 @@ class PullOutAxiSym(Simulator):
 
 
 if __name__ == '__main__':
-    s = PullOutAxiSym(u_max=0.01)
+    s = PullOutAxiSym(u_max=0.04, f_lateral=-100)
+    s.tloop.k_max = 10000
+    s.tline.step = 0.05
     s.tloop.verbose = True
     s.run()
-    print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
-    s.run()
+    print('F', np.max(
+        np.sum(s.hist.F_t[:, s.right_x_s.dofs]), axis=-1)
+    )
     w = s.get_window()
+    w.configure_traits()
+
     ax = p.subplot(111)
     w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
 
-    s.geometry.L_x = 10
-    s.run()
-    w = s.get_window()
-    print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
-    ax = p.subplot(111)
-    w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+#     s.geometry.L_x = 10
+#     s.run()
+#     w = s.get_window()
+#     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
+#     ax = p.subplot(111)
+#     w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
 
-    s.f_lateral = -10
+    s.f_lateral = -100
     s.run()
     w = s.get_window()
     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
