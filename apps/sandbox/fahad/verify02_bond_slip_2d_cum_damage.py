@@ -25,19 +25,11 @@ from simulator.api import \
 from simulator.demo.viz2d_fw import Viz2DFW, Vis2DFW
 from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
-from view.ui.bmcs_tree_node import itags_str
+from view.ui.bmcs_tree_node import itags_str, itags
 from view.window import BMCSWindow
 
 import numpy as np
 import traits.api as tr
-
-
-#from .mlab_decorators import decorate_figure
-u_max = 0.001
-#f_max = 30
-dx = 1
-r_steel = 1
-r_concrete = r_steel * 5
 
 
 class PullOut2D(Simulator):
@@ -65,39 +57,45 @@ class PullOut2D(Simulator):
 
     L_x = tr.Float(1, auto_set=False, enter_set=True, GEO=True)
 
-    xd_steel = tr.Property()
+    r_steel = tr.Float(1, auto_set=False, enter_set=True, GEO=True)
+
+    r_concrete = tr.Float(5, auto_set=False, enter_set=True, GEO=True)
+
+    perimeter = tr.Float(5, auto_set=False, enter_set=True, GEO=True)
+
+    xd_steel = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_xd_steel(self):
         return XDomainFEGrid(coord_min=(0, 0),
-                             coord_max=(self.L_x, r_steel),
+                             coord_max=(self.L_x, self.r_steel),
                              shape=(self.n_x, 1),
                              integ_factor=1,
                              fets=FETS2D4Q())
 
-    m_steel = tr.Property()
+    m_steel = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_m_steel(self):
         return MATS2DElastic(E=200000, nu=0.3)
 
-    xd_concrete = tr.Property()
+    xd_concrete = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_xd_concrete(self):
-        return XDomainFEGrid(coord_min=(0, r_steel),
-                             coord_max=(self.L_x, r_concrete),
+        return XDomainFEGrid(coord_min=(0, self.r_steel),
+                             coord_max=(self.L_x, self.r_concrete),
                              shape=(self.n_x, 1),
                              integ_factor=1,
                              fets=FETS2D4Q())
 
-    m_concrete = tr.Property()
+    m_concrete = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_m_concrete(self):
         return MATS2DElastic(E=30000, nu=0.2)
 
-    xd_ifc = tr.Property()
+    xd_ifc = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_xd_ifc(self):
@@ -105,10 +103,10 @@ class PullOut2D(Simulator):
             I=self.xd_steel.mesh.I[:, -1],
             J=self.xd_concrete.mesh.I[:, 0],
             fets=FETS1D52ULRH(),
-            integ_factor=1
+            integ_factor=self.perimeter
         )
 
-    m_ifc = tr.Property()
+    m_ifc = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_m_ifc(self):
@@ -117,7 +115,7 @@ class PullOut2D(Simulator):
             E_N=100000,
             algorithmic=True)  # omega_fn_type='li',
 
-    domains = tr.Property()
+    domains = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_domains(self):
@@ -138,12 +136,14 @@ class PullOut2D(Simulator):
     def _get_right_x_s(self):
         return BCSlice(slice=self.xd_steel.mesh[-1, :, -1, :],
                        var='u', dims=[0], value=self.u_max)
+
     right_x_c = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_right_x_c(self):
         return BCSlice(slice=self.xd_concrete.mesh[0, :, 0, :],
                        var='u', dims=[0], value=0)
+
     left_x_s = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
@@ -234,16 +234,16 @@ class PullOut2D(Simulator):
         return w
 
 
-if __name__ == '__main__':
-    s = PullOut2D(n_x=10,)
+def verify01_unit_length_test():
+    s = PullOut2D(n_x=30, L_x=100)
     s.m_ifc.trait_set(E_T=10000,
                       E_N=1e9,
                       tau_bar=1,  # 4.0,
                       K=0, gamma=0,  # 10,
                       c=1, S=0.0025, r=1,
-                      m=0.3,
+                      m=0.0,
                       algorithmic=False)
-    s.f_lateral = -0.001
+    s.f_lateral = -0.2
     s.u_max = 0.01
     s.tloop.k_max = 1000
     s.tloop.verbose = True
@@ -251,10 +251,35 @@ if __name__ == '__main__':
     s.tline.step = 0.01
     s.tstep.fe_domain.serialized_subdomains
     s.run()
+    return s
 
-    # print(s.bc_lateral_pressure.dofs)
-    # print(s.bc_y_0.dofs)
-    #print('f', s.hist.F_t[:, s.bc_y_0.dofs])
-    #print('u', s.hist.U_t[:, s.bc_y_0.dofs])
+
+def verify02_quasi_pullout():
+    d_s = 14
+    L_x = 5 * d_s
+    s = PullOut2D(n_x=30, L_x=L_x,
+                  r_steel=d_s / 2,
+                  r_concrete=d_s * 10,
+                  perimeter=d_s,
+                  )
+    s.m_ifc.trait_set(E_T=12900,
+                      E_N=1e9,
+                      tau_bar=4.2,  # 4.0,
+                      K=11.0, gamma=55,  # 10,
+                      c=2.6, S=4.8e-4, r=0.51,
+                      m=0.3,
+                      algorithmic=False)
+    s.f_lateral = -0.2
+    s.u_max = 0.4
+    s.tloop.k_max = 10000
+    s.tloop.verbose = True
+    s.tline.step = 0.0005  # 0.005
+    s.tline.step = 0.01
+    s.tstep.fe_domain.serialized_subdomains
+    return s
+
+
+if __name__ == '__main__':
+    s = verify02_quasi_pullout()
     w = s.get_window()
     w.configure_traits()
