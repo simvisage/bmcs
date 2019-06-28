@@ -9,7 +9,7 @@ from enthought.traits.ui.wx.basic_editor_factory import BasicEditorFactory
 from numpy import array
 from enthought.traits.ui.api import View, Item
 from matplotlib.figure import Figure
-from parameters import Material
+from .parameters import Material
 
 class _BondLawEditor( Editor ):
 

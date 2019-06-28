@@ -6,7 +6,7 @@ from traits.api import \
     Array, Bool, Callable,  Float, HasTraits, \
     Instance,   Range,  on_trait_change,  \
     Dict, Property, cached_property,   \
-    WeakRef, String, List, Constant, Str, Class, TraitError
+    WeakRef, String, List, Constant, Str, Type, TraitError
 from traitsui.api import \
     Item, View, VSplit, HGroup, Group,  TabularEditor, \
     Include, Spring
@@ -14,7 +14,7 @@ from traitsui.tabular_adapter \
     import TabularAdapter
 
 from mathkit.mfn.mfn_polar.mfn_polar import MFnPolar
-from matsXD_cmdm_phi_fn import \
+from .matsXD_cmdm_phi_fn import \
     IPhiFn, PhiFnStrainSoftening, PhiFnStrainHardening, PhiFnStrainHardeningLinear, \
     PhiFnGeneral, PhiFnGeneralExtended, PhiFnGeneralExtendedExp, PhiFnStrainHardeningBezier
 from util.traits.either_type import EitherType
@@ -48,7 +48,7 @@ class VariedParam(HasTraits):
     def reset_polar_fn(self):
         if self.switched_on:
             if self.mats_eval.mfn_class == None:
-                raise TraitError, 'No class for function representation specified'
+                raise TraitError('No class for function representation specified')
             self.polar_fn = self.mats_eval.mfn_class()
         else:
             self.polar_fn = None
@@ -116,7 +116,7 @@ class PolarDiscr(HasTraits):
     value of the microplane integrator object.
     '''
 
-    mfn_class = Class(None)
+    mfn_class = Type(None)
     #-------------------------------------------------------------------------
     # Common parameters for for isotropic and anisotropic damage function specifications
     #-------------------------------------------------------------------------
@@ -161,11 +161,11 @@ class PolarDiscr(HasTraits):
                                  PhiFnStrainHardeningBezier])
 
     def _phi_fn_default(self):
-        print 'setting phi_fn default'
+        print('setting phi_fn default')
         return PhiFnStrainSoftening(polar_discr=self)
 
     def _phi_fn_changed(self):
-        print 'setting phi_fn changed'
+        print('setting phi_fn changed')
         self.phi_fn.polar_discr = self
 
     varied_params = List(Str, [])

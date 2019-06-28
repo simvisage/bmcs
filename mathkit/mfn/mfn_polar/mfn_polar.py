@@ -3,8 +3,6 @@ import math
 import sys
 import time
 
-from chaco.api import PlotLabel
-from chaco.api import create_polar_plot
 from numpy import array, linspace, pi, arange, sin, cos, ones, frompyfunc, \
     where, hstack
 from traits.api import \
@@ -55,7 +53,7 @@ class MFnPolar(HasTraits):
     # arguments to configure the plot
     plotrange_min = Float(0., desc='lower bound of the plot range')
     plotrange_max = Float(1., desc='upper bound of the plot range')
-    frac_noplot = Range( 0., 1 , 0.3, desc='fraction of the \
+    frac_noplot = Range(0., 1, 0.3, desc='fraction of the \
     plot-circle that is not used for display of plot values ', auto_set=False)
     # @todo: put this into the status bar
     info = Str('')
@@ -103,7 +101,7 @@ class MFnPolar(HasTraits):
         # (for delta_alpha = 0 the transition function is evaluated)
         if abs(theta_tilde) < delta_alpha:
             radius_fn = _phi_residual
-        elif abs( theta_tilde ) >= delta_alpha and \
+        elif abs(theta_tilde) >= delta_alpha and \
                 abs(theta_tilde) < delta_alpha + delta_trans:
             radius_fn = (_phi_residual -
                          ((theta_tilde - delta_alpha) *
@@ -112,7 +110,7 @@ class MFnPolar(HasTraits):
             radius_fn = _phi_quasibrittle
         return radius_fn
 
-    radius = Property( Array, depends_on='theta,alpha,delta_alpha,\
+    radius = Property(Array, depends_on='theta,alpha,delta_alpha,\
                                             delta_trans,frac_noplot,\
                                             strech_residual,\
                                             strech_quasibrittle,\
@@ -156,7 +154,7 @@ class MFnPolar(HasTraits):
 #                                   show_label=False,
 #                                   border_width=1)
 
-    radius_min = Property( Float, depends_on='current_theta,alpha,delta_alpha,\
+    radius_min = Property(Float, depends_on='current_theta,alpha,delta_alpha,\
                                                 delta_trans,strech_residual,\
                                                 strech_quasibrittle')
 
@@ -165,7 +163,7 @@ class MFnPolar(HasTraits):
         r_min = self.radius.min()
         return r_min
 
-    radius_max = Property( Float, depends_on='current_theta,alpha,delta_alpha,\
+    radius_max = Property(Float, depends_on='current_theta,alpha,delta_alpha,\
                                                 delta_trans,strech_residual,\
                                                 strech_quasibrittle')
 
@@ -174,7 +172,7 @@ class MFnPolar(HasTraits):
         r_max = self.radius.max()
         return r_max
 
-    info = Property( Float, depends_on='current_theta,alpha,delta_alpha,\
+    info = Property(Float, depends_on='current_theta,alpha,delta_alpha,\
                                           delta_trans,strech_residual,\
                                           strech_quasibrittle, plotrange_min, \
                                           plotrange_max')
@@ -195,7 +193,7 @@ class MFnPolar(HasTraits):
 
     current_theta = Float(0.0)
 
-    current_radius = Property( Float, depends_on='current_theta,alpha,\
+    current_radius = Property(Float, depends_on='current_theta,alpha,\
                                                     delta_alpha,delta_trans,\
                                                     strech_residual,\
                                                     strech_quasibrittle')
@@ -252,6 +250,7 @@ class MFnPolar(HasTraits):
         resizable=True,
         scrollable=True,
         width=700, height=800)
+
 
 if __name__ == '__main__':
     #    mp = MFnPolar( alpha = 0.1, delta_alpha = 0.2, delta_trans = 0.3 )

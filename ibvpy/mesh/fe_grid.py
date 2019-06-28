@@ -1,4 +1,6 @@
 
+from functools import reduce
+
 from ibvpy.fets.i_fets_eval import IFETSEval
 from ibvpy.mesh.cell_grid.cell_array import ICellView, CellView, CellArray, ICellArraySource
 from ibvpy.mesh.cell_grid.cell_grid import CellGrid
@@ -9,15 +11,16 @@ from ibvpy.rtrace.rt_domain import RTraceDomain
 from numpy import copy, zeros, array_equal
 from traits.api import \
     Instance, Array, Int, on_trait_change, Property, cached_property, \
-    List, Button, HasTraits, implements, WeakRef, Float,  \
+    List, Button, HasTraits, provides, WeakRef, Float,  \
     Callable, Str, Event
 from traitsui.api import View, Item, HSplit, Group, TabularEditor
 from traitsui.tabular_adapter import TabularAdapter
 
-from fe_grid_activation_map import FEGridActivationMap
-from fe_grid_idx_slice import FEGridIdxSlice
-from fe_grid_ls_slice import FEGridLevelSetSlice
-from i_fe_uniform_domain import IFEUniformDomain
+from .fe_grid_activation_map import FEGridActivationMap
+from .fe_grid_idx_slice import FEGridIdxSlice
+from .fe_grid_ls_slice import FEGridLevelSetSlice
+from .fe_grid_node_slice import ISliceProperty
+from .i_fe_uniform_domain import IFEUniformDomain
 
 
 #-----------------------------------------------------------------------------
@@ -87,6 +90,7 @@ class MElem(HasTraits):
         return 'points:\n%s\ndofs %s' % (self.point_X_arr, self.dofs)
 
 
+@provides(ICellArraySource, IFEUniformDomain, ICellView)
 class FEGrid(FEGridActivationMap):
 
     '''Structured FEGrid consisting of potentially independent
@@ -117,8 +121,16 @@ class FEGrid(FEGridActivationMap):
        visualization field.(where to specify the topology? - probably in
        the CellSpec?
     '''
-    implements(ICellArraySource)
-    implements(IFEUniformDomain)
+
+    # Grid geometry specification
+    #
+    coord_min = Array(Float, value=[0., 0., 0.])
+    coord_max = Array(Float, value=[1., 1., 1.])
+
+    geo_transform = Callable
+
+    # number of elements in the individual dimensions
+    shape = Array(Int, value=[1, 1, 1], changes_ndofs=True)
 
     changed_structure = Event
 
@@ -134,8 +146,8 @@ class FEGrid(FEGridActivationMap):
     idx = Int()
 
     # links within the dependency
-    prev_grid = WeakRef('ibvpy.mesh.fe_grid.FEGrid')
-    next_grid = WeakRef('ibvpy.mesh.fe_grid.FEGrid')
+    prev_grid = WeakRef('ibvpy.mesh.fe_grid.FEGrid', allow_none=True)
+    next_grid = WeakRef('ibvpy.mesh.fe_grid.FEGrid', allow_none=True)
 
     _name = Str('')
     name = Property
@@ -212,16 +224,6 @@ class FEGrid(FEGridActivationMap):
         time stepper.
         '''
         return self.fets_eval.dots_class(sdomain=self)
-
-    # Grid geometry specification
-    #
-    coord_min = Array(Float, value=[0., 0., 0.])
-    coord_max = Array(Float, value=[1., 1., 1.])
-
-    geo_transform = Callable
-
-    # number of elements in the individual dimensions
-    shape = Array(Int, value=[1, 1, 1], changes_ndofs=True)
 
     dof_r = Property
 
@@ -320,6 +322,11 @@ class FEGrid(FEGridActivationMap):
         resizable=True,
         scrollable=True,
     )
+
+    I = Property
+
+    def _get_I(self):
+        return ISliceProperty(fe_grid=self)
 
     def __getitem__(self, idx):
         if isinstance(idx, tuple) or isinstance(idx, int):
@@ -471,7 +478,7 @@ class FEGrid(FEGridActivationMap):
     '''
 
     def _get_X_Id(self):
-        return self.geo_grid.point_x_arr
+        return self.geo_grid.point_X_arr
 
     def apply_on_ip_grid(self, fn, ip_mask):
         '''
@@ -709,14 +716,18 @@ class FEGrid(FEGridActivationMap):
         '''
         # Check if the specifiers for both grids are identical
         #
-        cell_grid = CellGrid(grid_cell_spec=self.dof_grid_spec,
-                             geo_transform=self.geo_transform,
-                             shape=self.shape,
-                             coord_min=self.coord_min,
-                             coord_max=self.coord_max)
-        _xdof_grid = DofCellGrid(cell_grid=cell_grid,
-                                 n_nodal_dofs=self.n_nodal_dofs,
-                                 dof_offset=self.dof_offset)
+        cell_grid = CellGrid(
+            grid_cell_spec=self.dof_grid_spec,
+            geo_transform=self.geo_transform,
+            shape=self.shape,
+            coord_min=self.coord_min,
+            coord_max=self.coord_max
+        )
+        _xdof_grid = DofCellGrid(
+            cell_grid=cell_grid,
+            n_nodal_dofs=self.n_nodal_dofs,
+            dof_offset=self.dof_offset
+        )
 
         # if self.dof_r.all() != self.geo_r.all():
         #
@@ -761,8 +772,6 @@ class FECellView(CellView):
     def _dof_view_default(self):
         return DofCellView()
 
-    implements(ICellView)
-
     @on_trait_change('cell_grid')
     def _reset_view_links(self):
         self.geo_view.cell_grid = self.cell_grid.geo_grid
@@ -799,22 +808,22 @@ if __name__ == '__main__':
     fe_domain.configure_traits()
 
     import sys
-    print 'refcount', sys.getrefcount(fe_domain)
+    print('refcount', sys.getrefcount(fe_domain))
     dots = fe_domain.dots
-    print dots.fets_eval
-    print 'refcount', sys.getrefcount(fe_domain)
+    print(dots.fets_eval)
+    print('refcount', sys.getrefcount(fe_domain))
 
-    print 'dof_r'
-    print fe_domain.dof_r
+    print('dof_r')
+    print(fe_domain.dof_r)
 
-    print fe_domain.geo_grid.cell_node_map
-    print fe_domain.dof_grid.cell_dof_map
+    print(fe_domain.geo_grid.cell_node_map)
+    print(fe_domain.dof_grid.cell_dof_map)
 # coord_max = (1.,1.,0.)
 # fe_domain.` (1,1)
 # fe_domain.n_nodal_dofs = 2
 #    print fe_domain.dof_grid.cell_dof_map
-    print fe_domain.elem_dof_map
-    print fe_domain.elem_X_map[0]
+    print(fe_domain.elem_dof_map)
+    print(fe_domain.elem_X_map[0])
 
 #    for e in fe_domain.elements:
 #        print e

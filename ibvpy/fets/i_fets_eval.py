@@ -1,5 +1,5 @@
 
-from traits.api import Array, Int, List, Interface, Class
+from traits.api import Array, Int, List, Interface, Type
 from ibvpy.core.i_tstepper_eval import ITStepperEval
 
 #-------------------------------------------------------------------
@@ -28,7 +28,7 @@ class IFETSEval( IFElem, ITStepperEval ):
     #    - irregular integration (mainteinance of integration points for
     #      each element within the domain is required) implemented in XDOTSEval
     #
-    dots_class = Class
+    dots_class = Type
 
     def adjust_spatial_context_for_point( self, sctx ):
         '''

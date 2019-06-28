@@ -4,12 +4,15 @@ Created on 14. 4. 2014
 @author: rch
 '''
 
+import string
+
 from reporter import RInputRecord
 from traits.api import \
     HasStrictTraits, Str, List, WeakRef, \
     Property, cached_property, on_trait_change, Event
 from traitsui.api import \
     View
+
 
 itags = dict(
     TIME=True,
@@ -21,6 +24,8 @@ itags = dict(
     CS=True,
     BC=True
 )
+
+itags_str = ','.join(['%s' % tag for tag in itags])
 
 
 class BMCSNodeBase(HasStrictTraits):
@@ -123,6 +128,8 @@ class BMCSTreeNodeMixIn(HasStrictTraits):
 
     def set_parents_recursively(self):
         for n in self.tree_node_list:
+            if n is None:
+                continue
             n.parent = self
             n.set_parents_recursively()
 

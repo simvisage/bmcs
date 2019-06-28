@@ -94,6 +94,9 @@ if __name__ == "__main__":
     from traits.api import HasTraits, Int, Float, on_trait_change
     from traitsui.api import View, Item
     from numpy import sin, cos, linspace, pi
+    from traits.etsconfig.api import ETSConfig
+
+    ETSConfig.toolkit = 'qt4'
 
     class Test(HasTraits):
 

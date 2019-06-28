@@ -1,7 +1,7 @@
 
 
-from ibvp_solve import IBVPSolve
+from .ibvp_solve import IBVPSolve
 
-from tloop import TLine, TLoop
+from .tloop import TLine, TLoop
 
-from tstepper import TStepper
+from .tstepper import TStepper

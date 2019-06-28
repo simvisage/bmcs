@@ -1,63 +1,57 @@
 
-from traits.api import \
-     Array, Bool, Callable, Enum, Float, HasTraits, \
-     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-     implements, Dict, Property, cached_property, Delegate
+from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
 
-from traitsui.api import \
-     Item, View, HSplit, VSplit, VGroup, Group, Spring
-
-#from dacwt import DAC
-
+from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
+from ibvpy.core.tstepper import \
+     TStepper as TS
+from ibvpy.mats.mats_eval import IMATSEval, MATSEval
+from mathkit.mfn import MFnLineArray
+from mathkit.mfn.mfn_line.mfn_matplotlib_editor import MFnMatplotlibEditor
+from mathkit.mfn.mfn_line.mfn_plot_adapter import MFnPlotAdapter
 from numpy import \
      array, ones, zeros, outer, inner, transpose, dot, frompyfunc, \
      fabs, sqrt, linspace, vdot, identity, tensordot, \
      sin as nsin, meshgrid, float_, ix_, \
      vstack, hstack, sqrt as arr_sqrt
-
-from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
-
 from scipy.linalg import eig, inv
+from traits.api import \
+     Array, Bool, Callable, Enum, Float, HasTraits, \
+     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
+     Dict, Property, cached_property, Delegate
+from traitsui.api import \
+     Item, View, HSplit, VSplit, VGroup, Group, Spring
 
-from ibvpy.core.tstepper import \
-     TStepper as TS
-
-from ibvpy.mats.mats_eval import IMATSEval, MATSEval
-
-from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
-from mathkit.mfn import MFnLineArray
-from mathkit.mfn.mfn_line.mfn_matplotlib_editor import MFnMatplotlibEditor
-from mathkit.mfn.mfn_line.mfn_plot_adapter import MFnPlotAdapter
-
+# from dacwt import DAC
 mpl_matplotlib_editor = MFnMatplotlibEditor()
 
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
 
+
 class MATS1D5Bond(MATSEval):
     '''
     Scalar Damage Model.
     '''
-    implements(IMATSEval)
+    # implements(IMATSEval)
 
-    Ef = Float(1., #34e+3,
+    Ef = Float(1.,  # 34e+3,
                  label="E",
                  desc="Young's Modulus Fiber",
                  auto_set=False, enter_set=True)
-    Af = Float(1., #34e+3,
+    Af = Float(1.,  # 34e+3,
                  label="A",
                  desc="Cross Section Fiber",
                  auto_set=False, enter_set=True)
-    Em = Float(1., #34e+3,
+    Em = Float(1.,  # 34e+3,
                  label="E",
                  desc="Young's Modulus Matrix",
                  auto_set=False, enter_set=True)
-    Am = Float(1., #34e+3,
+    Am = Float(1.,  # 34e+3,
                  label="A",
                  desc="Cross Section Matrix",
                  auto_set=False, enter_set=True)
-    G = Float(1., #34e+3,
+    G = Float(1.,  # 34e+3,
                  label="G",
                  desc="Shear Stiffness",
                  auto_set=False, enter_set=True)
@@ -104,12 +98,11 @@ class MATS1D5Bond(MATSEval):
         Intialize state variables.
         '''
 
-
     def new_cntl_var(self):
-        return zeros(4, float_)#TODO: adapt for 4-5..
+        return zeros(4, float_)  # TODO: adapt for 4-5..
 
     def new_resp_var(self):
-        return zeros(4, float_)#TODO: adapt for 4-5..
+        return zeros(4, float_)  # TODO: adapt for 4-5..
 
     #-----------------------------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
@@ -127,10 +120,9 @@ class MATS1D5Bond(MATSEval):
             D_mtx = zeros((5, 5))
             sigma = zeros(5)
             D_mtx[2, 2] = self.bond_fn.get_diff(eps_app_eng[2])
-            sigma[2] = self.bond_fn.get_value(eps_app_eng[2])#tau_m
+            sigma[2] = self.bond_fn.get_value(eps_app_eng[2])  # tau_m
         else:
-            print "MATS1D5Bond: Unsupported number of strain components"
-
+            print("MATS1D5Bond: Unsupported number of strain components")
 
         D_mtx[0, 0] = self.bond_fn.get_diff(eps_app_eng[0])
         D_mtx[1, 1] = self.bond_fn.get_diff(eps_app_eng[1])
@@ -138,12 +130,11 @@ class MATS1D5Bond(MATSEval):
         D_mtx[-2, -2] = self.Ef * self.Af
         D_mtx[-1, -1] = self.Em * self.Am
 
+        sigma[0] = self.bond_fn.get_value(eps_app_eng[0])  # tau_l
+        sigma[1] = self.bond_fn.get_value(eps_app_eng[1])  # tau_r
 
-        sigma[0] = self.bond_fn.get_value(eps_app_eng[0])#tau_l
-        sigma[1] = self.bond_fn.get_value(eps_app_eng[1])#tau_r
-
-        sigma[-2] = self.Ef * self.Af * eps_app_eng[-2]#sig_f
-        sigma[-1] = self.Em * self.Am * eps_app_eng[-1]#sig_m
+        sigma[-2] = self.Ef * self.Af * eps_app_eng[-2]  # sig_f
+        sigma[-1] = self.Em * self.Am * eps_app_eng[-1]  # sig_m
 
         # You print the stress you just computed and the value of the apparent E
 
@@ -186,7 +177,6 @@ class MATS1D5Bond(MATSEval):
                 sig_pos = [sig_eng[2]]
         return sig_pos
 
-
     def get_eps_app(self, sctx, eps_app_eng):
         r_pnt = sctx.loc
         if r_pnt[1] >= 0.:
@@ -215,11 +205,11 @@ class MATS1D5Bond(MATSEval):
     # Response trace evaluators
     #---------------------------------------------------------------------------------------------
 
-
     # Declare and fill-in the rte_dict - it is used by the clients to
     # assemble all the available time-steppers.
     #
     rte_dict = Trait(Dict)
+
     def _rte_dict_default(self):
         return {'sig_app_t1d'      : self.get_sig_app,
                 'eps_app_t1d'      : self.get_eps_app,
@@ -227,6 +217,7 @@ class MATS1D5Bond(MATSEval):
                 'slip_s'         : self.get_slip,
                 'msig_pos'     : self.get_msig_pos,
                 'msig_pm'      : self.get_msig_pm}
+
 
 if __name__ == '__main__':
      mats_bond = MATS1D5Bond()

@@ -30,10 +30,10 @@ from matplotlib.figure import Figure
 from numpy import \
     linspace, frompyfunc
 
-from stats.spirrid.i_rf import IRF
+from stats.spirrid_bak.i_rf import IRF
 from util.traits.either_type import EitherType
-from brittle_filament import Filament
-from free_stress_double_pullout import ConstantFrictionFiniteFiber
+from .brittle_filament import Filament
+from .free_stress_double_pullout import ConstantFrictionFiniteFiber
 
 class RFModelView( ModelView ):
 
@@ -119,17 +119,17 @@ class RFModelView( ModelView ):
                         ]
         view = View( HSplit( VGroup( Item( '@resp_func', show_label = False ), #*rf_param_items,
                                      label = 'Function Parameters',
-                                     id = 'stats.spirrid.rf_model_view.rf_params',
+                                     id = 'stats.spirrid_bak.rf_model_view.rf_params',
                                      scrollable = True
                                      ),
                              VGroup( *plot_param_items,
                                      label = 'Plot Parameters',
-                                     id = 'stats.spirrid.rf_model_view.plot_params'
+                                     id = 'stats.spirrid_bak.rf_model_view.plot_params'
                                      ),
                              VGroup( Item( 'model.comment', show_label = False,
                                            style = 'readonly' ),
                                      label = 'Comment',
-                                     id = 'stats.spirrid.rf_model_view.comment',
+                                     id = 'stats.spirrid_bak.rf_model_view.comment',
                                      scrollable = True,
                                      ),
                              VGroup( 
@@ -137,16 +137,16 @@ class RFModelView( ModelView ):
                                     Item( 'figure', editor = MPLFigureEditor(),
                                      resizable = True, show_label = False ),
                                      label = 'Plot',
-                                     id = 'stats.spirrid.rf_model_view.plot'
+                                     id = 'stats.spirrid_bak.rf_model_view.plot'
                                      ),
                              dock = 'tab',
-                             id = 'stats.spirrid.rf_model_view.split'
+                             id = 'stats.spirrid_bak.rf_model_view.split'
                              ),
                     kind = 'modal',
                     resizable = True,
                     dock = 'tab',
                     buttons = [OKButton],
-                    id = 'stats.spirrid.rf_model_view'
+                    id = 'stats.spirrid_bak.rf_model_view'
                     )
         return view
 

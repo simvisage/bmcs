@@ -216,7 +216,7 @@ def show_yield_faces():
 
     yc = YieldConditionExtendedLeonModel()
     f = yc.f(sig)
-    print 'f', f
+    print('f', f)
 
     # return
 

@@ -3,44 +3,38 @@ Created on Feb 25, 2010
 
 @author: jakub
 '''
-from traits.api import \
-     Array, Bool, Callable, Enum, Float, HasTraits, \
-     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-     implements, Dict, Property, cached_property, Delegate
+from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
 
-from traitsui.api import \
-     Item, View, HSplit, VSplit, VGroup, Group, Spring
-
-#from dacwt import DAC
-
+from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
+from ibvpy.core.tstepper import \
+     TStepper as TS
+from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
+from ibvpy.mats.mats_eval import IMATSEval
 from numpy import \
      array, ones, zeros, outer, inner, transpose, dot, frompyfunc, \
      fabs, sqrt, linspace, vdot, identity, tensordot, \
      sin as nsin, meshgrid, float_, ix_, \
      vstack, hstack, sqrt as arr_sqrt, sign
-
-from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
-
 from scipy.linalg import eig, inv
+from traits.api import \
+     Array, Bool, Callable, Enum, Float, HasTraits, \
+     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
+     Dict, Property, cached_property, Delegate
+from traitsui.api import \
+     Item, View, HSplit, VSplit, VGroup, Group, Spring
 
-from ibvpy.core.tstepper import \
-     TStepper as TS
 
-from ibvpy.mats.mats_eval import IMATSEval
-from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
-from ibvpy.api import RTrace, RTDofGraph, RTraceArraySnapshot
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
-
+# from dacwt import DAC
 #---------------------------------------------------------------------------
 # Material time-step-evaluator for Scalar-Damage-Model
 #---------------------------------------------------------------------------
-
 class MATS2D5PlasticBond(MATS2DEval):
     '''
     Elastic Model.
     '''
 
-    implements(IMATSEval)
+    # implements(IMATSEval)
 
     #---------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)
@@ -52,7 +46,7 @@ class MATS2D5PlasticBond(MATS2DEval):
     # Material parameters 
     #---------------------------------------------------------------------------
 
-    E_m = Float(1., #34e+3,
+    E_m = Float(1.,  # 34e+3,
                  label="E_m",
                  desc="Young's Modulus",
                  auto_set=False)
@@ -61,7 +55,7 @@ class MATS2D5PlasticBond(MATS2DEval):
                  desc="Poison's ratio",
                  auto_set=False)
 
-    E_f = Float(1., #34e+3,
+    E_f = Float(1.,  # 34e+3,
                  label="E_f",
                  desc="Young's Modulus",
                  auto_set=False)
@@ -70,27 +64,28 @@ class MATS2D5PlasticBond(MATS2DEval):
                  desc="Poison's ratio",
                  auto_set=False)
 
-    G = Float(1., #34e+3,
+    G = Float(1.,  # 34e+3,
                  label="G",
                  desc="Shear Modulus",
                  auto_set=False)
 
-    sigma_y = Float(.5, #34e+3,
+    sigma_y = Float(.5,  # 34e+3,
                 label="s_y",
                 desc="Yield stress",
                 auto_set=False)
 
-    K_bar = Float(0., #34e+3,
+    K_bar = Float(0.,  # 34e+3,
                 label="K",
                 desc="isotropic hardening",
                 auto_set=False)
 
-    H_bar = Float(0., #34e+3,
+    H_bar = Float(0.,  # 34e+3,
                    label="H",
                    desc="kinematic hardening",
                    auto_set=False)
 
     D_el = Property(Array(float), depends_on='E_f, nu_f,E_m,nu_f,G, stress_state')
+
     @cached_property
     def _get_D_el(self):
         if self.stress_state == "plane_stress":
@@ -125,8 +120,6 @@ class MATS2D5PlasticBond(MATS2DEval):
     # Private initialization methods
     #-----------------------------------------------------------------------------------------------
 
-
-
     #-----------------------------------------------------------------------------------------------
     # Setup for computation within a supplied spatial context
     #-----------------------------------------------------------------------------------------------
@@ -140,7 +133,6 @@ class MATS2D5PlasticBond(MATS2DEval):
     def get_state_array_size(self):
         return 3
 
-
     #-----------------------------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
     #-----------------------------------------------------------------------------------------------
@@ -153,7 +145,7 @@ class MATS2D5PlasticBond(MATS2DEval):
         sigma = dot(self.D_el[:], eps_app_eng)
 
         # You print the stress you just computed and the value of the apparent E
-        eps_n1 = float(eps_app_eng[6]) #hack for this particular case
+        eps_n1 = float(eps_app_eng[6])  # hack for this particular case
         G = self.G
 
         eps_avg = eps_n1
@@ -162,12 +154,12 @@ class MATS2D5PlasticBond(MATS2DEval):
             eps_n = eps_avg - float(d_eps[6])
             sctx.mats_state_array[:] = self._get_state_variables(sctx, eps_n)
 
-        #print 'state array ', sctx.mats_state_array
+        # print 'state array ', sctx.mats_state_array
         eps_p_n, q_n, alpha_n = sctx.mats_state_array
         sigma_trial = self.G * (eps_n1 - eps_p_n)
         xi_trial = sigma_trial - q_n
         f_trial = abs(xi_trial) - (self.sigma_y + self.K_bar * alpha_n)
-        #f_trial = -xi_trial - ( self.sigma_y + self.K_bar * alpha_n )
+        # f_trial = -xi_trial - ( self.sigma_y + self.K_bar * alpha_n )
 
         sig_n1 = zeros((1,), dtype='float_')
         D_n1 = zeros((1, 1), dtype='float_')
@@ -175,12 +167,12 @@ class MATS2D5PlasticBond(MATS2DEval):
             sig_n1[0] = sigma_trial
             D_n1[0, 0] = G
         else:
-            #print 'plastic'
+            # print 'plastic'
             d_gamma = f_trial / (self.G + self.K_bar + self.H_bar)
             sig_n1[0] = sigma_trial - d_gamma * self.G * sign(xi_trial)
             D_n1[0, 0] = (self.G * (self.K_bar + self.H_bar)) / \
                             (self.G + self.K_bar + self.H_bar)
-            #print 'stress ', sig_n1[0]
+            # print 'stress ', sig_n1[0]
         sigma[6] = sig_n1[0]
         self.D_el[6, 6] = D_n1[0, 0]
         return  sigma, self.D_el
@@ -243,7 +235,7 @@ class MATS2D5PlasticBond(MATS2DEval):
         return D_stress
 
     def _get_D_plane_strain(self):
-        #TODO: adapt to use arbitrary 2d model following the 1d5 bond
+        # TODO: adapt to use arbitrary 2d model following the 1d5 bond
         E_m = self.E_m
         nu_m = self.nu_m
         E_f = self.E_f
@@ -265,7 +257,6 @@ class MATS2D5PlasticBond(MATS2DEval):
         D_strain[6, 6] = G
         D_strain[7, 7] = G
         return D_strain
-
 
     #---------------------------------------------------------------------------------------------
     # Response trace evaluators
@@ -293,11 +284,11 @@ class MATS2D5PlasticBond(MATS2DEval):
         sig_eng, D_mtx = self.get_corr_pred(sctx, eps_app_eng, 0, 0, 0)
         return array([[sig_eng[6], 0.], [0., sig_eng[7]]])
 
-
     # Declare and fill-in the rte_dict - it is used by the clients to
     # assemble all the available time-steppers.
     #
     rte_dict = Trait(Dict)
+
     def _rte_dict_default(self):
         return {
                 'eps_app_f'  : self.get_eps_app_f,

@@ -1,2 +1,2 @@
 
-from mats1D_elastic import MATS1DElastic
+from .mats1D_elastic import MATS1DElastic

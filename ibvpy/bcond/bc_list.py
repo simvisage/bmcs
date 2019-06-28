@@ -12,21 +12,23 @@
 #
 # Created on May 26, 2009 by: rchx
 
-from ibvpy.core.i_bcond import \
-    IBCond
 from traits.api import  \
     Str, Enum, \
     List, cached_property, \
-    implements, Property
+    provides, Property
 from traitsui.api import \
     VSplit, \
     View, UItem, Item, TableEditor, VGroup
+
+from ibvpy.core.i_bcond import \
+    IBCond
+from traitsui.table_column \
+    import ObjectColumn
 from view.plot2d import Vis2D
 from view.ui import BMCSTreeNode
 
-from bc_dof import BCDof
-from traitsui.table_column \
-    import ObjectColumn
+from .bc_dof import BCDof
+
 
 bcond_list_editor = TableEditor(
     columns=[ObjectColumn(label='Type', name='var'),
@@ -37,12 +39,11 @@ bcond_list_editor = TableEditor(
 )
 
 
+@provides(IBCond)
 class BCDofList(BMCSTreeNode, Vis2D):
     '''
     Implements the IBC functionality for a constrained dof.
     '''
-    implements(IBCond)
-
     tree_node_list = List
 
     tree_node_list = Property(depends_on='bcdof_list,bcdof_list_items')

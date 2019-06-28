@@ -3,13 +3,15 @@ Created on 12.01.2016
 
 @author: Yingxiong
 '''
-from ibvpy.core.tline import TLine
 from traits.api import \
     Int, HasStrictTraits, Instance, \
     Float, \
     Array, List, Bool
+
+from ibvpy.core.tline import TLine
 import numpy as np
-from tstepper_dp import TStepper
+
+from .tstepper_dp import TStepper
 
 
 class TLoop(HasStrictTraits):
@@ -67,7 +69,6 @@ class TLoop(HasStrictTraits):
         if self.restart:
             self.tline.val = 0
             self.reset_sv_hist()
-
             self.restart = False
 
     def eval(self):
@@ -128,10 +129,10 @@ class TLoop(HasStrictTraits):
                 step_flag = 'corrector'
 
             if k >= self.k_max:
-                print ' ----------> No convergence for the time step %f', t_n1
+                print(' ----------> No convergence for the time step %f', t_n1)
                 break
             if self.restart or self.paused:
-                print 'interrupted iteration'
+                print('interrupted iteration')
                 break
             t_n = t_n1
             t_n1 = t_n + self.d_t

@@ -28,7 +28,7 @@ def F(w, f_t, G_f):
 
 
 l_ch = E * G_f / f_t**2
-print 'l', l_ch, L
+print('l', l_ch, L)
 
 w_ch = G_f / f_t
 w_max = 8.0 * w_ch

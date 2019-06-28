@@ -1,19 +1,14 @@
 
-from ibvpy.mats.mats1D.mats1D_eval import MATS1DEval
-from ibvpy.mats.mats_eval import IMATSEval
-from mathkit.mfn import MFnLineArray
-from numpy import \
-    array, ones, zeros, outer, inner, transpose, dot, frompyfunc, \
-    fabs, sqrt, linspace, vdot, identity, tensordot, \
-    sin as nsin, meshgrid, float_, ix_, \
-    vstack, hstack, sqrt as arr_sqrt
-from scipy.linalg import eig, inv
 from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasTraits, \
-    Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-    implements, Dict, Property, cached_property, Delegate
+    Float, \
+    Instance, Trait, on_trait_change, Event, \
+    Dict, Property
 from traitsui.api import \
-    Item, View, HSplit, VSplit, VGroup, Group, Spring
+    Item, View
+
+from ibvpy.mats.mats1D.mats1D_eval import MATS1DEval
+from mathkit.mfn import MFnLineArray
+import numpy as np
 
 
 #---------------------------------------------------------------------------
@@ -23,8 +18,6 @@ class MATS1DElastic(MATS1DEval):
     '''
     Elastic Model.
     '''
-
-    implements(IMATSEval)
 
     E = Float(1.,  # 34e+3,
               label="E",
@@ -76,10 +69,10 @@ class MATS1DElastic(MATS1DEval):
         super(MATS1DElastic, self).__init__(**kwtraits)
 
     def new_cntl_var(self):
-        return zeros(1, float_)
+        return np.zeros(1, np.float_)
 
     def new_resp_var(self):
-        return zeros(1, float_)
+        return np.zeros(1, np.float_)
 
     #-------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
@@ -94,8 +87,8 @@ class MATS1DElastic(MATS1DEval):
 #        E   = self.E
 #        D_el = array([[E]])
 #        sigma = dot( D_el, eps_app_eng )
-        D_el = array([[self.stress_strain_curve.diff(eps_n1)]])
-        sigma = array([self.stress_strain_curve(eps_n1)])
+        D_el = np.array([[self.stress_strain_curve.diff(eps_n1)]])
+        sigma = np.array([self.stress_strain_curve(eps_n1)])
         # You print the stress you just computed and the value of the apparent
         # E
         return sigma, D_el
@@ -129,6 +122,7 @@ class MATS1DElastic(MATS1DEval):
                        var_y='sig_app', idx_y=0,
                        record_on='update')
         ]
+
 
 if __name__ == '__main__':
     #-------------------------------------------------------------------------

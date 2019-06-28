@@ -30,7 +30,7 @@ viz_adapters might be defined to plot the values from
 the calculation additively.
 '''
 
-from StringIO import StringIO
+from io import StringIO
 import os
 from shutil import copyfile
 import subprocess
@@ -41,7 +41,7 @@ from traits.api import \
     HasStrictTraits, Str, List, Property, \
     cached_property, Instance, Constant
 
-from report_item import RInputRecord, ROutputSection
+from .report_item import RInputRecord, ROutputSection
 
 
 class ReportStudy(HasStrictTraits):
@@ -236,7 +236,7 @@ class Reporter(HasStrictTraits):
     def show_tex(self):
         with open(self.tex_file, 'r') as f:
             texsource = f.read()
-            print texsource
+            print(texsource)
 
     def run_pdflatex(self):
         cmd = ['pdflatex', '-interaction', 'nonstopmode', self.tex_file]

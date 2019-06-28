@@ -32,7 +32,7 @@ from numpy import \
 
 from math import exp, fabs
 
-from rt_nonlocal_averaging import \
+from .rt_nonlocal_averaging import \
     RTNonlocalAvg, QuarticAF, RTUAvg
 
 from ibvpy.mesh.fe_domain import \

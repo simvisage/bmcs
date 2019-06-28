@@ -1,0 +1,16 @@
+
+This directory provides the performance studies of the spirrid
+integration tool. There are three types of response functions
+tested:
+
+The implementation of the generic integration algorithm
+is given in mu_integ.py
+
+ * fiber_tt_2p.py: fiber tensile test with 2 parameters 
+   one strong discontinuity) 
+ * fiber_tt_5p.py: fiber tensile test with 5 parameters
+   one strong and one weak discontinuity
+ * fiber_po_8p.py: fiber pullout test with 7 parameters
+   one strong, one weak discontinuity 
+   and nonlinear range within the response
+   

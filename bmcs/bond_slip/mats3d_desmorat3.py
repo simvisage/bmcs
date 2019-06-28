@@ -3,30 +3,32 @@ Created on 06.11.2018
 
 @author: aguilar
 '''
-from bmcs.mats.mats_damage_fn import \
+import os.path
+
+from ibvpy.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     FRPDamageFn
 from ibvpy.mats.mats_eval import IMATSEval
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from traits.api import implements,  \
+from traits.api import provides,  \
     Constant, Float, WeakRef, List, Str, Property, cached_property, \
     Trait, on_trait_change, Instance, Callable
 from traitsui.api import View, VGroup, Item, UItem, Group
 from view.ui import BMCSTreeNode
 
-from mats_bondslip import MATSBondSlipBase
 import numpy as np
 import traits.api as tr
 
+from .mats_bondslip import MATSBondSlipBase
 
+
+@provides(IMATSEval)
 class MATS3DDesmorat(MATSBondSlipBase):
 
     node_name = 'bond model: damage-plasticity'
 
     '''Damage - plasticity model of bond.
     '''
-
-    tr.implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Material parameters
@@ -135,7 +137,7 @@ class MATS3DDesmorat(MATSBondSlipBase):
                 'eps_cum',
                 ]
 
-    def get_next_state(self, eps, eps_pi, Y, D, z, X, tau_e, tau, g, N, eps_cum):
+    def get_next_state(self, eps, eps_pi, Y, D, z, X, tau_e, tau, g, N, eps_cum, flag):
 
         D_m = self.D_m_abef
         D_b = self.D_b_abef
@@ -172,20 +174,22 @@ class MATS3DDesmorat(MATSBondSlipBase):
                     (self.E_b + (self.K + self.gamma) * (1. - D[i]))
 
          # return mapping for isotropic and kinematic hardening
-                norm2 = tau_e_trial - X[i]
-                norm3 = np.sqrt(np.einsum('nj,nj', norm2, norm2))
-                eps_pi[i + 1] = eps_pi[i] + norm2 * delta_pi / norm3
-                eps_cum[i + 1] = eps_cum[i] + norm2 * \
-                    norm2 * delta_pi / (norm3 * norm3)
+                numerador = tau_e_trial - X[i]
+                norm = np.sqrt(np.einsum('nj,nj', numerador, numerador))
+                sign = numerador / norm
+                eps_pi[i + 1] = eps_pi[i] + delta_pi * sign
+                eps_cum[i + 1] = eps_cum[i] + delta_pi * \
+                    np.einsum('ij,lk->ik', sign, sign)
                 Y[i + 1] = 0.5 * (np.einsum('ij,ijkl,lk', eps[i + 1], D_m, eps[i + 1])) + \
                     0.5 * (np.einsum('ij,ijkl,lk', eps_diff, D_b, eps_diff))
                 D_trial = D[i] + (Y[i + 1] / self.S) * delta_pi
                 N[i] = i + 1
-                if D[i] > 0.9:
+                if D_trial > 0.9:
+                    flag = 1
                     break
                 else:
                     D[i + 1] = D_trial
-                g[i + 1] = g[i] + (1. - D[i + 1]) * norm2 * delta_pi / norm3
+                g[i + 1] = g[i] + (1. - D[i + 1]) * delta_pi * sign
                 X[i + 1] = self.gamma * g[i + 1]
                 z[i + 1] = z[i] + delta_pi * (1. - D[i + 1])
 
@@ -194,7 +198,7 @@ class MATS3DDesmorat(MATSBondSlipBase):
                 tau[i + 1] = (np.einsum('ijkl,lk->ij', D_m, eps[i + 1]) * (1. - D[i + 1]) + (np.einsum('ijkl,lk->ij',
                                                                                                        D_b, eps[i + 1])) * (1. - D[i + 1]) - np.einsum('ijkl,lk->ij', D_b, eps_pi[i + 1])) * (1. - D[i + 1])
                 tau_e[i + 1] = (np.einsum('ijkl,lk->ij', D_b, eps_diff))
-        return eps_pi, Y, D, z, X, tau_e, tau, g, N, eps_cum
+        return eps_pi, Y, D, z, X, tau_e, tau, g, N, eps_cum, flag
 
     traits_view = View(
         Group(
@@ -217,17 +221,24 @@ class MATS3DDesmorat(MATSBondSlipBase):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    N_R_1 = np.zeros(20)
-    s_max_1 = np.zeros(20)
-    for j in range(20):
+    cycles = 5000
+    points = 50
+    eps_max = 0.0035
+    eps_max_min = 0.0005
+    eps_min = 0
+    N_R_1 = np.zeros(points)
+    d = np.zeros(points)
+    s_max_1 = np.zeros(points)
+    auxN = 0
+    for j in range(points):
         m = MATS3DDesmorat()
-        s_max_1[j] = 0.0025 - 0.002 * j / (j + 1)
-        s_levels_1 = np.linspace(0, s_max_1[j], 1000)
+        s_max_1[j] = eps_max - (eps_max - eps_max_min) * j / points
+        s_levels_1 = np.linspace(0, s_max_1[j], cycles * 2)
         s_levels_1.reshape(-1, 2)[:, 0] = 0
         s_levels_1.reshape(-1, 2)[:, 1] = s_max_1[j]
-        s_levels_1[0] = 0
-        s_history_1 = s_levels_1.flatten()
-        s = np.hstack([np.linspace(s_history_1[i], s_history_1[i + 1], 1, dtype=np.float_)
+#         s_levels_1[0] = 0
+#         s_history_1 = s_levels_1.flatten()
+        s = np.hstack([np.linspace(s_levels_1[i], s_levels_1[i + 1], 1, dtype=np.float_)
                        for i in range(len(s_levels_1) - 1)])
 
         eps = np.array([np.zeros((3, 3)) for _ in range(len(s))])
@@ -236,6 +247,7 @@ if __name__ == '__main__':
             eps[i][0][0] = s[i]
 
         eps_pi = np.array([np.zeros((3, 3)) for _ in range(len(s))])
+        eps_cum = np.array([np.zeros((3, 3)) for _ in range(len(s))])
         X = np.array([np.zeros((3, 3)) for _ in range(len(s))])
         g = np.array([np.zeros((3, 3)) for _ in range(len(s))])
         tau_e = np.array([np.zeros((3, 3)) for _ in range(len(s))])
@@ -243,11 +255,29 @@ if __name__ == '__main__':
         Y = np.zeros_like(s)
         D = np.zeros_like(s)
         z = np.zeros_like(s)
-        N = np.zeros(1000)
-        eps_pi, Y, D, z, X, tau_e, tau, g, N, eps_cum = m.get_next_state(
-            eps, eps_pi, Y, D, z, X, tau_e, tau, g, N, eps_cum)
+        N = np.zeros_like(s)
+        flag = 0
+        eps_pi, Y, D, z, X, tau_e, tau, g, N, eps_cum, flag = m.get_next_state(
+            eps, eps_pi, Y, D, z, X, tau_e, tau, g, N, eps_cum, flag)
+        if flag == 0:
+            break
         n = np.amax(N) / 2
+        d[j] = np.amax(D)
         N_R_1[j] = np.floor(n) + 1
+        flag2 = N_R_1[j] - auxN
+        auxN = N_R_1[j]
+#         print d[j]
+#         print flag
+
+#         if flag2 == 0:
+#             d[j] = d[j - 1]
+#             s_max_1[j] = s_max_1[j - 1]
+
+
+# np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat 3D\Original\N=0.txt', N_R_1, delimiter=" ", fmt="%s")
+# np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat
+# 3D\Original\epsMin=0.txt', s_max_1, delimiter=" ", fmt="%s")
+    print(np.amax(N_R_1))
     plt.semilogx(N_R_1, s_max_1)
     plt.ylim(0, 0.004)
     plt.show()

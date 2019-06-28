@@ -21,7 +21,7 @@ L = 450.0
 n_E = 30
 
 plt.subplot(121)
-n_E_list = range(4, n_E, 5)
+n_E_list = list(range(4, n_E, 5))
 for n_e in n_E_list:  # n: number of elements
     sig_t = [0]
     eps_t = [0]

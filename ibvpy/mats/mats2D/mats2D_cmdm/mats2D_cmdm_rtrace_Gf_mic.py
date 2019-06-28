@@ -75,16 +75,16 @@ class MATS2DMicroplaneDamageTraceGfmic( RTDofGraph ):
         
         # total "total energy" = weighted sum over the microplanes:
         E_t = array([ dot(E_t_arr, MPW) ])
-        print 'E_t_mic = %.10f' %(E_t )
+        print('E_t_mic = %.10f' %(E_t ))
 
         # total "elastic energy" = weighted sum over the microplanes:
         U_t = array([ dot(U_t_arr, MPW) ])
-        print 'U_t_mic = %.10f' %( U_t )
+        print('U_t_mic = %.10f' %( U_t ))
 
         # total "fracture energy" = weighted sum over the microplanes:
         G_f = array([ dot(G_f_arr, MPW) ])
-        print 'G_f_mic = %.10f' %( G_f )
-        print '\n'
+        print('G_f_mic = %.10f' %( G_f ))
+        print('\n')
 
         self.trace.xdata = array( self._trace_time, dtype = float )
 #        self.trace.ydata = array( self._trace_Gf, dtype = float )
@@ -129,7 +129,7 @@ class MATS2DMicroplaneDamageTraceEtmic( MATS2DMicroplaneDamageTraceGfmic ):
         E_t_arr = array([ self._get_E_t( xarray[:,i_mp], yarray[:,i_mp]) for i_mp in range(n_mp)])
         # total "total energy" = weighted sum over the microplanes:
         E_t = array([ dot(E_t_arr, MPW) ])
-        print 'E_t_mic = %.10f' %(E_t )
+        print('E_t_mic = %.10f' %(E_t ))
 
         self.trace.xdata = array( self._trace_time, dtype = float )
         self.trace.ydata = E_t * ones( self.trace.xdata.shape, dtype = float )

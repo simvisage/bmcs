@@ -1,0 +1,18 @@
+
+Issues that have encountered upon the transition from Python 2.7 to 3.5
+
+- the implements directive is not working because the class advisors
+  of the HasTraits class are not allowed anymore
+  
+- this results in assignment error when an interface was expected
+
+- the Class trait is not supported any more. Is the Type class 
+  a possible replacement?
+  
+- Installation of Canopy 2.1.9 - the python interpreter is hard    
+  to find - .local/share/... 
+  
+- The package pyqt is not installed by default because of licence issues
+  it must be installed manually
+  
+- sympy must be also installed in addition.

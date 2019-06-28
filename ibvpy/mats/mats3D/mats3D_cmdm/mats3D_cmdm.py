@@ -17,19 +17,16 @@ from numpy import \
 from numpy import \
     identity
 from traits.api import \
-    Constant,  Property, cached_property, implements
+    Constant,  Property, cached_property
 from traitsui.api import \
     View, Include
 from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from ibvpy.mats.matsXD.matsXD_cmdm.matsXD_cmdm import \
     MATSXDMicroplaneDamage
-from ibvpy.mats.mats_eval import \
-    IMATSEval
 
 
 class MATS3DMicroplaneDamage(MATSXDMicroplaneDamage, MATS3DEval):
 
-    implements(IMATSEval)
     # number of spatial dimensions
     #
     n_dim = Constant(3)
@@ -172,6 +169,7 @@ class MATS3DMicroplaneDamage(MATSXDMicroplaneDamage, MATS3DEval):
                        width=0.6, height=0.8,
                        buttons=['OK', 'Cancel']
                        )
+
 
 if __name__ == '__main__':
     m = MATS3DMicroplaneDamage()

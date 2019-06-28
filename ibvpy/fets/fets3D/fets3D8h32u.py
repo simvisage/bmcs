@@ -7,7 +7,7 @@ from numpy import \
 from scipy.linalg import \
      inv
 
-from fets3D import FETS3D
+from .fets3D import FETS3D
 
 #-----------------------------------------------------------------------------------
 # FETS3D8H32U - 32 nodes subparametric volume element (3D, cubic, serendipity family)

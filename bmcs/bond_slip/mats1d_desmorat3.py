@@ -4,18 +4,11 @@ Created on 20.10.2018
 @author: Mario Aguilar
 '''
 
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
-    FRPDamageFn
-from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from traits.api import implements,  \
-    Constant, Float, WeakRef, List, Str, Property, cached_property, \
-    Trait, on_trait_change, Instance, Callable
-from traitsui.api import View, VGroup, Item, UItem, Group
-
-import matplotlib.pyplot as plt
-from mats_bondslip import MATSBondSlipBase
+from traits.api import  \
+    Float, List
 import numpy as np
+
+from .mats_bondslip import MATSBondSlipBase
 
 
 class MATS1DDesmorat(MATSBondSlipBase):
@@ -156,7 +149,7 @@ class MATS1DDesmorat(MATSBondSlipBase):
                 Y[i + 1] = 0.5 * self.E_m * s[i + 1]**2. + 0.5 * \
                     self.E_b * (s[i + 1] - s_p[i + 1])**2.
                 D_trial = D[i] + (Y[i + 1] / self.S) * \
-                    delta_pi * (1. - D[i])**7
+                    delta_pi
                 N[i] = i + 1
                 if D[i] > 0.5:
                     # print ' ----------> No Convergence any more'
@@ -180,69 +173,6 @@ class MATS1DDesmorat(MATSBondSlipBase):
 
         return s_p, Y, D, z, X, tau_e, tau, N, s_cum
 
-    traits_view = View(
-        Group(
-            VGroup(
-                Item('E_b', full_size=True, resizable=True),
-                Item('E_m'),
-                Item('gamma'),
-                Item('K'),
-                Item('S'),
-                Item('tau_bar'),
-            ),
-
-        ),
-        width=0.4,
-        height=0.8,
-    )
-
-    tree_view = traits_view
-
-#     def get_corr_pred(self, s, d_s, tau, t_n, t_n1, s_vars):
-#
-#         s_p, alpha, z, kappa, omega = s_vars
-#
-#         n_e, n_ip, n_s = s.shape
-#         D = np.zeros((n_e, n_ip, n_s, n_s))
-#         D[:, :, 0, 0] = self.E_m
-#         D[:, :, 2, 2] = self.E_f
-#
-#         sig_pi_trial = self.E_b * (s[:, :, 1] - s_p)
-#
-#         Z = self.K * z
-#         X = self.gamma * alpha
-#         f = np.fabs(sig_pi_trial - X) - self.tau_bar - Z
-#
-#         elas = f <= 1e-6
-#         plas = f > 1e-6
-#
-#         d_tau = np.einsum('...st,...t->...s', D, d_s)
-#         tau += d_tau
-#
-#         # Return mapping
-#         delta_lamda = f / (self.E_b + self.gamma + self.K) * plas
-#         # update all the state variables
-#
-#         s_p = s_p + delta_lamda * np.sign(sig_pi_trial - X)
-#         z = z + delta_lamda
-#         alpha = alpha + delta_lamda * np.sign(sig_pi_trial - X)
-#
-#         kappa = np.max(np.array([kappa, np.fabs(s)]), axis=0)
-#         omega = self.g_fn(kappa)
-#
-#         tau[:, :, 1] = (1 - omega) * self.E_b * (s[:, :, 1] - s_p)
-#
-#         # Consistent tangent operator
-#
-#         g_fn = self.g_fn_get_function()
-#         D_ed = -self.E_b / (self.E_b + self.K + self.gamma) * derivative(g_fn, kappa, dx=1e-6) * self.E_b * (s[:, :, 1] - s_p) \
-#             + (1 - omega) * self.E_b * (self.K + self.gamma) / \
-#             (self.E_b + self.K_bar + self.H_bar)
-#
-#         D[:, :, 1, 1] = (1 - omega) * self.E_b * elas + D_ed * plas
-#
-#         return tau, D, s_p, alpha, z, kappa, omega
-
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
@@ -250,7 +180,8 @@ if __name__ == '__main__':
     d = np.zeros(20)
     s_max_1 = np.zeros(20)
     auxN = 0
-    for j in range(20):
+    points = []  # added to avoid error
+    for j in range(points):
         m = MATS1DDesmorat()
         s_max_1[j] = 0.0022 - 0.002 * j / (j + 1)
         s_levels_1 = np.linspace(0, s_max_1[j], 1000)
@@ -260,10 +191,8 @@ if __name__ == '__main__':
         s_history_1 = s_levels_1.flatten()
         s = np.hstack([np.linspace(s_history_1[i], s_history_1[i + 1], 1, dtype=np.float_)
                        for i in range(len(s_levels_1) - 1)])
-        # print s
-        s_vars = [np.zeros_like(s)
-                  for sv in m.sv_names]
-        N = np.zeros(1000)
+        print(s)
+        N = np.zeros(s)
         s_p, Y, D, z, X, tau_e, tau, N, s_cum = m.get_next_state(s, s_vars)
         n = np.amax(N) / 2
         d[j] = np.amax(D)
@@ -273,8 +202,10 @@ if __name__ == '__main__':
         if flag == 0:
             N_R_1[j] = 0
             d[j] = 0
-    np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat uniaxial\newD,Nlog,1.9e4,1.6e4,3e7,1e7,1e-7,1.txt', N_R_1, delimiter=" ", fmt="%s")
-    np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat uniaxial\newD,s_max,1.9e4,1.6e4,3e7,1e7,1e-7,1.txt', s_max_1, delimiter=" ", fmt="%s")
+    np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat uniaxial\newD,Nlog,1.9e4,1.6e4,3e7,1e7,1e-7,1.txt',
+               N_R_1, delimiter=" ", fmt="%s")
+    np.savetxt(r'C:\Users\mario\Desktop\Master\HiWi\Desmorat uniaxial\newD,s_max,1.9e4,1.6e4,3e7,1e7,1e-7,1.txt',
+               s_max_1, delimiter=" ", fmt="%s")
     plt.subplot(121)
     plt.semilogx(N_R_1[:], s_max_1[:], 'k')
     plt.xlabel('Nlog')

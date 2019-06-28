@@ -3,22 +3,21 @@ Created on May 20, 2009
 
 @author: jakub
 '''
-from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasTraits, Interface, implements, \
-    Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
-    on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property, Dict, \
-    DelegatesTo
-
-from dots_eval import DOTSEval, RTraceEvalUDomainFieldVar
-from mathkit.matrix_la.sys_mtx_array import SysMtxArray
 from ibvpy.mats.mats2D.mats2D_tensor import map2d_eps_eng_to_mtx
 from ibvpy.mats.mats3D.mats3D_tensor import map3d_eps_eng_to_mtx
-
+from mathkit.matrix_la.sys_mtx_array import SysMtxArray
 from numpy import ix_, frompyfunc, array, abs, vstack, linalg, dot, ones, hstack, \
-    arange, zeros_like, zeros, repeat, meshgrid, isinf, where, copy
+    arange, zeros_like, zeros, isinf, where, copy
+from traits.api import \
+    Array, Bool, Float, \
+    Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
+    Tuple, Property, cached_property, Dict
 
 from tvtk.api import tvtk
+
 from tvtk.tvtk_classes import tvtk_helper
+
+from .dots_eval import DOTSEval, RTraceEvalUDomainFieldVar
 
 
 class XDOTSEval(DOTSEval):
@@ -195,7 +194,7 @@ class XDOTSEval(DOTSEval):
                          'eps_f': RTraceEvalUDomainFieldVar(eval=self.get_eps_f, ts=self, u_mapping=self.map_u),
                          'u_rm': RTraceEvalUDomainFieldVar(eval=self.get_u_rm, ts=self, u_mapping=self.map_u),
                          'u_rf': RTraceEvalUDomainFieldVar(eval=self.get_u_rf, ts=self, u_mapping=self.map_u), })
-        for key, eval in self.fets_eval.rte_dict.items():
+        for key, eval in list(self.fets_eval.rte_dict.items()):
             rte_dict[key] = RTraceEvalUDomainFieldVar(name=key,
                                                       u_mapping=self.map_u,
                                                       eval=eval,
@@ -332,7 +331,8 @@ class XDOTSEval(DOTSEval):
 
         # handle the case of empty domain
         if len(ip_coo_list) == 0:
-            raise ValueError, 'empty subdomain - something wrong in the fe_domain management'
+            raise ValueError(
+                'empty subdomain - something wrong in the fe_domain management')
 
         ip_coo_arr = vstack(ip_coo_list)[:, self.fets_eval.dim_slice]
         ip_w_arr = hstack(ip_wei_list)
@@ -473,9 +473,9 @@ class XDOTSEval(DOTSEval):
         cell_type = cell_class().cell_type
         vtk_cell_types = ones(n_cells, dtype=int) * cell_type
         if self.debug_cell_data:
-            print 'vtk_cells_array', vtk_cell_array
-            print 'vtk_cell_offsets', vtk_cell_offsets
-            print 'vtk_cell_types', vtk_cell_types
+            print('vtk_cells_array', vtk_cell_array)
+            print('vtk_cell_offsets', vtk_cell_offsets)
+            print('vtk_cell_types', vtk_cell_types)
 
         return vtk_cell_array.flatten(), vtk_cell_offsets, vtk_cell_types
 

@@ -189,7 +189,7 @@ class MGridCell(SDomain):
         #points = self.grid_cell_coords[ ix_(self.node_map) ]
 
         points = self.grid_cell_coords 
-        print points
+        print(points)
         shape = points.shape
         if shape[1] < 3:
             _points = zeros( (shape[0],3), dtype = float )
@@ -203,7 +203,7 @@ class MGridCell(SDomain):
         n_points = self.grid_cell_coords.shape[0]
         full_node_map = ones(n_points,dtype=float) * -1.
         full_node_map[ ix_(self.node_map) ] = arange(len(self.node_map))
-        print full_node_map
+        print(full_node_map)
         return full_node_map
 
     #------------------------------------------------------------------

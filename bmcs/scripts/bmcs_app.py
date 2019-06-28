@@ -10,27 +10,30 @@ Toplevel script to start BMCS
 import sys
 
 from bmcs.bond_slip import \
-    run_bond_slip_model_p, \
-    run_bond_slip_model_d, \
-    run_bond_slip_model_dp
+    run_bond_sim_damage, \
+    run_bond_sim_elasto_plasticity
 from bmcs.crack_mode_I import \
     run_bending3pt_mic_odf, \
     run_bending3pt_sdamage_viz2d, \
     run_bending3pt_sdamage_viz3d, \
+    run_tension_sdamage_viz3d, \
     run_tensile_test_sdamage
 from bmcs.pullout import \
     run_pullout_const_shear, \
     run_pullout_dp, \
+    run_pullout_ep_cyclic, \
     run_pullout_multilinear, \
-    run_pullout_frp_damage
+    run_pullout_frp_damage, \
+    run_pullout_fatigue
 from ibvpy.mats.mats3D.mats3D_plastic.yield_face3D_explorer import run_explorer
 from traits.api import HasTraits, Button, Str, Constant
 from traitsui.api import \
     View, Item, UItem, VGroup, Group, Spring, HGroup
 
-from bmcs_version import CURRENT_VERSION
 from ibvpy.mats.mats3D.mats3D_plastic.yield_face3D_explorer \
     import run_explorer
+
+from .bmcs_version import CURRENT_VERSION
 
 
 # A bmcs mayavi instance so we can close it correctly.
@@ -46,17 +49,18 @@ class BMCSLauncher(HasTraits):
     bond_slip_model_d = Button(label='Damage')
 
     def _bond_slip_model_d_fired(self):
-        run_bond_slip_model_d(kind='live')
+        run_bond_sim_damage()
 
     bond_slip_model_p = Button(label='Plasticity')
 
     def _bond_slip_model_p_fired(self):
-        run_bond_slip_model_p(kind='live')
+        run_bond_sim_elasto_plasticity()
 
     bond_slip_model_dp = Button(label='Damage-plasticity')
 
     def _bond_slip_model_dp_fired(self):
-        run_bond_slip_model_dp(kind='live')
+        pass
+        # run_bond_slip_model_dp(kind='live')
 
     #=========================================================================
     # Lecture #3
@@ -76,10 +80,20 @@ class BMCSLauncher(HasTraits):
     def _pullout_model_frp_damage_fired(self):
         run_pullout_frp_damage(kind='live')
 
+    pullout_model_ep = Button(label='Elasto-plasticity')
+
+    def _pullout_model_ep_fired(self):
+        run_pullout_ep_cyclic()
+
     pullout_model_dp = Button(label='Damage-plasticity')
 
     def _pullout_model_dp_fired(self):
         run_pullout_dp(kind='live')
+
+    pullout_model_fatigue = Button(label='Damage-fatigue')
+
+    def _pullout_model_fatigue_fired(self):
+        run_pullout_fatigue(kind='live')
 
     #=========================================================================
     # Lecture #8
@@ -88,7 +102,13 @@ class BMCSLauncher(HasTraits):
     tensile_test_2d_sdamage = Button(label='Tensile test - isotropic damage')
 
     def _tensile_test_2d_sdamage_fired(self):
-        run_tensile_test_sdamage(kind='live')
+        run_tension_sdamage_viz3d(kind='live')
+
+    bending3pt_2d_sdamage_viz2d = Button(
+        label='bending test 3Pt - isotropic damage (2D-light)')
+
+    def _bending3pt_2d_sdamage_viz2d_fired(self):
+        run_bending3pt_sdamage_viz2d(kind='live')
 
     bending3pt_3d = Button(label='Bending test (3D)')
 
@@ -121,37 +141,68 @@ class BMCSLauncher(HasTraits):
             HGroup(
                 Spring(),
                 Item('version', style='readonly',
-                     full_size=True, resizable=True)
+                     full_size=True, resizable=True,
+                     )
             ),
             Group(
                 UItem('bond_slip_model_d',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
                 UItem('bond_slip_model_p',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
                 UItem('bond_slip_model_dp',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='False'
+                      ),
                 label='Bond-slip models, lecture #1-2'
             ),
             Group(
                 UItem('pullout_model_const_shear',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
                 UItem('pullout_model_multilinear',
-                      full_size=True, resizable=True),
-                #                 UItem('pullout_model_frp_damage',
-                #                       full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
+                UItem('pullout_model_ep',
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
+                UItem('pullout_model_frp_damage',
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
                 UItem('pullout_model_dp',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
+                UItem('pullout_model_fatigue',
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
                 label='Pull-out models, lecture #3-6'
             ),
             Group(
                 UItem('tensile_test_2d_sdamage',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
                 UItem('bending3pt_2d_sdamage_viz2d',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
                 UItem('bending3pt_2d_sdamage_viz3d',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
                 UItem('bending3pt_3d',
-                      full_size=True, resizable=True),
+                      full_size=True, resizable=True,
+                      enabled_when='True'
+                      ),
                 label='Bending, crack propagation, lecture #7-9'
             ),
             Group(

@@ -33,7 +33,7 @@ class EitherType(TraitType):
         if isinstance(value, ClassTypes):
             klass = value
             if not klass in self._klasses:
-                raise TraitError, 'type %s not in the type scope' % klass
+                raise TraitError('type %s not in the type scope' % klass)
             # check if the last instance of the klass has been
             # registered earlier in the trait history
             new_value = klass()
@@ -42,8 +42,8 @@ class EitherType(TraitType):
             if isinstance(value, tuple(self._klasses)):
                 new_value = value
             else:
-                raise TraitError, 'value of type %s out of the scope: %s' % \
-                    (value.__class__, self._klasses)
+                raise TraitError('value of type %s out of the scope: %s' %
+                                 (value.__class__, self._klasses))
         return new_value
 
     def get_default_value(self):
@@ -63,32 +63,31 @@ class EitherType(TraitType):
 
         return InstanceEditor(values=choice_list, kind='live')
 
+
 if __name__ == '__main__':
 
-    from types import StringType, IntType
-
     class UseEitherType(HasTraits):
-        int_or_string = EitherType(klasses=[IntType, StringType])
+        int_or_string = EitherType(klasses=[int, str])
 
         trait_vie = View(Item('int_or_string', style='custom'),
                          resizable=True)
 
     uet = UseEitherType()
 
-    print 'default value', uet.int_or_string
+    print('default value', uet.int_or_string)
 
     uet.int_or_string = 4
 
-    print 'value', uet.int_or_string
+    print('value', uet.int_or_string)
 
     uet.configure_traits()
 
-    uet.int_or_string = StringType
+    uet.int_or_string = str
 
-    print 'value after type reset', uet.int_or_string
+    print('value after type reset', uet.int_or_string)
 
     uet.int_or_string = 'is now the string'
 
-    print 'value', uet.int_or_string
+    print('value', uet.int_or_string)
 
     uet.int_or_string = 8.9  # exception

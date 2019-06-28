@@ -1,34 +1,25 @@
 
 #-- Imports --------------------------------------------------------------
 
-from os.path \
-    import join, dirname
-
 from numpy \
     import sqrt
-
 from numpy.random \
     import random
-
 from traits.api \
     import HasTraits, Property, Array, Any, Event, \
     on_trait_change, Instance, WeakRef, Int, Str, Bool, Trait, \
-    Interface, implements
-
+    Interface, provides
 from traitsui.api \
     import View, Item, TabularEditor, HSplit, Group
-
 from traitsui.menu \
     import CancelButton
-
 from traitsui.tabular_adapter \
     import TabularAdapter
+
 
 #------------------------------------------------------------------------
 # Source of the data for array view
 #------------------------------------------------------------------------
-
-
 class ICellArraySource(Interface):
 
     '''Object representing a structured 1,2,3-dimensional cell grid.
@@ -61,11 +52,11 @@ class ICellView(Interface):
 #------------------------------------------------------------------------
 
 
+@provides(ICellView)
 class CellView(HasTraits):
 
     '''Get the element numbers.
     '''
-    implements(ICellView)
 
     cell_idx = Int(-1)
 
@@ -124,6 +115,7 @@ class ElemTabularAdapter (TabularAdapter):
 
 #-- Tabular Editor Definition --------------------------------------------
 
+
 elem_tabular_editor = TabularEditor(
     adapter=ElemTabularAdapter(),
     selected_row='current_row',
@@ -164,6 +156,7 @@ class CellArray(HasTraits):
         resizable=True,
         buttons=[CancelButton]
     )
+
 
 # Run the demo (if invoked from the command line):
 if __name__ == '__main__':

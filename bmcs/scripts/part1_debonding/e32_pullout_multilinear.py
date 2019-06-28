@@ -5,7 +5,7 @@ Created on Jul 12, 2017
 '''
 from os.path import join
 
-from bmcs.pullout.pullout_multilinear import PullOutModel
+from bmcs.pullout.pullout_multilinear_sim import PullOutModel
 from view.window import BMCSWindow
 
 import pylab as p
@@ -20,7 +20,7 @@ class PullOutMultilinearBondStudy(BMCSWindow):
 
     def __init__(self, *args, **kw):
         self.model = PullOutModel(name='e32_pullout_multilinear',
-                                  n_e_x=100, k_max=1000, u_f0_max=1.84)
+                                  n_e_x=100, k_max=1000, w_max=1.84)
         self.model.tline.step = 0.01
         self.model.geometry.L_x = 200.0
         self.model.loading_scenario.set(loading_type='monotonic')

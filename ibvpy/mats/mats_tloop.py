@@ -3,17 +3,18 @@ Created on 12.01.2016
 
 @author: Yingxiong
 '''
-from ibvpy.core.tline import TLine
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
-from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
 from traits.api import Int, HasStrictTraits, Instance, \
     Float, Event, \
     Array, List, Bool, Property, cached_property, Str, Dict
 from traitsui.api import View, Item
+
+from ibvpy.core.tline import TLine
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxArray
+from mathkit.matrix_la.sys_mtx_assembly import SysMtxAssembly
+import numpy as np
 from view.ui import BMCSLeafNode
 
-from mats3D.mats3D_explore import MATS3DExplore
-import numpy as np
+from .mats3D.mats3D_explore import MATS3DExplore
 
 
 #from matsXD.matsXD_explore import MATSXDExplore
@@ -65,11 +66,11 @@ class TLoop(HasStrictTraits):
     @cached_property
     def _get_state_arrays(self):
         sa_shapes = self.ts.state_array_shapes
-        print 'state array generated', sa_shapes
+        print('state array generated', sa_shapes)
         return {
             name: np.zeros(mats_sa_shape, dtype=np.float_)[np.newaxis, ...]
             for name, mats_sa_shape
-            in sa_shapes.items()
+            in list(sa_shapes.items())
         }
 
     def init(self):
@@ -92,7 +93,7 @@ class TLoop(HasStrictTraits):
         while (t_n1 - self.tline.max) <= self.step_tolerance and \
                 not (self.restart or self.paused):
             k = 0
-            print 'load factor', t_n1,
+            print('load factor', t_n1, end=' ')
             step_flag = 'predictor'
             U_k = np.copy(U_n)
             d_U_k = np.zeros_like(U_k)
@@ -136,12 +137,12 @@ class TLoop(HasStrictTraits):
                 step_flag = 'corrector'
 
             if k >= self.k_max:
-                print ' ----------> no convergence'
+                print(' ----------> no convergence')
                 break
             else:
-                print '(', k, ')'
+                print('(', k, ')')
             if self.restart or self.paused:
-                print 'interrupted iteration'
+                print('interrupted iteration')
                 break
 
             t_n = t_n1
@@ -174,13 +175,13 @@ if __name__ == '__main__':
         mats_eval=MATS3DDesmorat()
     )
 
-    ts.bcond_mngr.bcond_list = [BCDof(var='u', dof=0, value=3)]
+    ts.bcond_mngr.bcond_list = [BCDof(var='u', dof=0, value=0.001)]
 
     tl = TLoop(ts=ts, tline=TLine(step=0.1))
     tl.init()
     U_k = tl.eval()
 
-    print U_k
+    print(U_k)
 
-    print 'U', tl.U_record
-    print 'F', tl.F_record
+    print('U', tl.U_record)
+    print('F', tl.F_record)

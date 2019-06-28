@@ -40,7 +40,7 @@ from mathkit.mfn import MFnLineArray
 from numpy import pi as Pi
 from math import cos, sin
 from ibvpy.mats.matsXD.matsXD_explore import MATSXDExplore
-from mats1D5_bond import MATS1D5Bond
+from .mats1D5_bond import MATS1D5Bond
 
 class MATS1D5Explore( MATSXDExplore ):
     '''

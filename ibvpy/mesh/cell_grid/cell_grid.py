@@ -1,29 +1,31 @@
 
-from ibvpy.core.i_sdomain import \
-    ISDomain
-from ibvpy.core.sdomain import \
-    SDomain
-from ibvpy.plugins.mayavi_util.pipelines import \
-    MVPolyData, MVPointLabels, MVStructuredGrid
+from functools import reduce
+
 from numpy import \
-    array, unique, min, max, mgrid, ogrid, c_, alltrue, repeat, ix_, \
-    arange, ones, zeros, multiply, sort, index_exp, indices, add, hstack, \
+    array, mgrid, c_, \
+    arange, zeros, multiply, sort, index_exp, add, \
     frompyfunc
 from traits.api import \
-    HasTraits, List, Array, Property, cached_property, \
+    Array, Property, cached_property, \
     Instance, Trait, Button, on_trait_change, Tuple, \
-    Int, Float, implements, Delegate, Callable
+    Int, Float, provides, Delegate, Callable
 from traitsui.api import \
     View, Item
 
-from cell_array import CellView, ICellView, CellArray, ICellArraySource
-from cell_grid_slice import CellGridSlice
-from cell_spec import CellSpec, GridCell
+from ibvpy.core.sdomain import \
+    SDomain
+from ibvpy.plugins.mayavi_util.pipelines import \
+    MVStructuredGrid
+
+from .cell_array import CellView, CellArray, ICellArraySource
+from .cell_grid_slice import CellGridSlice
+from .cell_spec import CellSpec, GridCell
 
 
 #--------------------------------------------------------------------------
 # CellGrid
 #--------------------------------------------------------------------------
+@provides(ICellArraySource)
 class CellGrid(SDomain):
     '''
     Manage an array of cells defined within a structured grid.
@@ -49,7 +51,6 @@ class CellGrid(SDomain):
                       representing a node of the cell
 
     '''
-    implements(ICellArraySource)
 
     # Everything depends on the grid_cell_specification
     # defining the distribution of nodes within the cell.
@@ -272,7 +273,7 @@ class CellGrid(SDomain):
         return c_[tuple([x.flatten() for x in self.point_x_grid])]
 
     point_X_arr = Property(
-        depends_on='grid_cell_spec,shape,coord_min,coord_max')
+        depends_on='grid_cell_spec,shape,coord_min,coord_max, geo_transform')
 
     @cached_property
     def _get_point_X_arr(self):
@@ -408,7 +409,7 @@ class CellGrid(SDomain):
         '''
         vertex_idx_grid = self.vertex_idx_grid
         cutoff_last = [slice(0, -1) for i in range(self.n_dims)]
-        base_node_grid = vertex_idx_grid[cutoff_last]
+        base_node_grid = vertex_idx_grid[tuple(cutoff_last)]
         return sort(base_node_grid.flatten())
 
     cell_node_map = Property(depends_on='shape,grid_cell_spec.+')
@@ -574,64 +575,64 @@ if __name__ == '__main__':
                                                         [1, 1],
                                                         [-1, 1]]))
 
-    print '--------- Point index grid specification -------'
+    print('--------- Point index grid specification -------')
 
-    print 'point grid shape'
-    print mgd._get_point_grid_shape()
-    print 'point grid size'
-    print mgd.point_grid_size
-    print 'point idx grid'
-    print mgd.point_idx_grid
+    print('point grid shape')
+    print(mgd._get_point_grid_shape())
+    print('point grid size')
+    print(mgd.point_grid_size)
+    print('point idx grid')
+    print(mgd.point_idx_grid)
 
-    print '--------- Point coordinates --------------'
+    print('--------- Point coordinates --------------')
 
-    print 'point x grid'
-    print mgd.point_x_grid
-    print 'point X grid'
-    print mgd.point_X_grid
-    print 'point x arr'
-    print mgd.point_x_arr
-    print 'point X arr'
-    print mgd.point_X_arr
+    print('point x grid')
+    print(mgd.point_x_grid)
+    print('point X grid')
+    print(mgd.point_X_grid)
+    print('point x arr')
+    print(mgd.point_x_arr)
+    print('point X arr')
+    print(mgd.point_X_arr)
 
-    print '--------- Vertex index grid specification --------------'
+    print('--------- Vertex index grid specification --------------')
 
-    print 'vertex nodes'
-    print mgd.vertex_idx_arr
-    print 'vertex_idx_grid'
-    print mgd.vertex_idx_grid
+    print('vertex nodes')
+    print(mgd.vertex_idx_arr)
+    print('vertex_idx_grid')
+    print(mgd.vertex_idx_grid)
 
-    print '--------- Vertex coordinates --------------'
+    print('--------- Vertex coordinates --------------')
 
-    print 'vertex_x_grid'
-    print mgd.vertex_x_grid
-    print 'vertex_X_grid'
-    print mgd.vertex_X_grid
-    print 'vertex_x_arr'
-    print mgd.vertex_x_arr
-    print 'vertex_X_arr'
-    print mgd.vertex_X_arr
+    print('vertex_x_grid')
+    print(mgd.vertex_x_grid)
+    print('vertex_X_grid')
+    print(mgd.vertex_X_grid)
+    print('vertex_x_arr')
+    print(mgd.vertex_x_arr)
+    print('vertex_X_arr')
+    print(mgd.vertex_X_arr)
 
-    print '--------- Cell node mapping   --------------'
+    print('--------- Cell node mapping   --------------')
 
-    print 'cell node map'
-    print mgd.cell_node_map
+    print('cell node map')
+    print(mgd.cell_node_map)
 
-    print '--------- Index transformations ------------'
+    print('--------- Index transformations ------------')
 
-    print 'cell offset for ( 1, 0  )'
+    print('cell offset for ( 1, 0  )')
     offset = mgd.get_cell_offset((1, 0))
-    print offset
+    print(offset)
 
-    print 'cell idx - should be ( 1, 0 )'
+    print('cell idx - should be ( 1, 0 )')
     idx = mgd.get_cell_idx(offset)
-    print idx
+    print(idx)
 
-    print '--------- Vertex idx array -----------------'
+    print('--------- Vertex idx array -----------------')
 
-    print 'get the geometry for visualization'
-    print mgd._get_mvpoints()
-    print mgd._get_mvpoints_grid_shape()
+    print('get the geometry for visualization')
+    print(mgd._get_mvpoints())
+    print(mgd._get_mvpoints_grid_shape())
 
-    print 'base nodes'
-    print mgd.base_nodes
+    print('base nodes')
+    print(mgd.base_nodes)

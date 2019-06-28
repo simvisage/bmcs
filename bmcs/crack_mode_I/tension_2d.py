@@ -5,6 +5,13 @@ Created on 12.01.2016
 @todo: derive the size of the state array.
 '''
 
+from scipy import interpolate as ip
+from traits.api import \
+    Property, Instance, cached_property, \
+    List, Float, Trait, Int, on_trait_change
+from traitsui.api import \
+    View, Item, UItem, VGroup
+
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
@@ -22,22 +29,17 @@ from ibvpy.mats.mats3D.viz3d_strain_field import \
     Vis3DStrainField, Viz3DStrainField
 from ibvpy.mats.mats3D.viz3d_stress_field import \
     Vis3DStressField, Viz3DStressField
-from scipy import interpolate as ip
-from traits.api import \
-    Property, Instance, cached_property, \
-    List, Float, Trait, Int, on_trait_change
-from traitsui.api import \
-    View, Item, UItem, VGroup
+import numpy as np
+import numpy as np
+from simulator.api import Simulator
+import traits.api as tr
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
-from view.window import BMCSModel, BMCSWindow
+from view.window import BMCSWindow
 
-from bending3pt_2d import \
+from .bending3pt_2d import \
     Viz2DForceDeflection, Vis2DCrackBand, CrossSection
-import numpy as np
-import numpy as np
-import traits.api as tr
-from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
+from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
 class XCrossSection(BMCSLeafNode):
@@ -92,7 +94,7 @@ class Geometry(BMCSLeafNode):
     tree_view = traits_view
 
 
-class TensileTestModel(BMCSModel, Vis2D):
+class TensileTestModel(Simulator):
     '''The tensile test is used to verify the softening behavior
     '''
     node_name = 'tensile test simulation'
@@ -103,7 +105,7 @@ class TensileTestModel(BMCSModel, Vis2D):
 
         return [
             self.tline,
-            self.mats_eval,
+            self.model,
             self.cross_section,
             self.geometry,
         ]
@@ -111,25 +113,10 @@ class TensileTestModel(BMCSModel, Vis2D):
     def _update_node_list(self):
         self.tree_node_list = [
             self.tline,
-            self.mats_eval,
+            self.model,
             self.cross_section,
             self.geometry,
         ]
-
-    #=========================================================================
-    # Interactive control of the time loop
-    #=========================================================================
-    def init(self):
-        self.tloop.init()
-
-    def eval(self):
-        return self.tloop.eval()
-
-    def pause(self):
-        self.tloop.paused = True
-
-    def stop(self):
-        self.tloop.restart = True
 
     #=========================================================================
     # Test setup parameters
@@ -166,30 +153,30 @@ class TensileTestModel(BMCSModel, Vis2D):
     #=========================================================================
     # Material model
     #=========================================================================
-    mats_eval_type = Trait('microplane damage (eeg)',
-                           {'elastic': MATS2DElastic,
-                            'microplane damage (eeq)': MATS2DMplDamageEEQ,
-                            'microplane CSD (eeq)': MATS2DMplCSDEEQ,
-                            #'microplane CSD (odf)': MATS2DMplCSDODF,
-                            'scalar damage': MATS2DScalarDamage
-                            },
-                           MAT=True
-                           )
+    model_type = Trait('microplane damage (eeg)',
+                       {'elastic': MATS2DElastic,
+                        'microplane damage (eeq)': MATS2DMplDamageEEQ,
+                        'microplane CSD (eeq)': MATS2DMplCSDEEQ,
+                        #'microplane CSD (odf)': MATS2DMplCSDODF,
+                        'scalar damage': MATS2DScalarDamage
+                        },
+                       MAT=True
+                       )
 
-    @on_trait_change('mats_eval_type')
-    def _set_mats_eval(self):
-        self.mats_eval = self.mats_eval_type_()
+    @on_trait_change('model_type')
+    def _set_model(self):
+        self.model = self.model_type_()
 
     @on_trait_change('BC,MAT,MESH')
     def reset_node_list(self):
         self._update_node_list()
 
-    mats_eval = Instance(IMATSEval,
-                         MAT=True)
+    model = Instance(IMATSEval,
+                     MAT=True)
     '''Material model'''
 
-    def _mats_eval_default(self):
-        return self.mats_eval_type_()
+    def _model_default(self):
+        return self.model_type_()
 
     regularization_on = tr.Bool(True, MAT=True, MESH=True,
                                 auto_set=False, enter_set=True)
@@ -197,7 +184,7 @@ class TensileTestModel(BMCSModel, Vis2D):
     @on_trait_change('L_cb')
     def broadcast_cb(self):
         if self.regularization_on:
-            self.mats_eval.omega_fn.L_s = self.L_cb
+            self.model.omega_fn.L_s = self.L_cb
 
     #=========================================================================
     # Finite element type
@@ -253,7 +240,7 @@ class TensileTestModel(BMCSModel, Vis2D):
         dgrid = DOTSGrid(L_x=self.geometry.L, L_y=self.geometry.H,
                          integ_factor=self.cross_section.b,
                          n_x=self.n_e_x, n_y=self.n_e_y,
-                         fets=self.fets_eval, mats=self.mats_eval)
+                         fets=self.fets_eval)
 
         L = self.geometry.L
         L_c = self.L_cb
@@ -267,39 +254,6 @@ class TensileTestModel(BMCSModel, Vis2D):
 
     def _get_fe_grid(self):
         return self.dots_grid.mesh
-
-    tline = Instance(TLine)
-
-    def _tline_default(self):
-        t_max = 1.0
-        d_t = 0.1
-        return TLine(min=0.0, step=d_t, max=t_max,
-                     time_change_notifier=self.time_changed,
-                     )
-
-    L_cb = Float(5.0, label='crack band width',
-                 MAT=True,
-                 MESH=True,
-                 auto_set=False, enter_set=True)
-
-    k_max = Int(200,
-                ALG=True)
-    tolerance = Float(1e-4,
-                      ALG=True)
-    tloop = Property(Instance(TimeLoop),
-                     depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
-    '''Algorithm controlling the time stepping.
-    '''
-    @cached_property
-    def _get_tloop(self):
-        k_max = self.k_max
-        tolerance = self.tolerance
-        return TimeLoop(ts=self.dots_grid, k_max=k_max,
-                        tolerance=tolerance,
-                        algorithmic=False,
-                        tline=self.tline,
-                        bc_mngr=self.bcond_mngr,
-                        response_traces=self.response_traces.values())
 
     response_traces = tr.Dict
     '''Response traces.
@@ -348,14 +302,14 @@ class TensileTestModel(BMCSModel, Vis2D):
 
 def run_tensile_test_sdamage(*args, **kw):
     bt = TensileTestModel(n_e_x=20, n_e_y=1, k_max=500,
-                          mats_eval_type='scalar damage'
+                          model_type='scalar damage'
                           )
     L = 200.
     L_cb = 5.0
     E = 30000.0
     f_t = 2.4
     G_f = 0.09
-    bt.mats_eval.trait_set(
+    bt.model.trait_set(
         stiffness='algorithmic',
         E=E,
         nu=0.2
@@ -363,7 +317,7 @@ def run_tensile_test_sdamage(*args, **kw):
     f_t_Em = np.ones_like(bt.dots_grid.state_arrays['omega']) * 10.0
     l_f_t_Em = len(f_t_Em)
     f_t_Em[0, ...] = 1.0
-    bt.mats_eval.omega_fn.trait_set(
+    bt.model.omega_fn.trait_set(
         f_t=f_t,
         f_t_Em=f_t_Em,
         G_f=G_f,

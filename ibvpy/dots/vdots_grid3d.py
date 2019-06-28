@@ -15,11 +15,10 @@ import numpy as np
 import traits.api as tr
 
 
+@tr.provides(ITStepperEval)
 class DOTSGrid(tr.HasStrictTraits):
     '''Domain time steppsr on a grid mesh
     '''
-    tr.implements(ITStepperEval)
-
     L_x = tr.Float(200, input=True)
     L_y = tr.Float(100, input=True)
     L_z = tr.Float(100, input=True)
@@ -145,7 +144,7 @@ class DOTSGrid(tr.HasStrictTraits):
             name: np.zeros((self.mesh.n_active_elems, self.fets.n_m,)
                            + mats_sa_shape, dtype=np.float_)
             for name, mats_sa_shape
-            in self.mats.state_array_shapes.items()
+            in list(self.mats.state_array_shapes.items())
         }
 
     def get_corr_pred(self, U, dU, t_n, t_n1, update_state, algorithmic):

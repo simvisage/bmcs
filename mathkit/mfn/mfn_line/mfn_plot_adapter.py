@@ -15,13 +15,14 @@
 from traits.api import \
     HasTraits, HasPrivateTraits, Color, Str, Int, Float, Enum, List, \
     Dict, Bool, Instance, Any, Font, Event, Property, Interface, \
-    on_trait_change, cached_property, implements, Color, Tuple
+    on_trait_change, cached_property, Color, Tuple
            
 #-------------------------------------------------------------------------------
 #  'MFnPlotAdapter' class:
 #-------------------------------------------------------------------------------
 
-class MFnPlotAdapter ( HasPrivateTraits ):
+
+class MFnPlotAdapter (HasPrivateTraits):
     
     """ The base class for adapting function implementation in order to plot
     it in a plotting toolkit (either Chaco or Matplotlib)
@@ -29,10 +30,10 @@ class MFnPlotAdapter ( HasPrivateTraits ):
     
     # label on the x axis (only used when var_x empty)
     #
-    label_x = Str( '' )
+    label_x = Str('')
     
     # label on the y axis (only used when var_y empty)
-    label_y = Str( '' )
+    label_y = Str('')
 
     # title of the diagram
     #
@@ -58,11 +59,11 @@ class MFnPlotAdapter ( HasPrivateTraits ):
     # @todo - further attributes to be made available
     
     # limits of number positions for switching into scientific notation 1eXX
-    scilimits = Tuple(-3.,4.)
+    scilimits = Tuple(-3., 4.)
     
     # Plot properties
     
-    line_color =  List(['blue', 
+    line_color = List(['blue',
                         'red',
                         'green',
                         'black',
@@ -72,36 +73,36 @@ class MFnPlotAdapter ( HasPrivateTraits ):
                         'cyan'
                         ]) 
 
-    #rr: is the dictionary necessary here?
-    #why not a list of keys? chaco as well mpl can work with the key 
+    # rr: is the dictionary necessary here?
+    # why not a list of keys? chaco as well mpl can work with the key 
     line_style = Dict({'solid' : '-',
                   'dash' : '.',
                   'dot dash' : '-.',
                   'dot' : ':',
                  })
 
-    #horisontal axis scale ('log', 'symlog', 'linear')    
+    # horisontal axis scale ('log', 'symlog', 'linear')    
     xscale = Str('linear')
     
-    #vertical axis scale ('log', 'symlog', 'linear')    
+    # vertical axis scale ('log', 'symlog', 'linear')    
     yscale = Str('linear')    
     
     # linewidth
     line_width = List(2.0)
     
     # color of the plotting background
-    bgcolor = Str( 'white' )
+    bgcolor = Str('white')
   
     # Border, padding properties
-    border_visible = Bool( False )
+    border_visible = Bool(False)
 
     # @todo - unused - padding defined below - should be used in Chaco - 
     # in Matplotlib it is working already [Faezeh, Check please]
-    border_width =  Int( 0 )
+    border_width = Int(0)
     
     # @todo does this work in both Mpl and Chaco? [Faeseh Check please]
     #
-    padding_bg_color = Str( 'white' )
+    padding_bg_color = Str('white')
     
     # labels in legend
     
@@ -115,14 +116,14 @@ class MFnPlotAdapter ( HasPrivateTraits ):
     
     # minimum size
     #
-    min_size = Tuple( ( 200, 200 ) )
+    min_size = Tuple((200, 200))
 
     # padding
     
-    padding = Dict( { 'left'   : 0.1,
+    padding = Dict({ 'left'   : 0.1,
                       'bottom' : 0.1,
                       'right'  : 0.9,
-                      'top'    : 0.9 } )
+                      'top'    : 0.9 })
     
     # No of values displayed on the x axis
     xticks = Int(0)
@@ -134,20 +135,18 @@ class MFnPlotAdapter ( HasPrivateTraits ):
 #  'MFnPlotAdapter' class:
 #-------------------------------------------------------------------------------
 
-class MFnMultiPlotAdapter ( MFnPlotAdapter ):
+
+class MFnMultiPlotAdapter (MFnPlotAdapter):
     
     """ The base class for adapting function implementation in order to plot
     it in a plotting toolkit (either Chaco or Matplotlib)
     """
 
     # rr: test only, needs to be written in a more robust way
-    mline_style = List( 100 * ['solid'] )
+    mline_style = List(100 * ['solid'])
     
-    mline_color = List( 100 * ['black'] )
+    mline_color = List(100 * ['black'])
     
     mline_width = List(100 * [2.0])
-
-    
-    
     
     

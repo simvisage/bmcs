@@ -1,45 +1,39 @@
 '''
 '''
-from traits.api import Callable, Constant
-from ibvpy.mats.mats_eval import MATSEval
-from ibvpy.mats.mats2D.mats2D_tensor import map2d_eps_eng_to_mtx
-
-from ibvpy.mats.mats2D.mats2D_tensor import \
-    map2d_eps_eng_to_mtx, map2d_sig_eng_to_mtx, map2d_eps_mtx_to_eng, map2d_sig_mtx_to_eng, \
-    map2d_ijkl2mn, map2d_tns2_to_tns4, map2d_tns4_to_tns2, compliance_mapping2d
-
-from traits.api import \
-     Array, Bool, Callable, Enum, Float, HasTraits, \
-     Instance, Int, Trait, Range, HasStrictTraits, on_trait_change, Event, \
-     implements, Dict, Property, cached_property, Delegate, List, WeakRef
-
-from util.traits.either_type import \
-    EitherType
-
-from traitsui.api import \
-    Item, View, HSplit, VSplit, VGroup, Group, Spring
-
-from ibvpy.api import BCDof, RTrace, TStepper
-from ibvpy.mats.mats2D.mats2D_elastic.mats2D_elastic import MATS2DElastic
-from ibvpy.core.tloop import TLoop, TLine
-from ibvpy.core.sdomain import SDomain
-from ibvpy.core.scontext import SContext
-from ibvpy.api import BCDof
-from ibvpy.core.ibv_model import IBVModel
-from ibvpy.mats.mats_eval import IMATSEval
-from ibvpy.mats.mats2D.mats2D_elastic.mats2D_elastic import MATS2DElastic
-from ibvpy.mats.mats2D.mats2D_cmdm.mats2D_cmdm import MATS2DMicroplaneDamage
-from ibvpy.mats.mats2D.mats2D_sdamage.mats2D_sdamage import MATS2DScalarDamage
-from ibvpy.mesh.fe_grid import FEGrid
-
-from ibvpy.mats.mats2D.mats2D_explorer_bcond import get_value_and_coeff, BCDofProportional
-from ibvpy.rtrace.rt_dof import RTDofGraph
-import numpy as np
-
 from math import \
     pi
 
+from ibvpy.api import BCDof
+from ibvpy.api import BCDof, RTrace, TStepper
+from ibvpy.core.ibv_model import IBVModel
+from ibvpy.core.scontext import SContext
+from ibvpy.core.sdomain import SDomain
+from ibvpy.core.tloop import TLoop, TLine
+from ibvpy.mats.mats2D.mats2D_cmdm.mats2D_cmdm import MATS2DMicroplaneDamage
+from ibvpy.mats.mats2D.mats2D_elastic.mats2D_elastic import MATS2DElastic
+from ibvpy.mats.mats2D.mats2D_elastic.mats2D_elastic import MATS2DElastic
+from ibvpy.mats.mats2D.mats2D_explorer_bcond import get_value_and_coeff, BCDofProportional
+from ibvpy.mats.mats2D.mats2D_sdamage.mats2D_sdamage import MATS2DScalarDamage
+from ibvpy.mats.mats2D.mats2D_tensor import \
+    map2d_eps_eng_to_mtx, map2d_sig_eng_to_mtx, map2d_eps_mtx_to_eng, map2d_sig_mtx_to_eng, \
+    map2d_ijkl2mn, map2d_tns2_to_tns4, map2d_tns4_to_tns2, compliance_mapping2d
+from ibvpy.mats.mats2D.mats2D_tensor import map2d_eps_eng_to_mtx
+from ibvpy.mats.mats_eval import IMATSEval
+from ibvpy.mats.mats_eval import MATSEval
+from ibvpy.mesh.fe_grid import FEGrid
+from ibvpy.rtrace.rt_dof import RTDofGraph
 from mathkit.mfn import MFnLineArray
+from traits.api import Callable, Constant
+from traits.api import \
+     Array, Bool, Callable, Enum, Float, HasTraits, \
+     Instance, Int, Trait, Range, HasStrictTraits, on_trait_change, Event, \
+     Dict, Property, cached_property, Delegate, List, WeakRef
+from traitsui.api import \
+    Item, View, HSplit, VSplit, VGroup, Group, Spring
+from util.traits.either_type import \
+    EitherType
+
+import numpy as np
 import pylab as p
 
 if __name__ == '__main__':
@@ -141,7 +135,7 @@ if __name__ == '__main__':
 
 #    sig_plot.configure_traits()
 
-    print 'sig_plot.xdata', sig_plot.ydata
+    print('sig_plot.xdata', sig_plot.ydata)
     p.plot(sig_plot.xdata, sig_plot.ydata)
     p.show()
 

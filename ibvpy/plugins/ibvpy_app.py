@@ -14,17 +14,17 @@ from traits.api import \
     HasTraits, Instance, Int, \
     on_trait_change
 
-from ibv_model_plugin import IBVModelPlugin
-from ibv_model_ui_plugin import IBVModelUIPlugin
-from ibvpy_workbench_application import IBVPyWorkbenchApplication
+from .ibv_model_plugin import IBVModelPlugin
+from .ibv_model_ui_plugin import IBVModelUIPlugin
+from .ibvpy_workbench_application import IBVPyWorkbenchApplication
 import mayavi.plugins.app as mayavi_app
-from mayavi_engine import set_engine
-from rtrace_plugin import RTracePlugin
-from rtrace_ui_plugin import RTraceUIPlugin
-from tloop_plugin import TLoopPlugin
-from tloop_ui_plugin import TLoopUIPlugin
-from tstepper_plugin import TStepperPlugin
-from tstepper_ui_plugin import TStepperUIPlugin
+from .mayavi_engine import set_engine
+from .rtrace_plugin import RTracePlugin
+from .rtrace_ui_plugin import RTraceUIPlugin
+from .tloop_plugin import TLoopPlugin
+from .tloop_ui_plugin import TLoopUIPlugin
+from .tstepper_plugin import TStepperPlugin
+from .tstepper_ui_plugin import TStepperUIPlugin
 
 
 # Enthought library imports.

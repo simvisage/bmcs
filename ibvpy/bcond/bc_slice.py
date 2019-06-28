@@ -26,17 +26,18 @@ from traits.api import Float, \
     Instance, Int, Trait, Str, Enum, \
     List, cached_property, \
     Button, \
-    implements, Property
+    provides, Property
 from traitsui.api import \
     VSplit, \
     View, UItem, Item, TableEditor, VGroup
 from view.plot2d import Vis2D, Viz2DTimeFunction
 from view.ui import BMCSTreeNode
 
-from bc_dof import BCDof
 import numpy as np
 from traitsui.table_column \
     import ObjectColumn
+
+from .bc_dof import BCDof
 
 
 # The definition of the demo TableEditor:
@@ -49,12 +50,11 @@ bcond_list_editor = TableEditor(
 )
 
 
+@provides(IBCond)
 class BCSlice(BMCSTreeNode, Vis2D):
     '''
     Implements the IBC functionality for a constrained dof.
     '''
-    implements(IBCond)
-
     tree_node_list = List
 
     tree_node_list = Property(depends_on='bcdof_list,bcdof_list_items')
@@ -269,7 +269,7 @@ class BCSlice(BMCSTreeNode, Vis2D):
     dofs = Property
 
     def _get_dofs(self):
-        return self.slice.dofs
+        return np.unique(self.slice.dofs[:, :, self.dims].flatten())
 
     dof_X = Property
 
@@ -494,7 +494,7 @@ if __name__ == '__main__':
     tloop = TLoop(tstepper=ts,
                   tline=TLine(min=0.0, step=1., max=1.0))
 
-    print 'u', tloop.setup()
+    print('u', tloop.setup())
 
     # print 'F', tloop.tstepper.F_ext
 

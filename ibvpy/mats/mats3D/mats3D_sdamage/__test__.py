@@ -12,7 +12,7 @@
 #
 # Created on Aug 19, 2009 by: rch
 
-from mats3D_sdamage import \
+from .mats3D_sdamage import \
     MATS3DScalarDamage
 
 from ibvpy.mats.mats3D.__test__ import TestMATS3D

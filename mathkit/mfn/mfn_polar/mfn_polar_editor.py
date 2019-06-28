@@ -4,45 +4,34 @@ traits.ui.wx.plot_editor.
 """
 
 # Enthought library imports
+import wx
+
+from chaco.abstract_plot_renderer import AbstractPlotRenderer
+from chaco.api import OverlayPlotContainer, PlotLabel, Label, \
+    DataLabel, TextBoxOverlay
+from chaco.array_data_source import ArrayDataSource
+from chaco.data_range_1d import DataRange1D
+from chaco.polar_line_renderer import PolarLineRenderer
+from chaco.polar_mapper import PolarMapper
 from enable.api import black_color_trait, LineStyle, ColorTrait, \
     white_color_trait
-
-# from etsproxy.enable.wx_backend.api import Window
-# <=== Unchange
-
+from numpy import frompyfunc, add, ndarray, arange, array, compress, \
+    concatenate, cos, pi, sin, transpose, zeros
+from pyface.api import FileDialog, OK
+from pyface.image_resource import ImageResource
 from traits.api import false, Str, Range, Float, Bool, Int, Any, \
     List, HasPrivateTraits, Instance
 from traitsui.api import Item, UI
+from traitsui.menu import Action, ToolBar, Menu
 from traitsui.wx.editor import Editor
 from traitsui.wx.editor_factory import EditorFactory
-from traitsui.menu import Action, ToolBar, Menu
-#from etsproxy.traits.ui.wx.helper import traits_ui_panel
 
-# Local relative imports
-from chaco.plot_containers import OverlayPlotContainer
-from chaco.plot_label import PlotLabel
 
-# Somewhat unorthodox...
-
-# from etsproxy.chaco.tools.api import SimpleZoom, DataLabelTool
+# from etsproxy.enable.wx_backend.api import Window
 # <=== Unchange
-
-from chaco.api import OverlayPlotContainer, PlotLabel, Label, \
-    DataLabel, TextBoxOverlay
-from chaco.polar_line_renderer import PolarLineRenderer
-from chaco.abstract_plot_renderer import AbstractPlotRenderer
-from chaco.polar_mapper import PolarMapper
-from chaco.array_data_source import ArrayDataSource
-from chaco.data_range_1d import DataRange1D
-
-from numpy import frompyfunc, add, ndarray, arange, array, compress, \
-    concatenate, cos, pi, sin, transpose, zeros
-
-import wx
-
-from pyface.image_resource import ImageResource
-from pyface.api import FileDialog, OK
-
+#from etsproxy.traits.ui.wx.helper import traits_ui_panel
+# Somewhat unorthodox...
+# <=== Unchange
 # Constant variable
 WindowColor = "lightgray"
 
@@ -170,8 +159,8 @@ class MFnPolarPlotEditor (Editor):
 
     def validate(self, plotrange_min, plotrange_max):
         if plotrange_min >= plotrange_max:
-            print "### Error ###: invalid plot ranges. plotrange_max must be \
-                   greater than plotrange_min."
+            print("### Error ###: invalid plot ranges. plotrange_max must be \
+                   greater than plotrange_min.")
             return False
         else:
             return True
@@ -215,7 +204,7 @@ class MFnPolarPlotEditor (Editor):
         # inferring the calling convention based on introspecting the argument
         # list.
         for name in [plotitem.index] + plotitem.value_list:
-            print "setting on trait change for ", name
+            print("setting on trait change for ", name)
             object.on_trait_change(self._update_data, name)
         object.on_trait_change(self.update_editor, plotitem.type_trait)
 
@@ -260,7 +249,7 @@ class MFnPolarPlotEditor (Editor):
         if dlg.open() == OK:
             path = dlg.path
 
-            print "Saving data to", path, "..."
+            print("Saving data to", path, "...")
             try:
 
                 factory = self.factory
@@ -269,9 +258,9 @@ class MFnPolarPlotEditor (Editor):
                 y_values = getattr(self.object, plotitem.value_list)
 
             except:
-                print "Error saving!"
+                print("Error saving!")
                 raise
-            print "Plot saved."
+            print("Plot saved.")
         return
 
     def on_savefig(self):
@@ -287,7 +276,7 @@ class MFnPolarPlotEditor (Editor):
         if dlg.open() == OK:
             path = dlg.path
 
-            print "Saving plot to", path, "..."
+            print("Saving plot to", path, "...")
             try:
 
                 # Now we create a canvas of the appropriate size and
@@ -298,7 +287,7 @@ class MFnPolarPlotEditor (Editor):
                 self._plot.bounds = [500, 300]
                 self._plot.padding = 50
                 plot_gc = PlotGraphicsContext(self._plot.outer_bounds)
-                print self._plot.outer_bounds
+                print(self._plot.outer_bounds)
                 plot_gc.render_component(self._plot)
 
                 # Finally, we tell the graphics context to save itself to
@@ -306,9 +295,9 @@ class MFnPolarPlotEditor (Editor):
                 plot_gc.save(path)
 
             except:
-                print "Error saving!"
+                print("Error saving!")
                 raise
-            print "Plot saved."
+            print("Plot saved.")
         return
 
     #-------------------------------------------------------------------------
@@ -364,8 +353,8 @@ class MFnPolarPlotEditor (Editor):
         # check plausibility
         if not ((array([plotrange_min]) <= radius_arr).all() and
                 (radius_arr <= array([plotrange_max])).all()):
-            print "Note: some value out of range! Compare plotranges with \
-                   indicated values for Radius_min and Radius_max "
+            print("Note: some value out of range! Compare plotranges with \
+                   indicated values for Radius_min and Radius_max ")
 
         if self.validate(plotrange_min, plotrange_max):
             # plot unitcircle if zero is in plotrange
@@ -399,9 +388,9 @@ class MFnPolarPlotEditor (Editor):
                 self._container.add(plot_unitcircle)
                 self._container.request_redraw()
 
-                print 'container', self._container.get_preferred_size()
+                print('container', self._container.get_preferred_size())
 
-                print 'width for Unitcircle', plot_unitcircle.width
+                print('width for Unitcircle', plot_unitcircle.width)
 
             # plot a single point at the position of 'plotrange_min'
             radius_axeslabels = array([frac_noplot])
@@ -439,8 +428,8 @@ class MFnPolarPlotEditor (Editor):
             x_center = factory.width / 2.0
             y_center = factory.height / 2.0
 
-            print('factory.width', factory.width)
-            print('factory.height', factory.height)
+            print(('factory.width', factory.width))
+            print(('factory.height', factory.height))
 
             x_frac_min = frac_noplot * factory.height / 2
             x_frac_max = factory.height / 2
@@ -449,14 +438,14 @@ class MFnPolarPlotEditor (Editor):
             x_pnt_max = x_center + x_frac_max
             y_pnt = y_center
 
-            print('x_center=', x_center)
-            print('y_center=', y_center)
+            print(('x_center=', x_center))
+            print(('y_center=', y_center))
 
-            print('x_frac_min=', x_frac_min)
-            print('x_frac_max=', x_frac_max)
+            print(('x_frac_min=', x_frac_min))
+            print(('x_frac_max=', x_frac_max))
 
-            print('x_pnt_min=', x_pnt_min)
-            print('x_pnt_max=', x_pnt_max)
+            print(('x_pnt_min=', x_pnt_min))
+            print(('x_pnt_max=', x_pnt_max))
 
 #            txt_plotrange_min = TextBoxOverlay(text = plotrange_min.__str__(), \
 #                                alternate_position = (x_pnt_min,y_pnt) )
@@ -604,8 +593,8 @@ class MFnPolarPlotEditorToolbar (HasPrivateTraits):
 
         actions = [self.save_data, self.save_fig]
         toolbar = ToolBar(image_size=(16, 16),
-                          show_tool_names = False,
-                          show_divider = False,
+                          show_tool_names=False,
+                          show_divider=False,
                           *actions)
         self.control = toolbar.create_tool_bar(parent, self)
         self.control.SetBackgroundColour(parent.GetBackgroundColour())
@@ -787,14 +776,14 @@ class MFnPolarLineRenderer(AbstractPlotRenderer):
         x_center = self.x + self.width / 2.0
         y_center = self.y + self.height / 2.0
 
-        print('self.x', self.x)
-        print('self.y', self.y)
+        print(('self.x', self.x))
+        print(('self.y', self.y))
 
-        print('2*****self.width/2.0', self.width / 2.0)
-        print('2****self.height/2.0', self.height / 2.0)
+        print(('2*****self.width/2.0', self.width / 2.0))
+        print(('2****self.height/2.0', self.height / 2.0))
 
-        print('x_center', x_center)
-        print('y_center', y_center)
+        print(('x_center', x_center))
+        print(('y_center', y_center))
 
         rad_one = min(self.width / 2.0, self.height / 2.0)
         rad_unitcircle_plt = 0.3

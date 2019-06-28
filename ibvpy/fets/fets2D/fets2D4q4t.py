@@ -1,14 +1,13 @@
+from ibvpy.fets.fets_eval import FETSEval
 from numpy import \
     array, zeros, int_, float_, ix_, dot, linspace, hstack, vstack, arange, \
     identity
 from scipy.linalg import \
     inv
 from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasTraits, Interface, implements, \
+    Array, Bool, Callable, Enum, Float, HasTraits, Interface, \
     Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
     on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property
-
-from ibvpy.fets.fets_eval import FETSEval
 
 
 #-------------------------------------------------------------------------
@@ -35,11 +34,11 @@ class FETS2D4Q4T(FETSEval):
     ngp_s = Int(2)
 
     # Corner nodes are used for visualization
-    vtk_r = Array(value=[[-1., -1.], [1., -1.], [1.,  1.], [-1.,  1.]])
+    vtk_r = Array(value=[[-1., -1.], [1., -1.], [1., 1.], [-1., 1.]])
     vtk_cells = [[0, 1, 2, 3]]
     vtk_cell_types = 'Quad'
 
-    #vtk_point_ip_map = [0,1,3,2]
+    # vtk_point_ip_map = [0,1,3,2]
     n_nodal_dofs = Int(1)
 
     #---------------------------------------------------------------------
@@ -99,8 +98,8 @@ class FETS2D4Q4T(FETSEval):
             Bx_mtx[1, i] = dNx_mtx[1, i]
         return Bx_mtx
 
-
 #----------------------- example --------------------
+
 
 def run_example():
     from ibvpy.api import \
@@ -112,7 +111,7 @@ def run_example():
     from ibvpy.api import BCDofGroup
     fets_eval = FETS2D4Q4T(mats_eval=MATS2DConduction(k=1.))
 
-    print fets_eval.vtk_node_cell_data
+    print(fets_eval.vtk_node_cell_data)
 
     from ibvpy.mesh.fe_grid import FEGrid
     from ibvpy.mesh.fe_refinement_grid import FERefinementGrid
@@ -148,15 +147,16 @@ def run_example():
 
     # Add the time-loop control
     tloop = TLoop(tstepper=tstepper, debug=False,
-                  tline=TLine(min=0.0,  step=1.0, max=1.0))
+                  tline=TLine(min=0.0, step=1.0, max=1.0))
 
     tloop.eval()
     # Put the whole thing into the simulation-framework to map the
     # individual pieces of definition into the user interface.
     #
-    #from ibvpy.plugins.ibvpy_app import IBVPyApp
-    #app = IBVPyApp( ibv_resource = tloop )
+    # from ibvpy.plugins.ibvpy_app import IBVPyApp
+    # app = IBVPyApp( ibv_resource = tloop )
     # app.main()
+
 
 if __name__ == '__main__':
     run_example()

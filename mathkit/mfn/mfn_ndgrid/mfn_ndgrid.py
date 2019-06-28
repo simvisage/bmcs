@@ -9,6 +9,7 @@ from traits.api import \
 
 
 from mathkit.geo.geo_ndgrid import GeoNDGrid, GridPoint
+from functools import reduce
 
 
 # tvtk related imports
@@ -137,9 +138,9 @@ if __name__ == '__main__':
     mfn = MFnNDGrid(active_dims=['x', 'y'], shape=(1, 1, 1),
                     x_maxs=GridPoint(x=5, y=5, z=15))
     mfn.set_values_in_box(4.3, [1, 1, 1], [5, 5, 2])
-    print 'value at (5,0,0)', mfn.get_value([5, 5, 0])
-    print 'value at (1.1,1.1,1.1)', mfn.get_value([1.1, 1.1, 1])
-    print 'value at (0.5,0.5)', mfn([0.5, 0.5])
+    print('value at (5,0,0)', mfn.get_value([5, 5, 0]))
+    print('value at (1.1,1.1,1.1)', mfn.get_value([1.1, 1.1, 1]))
+    print('value at (0.5,0.5)', mfn([0.5, 0.5]))
 #     mayavi.add_source(mfn)
 #     # Visualize the data.
 #     mayavi.add_module(Outline())

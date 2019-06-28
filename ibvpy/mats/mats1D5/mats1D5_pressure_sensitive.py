@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------
 #
 # Copyright (c) 2009, IMB, RWTH Aachen.
 # All rights reserved.
@@ -12,41 +12,40 @@
 #
 # Created on Sep 8, 2009 by: rch
 
-from traits.api import \
-    Instance, Property, cached_property, implements, List, \
-    Callable, String, Int, HasTraits, Float
-
-from mathkit.numpy.numpy_func import Heaviside
 import math
-
-from traitsui.api import \
-    View, Item
 
 from ibvpy.mats.mats1D5.mats1D5_eval import MATS1D5Eval
 from ibvpy.mats.mats_eval import IMATSEval
+from mathkit.numpy.numpy_func import Heaviside
+from traits.api import \
+    Instance, Property, cached_property, List, \
+    Callable, String, Int, HasTraits, Float
+from traitsui.api import \
+    View, Item
 
-from numpy import zeros, zeros_like, array
+import numpy as np
+
 
 class MATS1D5PressureSensitive(MATS1D5Eval):
-    ur'''Bond model for two phases interacting over an interface with zero thickness.
+    r'''Bond model for two phases interacting over an interface with zero thickness.
 The frictional resistance is governed by the current level of pressure 
 using the cohesion :math:`c` and frictional angle :math`\phi`. 
 
 Basic formulas
 
 The threshold level of frictional stress is prescribed by the Mohr-Coulomb rule:
-    
+
 .. math::
     \tau_\mathrm{fr}(\sigma) = \left( c + \sigma \; \tan{(\phi)} \right) 
      H\left( \sigma -  \frac{c}{\tan{(\phi)}}\right)
     :label: eq_MATS1D5PressureSensitive
-    
+
 The deformation variables include interface opening :math:`w` and sliding :math:`s`
 related to the stress variables using the equations
 
 .. math::
     \tau = G_s \cdot ( s - s^p )
-    
+
 .. math::
     \sigma = \left( G_w^{(+)} H(w) + G_w^{(-)} H(-w) \right) \cdot w
 
@@ -71,7 +70,7 @@ The flow rule for yielding slip is provided as
 
 .. math::
     \dot{s}_p = \dot{\gamma} \; \mathrm{sign}(\tau)
-    
+
 and the consistency condition (staying on the yield surface upon platic loading)
 
 .. math::
@@ -87,7 +86,7 @@ Given the displacement increment
     s_{n+1} = s_{n} + \Delta s_{n}, \; 
     w_{n+1} = w_{n} + \Delta w_{n}, \;
     :label: eq_increment
-    
+
 the elastic trial stresses are calculated as
 
 .. math::
@@ -104,7 +103,7 @@ and the frictional threshold for the current transverse stresses
     :label: eq_mohr_coulomb
 
 The trial consistency condition is obtained as
-    
+
 .. math::
     f_{n+1}^\mathrm{trial} = \left| \tau_{n+1}^\mathrm{trial} \right|
     - \tau^\mathrm{fr}_{n+1}(\sigma_{n+1})
@@ -142,7 +141,7 @@ and
 
 .. math::
     \left| \tau_{n+1} \right| + \Delta \gamma G_s = \left| \tau^{\mathrm{trial}}_{n+1} \right|
-    
+
 Finally, due to :math:`\Delta \gamma > 0` the discrete consistency condition 
 (:eq:`eq_discr_consistency`) can be further expanded as
 
@@ -165,94 +164,79 @@ and
 
     '''
 
-    implements(IMATSEval)
+    # implements(IMATSEval)
 
-    G_s = Float(1.0, input = True, enter_set = False,
-                   label = 'cohesion')
+    G_s = Float(1.0, input=True, enter_set=False,
+                label='cohesion')
 
-    G_w_open = Float(1.0, input = True, enter_set = False,
-                   label = 'cohesion')
+    G_w_open = Float(1.0, input=True, enter_set=False,
+                     label='cohesion')
 
-    G_w_close = Float(1e+6, input = True, enter_set = False,
-                   label = 'cohesion')
+    G_w_close = Float(1e+6, input=True, enter_set=False,
+                      label='cohesion')
 
-    c = Float(0.0, input = True, enter_set = False,
-               label = 'cohesion')
+    c = Float(0.0, input=True, enter_set=False,
+              label='cohesion')
 
-    phi = Float(0.1, input = True, enter_set = False,
-                label = 'friction angle')
+    phi = Float(0.1, input=True, enter_set=False,
+                label='friction angle')
 
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Submodels constituting the interface behavior
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
     traits_view = View(Item('c@'),
-                        Item('phi@'),
-                        Item('G_open@'),
-                        Item('G_slip@'),
-                        Item('G_penalty@'),
-                        resizable = True,
-                        scrollable = True,
-                        width = 0.8,
-                        height = 0.9,
-                        buttons = ['OK', 'Cancel'])
+                       Item('phi@'),
+                       Item('G_open@'),
+                       Item('G_slip@'),
+                       Item('G_penalty@'),
+                       resizable=True,
+                       scrollable=True,
+                       width=0.8,
+                       height=0.9,
+                       buttons=['OK', 'Cancel'])
 
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Setup for computation within a supplied spatial context
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
-    def get_state_array_size(self):
-        '''
-        Return the number of floats to be saved
-        '''
-        return 1
+    state_var_shapes = {'slip_p': ()}
 
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
-    #-----------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, sctx, eps_app_eng, d_eps_app_eng, tn, tn1, *args, **kw):
+    def get_corr_pred(self, sctx, u_r, tn1, slip_p):
         '''
         Corrector predictor computation.
         @param eps_app_eng input variable - engineering strain
         '''
 
-        eps1, s, w, eps2 = eps_app_eng
-        d_eps1, d_s, d_w, e_eps2 = eps_app_eng
-        sig_app_eng = zeros_like(eps_app_eng)
+        s_n = u_r[..., 0]
+        w = u_r[..., 1]
+        s_p_n = slip_p
 
-        if sctx.update_state_on:
-            slip_n = s - d_s
-            slip_p_n = slip_n # get the plastic slip 
-            sctx.mats_state_array[0] = slip_p_n
+        f_separate = (Heaviside(w) * self.G_open + 
+                      Heaviside(-w) * self.G_penalty) * w
 
-        # @todo [rch] dirty - when called form response tracer        
-        if isinstance(d_eps_app_eng, int) and d_eps_app_eng == 0:
-            d_eps_app_eng = zeros_like(eps_app_eng)
+        f_r = np.zeros_like(u_r)
+        tau_trial = self.G_slip * (s_n - s_p_n)
+        f_trial = abs(tau_trial) - (f_separate + math.tan(self.phi))
 
-        s_n = s
-        s_p_n = sctx.mats_state_array[0]
+        f_I = np.where(f_trial > 0.0)
+        f_r[..., 0] = tau_trial
 
-        f_separate = (Heaviside(w) * self.G_open + Heaviside(-w) * self.G_penalty) * w
+        D_n1[0, 0] = E
+        d_gamma = f_trial / (self.E + self.K_bar + self.H_bar)
+        sig_n1[0] = sigma_trial - d_gamma * self.E * sign(xi_trial)
+        D_n1[0, 0] = (self.E * (self.K_bar + self.H_bar)) / \
+            (self.E + self.K_bar + self.H_bar)
 
-        n = self.G_penalty
-        tau_trial = self.G_slip * (s_n - s_p_n);
-        f_trial = abs(tau_trial) - (f_separate + math.tan(self.phi));
+        sig_n1 = zeros((1,), dtype='float_')
+        D_n1 = zeros((1, 1), dtype='float_')
 
-        if f_trial <= 1e-8:
-            sig_n1[2] = tau_trial;
-            D_n1[0, 0] = E;
-        else:
-            d_gamma = f_trial / (self.E + self.K_bar + self.H_bar);
-            sig_n1[0] = sigma_trial - d_gamma * self.E * sign(xi_trial);
-            D_n1[0, 0] = (self.E * (self.K_bar + self.H_bar)) / \
-                            (self.E + self.K_bar + self.H_bar);
-
-        sig_n1 = zeros((1,), dtype = 'float_')
-        D_n1 = zeros((1, 1), dtype = 'float_')
-
-
-        D_mtx = zeros((eps_app_eng.shape[0], eps_app_eng.shape[0]), dtype = 'float_')
+        D_mtx = zeros(
+            (eps_app_eng.shape[0], eps_app_eng.shape[0]), dtype='float_')
 
         return sig_app_eng, D_mtx
 
@@ -273,40 +257,42 @@ and
         return sig_eng[2:3]
 
     rte_dict = Property
+
     def _get_rte_dict(self):
 
         rte_dict = {}
         ix_maps = [0, 1, 2, 3]
         for name, mats, ix_map, size, offset in \
             zip(self._mats_names, self._mats_list, ix_maps, self._state_sizes,
-                 self._state_offsets):
-            for key, v_eval in mats.rte_dict.items():
+                self._state_offsets):
+            for key, v_eval in list(mats.rte_dict.items()):
 
-                __call_v_eval = RTE1D5Bond(v_eval = v_eval,
-                                            name = name + '_' + key,
-                                            size = size,
-                                            offset = offset,
-                                            ix_map = ix_map)
+                __call_v_eval = RTE1D5Bond(v_eval=v_eval,
+                                           name=name + '_' + key,
+                                           size=size,
+                                           offset=offset,
+                                           ix_map=ix_map)
 
-                rte_dict[ name + '_' + key ] = __call_v_eval
-
+                rte_dict[name + '_' + key] = __call_v_eval
 
         # sigma is also achievable through phase1_sig_app and phase_2_sig_app
-        extra_rte_dict = {'sig1' : self.get_sig1,
-                          'sig2' : self.get_sig2,
-                          'shear_flow' : self.get_shear_flow,
-                          'cohesive_stress' : self.get_cohesive_stress,
+        extra_rte_dict = {'sig1': self.get_sig1,
+                          'sig2': self.get_sig2,
+                          'shear_flow': self.get_shear_flow,
+                          'cohesive_stress': self.get_cohesive_stress,
                           }
         rte_dict.update(extra_rte_dict)
         return rte_dict
-    #-------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
     # Methods required by the mats_explore tool
-    #-------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------
+
     def new_cntl_var(self):
         return zeros(4, 'float_')
 
     def new_resp_var(self):
         return zeros(4, 'float_')
+
 
 class RTE1D5Bond(HasTraits):
 
@@ -317,10 +303,10 @@ class RTE1D5Bond(HasTraits):
     ix_map = Int
 
     def __call__(self, sctx, u, *args, **kw):
-        u_x = array([ u[ self.ix_map ] ], dtype = 'float')
+        u_x = array([u[self.ix_map]], dtype='float')
         # save the spatial context
         mats_state_array = sctx.mats_state_array
-        sctx.mats_state_array = mats_state_array[ self.offset: self.offset + self.size ]
+        sctx.mats_state_array = mats_state_array[self.offset: self.offset + self.size]
         result = self.v_eval(sctx, u_x, *args, **kw)
         # put the spatial context back
         sctx.mats_state_array = mats_state_array
@@ -344,49 +330,50 @@ def sp_derive():
 
     tau_trial = G_s * (s_n1 - s_p_n)
 
-    print 'diff', sp.diff(tau_trial, ds_n)
+    print('diff', sp.diff(tau_trial, ds_n))
 
-    print tau_trial
+    print(tau_trial)
 
     sig_n1 = G_w * w_n1
 
-    print sig_n1
+    print(sig_n1)
 
-    tau_fr = (c + sig_n1 * sp.tan(phi)) * sp.Heaviside(sig_n1 - c / sp.tan(phi))
+    tau_fr = (c + sig_n1 * sp.tan(phi)) * \
+        sp.Heaviside(sig_n1 - c / sp.tan(phi))
 
-    print tau_fr
+    print(tau_fr)
 
     d_tau_fr = sp.diff(tau_fr, dw_n)
 
-    print d_tau_fr
+    print(d_tau_fr)
 
     f_trial = sp.abs(tau_trial) - tau_fr
 
-    print f_trial
+    print(f_trial)
 
     d_gamma = f_trial / G_s
 
-    print 'd_gamma'
+    print('d_gamma')
     sp.pretty_print(d_gamma)
 
-    print 'd_gamma_s'
+    print('d_gamma_s')
     sp.pretty_print(sp.diff(d_gamma, ds_n))
 
-    print 'tau_n1'
+    print('tau_n1')
     tau_n1 = sp.simplify(tau_trial - d_gamma * G_s * sp.sign(tau_trial))
     sp.pretty_print(tau_n1)
 
-    print 'dtau_n1_w'
+    print('dtau_n1_w')
     dtau_n1_w = sp.diff(tau_n1, dw_n)
     sp.pretty_print(dtau_n1_w)
 
-    print 'dtau_n1_s'
+    print('dtau_n1_s')
     dtau_n1_s = sp.diff(d_gamma * sp.sign(tau_trial), ds_n)
-    print dtau_n1_s
+    print(dtau_n1_s)
 
     s_p_n1 = s_p_n + d_gamma * sp.sign(tau_trial)
 
-    print s_p_n1
+    print(s_p_n1)
 
 
 if __name__ == '__main__':

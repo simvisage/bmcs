@@ -1,32 +1,26 @@
 
-from bmcs.mats.mats_damage_fn import \
+from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
+from ibvpy.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn,\
     PlottableFn, DamageFn, GfDamageFn
-from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
-from ibvpy.mats.mats2D.vmats2D_eval import MATS2D
-from ibvpy.mats.mats_eval import IMATSEval
-from traits.api import Float, on_trait_change, Property, Array
-from traitsui.api import VGroup, UItem, \
-    Item, View, VSplit, Group, Spring
-
+from simulator.api import \
+    TLoopImplicit, TStepBC
+from traits.api import on_trait_change, Bool
+from traitsui.api import UItem, \
+    Item, View, Group, Spring
 
 import numpy as np
 import traits.api as tr
-from vstrain_norm2d import StrainNorm2D, SN2DRankine
+
+from .vstrain_norm2d import StrainNorm2D, SN2DRankine
 
 
-# from scipy.linalg import eig, inv
-#---------------------------------------------------------------------------
-# Material time-step-evaluator for Scalar-Damage-Model
-#---------------------------------------------------------------------------
-
-
-class MATS2DScalarDamage(MATS2DEval, MATS2D):
-    r'''
-    Isotropic damage model.
+class MATS2DScalarDamage(MATS2DEval):
+    r'''Isotropic damage model.
     '''
 
-    tr.implements(IMATSEval)
+    tloop_type = TLoopImplicit
+    tstep_type = TStepBC
 
     node_name = 'isotropic damage model'
 
@@ -77,8 +71,8 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
     the material model
     '''
 
-    state_array_shapes = {'kappa': (),
-                          'omega': ()}
+    state_var_shapes = {'kappa': (),
+                        'omega': ()}
     r'''
     Shapes of the state variables
     to be stored in the global array at the level 
@@ -92,69 +86,46 @@ class MATS2DScalarDamage(MATS2DEval, MATS2D):
         kappa[...] = 0
         omega[...] = 0
 
-    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1,
-                      update_state, algorithmic, kappa, omega):
+    algorithmic = Bool(True)
+
+    def get_corr_pred(self, eps_ab, tn1, kappa, omega):
         r'''
         Corrector predictor computation.
         @param eps_app_eng input variable - engineering strain
         '''
-        if update_state:
-            eps_Emab_n = eps_Emab_n1 - deps_Emab
-            kappa_Em, omega_Em, f_idx = self._get_state_variables(
-                eps_Emab_n, kappa, omega)
-            kappa[...] = kappa_Em
-            omega[...] = omega_Em
-
-        kappa_Em, omega_Em, f_idx = self._get_state_variables(
-            eps_Emab_n1, kappa, omega
+        eps_eq = self.strain_norm.get_eps_eq(eps_ab, kappa)
+        I = self.omega_fn.get_f_trial(eps_eq)
+        eps_eq_I = eps_eq[I]
+        kappa[I] = eps_eq_I
+        omega[I] = self.omega_fn(eps_eq_I)
+        phi = (1.0 - omega)
+        D_abcd = np.einsum(
+            '...,abcd->...abcd',
+            phi, self.D_abcd
         )
-        phi_Em = (1.0 - omega_Em)
-        D_Emabcd = np.einsum(
-            'Em,abcd->Emabcd', phi_Em, self.D_abcd
+        sig_ab = np.einsum(
+            '...abcd,...cd->...ab',
+            D_abcd, eps_ab
         )
-        sigma_Emab = np.einsum(
-            'Emabcd,Emcd->Emab', D_Emabcd, eps_Emab_n1
+        if self.algorithmic:
+            domega_I = self.omega_fn.diff(eps_eq_I)
+            domega_I[np.where(np.fabs(domega_I) < .001)] = .001
+            deps_eq_cd_I = self.strain_norm.get_deps_eq(eps_ab[I])
+            D_abcd[I] -= np.einsum(
+                '...,...cd,abcd,...cd->...abcd',
+                domega_I, deps_eq_cd_I, self.D_abcd, eps_ab[I]
+            )
+        return sig_ab, D_abcd
+
+    def _get_var_dict(self):
+        var_dict = super(MATS2DScalarDamage, self)._get_var_dict()
+        var_dict.update(
+            omega=self.get_omega
         )
-        if algorithmic:
-            D_Emabcd_red = self._get_D_abcd_alg_reduction(
-                kappa_Em, eps_Emab_n1, f_idx)
-            D_Emabcd[f_idx] -= D_Emabcd_red[f_idx]
+        return var_dict
 
-        return D_Emabcd, sigma_Emab
-
-    def _get_state_variables(self, eps_Emab, kappa, omega):
-        kappa_Em = np.copy(kappa)
-        eps_eq_Em = self.strain_norm.get_eps_eq(eps_Emab, kappa_Em)
-        f_idx = self._get_f_trial(eps_eq_Em)
-        kappa_Em[f_idx] = eps_eq_Em[f_idx]
-        omega_Em = self._get_omega(eps_eq_Em, f_idx)
-        return kappa_Em, omega_Em, f_idx
-
-    def _get_f_trial(self, eps_eq_Em):
-        return self.omega_fn.get_f_trial(eps_eq_Em)
-
-    def _get_omega(self, kappa_Em, idx_map):
-        r'''
-        Return new value of damage parameter
-        @param kappa_Em: maximum strain norm achieved so far 
-        '''
-        return self.omega_fn(kappa_Em, idx_map)
-
-    def _get_domega(self, kappa_Em, idx_map):
-        '''
-        Return new value of damage parameter derivative
-        @param kappa_Em: maximum strain norm achieved so far
-        '''
-        return self.omega_fn.diff(kappa_Em, idx_map)
-
-    def _get_D_abcd_alg_reduction(self, kappa_Em, eps_Emab_n1, f_idx):
-        '''Calculate the stiffness term to be subtracted
-        from the secant stiffness to get the algorithmic stiffness.
-        '''
-        domega_Em = self._get_domega(kappa_Em, f_idx)
-        deps_eq_Emcd = self.strain_norm.get_deps_eq(eps_Emab_n1)
-        return np.einsum('...,...cd,abcd,...cd->...abcd',
-                         domega_Em, deps_eq_Emcd, self.D_abcd, eps_Emab_n1)
+    def get_omega(self, eps_ab, tn1, kappa, omega):
+        return omega
 
     traits_view = View(
         Group(
@@ -191,12 +162,12 @@ if __name__ == '__main__':
     G_f = 0.090
     E = 20000.0
     omega_fn_gf = GfDamageFn(G_f=G_f, f_t=f_t, L_s=22.5)
-    print omega_fn_gf.eps_0
-    print omega_fn_gf(0.000148148)
+    print(omega_fn_gf.eps_0)
+    print(omega_fn_gf(0.000148148))
 
     mats = MATS2DScalarDamage(E=30000,
                               stiffness='algorithmic',
                               nu=0.0,
                               )
-    print mats.strain_norm
+    print(mats.strain_norm)
     mats.configure_traits()

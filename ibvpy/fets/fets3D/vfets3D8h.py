@@ -88,6 +88,7 @@ class FETS3D8H(FETSEval):
     n_nodal_dofs = 3
 
     vtk_cells = [[0, 1, 3, 2, 4, 5, 7, 6]]
+    vtk_cell_types = 'Hexahedron'
     vtk_cell = [0, 1, 3, 2, 4, 5, 7, 6]
     vtk_cell_type = 'Hexahedron'
 
@@ -124,15 +125,15 @@ class FETS3D8H(FETSEval):
     '''
     @tr.cached_property
     def _get_shape_function_values(self):
-        N_mi = np.array([N_xi_i.subs(zip([xi_1, xi_2, xi_3], xi))
+        N_mi = np.array([N_xi_i.subs(list(zip([xi_1, xi_2, xi_3], xi)))
                          for xi in self.xi_m], dtype=np.float_)
         N_im = np.einsum('mi->im', N_mi)
         dN_mir = np.array(
-            [dN_xi_ir.subs(zip([xi_1, xi_2, xi_3], xi))
+            [dN_xi_ir.subs(list(zip([xi_1, xi_2, xi_3], xi)))
              for xi in self.xi_m], dtype=np.float_
         ).reshape(8, 8, 3)
         dN_nir = np.array(
-            [dN_xi_ir.subs(zip([xi_1, xi_2, xi_3], xi))
+            [dN_xi_ir.subs(list(zip([xi_1, xi_2, xi_3], xi)))
              for xi in self.vtk_r], dtype=np.float_
         ).reshape(8, 8, 3)
         dN_imr = np.einsum('mir->imr', dN_mir)

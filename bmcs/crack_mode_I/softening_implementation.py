@@ -113,7 +113,7 @@ eps_0 = f_t / E
 eps_ch = G_f / f_t
 L_ch = E * G_f / f_t**2
 
-print 'L_ch', L_ch
+print('L_ch', L_ch)
 
 L = 45.0
 u_max = 0.15
@@ -148,7 +148,7 @@ for N in [1.00001, 3, 4, 5, 9]:
             d_eps_s = -R / dR
             eps_s_arr += d_eps_s
             if K == K_max - 1:
-                raise ValueError, 'No convergence'
+                raise ValueError('No convergence')
         sig = ((1.0 - omega_fn(eps_s_arr)) * E * eps_s_arr)[0]
         sig_t.append(sig)
         eps_t.append(u / L)

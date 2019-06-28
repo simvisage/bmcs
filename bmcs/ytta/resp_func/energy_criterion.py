@@ -10,7 +10,7 @@ from traitsui.api import View, Item, VGroup
 from traitsui.menu import OKButton
 from util.traits.either_type import EitherType
 
-from pull_out import PullOut
+from .pull_out import PullOut
 
 
 class EnergyCriterion(PullOut):

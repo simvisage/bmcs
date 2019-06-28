@@ -1,18 +1,18 @@
+from traits.api import Float, \
+    Int,  Enum, Instance, \
+    List,  Any, provides
+from traitsui.api import \
+    View, Item, UItem, VGroup, VSplit
+
 from ibvpy.core.i_bcond import \
     IBCond
 from mathkit.mfn import MFnLineArray
-from traits.api import Float, \
-    Int,  Enum, Instance, \
-    List,  Any, implements
-from traitsui.api import \
-    View, Item, UItem, VGroup, Include, VSplit
+import numpy as np
 from view.plot2d import Vis2D, Viz2DTimeFunction
 from view.ui import BMCSTreeNode
 
 
-import numpy as np
-
-
+@provides(IBCond)
 class BCDof(BMCSTreeNode):
     '''
     Implements the IBC functionality for a constrained dof.
@@ -48,8 +48,6 @@ class BCDof(BMCSTreeNode):
            link_coeffs = [-sin(alpha)/cos(alpha) ] )
 
     '''
-    implements(IBCond)
-
     node_name = 'boundary condition'
     tree_node_list = List()
 
@@ -139,7 +137,6 @@ class BCDof(BMCSTreeNode):
         '''
         According to the kind specification add the
         '''
-
         if self.is_essential():
 
             # The displacement is applied only in the first iteration step!.
@@ -241,4 +238,4 @@ if __name__ == '__main__':
                        BCDof(
                            var='u', dof=5, link_dofs=[16], link_coeffs=[1.], value=0.),
                        BCDof(var='f', dof=21, value=10)])
-    print tloop.eval()
+    print(tloop.eval())

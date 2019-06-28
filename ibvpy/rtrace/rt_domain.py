@@ -3,7 +3,7 @@ from traits.api import \
     Instance, Int, Trait, Str, Enum, \
     Callable, List, TraitDict, Any, Range, \
     Delegate, Event, on_trait_change, Button, \
-    Interface, WeakRef, implements, Property, cached_property, Tuple, \
+    Interface, WeakRef, Property, cached_property, Tuple, \
     Dict
 
 from traitsui.api \
@@ -83,7 +83,7 @@ class RTraceDomain(HasTraits):
         '''
         # self.mvp_mgrid_geo.redraw()
 
-        print 'REDRAWING', self.sd.name
+        print('REDRAWING', self.sd.name)
 
         self.mvp_mgrid_geo.rebuild_pipeline(self.vtk_node_structure)
 

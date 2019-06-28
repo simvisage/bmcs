@@ -9,7 +9,7 @@ from traitsui.api import \
     View, UItem, Item, HSplit, Group, \
     VGroup, Spring
 import numpy as np
-from yield_face3D import YieldConditionAbaqus, YieldConditionWillamWarnke, \
+from .yield_face3D import YieldConditionAbaqus, YieldConditionWillamWarnke, \
     YieldConditionDruckerPrager, YieldConditionVonMises, YieldConditionRankine
 
 

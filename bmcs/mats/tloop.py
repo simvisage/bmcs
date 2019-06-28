@@ -11,7 +11,7 @@ from traitsui.api import View, Item
 from view.ui import BMCSLeafNode
 
 import numpy as np
-from tstepper import TStepper
+from .tstepper import TStepper
 
 
 class TLoop(HasStrictTraits):
@@ -58,11 +58,11 @@ class TLoop(HasStrictTraits):
         self.D_record = [np.zeros_like(D)]
 
     def init(self):
-        print 'INIT'
+        print('INIT')
         if self.paused:
             self.paused = False
         if self.restart:
-            print 'RESET TIME'
+            print('RESET TIME')
             self.tline.val = 0
             self.reset_sv_hist()
             self.restart = False
@@ -120,10 +120,10 @@ class TLoop(HasStrictTraits):
                 step_flag = 'corrector'
 
             if k >= self.k_max:
-                print ' ----------> No Convergence any more'
+                print(' ----------> No Convergence any more')
                 break
             if self.restart or self.paused:
-                print 'interrupted iteration'
+                print('interrupted iteration')
                 break
             t_n = t_n1
             t_n1 = t_n + self.d_t

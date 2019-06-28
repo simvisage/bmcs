@@ -4,8 +4,8 @@ from scipy.linalg import \
     inv
 
 from traits.api import \
-    Int, implements, Array
-from ibvpy.fets.fets_eval import IFETSEval, FETSEval
+    Int, Array
+from ibvpy.fets.fets_eval import FETSEval
 
 
 #-----------------------------------------------------------------------------
@@ -15,8 +15,6 @@ class FETS1D2L(FETSEval):
     '''
     Fe Bar 2 nodes, deformation
     '''
-
-    implements(IFETSEval)
 
     debug_on = True
 
@@ -85,6 +83,7 @@ class FETS1D2L(FETSEval):
 
 #----------------------- example --------------------
 
+
 from ibvpy.plugins.ibvpy_app import IBVPyApp
 
 
@@ -108,8 +107,8 @@ def __demo__():
             bcond_list=[BCDof(var='u', dof=0, value=0.),
                         BCDof(var='f', dof=3, value=1,)],
             rtrace_list=[RTDofGraph(name='Fi,right over u_right (iteration)',
-                                     var_y='F_int', idx_y=0,
-                                     var_x='U_k', idx_x=1),
+                                    var_y='F_int', idx_y=0,
+                                    var_x='U_k', idx_x=1),
                          RTraceDomainListField(name='Stress',
                                                var='sig_app', idx=0),
                          RTraceDomainListField(name='Displacement',
@@ -125,16 +124,17 @@ def __demo__():
     tloop = TLoop(tstepper=ts,
                   tline=TLine(min=0.0, step=0.5, max=1.0))
 
-    print '---- result ----'
-    print tloop.eval()
-    print ts.F_int
-    print ts.rtrace_list[0].trace.ydata
+    print('---- result ----')
+    print(tloop.eval())
+    print(ts.F_int)
+    print(ts.rtrace_list[0].trace.ydata)
 
     # Put the whole stuff into the simulation-framework to map the
     # individual pieces of definition into the user interface.
     #
     app = IBVPyApp(ibv_resource=tloop)
     app.main()
+
 
 if __name__ == '__main__':
     __demo__()

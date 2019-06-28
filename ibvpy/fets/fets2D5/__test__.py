@@ -49,8 +49,8 @@ class TestFETS2D5( unittest.TestCase ):
     def setUp( self ):
         # test elastic case: compare values of MATS2D5 with no damage (phi_fn = 1 (const.)).
         phi_fn = PhiFnGeneral()
-        print phi_fn.mfn.xdata
-        print phi_fn.mfn.ydata
+        print(phi_fn.mfn.xdata)
+        print(phi_fn.mfn.ydata)
 
         # linear elements
         self.fets_eval3D = FETS3D8H( mats_eval = MATS3DElastic( E = 34000., nu = 0.25 ) )

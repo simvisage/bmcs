@@ -6,7 +6,6 @@ Created on Dec 3, 2015
 
 from os.path import join
 
-from reporter import ROutputItem
 from traits.api import \
     HasStrictTraits, Dict, Property, Float, \
     Bool, WeakRef, DelegatesTo, cached_property, \
@@ -16,6 +15,7 @@ from traitsui.api import \
     HSplit, Item, VGroup
 
 import matplotlib.pyplot as plt
+from reporter import ROutputItem
 
 
 class Viz2D(ROutputItem):
@@ -33,11 +33,17 @@ class Viz2D(ROutputItem):
         return self.name
     vis2d = WeakRef
 
+    def reset(self, ax):
+        pass
+
+    def clear(self):
+        pass
+
     def plot(self, ax, vot=0):
-        self.vis2d.plot(ax, vot)
+        raise NotImplemented
 
     def plot_tex(self, ax, vot, *args, **kw):
-        self.plot(ax, vot, *args, **kw)
+        raise NotImplemented
 
     def write_figure(self, f, rdir, rel_study_path):
         fname = 'fig_' + self.name.replace(' ', '_') + '.pdf'
@@ -49,7 +55,7 @@ class Viz2D(ROutputItem):
     def savefig_animate(self, vot, fname, figsize=(9, 6)):
         fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111)
-        self.plot_tex(ax, vot)
+        self.plot(ax, vot)
         fig.tight_layout()
         fig.savefig(fname)
 
@@ -58,9 +64,6 @@ class Viz2D(ROutputItem):
         ax = fig.add_subplot(111)
         self.plot_tex(ax, 0.25)
         fig.savefig(fname)
-
-    def reset(self, ax):
-        pass
 
     trait_view = View(
         HSplit(

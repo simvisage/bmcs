@@ -52,10 +52,10 @@ if __name__ == '__main__':
 
     u = tloop.eval()
     # expected solution
-    print 'u', u
+    print('u', u)
     # compare the reaction at the left end
     F = ts.F_int[-1]
 
-    print 'F', F
+    print('F', F)
 
     ts.bcond_mngr.configure_traits()

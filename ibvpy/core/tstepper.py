@@ -19,14 +19,14 @@ from traitsui.menu import \
     Action
 from view.ui import BMCSTreeNode
 
-from bcond_mngr import BCondMngr
-from i_sdomain import ISDomain
-from ibv_resource import IBVResource
+from .bcond_mngr import BCondMngr
+from .i_sdomain import ISDomain
+from .ibv_resource import IBVResource
 import numpy as np
-from rtrace_mngr import RTraceMngr
-from scontext import SContext
-from sdomain import SDomain
-from tstepper_eval import ITStepperEval
+from .rtrace_mngr import RTraceMngr
+from .scontext import SContext
+from .sdomain import SDomain
+from .tstepper_eval import ITStepperEval
 
 
 class TStepper(BMCSTreeNode):
@@ -103,7 +103,7 @@ class TStepper(BMCSTreeNode):
                 elif isinstance(d, FESubDomain):
                     d.domain = self._sdomain
                 else:
-                    raise TypeError, 'The list can contain only FEGrid or FERefinementGrid'
+                    raise TypeError('The list can contain only FEGrid or FERefinementGrid')
         else:
             self._sdomain = value
 

@@ -93,7 +93,7 @@ class BCDofProportional(BCDof):
 
     @on_trait_change('alpha_rad,max_strain')
     def _reset(self):
-        print 'reseting bcond'
+        print('reseting bcond')
         alpha = self.alpha_rad  # Pi * self.alpha_degree / 180
         value, coeff = get_value_and_coeff(self.max_strain, alpha)
         self.value = value

@@ -6,8 +6,8 @@ Created on 12.01.2016
 
 from ibvpy.dots.dots_grid_eval import DOTSGridEval
 from ibvpy.fets.fets_eval import FETSEval, IFETSEval
-from traits.api import implements, Int, Array, \
-    Property, cached_property, Float, List
+from traits.api import Int, Array, \
+    Property, cached_property, Float, List, provides
 
 import numpy as np
 import sympy as sp
@@ -34,13 +34,14 @@ N_xi_i = sp.Matrix([0.5 - xi_1 / 2., 0.5 + xi_1 / 2.], dtype=np.float_)
 dN_xi_ir = sp.Matrix([[-1. / 2], [1. / 2]], dtype=np.float_)
 
 
-class FETS1D52ULRHFatigue(FETSEval):
+@provides(IFETSEval)
+class FETS1D52ULRHFatigueOld(FETSEval):
 
     '''
     Fe Bar 2 nodes, deformation
     '''
 
-    implements(IFETSEval)
+    vtk_expand_operator = tr.Array(np.float_, value=[[1, 0, 0]])
 
     debug_on = True
 
@@ -235,13 +236,13 @@ class FETS1D52ULRHFatigue(FETSEval):
     '''
     @tr.cached_property
     def _get_shape_function_values(self):
-        N_mi = np.array([N_xi_i.subs(zip([xi_1, xi_2, xi_3], xi))
+        N_mi = np.array([N_xi_i.subs(list(zip([xi_1, xi_2, xi_3], xi)))
                          for xi in self.xi_m], dtype=np.float_)
         N_im = np.einsum('mi->im', N_mi)
-        dN_mir_arr = [np.array(dN_xi_ir.subs(zip([xi_1], xi))).astype(np.float_)
+        dN_mir_arr = [np.array(dN_xi_ir.subs(list(zip([xi_1], xi)))).astype(np.float_)
                       for xi in self.xi_m]
         dN_mir = np.array(dN_mir_arr, dtype=np.float)
-        dN_nir_arr = [np.array(dN_xi_ir.subs(zip([xi_1], xi))).astype(np.float_)
+        dN_nir_arr = [np.array(dN_xi_ir.subs(list(zip([xi_1], xi)))).astype(np.float_)
                       for xi in self.vtk_r]
         dN_nir = np.array(dN_nir_arr, dtype=np.float)
         dN_imr = np.einsum('mir->imr', dN_mir)
@@ -272,6 +273,7 @@ class FETS1D52ULRHFatigue(FETSEval):
     I_sym_abcd = tr.Array(np.float)
 
     def _I_sym_abcd_default(self):
+        delta = np.identity(3)
         return 0.5 * \
             (np.einsum('ac,bd->abcd', delta, delta) +
              np.einsum('ad,bc->abcd', delta, delta))
@@ -279,4 +281,4 @@ class FETS1D52ULRHFatigue(FETSEval):
 
 if __name__ == '__main__':
     fe = FETS1D52ULRHFatigue()
-    print 'dN_imr', fe.dN_imr
+    print('dN_imr', fe.dN_imr)

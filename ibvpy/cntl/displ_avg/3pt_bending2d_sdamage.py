@@ -29,7 +29,7 @@ from ibvpy.fets.fets2D.fets2D4q8u import FETS2D4Q8U
 from numpy import array, cos, sin, pi, sqrt, deg2rad, arctan
 from mathkit.mfn import MFnLineArray
 
-from rt_nonlocal_averaging import \
+from .rt_nonlocal_averaging import \
     RTNonlocalAvg, QuarticAF
 
 def app():

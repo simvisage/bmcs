@@ -151,7 +151,7 @@ class FETS2DTF(FETSEval):
         RTraceEval dictionary with standard field variables.
         '''
         rte_dict = self._debug_rte_dict()
-        for key, v_eval in self.mats_eval.rte_dict.items():
+        for key, v_eval in list(self.mats_eval.rte_dict.items()):
 
             # add the eval into the loop.
             #
@@ -236,7 +236,7 @@ def example_with_new_domain():
 
     #import cProfile
     #cProfile.run('tloop.eval()', 'tloop_prof' )
-    print tloop.eval()
+    print(tloop.eval())
     #import pstats
     #p = pstats.Stats('tloop_prof')
     # p.strip_dirs()

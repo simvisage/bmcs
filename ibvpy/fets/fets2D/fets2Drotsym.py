@@ -181,7 +181,7 @@ def example_with_new_domain():
 
     #import cProfile
     #cProfile.run('tloop.eval()', 'tloop_prof' )
-    print tloop.eval()
+    print(tloop.eval())
     #import pstats
     #p = pstats.Stats('tloop_prof')
     # p.strip_dirs()

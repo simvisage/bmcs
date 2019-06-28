@@ -21,7 +21,7 @@ if __name__ == '__main__':
                             shape = ( 2, ),
         #                              inactive_elems = [3],
                             fets_eval = fets_sample )
-        print "n_e ", fe_domain.shape
+        print("n_e ", fe_domain.shape)
         #second element,right node 
         fe_slice = fe_domain[1, -1]
         #second element
@@ -47,16 +47,16 @@ if __name__ == '__main__':
         # first element, right front edge                  
         fe_slice = fe_domain[0, 0, 0, -1, :, -1]
 
-    print 'elems'
-    print fe_slice.elems
-    print 'dof_nodes'
-    print fe_slice.dof_nodes
-    print 'dofs'
-    print fe_slice.dofs
-    print 'dof coords'
-    print fe_slice.dof_X
-    print 'geo_nodes'
-    print fe_slice.geo_nodes
-    print 'geo_r'
-    print fe_slice.geo_X
-    print 'points? what are they for?'
+    print('elems')
+    print(fe_slice.elems)
+    print('dof_nodes')
+    print(fe_slice.dof_nodes)
+    print('dofs')
+    print(fe_slice.dofs)
+    print('dof coords')
+    print(fe_slice.dof_X)
+    print('geo_nodes')
+    print(fe_slice.geo_nodes)
+    print('geo_r')
+    print(fe_slice.geo_X)
+    print('points? what are they for?')

@@ -45,7 +45,7 @@ class RTracePlugin(Plugin):
         rtrace_service = app.get_service(
             'ibvpy.plugins.rtrace_service.RTraceService')
         if rtrace_service == None:
-            from rtrace_service import RTraceService
+            from .rtrace_service import RTraceService
             rtrace_service = RTraceService()
         # attach the service to the current window
         rtrace_service.window = properties['window']

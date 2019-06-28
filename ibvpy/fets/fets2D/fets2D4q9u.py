@@ -223,7 +223,7 @@ if __name__ == '__main__':
     domain = FEGrid(coord_max=(3., 3., 0.),
                     shape=(3, 3),
                     fets_eval=fets_eval)
-    print 'n_dofs', domain.n_dofs
+    print('n_dofs', domain.n_dofs)
 
     right_dof = 2
     ts = TS(
@@ -266,9 +266,9 @@ if __name__ == '__main__':
     import pstats
     p = pstats.Stats('tloop_prof')
     p.strip_dirs()
-    print 'cumulative'
+    print('cumulative')
     p.sort_stats('cumulative').print_stats(20)
-    print 'time'
+    print('time')
     p.sort_stats('time').print_stats(20)
 
     # Put the whole stuff into the simulation-framework to map the

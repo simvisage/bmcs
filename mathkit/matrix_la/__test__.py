@@ -6,9 +6,9 @@ from numpy import array, zeros, arange, array_equal, hstack, dot
 from numpy import array, zeros, arange, array_equal, sqrt
 from scipy.linalg import solve, norm
 
-from coo_mtx import COOSparseMtx
-from dense_mtx import DenseMtx
-from sys_mtx_assembly import SysMtxAssembly
+from .coo_mtx import COOSparseMtx
+from .dense_mtx import DenseMtx
+from .sys_mtx_assembly import SysMtxAssembly
 
 
 # bar clamped at the left end and loaded at the right end

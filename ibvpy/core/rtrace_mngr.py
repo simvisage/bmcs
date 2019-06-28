@@ -11,7 +11,7 @@ from traitsui.tabular_adapter \
     import TabularAdapter
 from view.ui import BMCSTreeNode
 
-from rtrace import RTrace
+from .rtrace import RTrace
 
 
 #-------------------------------------------------------------------------

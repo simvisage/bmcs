@@ -5,15 +5,15 @@ Created on Jul 17, 2017
 '''
 
 from reporter import Reporter
-import part1_debonding.e21_bond_slip_damage
-import part1_debonding.e22_bond_slip_plasticity
-import part1_debonding.e23_bond_slip_damage_plasticity
-import part1_debonding.e31_pullout_frictional
-import part1_debonding.e32_pullout_multilinear
-import part1_debonding.e33_pullout_frp_damage
-import part1_debonding.e43_po_hardening_length_dependence
-import part1_debonding.e44_po_softening_length_dependence
-import part2_cracking.e51_localization_zone
+from . import part1_debonding.e21_bond_slip_damage
+from . import part1_debonding.e22_bond_slip_plasticity
+from . import part1_debonding.e23_bond_slip_damage_plasticity
+from . import part1_debonding.e31_pullout_frictional
+from . import part1_debonding.e32_pullout_multilinear
+from . import part1_debonding.e33_pullout_frp_damage
+from . import part1_debonding.e43_po_hardening_length_dependence
+from . import part1_debonding.e44_po_softening_length_dependence
+from . import part2_cracking.e51_localization_zone
 
 if __name__ == '__main__':
 

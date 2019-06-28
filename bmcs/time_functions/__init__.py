@@ -1,3 +1,3 @@
 
-from loading_scenario import \
+from .loading_scenario import \
     LoadingScenario, Viz2DLoadControlFunction

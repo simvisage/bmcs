@@ -83,7 +83,7 @@ if __name__ == '__main__':
     tloop = TLoop( tstepper = ts,
                    tline  = TLine( min = 0.0,  step = 1, max = 1.0 ))
     
-    print tloop.setup()
+    print(tloop.setup())
     
     from ibvpy.plugins.ibvpy_app import IBVPyApp
     ibvpy_app = IBVPyApp( ibv_resource = tloop )

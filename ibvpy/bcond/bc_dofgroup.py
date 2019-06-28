@@ -4,19 +4,20 @@ from traits.api import Array, Bool, Enum, Float, HasTraits, \
     Int, Trait, Enum, \
     Callable, List, \
     Button, \
-    implements
-from traitsui.api \
-    import View, Item, VSplit, TableEditor, ListEditor
+    provides
 from traitsui.api import \
     HSplit, Group
-from traitsui.table_column \
-    import ObjectColumn
 
-from bc_dof import BCDof
 from ibvpy.core.i_bcond import \
     IBCond
 from ibvpy.plugins.mayavi_util.pipelines import \
     MVPointLabels
+from traitsui.api \
+    import View, Item, VSplit, TableEditor, ListEditor
+from traitsui.table_column \
+    import ObjectColumn
+
+from .bc_dof import BCDof
 
 
 # The definition of the demo TableEditor:
@@ -29,13 +30,12 @@ bcond_list_editor = TableEditor(
 )
 
 
+@provides(IBCond)
 class BCDofGroup(HasTraits):
 
     '''
     Implements the IBC functionality for a constrained dof.
     '''
-    implements(IBCond)
-
     var = Enum('u', 'f')
 
     get_dof_method = Callable
@@ -104,8 +104,8 @@ class BCDofGroup(HasTraits):
                 self.link_dims = self.dims
             else:
                 if len(self.dims) != len(self.link_dims):
-                    raise IndexError, 'incompatible dim specification (%d != %d' \
-                        % (len(self.dims), len(self.link_dims))
+                    raise IndexError('incompatible dim specification (%d != %d'
+                                     % (len(self.dims), len(self.link_dims)))
 
             link_dofs_arr = link_dofs[:, tuple(self.link_dims)]
 
@@ -149,7 +149,7 @@ class BCDofGroup(HasTraits):
 
     def _get_mvpoints(self):
         # blow up
-        print 'dof_X', self.dof_X
+        print('dof_X', self.dof_X)
         return array(self.dof_X, dtype='float_')
 
     def _get_labels(self):
@@ -157,7 +157,7 @@ class BCDofGroup(HasTraits):
         n_points = self.dof_numbers.shape[0]
         dofs = repeat(-1., n_points * 3).reshape(n_points, 3)
         dofs[:, tuple(self.dims)] = self.dof_numbers
-        print 'BC - DOFS', dofs
+        print('BC - DOFS', dofs)
         return dofs
 
     redraw_button = Button('Redraw')

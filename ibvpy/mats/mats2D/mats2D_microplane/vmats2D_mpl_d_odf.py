@@ -7,32 +7,18 @@ Microplane damage model 2D - ODFS (Wu [2009])
 '''
 
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
-from ibvpy.mats.mats_eval import \
-    IMATSEval
 from numpy import \
     array, einsum, identity, sqrt
 from traits.api import \
-    Constant, implements,\
+    Constant, \
     Float, Property, cached_property
-from ibvpy.mats.mats2D.vmats2D_eval import \
-    MATS2D
+
+from ibvpy.mats.matsXD.vmatsXD_eval import MATSXDEval
 import numpy as np
 import traits.api as tr
 
 
-class MATS2DMicroplaneDamageODF(MATS2DEval, MATS2D):
-
-    E = Float(34000,
-              label="E",
-              desc="Elastic modulus",
-              enter_set=True,
-              auto_set=False)
-
-    nu = Float(0.2,
-               label="G",
-               desc="poisson's ratio",
-               enter_set=True,
-               auto_set=False)
+class MATSXDMicroplaneDamageODF(MATSXDEval):
 
     epsilon_0 = Float(59e-6,
                       label="a",
@@ -58,11 +44,12 @@ class MATS2DMicroplaneDamageODF(MATS2DEval, MATS2D):
                    enter_set=True,
                    auto_set=False)
 
-    state_array_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
+    state_var_shapes = tr.Property(tr.Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
     '''
+
     @cached_property
-    def _get_state_array_shapes(self):
+    def _get_state_var_shapes(self):
         return {'kappa': (self.n_mp,),
                 'omega': (self.n_mp,)}
 
@@ -123,18 +110,15 @@ class MATS2DMicroplaneDamageODF(MATS2DEval, MATS2D):
         e_equiv_Emn = sqrt(e_N_pos_Emn * e_N_pos_Emn + c_T * e_TT_Emn)
         return e_equiv_Emn
 
-    def _get_state_variables(self, eps_Emab, kappa, omega):
+    def update_state_variables(self, eps_Emab, kappa, omega):
 
-        kappa_Emn = np.copy(kappa)
-        omega_Emn = np.copy(omega)
         e_Emna = self._get_e_Emna(eps_Emab)
         eps_eq_Emn = self._get_e_equiv_Emn(e_Emna)
         f_trial_Emn = eps_eq_Emn - self.epsilon_0
-        f_idx = np.where(f_trial_Emn > 0)
-        kappa_Emn[f_idx] = eps_eq_Emn[f_idx]
-        omega_Emn[f_idx] = self._get_omega(eps_eq_Emn[f_idx])
-
-        return kappa_Emn, omega_Emn, f_idx
+        I = np.where(f_trial_Emn > 0)
+        kappa[I] = eps_eq_Emn[I]
+        omega[I] = self._get_omega(eps_eq_Emn[I])
+        return I
 
     def _get_omega(self, kappa_Emn):
         '''
@@ -229,10 +213,10 @@ class MATS2DMicroplaneDamageODF(MATS2DEval, MATS2D):
         delta = identity(2)
         PP_dev_nabcd = 0.5 * (0.5 * (einsum('na,nc,bd -> nabcd', self._MPN, self._MPN, delta) +
                                      einsum('na,nd,bc -> nabcd', self._MPN, self._MPN, delta)) +
-                              0.5 * (einsum('ac,nb,nd -> nabcd',  delta, self._MPN, self._MPN) +
-                                     einsum('ad,nb,nc -> nabcd',  delta, self._MPN, self._MPN))) -\
+                              0.5 * (einsum('ac,nb,nd -> nabcd', delta, self._MPN, self._MPN) +
+                                     einsum('ad,nb,nc -> nabcd', delta, self._MPN, self._MPN))) - \
             (1.0 / 3.0) * (einsum('na,nb,cd -> nabcd', self._MPN, self._MPN, delta) +
-                           einsum('ab,nc,nd -> nabcd', delta, self._MPN, self._MPN)) +\
+                           einsum('ab,nc,nd -> nabcd', delta, self._MPN, self._MPN)) + \
             (1.0 / 9.0) * einsum('ab,cd -> abcd', delta, delta)
 
         return PP_dev_nabcd
@@ -373,7 +357,7 @@ class MATS2DMicroplaneDamageODF(MATS2DEval, MATS2D):
 
         S_4_Emabcd = (1.0 - d_Em) * K0 * I_vol_abcd + (1.0 - d_Em) * G0 * I_dev_abcd + (2.0 / 3.0) * (G0 - K0) * \
             (einsum('ij,Emkl -> Emijkl', delta, D_bar_Emab) +
-             einsum('Emij,kl -> Emijkl', D_bar_Emab, delta)) + 0.5 * (- K0 + 2.0 * G0) *\
+             einsum('Emij,kl -> Emijkl', D_bar_Emab, delta)) + 0.5 * (-K0 + 2.0 * G0) * \
             (0.5 * (einsum('ik,Emjl -> Emijkl', delta, D_bar_Emab) + einsum('Emil,jk -> Emijkl', D_bar_Emab, delta)) +
              0.5 * (einsum('Emil,jk -> Emijkl', D_bar_Emab, delta) + einsum('ik,Emjl -> Emijkl', delta, D_bar_Emab)))
 
@@ -426,20 +410,9 @@ class MATS2DMicroplaneDamageODF(MATS2DEval, MATS2D):
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1, update_state, kappa, omega):
+    def get_corr_pred(self, eps_Emab_n1, tn1, kappa, omega):
 
-        if update_state:
-
-            eps_Emab_n = eps_Emab_n1 - deps_Emab
-
-            kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
-                eps_Emab_n1, kappa, omega)
-
-            kappa[...] = kappa_Emn[...]
-            omega[...] = omega_Emn[...]
-
-        kappa_Emn, omega_Emn, f_idx = self._get_state_variables(
-            eps_Emab_n1, kappa, omega)
+        I = self.update_variables(eps_Emab_n1, kappa, omega)
 
         #----------------------------------------------------------------------
         # if the regularization using the crack-band concept is on calculate the
@@ -472,9 +445,9 @@ class MATS2DMicroplaneDamageODF(MATS2DEval, MATS2D):
         return D_Emabcd, sig_Emab
 
 
-class MATS2DMplDamageODF(MATS2DMicroplaneDamageODF, MATS2DEval):
+class MATS2DMplDamageODF(MATSXDMicroplaneDamageODF, MATS2DEval):
 
-    implements(IMATSEval)
+    # implements(IMATSEval)
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D
@@ -505,90 +478,3 @@ class MATS2DMplDamageODF(MATS2DMicroplaneDamageODF, MATS2DEval):
     @cached_property
     def _get__MPW(self):
         return np.ones(self.n_mp) / self.n_mp * 2.0
-
-    #-------------------------------------------------------------------------
-    # Cached elasticity tensors
-    #-------------------------------------------------------------------------
-    stress_state = tr.Enum("plane_stress", "plane_strain", input=True)
-
-    #-------------------------------------------------------------------------
-    # Material parameters
-    #-------------------------------------------------------------------------
-    E = tr.Float(34e+3,
-                 label="E",
-                 desc="Young's Modulus",
-                 auto_set=False,
-                 input=True)
-
-    nu = tr.Float(0.2,
-                  label='nu',
-                  desc="Poison ratio",
-                  auto_set=False,
-                  input=True)
-
-    def _get_lame_params(self):
-        la = self.E * self.nu / ((1 + self.nu) * (1 - 2 * self.nu))
-        # second Lame parameter (shear modulus)
-        mu = self.E / (2 + 2 * self.nu)
-        return la, mu
-
-    D_ab = tr.Property(tr.Array, depends_on='+input')
-    '''Elasticity matrix (shape: (3,3))
-    '''
-    @tr.cached_property
-    def _get_D_ab(self):
-        if self.stress_state == 'plane_stress':
-            return self._get_D_ab_plane_stress()
-        elif self.stress_state == 'plane_strain':
-            return self._get_D_ab_plane_strain()
-
-    def _get_D_ab_plane_stress(self):
-        '''
-        Elastic Matrix - Plane Stress
-        '''
-        E = self.E
-        nu = self.nu
-        D_stress = np.zeros([3, 3])
-        D_stress[0, 0] = E / (1.0 - nu * nu)
-        D_stress[0, 1] = E / (1.0 - nu * nu) * nu
-        D_stress[1, 0] = E / (1.0 - nu * nu) * nu
-        D_stress[1, 1] = E / (1.0 - nu * nu)
-        D_stress[2, 2] = E / (1.0 - nu * nu) * (1.0 / 2.0 - nu / 2.0)
-        return D_stress
-
-    def _get_D_ab_plane_strain(self):
-        '''
-        Elastic Matrix - Plane Strain
-        '''
-        E = self.E
-        nu = self.nu
-        D_strain = np.zeros([3, 3])
-        D_strain[0, 0] = E * (1.0 - nu) / (1.0 + nu) / (1.0 - 2.0 * nu)
-        D_strain[0, 1] = E / (1.0 + nu) / (1.0 - 2.0 * nu) * nu
-        D_strain[1, 0] = E / (1.0 + nu) / (1.0 - 2.0 * nu) * nu
-        D_strain[1, 1] = E * (1.0 - nu) / (1.0 + nu) / (1.0 - 2.0 * nu)
-        D_strain[2, 2] = E * (1.0 - nu) / (1.0 + nu) / (2.0 - 2.0 * nu)
-        return D_strain
-
-    map2d_ijkl2a = tr.Array(np.int_, value=[[[[0, 0],
-                                              [0, 0]],
-                                             [[2, 2],
-                                              [2, 2]]],
-                                            [[[2, 2],
-                                              [2, 2]],
-                                             [[1, 1],
-                                                [1, 1]]]])
-    map2d_ijkl2b = tr.Array(np.int_, value=[[[[0, 2],
-                                              [2, 1]],
-                                             [[0, 2],
-                                              [2, 1]]],
-                                            [[[0, 2],
-                                              [2, 1]],
-                                             [[0, 2],
-                                                [2, 1]]]])
-
-    D_abef = tr.Property(tr.Array, depends_on='+input')
-
-    @tr.cached_property
-    def _get_D_abef(self):
-        return self.D_ab[self.map2d_ijkl2a, self.map2d_ijkl2b]

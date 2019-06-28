@@ -7,12 +7,11 @@ from numpy import \
 from traits.api import \
     Float,  \
     Instance, HasStrictTraits, on_trait_change,  \
-    implements, Button, \
+    provides, Button, \
     Interface, WeakRef
 from traitsui.api import \
     Item, View, VGroup, \
     Group, HGroup
-
 from mathkit.mfn import MFnLineArray
 from mathkit.mfn.mfn_line.mfn_matplotlib_editor import MFnMatplotlibEditor
 from mathkit.mfn.mfn_line.mfn_plot_adapter import MFnPlotAdapter
@@ -54,8 +53,8 @@ class IPhiFn(Interface):
 #-------------------------------------------------------------------------
 
 
+@provides(IPhiFn)
 class PhiFnBase(HasStrictTraits):
-
     '''
     Damage function.
     '''
@@ -94,7 +93,7 @@ class PhiFnBase(HasStrictTraits):
         Extract the traits that are of type Float
         '''
         params = []
-        for name, trait in self.traits().items():
+        for name, trait in list(self.traits().items()):
             if trait.is_trait_type(Float):
                 params.append(name)
         return params
@@ -112,7 +111,7 @@ class PhiFnBase(HasStrictTraits):
 
 class PhiFnGeneral(PhiFnBase):
 
-    implements(IPhiFn)
+    # implements(IPhiFn)
 
     def _polar_discr_changed(self):
         self.polar_discr.regularization = False
@@ -171,8 +170,8 @@ class PhiFnGeneral(PhiFnBase):
 
     @on_trait_change('print_button')
     def print_button_fired(self):
-        print 'eps:\n', [self.mfn.xdata]
-        print '1-omega:\n', [self.mfn.ydata]
+        print('eps:\n', [self.mfn.xdata])
+        print('1-omega:\n', [self.mfn.ydata])
 
     # Default TraitsUI view
     traits_view = View(Group(
@@ -191,7 +190,7 @@ class PhiFnGeneral(PhiFnBase):
 #-------------------------------------------------------------------------
 class PhiFnGeneralExtended(PhiFnGeneral):
 
-    implements(IPhiFn)
+    # implements(IPhiFn)
 
     factor_eps_fail = Float(1.0)
 
@@ -221,7 +220,7 @@ class PhiFnGeneralExtended(PhiFnGeneral):
 
 class PhiFnGeneralExtendedExp(PhiFnGeneral):
 
-    implements(IPhiFn)
+    # implements(IPhiFn)
 
     Dfp = Float(0.0, desc='residual integrity',
                 enter_set=True, auto_set=False)
@@ -241,18 +240,18 @@ class PhiFnGeneralExtendedExp(PhiFnGeneral):
         if e_max <= eps_last:
             return super(PhiFnGeneralExtendedExp, self).get_value(e_max)
         else:
-            print '**** Entered softening branch ****'
-            raise ValueError, "Entered softening branch"
+            print('**** Entered softening branch ****')
+            raise ValueError("Entered softening branch")
             # exponential softening with residual integrity after rupture
             # strain in the tensile test has been reached
             Dfp = self.Dfp
             Epp = eps_last
             Efp = self.Efp_frac * eps_last
-            print 'phi_last:', phi_last, ', eps_last:', eps_last,
+            print('phi_last:', phi_last, ', eps_last:', eps_last, end=' ')
             phi = phi_last * \
                 ((1 - Dfp) *
                  sqrt(Epp / e_max * exp(-(e_max - Epp) / Efp)) + Dfp)
-            print ', e_max:', e_max, 'phi:', phi
+            print(', e_max:', e_max, 'phi:', phi)
             return phi
 
     def get_plot_range(self):
@@ -270,7 +269,7 @@ class PhiFnStrainSoftening(PhiFnBase):
     Damage function.
     '''
 
-    implements(IPhiFn)
+    # implements(IPhiFn)
 
     G_f = Float(0.001117,
                 label='G_f',
@@ -308,8 +307,8 @@ class PhiFnStrainSoftening(PhiFnBase):
 
         gamma = (E * G_f) / (h * f_t ** 2)
         if gamma < 2.0:
-            print 'WARNING: elements too big -> refine, h should be at maximum only half of the characteristic length'
-            print 'in FIT PARAMS: gamma set to 2.0'
+            print('WARNING: elements too big -> refine, h should be at maximum only half of the characteristic length')
+            print('in FIT PARAMS: gamma set to 2.0')
             gamma = 2.0
 
         Epp = f_t / \
@@ -409,7 +408,7 @@ class PhiFnStrainHardeningLinear(PhiFnBase):
     Damage function which leads to a piecewise linear stress strain response.
     '''
 
-    implements(IPhiFn)
+    # implements(IPhiFn)
 
     E_f = Float(70e+3, desc='E-Modulus of the fibers',
                 enter_set=True, auto_set=False, modified=True)
@@ -434,11 +433,11 @@ class PhiFnStrainHardeningLinear(PhiFnBase):
 
     @on_trait_change('+modified')
     def refresh_plot(self):
-        print 'refreshing'
+        print('refreshing')
         super(PhiFnStrainHardeningLinear, self).refresh_plot()
 
     def _polar_discr_changed(self):
-        print 'regularizatoin set to False'
+        print('regularizatoin set to False')
         self.polar_discr.regularization = False
 
     def get_value(self, e_max, *c_list):
@@ -465,7 +464,7 @@ class PhiFnStrainHardeningLinear(PhiFnBase):
         if e_max <= epsilon_0:
             return 1.0
         elif e_max >= Elimit:
-            print '********** microplane reached maximum strain *********'
+            print('********** microplane reached maximum strain *********')
             return 1e-100
 
         epsilon_1 = sigma_0 * (-rho * E_f - E_m + rho * E_m + rho * E_f *
@@ -516,7 +515,7 @@ class PhiFnStrainHardening(PhiFnBase):
     Damage function.
     '''
 
-    implements(IPhiFn)
+    # implements(IPhiFn)
 
     Epp = Float(5.9e-05, desc='microplane strain at the onset of damage',
                 enter_set=True, auto_set=False)

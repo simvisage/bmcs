@@ -1,27 +1,26 @@
+from traits.api import \
+    Instance, Array, Int, on_trait_change, Property, cached_property, \
+    List, Button, provides,  \
+    Event
+from traitsui.api import View, Item, Include
 
 from ibvpy.dots.subdots_eval import SubDOTSEval
 from ibvpy.fets.i_fets_eval import IFETSEval
 from ibvpy.mesh.cell_grid.cell_array import ICellArraySource
 from ibvpy.mesh.cell_grid.cell_spec import CellSpec
 from ibvpy.rtrace.rt_domain import RTraceDomain
-from numpy import array, copy, zeros, array_equal, repeat, arange, append, vstack, hstack
-from traits.api import \
-    Instance, Array, Int, on_trait_change, Property, cached_property, \
-    List, Button, implements,  \
-    Event
-from traitsui.api import View, Item, Include
+import numpy as np
 
-from fe_grid import FEGrid, MElem
-from fe_refinement_level import FERefinementLevel
-from i_fe_uniform_domain import IFEUniformDomain
+from .fe_grid import FEGrid, MElem
+from .fe_refinement_level import FERefinementLevel
+from .i_fe_uniform_domain import IFEUniformDomain
 
 
+@provides(ICellArraySource, IFEUniformDomain)
 class FERefinementGrid(FERefinementLevel):
 
     '''Subgrid derived from another grid domain.
     '''
-    implements(ICellArraySource)
-    implements(IFEUniformDomain)
 
     changed_structure = Event
 
@@ -111,7 +110,7 @@ class FERefinementGrid(FERefinementLevel):
     fine_cell_shape = Array(int, value=[2, 2, 2])
 
     def get_fine_ix(self, coarse_ix):
-        return array(list(coarse_ix), dtype=int) * self.fine_cell_shape
+        return np.array(list(coarse_ix), dtype=int) * self.fine_cell_shape
 
     def get_bounding_box(self, coarse_ix):
         '''Get the corner coordinates of the parent cell
@@ -120,8 +119,8 @@ class FERefinementGrid(FERefinementLevel):
         # FEPatchedGrid
         #
         pgrid = self.parent.fe_subgrids[0].geo_grid.point_x_grid
-        print 'shape', pgrid.shape
-        coarse_ix = array(list(coarse_ix), dtype=int)
+        print('shape', pgrid.shape)
+        coarse_ix = np.array(list(coarse_ix), dtype=int)
         coord_min = pgrid[(slice(0, pgrid.shape[0]),) + tuple(coarse_ix)]
         coord_max = pgrid[(slice(0, pgrid.shape[0]),) + tuple(coarse_ix + 1)]
         return coord_min, coord_max
@@ -162,15 +161,15 @@ class FERefinementGrid(FERefinementLevel):
     elem_dof_map = Property(Array)
 
     def _get_elem_dof_map(self):
-        elem_dof_map = vstack([fe_subgrid.elem_dof_map
-                               for fe_subgrid in self.fe_subgrids])
+        elem_dof_map = np.vstack([fe_subgrid.elem_dof_map
+                                  for fe_subgrid in self.fe_subgrids])
         return elem_dof_map
 
     elem_dof_map_unmasked = Property(Array)
 
     def _get_elem_dof_map_unmasked(self):
-        elem_dof_map = vstack([fe_subgrid.elem_dof_map_unmasked
-                               for fe_subgrid in self.fe_subgrids])
+        elem_dof_map = np.vstack([fe_subgrid.elem_dof_map_unmasked
+                                  for fe_subgrid in self.fe_subgrids])
         return elem_dof_map
 
     n_elems = Property
@@ -194,59 +193,59 @@ class FERefinementGrid(FERefinementLevel):
 
     def _get_elem_X_map(self):
         '''Array with the point coordinates'''
-        return vstack([fe_subgrid.elem_X_map
-                       for fe_subgrid in self.fe_subgrids])
+        return np.vstack([fe_subgrid.elem_X_map
+                          for fe_subgrid in self.fe_subgrids])
 
     elem_X_map_unmasked = Property(Array)
 
     def _get_elem_X_map_unmasked(self):
         '''Array with the point coordinates'''
-        return vstack([fe_subgrid.elem_X_map_unmasked
-                       for fe_subgrid in self.fe_subgrids])
+        return np.vstack([fe_subgrid.elem_X_map_unmasked
+                          for fe_subgrid in self.fe_subgrids])
 
     elem_x_map = Property(Array)
 
     def _get_elem_x_map(self):
         '''Array with the point coordinates'''
-        return vstack([fe_subgrid.elem_x_map
-                       for fe_subgrid in self.fe_subgrids])
+        return np.vstack([fe_subgrid.elem_x_map
+                          for fe_subgrid in self.fe_subgrids])
 
     elem_x_map_unmasked = Property(Array)
 
     def _get_elem_x_map_unmasked(self):
         '''Array with the point coordinates'''
-        return vstack([fe_subgrid.elem_x_map_unmasked
-                       for fe_subgrid in self.fe_subgrids])
+        return np.vstack([fe_subgrid.elem_x_map_unmasked
+                          for fe_subgrid in self.fe_subgrids])
 
     dof_Eid = Property
     '''Mapping of Element, Node, Dimension -> DOF 
     '''
 
     def _get_dof_Eid(self):
-        return vstack([fe_subgrid.dof_Eid
-                       for fe_subgrid in self.fe_subgrids])
+        return np.vstack([fe_subgrid.dof_Eid
+                          for fe_subgrid in self.fe_subgrids])
 
     dofs = Property
     ''' 
     '''
 
     def _get_dofs(self):
-        return vstack([fe_subgrid.dofs
-                       for fe_subgrid in self.fe_subgrids])
+        return np.vstack([fe_subgrid.dofs
+                          for fe_subgrid in self.fe_subgrids])
 
     I_Ei = Property(Array)
     '''For a given element and its node number return the global index
     of the node'''
 
     def _get_I_Ei(self):
-        return vstack([fe_subgrid.I_Ei
-                       for fe_subgrid in self.fe_subgrids])
+        return np.vstack([fe_subgrid.I_Ei
+                          for fe_subgrid in self.fe_subgrids])
 
     X_Id = Property(Array)
 
     def _get_X_Id(self):
-        return vstack([fe_subgrid.X_Id
-                       for fe_subgrid in self.fe_subgrids])
+        return np.vstack([fe_subgrid.X_Id
+                          for fe_subgrid in self.fe_subgrids])
 
     def deactivate(self, idx):
         '''Deactivate the specified element.
@@ -302,7 +301,7 @@ class FERefinementGrid(FERefinementLevel):
 
     def subgrids(self):
         #no_parents = [ None for i in range( len( self._fe_subgrids ) ) ]
-        return zip(self.refinement_dict.keys(), self.fe_subgrids)
+        return list(zip(list(self.refinement_dict.keys()), self.fe_subgrids))
 
     elem_dof_enumeration = Property(
         depends_on='changed_structure,+changed_geometry')
@@ -312,7 +311,7 @@ class FERefinementGrid(FERefinementLevel):
         '''Array with the dof enumeration
         '''
         #p_list, args_list, fe_domain_list = [], [], []
-        for p, refinement_args in self.refinement_dict.items():
+        for p, refinement_args in list(self.refinement_dict.items()):
 
             fe_domain = self.get_fine_fe_domain(p)
             #fe_domain_list.append( fe_domain )
@@ -342,20 +341,20 @@ class FERefinementGrid(FERefinementLevel):
     @cached_property
     def _get_activation_map(self):
         '''@TODO - react to changes in parent'''
-        return hstack([subgrid.activation_map for subgrid in self.fe_subgrids])
+        return np.hstack([subgrid.activation_map for subgrid in self.fe_subgrids])
 
     # get indices of all active elements
     idx_active_elems = Property(depends_on='changed_structure')
 
     @cached_property
     def _get_idx_active_elems(self):
-        return arange(self.n_grid_elems)[self.activation_map]
+        return np.arange(self.n_grid_elems)[self.activation_map]
 
     n_grid_elems = Property
 
     def _get_n_grid_elems(self):
         '''Total number of elements in the subgrid'''
-        n_elem_arr = array(
+        n_elem_arr = np.array(
             [subgrid.n_grid_elems for subgrid in self.fe_subgrids], dtype='int')
         return sum(n_elem_arr)
 
@@ -364,7 +363,7 @@ class FERefinementGrid(FERefinementLevel):
 
     @cached_property
     def _get_n_active_elems(self):
-        n_elem_arr = array(
+        n_elem_arr = np.array(
             [subgrid.n_active_elems for subgrid in self.fe_subgrids], dtype='int')
         return sum(n_elem_arr)
 
@@ -390,7 +389,7 @@ class FERefinementGrid(FERefinementLevel):
         # the result.
         out_single = fn(ip_mask[0], X_el[0])
         out_grid_shape = (X_el.shape[0], ip_mask.shape[0],) + out_single.shape
-        out_grid = zeros(out_grid_shape)
+        out_grid = np.zeros(out_grid_shape)
 
         for el in range(X_el.shape[0]):
             for ip in range(ip_mask.shape[0]):
@@ -409,7 +408,7 @@ class FERefinementGrid(FERefinementLevel):
         # the result.
         out_single = fn(ip_mask[0], X_el[0])
         out_grid_shape = (X_el.shape[0], ip_mask.shape[0],) + out_single.shape
-        out_grid = zeros(out_grid_shape)
+        out_grid = np.zeros(out_grid_shape)
 
         for el in range(X_el.shape[0]):
             for ip in range(ip_mask.shape[0]):
@@ -440,11 +439,8 @@ class FERefinementGrid(FERefinementLevel):
 if __name__ == '__main__':
 
     from ibvpy.api import \
-        TStepper as TS, RTDofGraph, RTraceDomainField, TLoop, \
-        TLine, BCDofGroup, BCDof, IBVPSolve as IS, FEDomain, FEPatchedGrid
-    from ibvpy.rtrace.rt_domain_list_field import RTraceDomainListField
-    from ibvpy.mats.mats1D.mats1D_elastic.mats1D_elastic import MATS1DElastic
-    from ibvpy.mesh.fe_grid import FEGrid
+        TStepper as TS, RTDofGraph, TLoop, \
+        TLine, BCDofGroup, BCDof, FEDomain
 
     def example_0():
         from ibvpy.fets.fets_eval import FETSEval
@@ -463,11 +459,11 @@ if __name__ == '__main__':
                          inactive_elems=[1],
                          fets_eval=fets_sample)
 
-        print 'elem_dof_map'
-        print fe_domain.elem_dof_map
+        print('elem_dof_map')
+        print(fe_domain.elem_dof_map)
 
-        print 'elem_X_map'
-        print fe_domain.elem_X_map
+        print('elem_X_map')
+        print(fe_domain.elem_X_map)
 
         fe_child_domain = FERefinementGrid(parent=fe_pgrid,
                                            fets_eval=fets_sample,
@@ -476,14 +472,14 @@ if __name__ == '__main__':
         fe_child_domain.refine_elem((1, 1))
         fe_child_domain.refine_elem((0, 1))
 
-        print fe_child_domain.elem_dof_map
-        print fe_child_domain.elem_X_map
+        print(fe_child_domain.elem_dof_map)
+        print(fe_child_domain.elem_X_map)
 
-        print 'n_dofs', fe_child_domain.n_dofs
+        print('n_dofs', fe_child_domain.n_dofs)
 
         for e_id, e in enumerate(fe_child_domain.elements):
-            print 'idx', e_id
-            print e
+            print('idx', e_id)
+            print(e)
 
         from ibvpy.plugins.ibvpy_app import IBVPyApp
         ibvpy_app = IBVPyApp(ibv_resource=fe_domain)
@@ -518,7 +514,7 @@ if __name__ == '__main__':
         tloop = TLoop(tstepper=ts, debug=True,
                       tline=TLine(min=0.0, step=1, max=1.0))
 
-        print tloop.eval()
+        print(tloop.eval())
     #    print ts.F_int
     #    print ts.rtrace_list[0].trace.ydata
 
@@ -570,7 +566,7 @@ if __name__ == '__main__':
         tloop = TLoop(tstepper=ts,
                       tline=TLine(min=0.0, step=1, max=1.0))
 
-        print tloop.eval()
+        print(tloop.eval())
         from ibvpy.plugins.ibvpy_app import IBVPyApp
         ibvpy_app = IBVPyApp(ibv_resource=tloop)
         ibvpy_app.main()

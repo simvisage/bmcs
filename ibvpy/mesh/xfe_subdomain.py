@@ -7,16 +7,17 @@ from scipy.optimize import \
     brentq
 from traits.api import \
     Instance, Property, cached_property, \
-    implements, Float, \
+    provides, Float, \
     Callable, Str, Enum
 
-from fe_grid import MElem
-from fe_subdomain import FESubDomain
 from ibvpy.dots.xdots_eval import XDOTSEval
 from ibvpy.fets.fets_eval import FETSEval
 from ibvpy.mesh.i_fe_grid_slice import IFEGridSlice
 from ibvpy.mesh.i_fe_uniform_domain import IFEUniformDomain
 from ibvpy.rtrace.rt_domain import RTraceDomain
+
+from .fe_grid import MElem
+from .fe_subdomain import FESubDomain
 
 
 #--------------------------------------------------------------------------
@@ -63,11 +64,10 @@ def get_intersect_pt(fn, args):
         return
 
 
+@provides(IFEUniformDomain)
 class XFESubDomain(FESubDomain):
     '''Subgrid derived from another grid domain.
     '''
-
-    implements(IFEUniformDomain)
 
     # Distinguish which part of the level set to take
     #
@@ -85,7 +85,8 @@ class XFESubDomain(FESubDomain):
         'reset the domain of this domain'
         if self._domain:
             # unregister in the old domain
-            raise NotImplementedError, 'FESubDomain cannot be relinked to another FEDomain'
+            raise NotImplementedError(
+                'FESubDomain cannot be relinked to another FEDomain')
 
         self._domain = value
         # register in the domain as a subdomain
@@ -164,8 +165,8 @@ class XFESubDomain(FESubDomain):
             # get the new elemes
             new_elems = new_slice.elems
             # remember the state associated with the elements
-            print 'old_elems', old_elems
-            print 'new_elems', new_elems
+            print('old_elems', old_elems)
+            print('new_elems', new_elems)
             old_size = old_elems.size
             new_size = new_elems.size
 
@@ -441,7 +442,7 @@ class XFESubDomain(FESubDomain):
                     if r_coord != None:
                         inter_pts.append([r_coord, c_coord])
             elif dim == 3:
-                raise NotImplementedError, 'not available for 3D yet'
+                raise NotImplementedError('not available for 3D yet')
             el_pnts.append(inter_pts)
         return array(el_pnts)
 

@@ -1,2 +1,2 @@
 
-from mfn_line.mfn_line import MFnLineArray
+from .mfn_line.mfn_line import MFnLineArray
