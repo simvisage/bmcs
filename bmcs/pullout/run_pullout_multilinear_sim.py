@@ -167,8 +167,13 @@ def run_multilinear_bond_slip_law_epoxy_tvlach():
     w.configure_traits()
 
 
+def run_crack_bridge_multilinear():
+    'clamped left'
+
+
 if __name__ == '__main__':
-    run_pullout_multilinear()
+    run_cb_multi()
+
     # run_pullout_multi()
     # run_cb_multi()
     # run_po_paper2_4layers()
