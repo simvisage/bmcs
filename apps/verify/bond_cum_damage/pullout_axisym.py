@@ -6,6 +6,7 @@ Created on 30.04.2019
 import time
 
 from ibvpy.bcond import BCSlice
+from ibvpy.bcond.bc_dof import BCDof
 from ibvpy.fets import FETS2D4Q
 from ibvpy.fets.fets1D5 import FETS1D52ULRH
 from ibvpy.mats.mats1D5.vmats1D5_d import \
@@ -24,6 +25,7 @@ from ibvpy.mats.viz3d_scalar_field import \
     Vis3DStateField, Viz3DScalarField
 from ibvpy.mats.viz3d_tensor_field import \
     Vis3DTensorField, Viz3DTensorField
+from mathkit.mfn import MFnLineArray
 from reporter import RInputRecord
 from simulator.api import \
     Simulator
@@ -32,10 +34,10 @@ from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
 from view.ui import BMCSLeafNode
 from view.ui.bmcs_tree_node import itags_str
-from view.ui.bmcs_tree_node import itags_str
 from view.window import BMCSWindow
 
 import numpy as np
+import pylab as p
 import traits.api as tr
 import traitsui.api as ui
 
@@ -262,11 +264,33 @@ class PullOutAxiSym(Simulator):
         return BCSlice(slice=self.xd_steel.mesh[0, :, 0, :],
                        var='f', dims=[0], value=0)
 
+    bc_y_0 = tr.Property(depends_on=itags_str)
+
+    @tr.cached_property
+    def _get_bc_y_0(self):
+        return BCSlice(slice=self.xd_steel.mesh[:, -1, :, -1],
+                       var='u', dims=[1], value=0)
+
+    f_lateral = tr.Float(0, auto_set=False, enter_set=True, BC=True)
+
+    bc_lateral_pressure_dofs = tr.Property(depends_on=itags_str)
+
+    @tr.cached_property
+    def _get_bc_lateral_pressure_dofs(self):
+        tf = MFnLineArray(xdata=[0, 1], ydata=[1, 1])
+        mesh_slice = self.xd_concrete.mesh[:, -1, :, -1]
+        dofs = np.unique(mesh_slice.dofs[:, :, 1].flatten())
+        return [BCDof(dof=dof,
+                      var='f', value=self.f_lateral, time_function=tf)
+                for dof in dofs]
+
     bc = tr.Property(depends_on=itags_str)
 
     @tr.cached_property
     def _get_bc(self):
-        return [self.right_x_s, self.right_x_c]
+        self.bc_lateral_pressure_dofs
+        return [self.right_x_s, self.right_x_c, self.bc_y_0] + \
+            self.bc_lateral_pressure_dofs
 
     record = {
         'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),
@@ -317,16 +341,37 @@ class PullOutAxiSym(Simulator):
         ui.Item('n_x'),
         ui.Item('n_y_steel'),
         ui.Item('n_y_concrete'),
+        ui.Item('f_lateral'),
     )
 
 
 if __name__ == '__main__':
-    s = PullOutAxiSym(u_max=0.001)
+    s = PullOutAxiSym(u_max=0.04, f_lateral=-100)
+    s.tloop.k_max = 10000
+    s.tline.step = 0.05
     s.tloop.verbose = True
     s.run()
-    s.geometry.L_x = 10
+    print('F', np.max(
+        np.sum(s.hist.F_t[:, s.right_x_s.dofs]), axis=-1)
+    )
+    w = s.get_window()
+    w.configure_traits()
+
+    ax = p.subplot(111)
+    w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+
+#     s.geometry.L_x = 10
+#     s.run()
+#     w = s.get_window()
+#     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
+#     ax = p.subplot(111)
+#     w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+
+    s.f_lateral = -100
     s.run()
-    print('r_m', s.cross_section.R_m)
-    s.cross_section.R_m = 3
-    s.n_x = 30
-    s.run()
+    w = s.get_window()
+    print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
+    ax = p.subplot(111)
+    w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+
+    p.show()
