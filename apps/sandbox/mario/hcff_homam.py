@@ -7,7 +7,6 @@ Remarks to code
 import os
 import string
 
-<<<<<<< Updated upstream
 from matplotlib.figure import Figure
 from pyface.api import FileDialog, MessageDialog
 from scipy.signal import argrelextrema
@@ -21,7 +20,7 @@ import pandas as pd
 import traits.api as tr
 import traitsui.api as ui
 
-from .hcff_filters.hcff_filter import HCFFilter, HCFFChild, HCFFParent
+from .hcff_filters.hcff_filter import HCFFilter, HCFFParent
 
 
 class PlotOptions(tr.HasTraits):
@@ -198,7 +197,6 @@ class HCFF(tr.HasStrictTraits):
     #=========================================================================
     decimal = tr.Enum(',', '.')
     delimiter = tr.Str(';')
-<<<<<<< Updated upstream
     file_csv = tr.File
     open_file_csv = tr.Button('Input file')
     skip_rows = tr.Int(4, auto_set=False, enter_set=True)
@@ -256,14 +254,13 @@ class HCFF(tr.HasStrictTraits):
         for i in range(len(headers_array)):
             headers_array[i] = self.get_valid_file_name(headers_array[i])
         self.columns_headers_list = list(headers_array)
-<<<<<<< Updated upstream
-        
+
         """ Saving file name and path and creating NPY folder """
         dir_path = os.path.dirname(self.file_csv)
         self.npy_folder_path = os.path.join(dir_path, 'NPY')
         if os.path.exists(self.npy_folder_path) == False:
             os.makedirs(self.npy_folder_path)
-            
+
         self.file_name = os.path.splitext(os.path.basename(self.file_csv))[0]
 
         """ Saving file name and path and creating NPY folder """
@@ -277,7 +274,6 @@ class HCFF(tr.HasStrictTraits):
     #=========================================================================
     # Parameters of the filter algorithm
     #=========================================================================
-=======
 
     #=========================================================================
     # Parameters of the filter algorithm
@@ -378,7 +374,6 @@ class HCFF(tr.HasStrictTraits):
         plt.show()
 
     figure = tr.Instance(Figure)
->>>>>>> Stashed changes
 
     def _figure_default(self):
         figure = Figure(facecolor='white')
@@ -388,7 +383,6 @@ class HCFF(tr.HasStrictTraits):
     def _parse_csv_to_npy_fired(self):
         print('Parsing csv into npy files...')
 
->>>>>>> Stashed changes
         for i in range(len(self.columns_headers_list)):
             column_array = np.array(pd.read_csv(
                 self.file_csv, delimiter=self.delimiter, decimal=self.decimal, skiprows=self.skip_rows, usecols=[i]))
@@ -418,8 +412,9 @@ class HCFF(tr.HasStrictTraits):
             abs((force)) > abs(self.peak_force_before_cycles))[0][0]
         force_ascending = force[0:peak_force_before_cycles_index]
         force_rest = force[peak_force_before_cycles_index:]
-        
-        force_max_indices, force_min_indices = self.get_array_max_and_min_indices(force_rest)
+
+        force_max_indices, force_min_indices = self.get_array_max_and_min_indices(
+            force_rest)
 
         force_max_indices, force_min_indices = self.get_array_max_and_min_indices(
             force_rest)
