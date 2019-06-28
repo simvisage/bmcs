@@ -21,6 +21,17 @@ class HCFFParent(tr.HasStrictTraits):
         child.source = self
         self.filters.append(child)
 
+    output_table = tr.Property(tr.Dict,
+                               depends_on='+inputs')
+
+    def _get_ouput_table(self):
+        raise NotImplementedError('Output table not defined')
+
+    columns = tr.Property()
+
+    def _get_columns(self):
+        return self.output_table.keys()
+
 
 class HCFFChild(tr.HasStrictTraits):
 
@@ -31,12 +42,22 @@ class HCFFilter(HCFFParent, HCFFChild):
 
     name = tr.Str('Filters name')
 
-#     output_table = tr.Property(tr.Instance(DataTable),
-#                                depends_on='+inputs')
+    chunk_size = tr.Int(100, input=True)
+
+    output_table = tr.Property(tr.Dict,
+                               depends_on='+input')
+
+    @tr.cached_property
+    def _get_output_table(self):
+        print('accessing data of filter', self.name)
+        return {
+            'first': self.source.output_table['first'] * 2,
+            'second': self.source.output_table['second'] / 2
+        }
 
 
 if __name__ == '__main__':
 
     f1 = HCFFilter(name='f1')
-    f1.add_filter(HCFFilter(name='f2'))
-    f1.configure_traits()
+    f2 = HCFFilter(name='f2')
+    f1.add_filter(f2)

@@ -109,7 +109,7 @@ class FileImportManager(tr.HasTraits):
 
 class HCFFRoot(HCFFParent):
 
-    name = tr.Str('root')
+    #name = tr.Str('root')
 
     import_manager = tr.Instance(FileImportManager, ())
 
@@ -136,30 +136,6 @@ tree_editor = ui.TreeEditor(
                     label='=HCF',
                     #                    view=ui.View()  # Empty view
                     ),
-        #         ui.TreeNode(node_for=[HCF],
-        #                     auto_open=True,
-        #                     children='file_import_manager',
-        #                     label='=file_import_manager',
-        #                     view=ui.View()  # Empty view
-        #                     ),
-        #         ui.TreeNode(node_for=[HCF],
-        #                     auto_open=True,
-        #                     children='filters',
-        #                     label='=Filters',
-        #                     view=ui.View()  # Empty view
-        #                     ),
-        #         ui.TreeNode(node_for=[HCF],
-        #                     auto_open=True,
-        #                     children='plot_options',
-        #                     label='=plot_options',
-        #                     view=ui.View()  # Empty view
-        #                     ),
-        #         ui.TreeNode(node_for=[FileImportManager],
-        #                     auto_open=True,
-        #                     children='',
-        #                     label='=File Import',
-        #                     view='view'
-        #                     ),
         ui.TreeNode(node_for=[HCFFilter],
                     auto_open=True,
                     children='filters',
@@ -613,10 +589,13 @@ if __name__ == '__main__':
     #     hcff = HCFF(file_csv='C:\\Users\\hspartali\\Desktop\\BeamEnd_Results')
     hcff = HCFF2()
     cut_initial = HCFFilter(name='cut')
-    cut_initial.add_filter(HCFFilter(name='custom'))
-    cut_initial.filters[0].add_filter(HCFFilter(name='average'))
-    cut_initial.add_filter(HCFFilter(name='custom differently'))
     hcff.hcf.add_filter(cut_initial)
+
+    custom_filter = HCFFilter(name='custom')
+    cut_initial.add_filter(custom_filter)
+
+    custom_filter.add_filter(HCFFilter(name='average'))
+    cut_initial.add_filter(HCFFilter(name='custom differently'))
 
 
 #    plot_options = [PlotOptions()]
