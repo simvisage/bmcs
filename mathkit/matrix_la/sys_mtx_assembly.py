@@ -164,7 +164,8 @@ class SysMtxAssembly(HasTraits):
             self._c[a] = constraint
 
             if self.debug:
-                print('new constraint: a:', a, 'u_a', u_a, 'alpha', alpha, 'ix_a', ix_a)
+                print('new constraint: a:', a, 'u_a',
+                      u_a, 'alpha', alpha, 'ix_a', ix_a)
 
         else:
             # duplicate specification, if it is identical with the
@@ -192,10 +193,10 @@ class SysMtxAssembly(HasTraits):
             elif not constraint.u_a == u_a or \
                     not allclose(constraint.alpha, alpha, rtol=1e-4) or \
                     not array_equal(constraint.ix_a, ix_a):
-                raise ValueError('contradicting constraint definition:\n' \
-                    'a = %d, u = %f, alpha = %s, ix_a = %s\n' \
-                    'previous constraint:\n%s' % (
-                        a, u_a, alpha, ix_a, constraint))
+                raise ValueError('contradicting constraint definition:\n'
+                                 'a = %d, u = %f, alpha = %s, ix_a = %s\n'
+                                 'previous constraint:\n%s' % (
+                                     a, u_a, alpha, ix_a, constraint))
 
         return constraint
 
@@ -210,8 +211,8 @@ class SysMtxAssembly(HasTraits):
             if swapped_values == False:
                 return sorted_c
         # exception - the cyclic specification of constraints
-        raise ValueError('maximum number of reorderings (1000) reached\n' \
-            'this is probably due to cyclic constraints specification')
+        raise ValueError('maximum number of reorderings (1000) reached\n'
+                         'this is probably due to cyclic constraints specification')
 
     def _get_simply_sorted_c(self, constraints):
         # first test if one of the indices in ix_a is already in _c

@@ -89,46 +89,37 @@ class MATS1D5DPCumPress(MATSEval):
 
         s = u_r[..., 0]
         w = u_r[..., 1]
-        # For normal
-        H_w_N = np.array(w <= 0.0, dtype=np.float_)  # CRIME
+        # For normal direction
+        H_w_N = np.array(w <= 0.0, dtype=np.float_)
         E_alg_N = H_w_N * self.E_N
         sig_N = E_alg_N * w
-
         # For tangential
         #Y = 0.5 * self.E_T * (u_T - s_pi)**2
         tau_pi_trial = self.E_T * (s - s_pi)
         Z = self.K * z
         X = self.gamma * alpha
-
         f = np.fabs(tau_pi_trial - X) - Z - self.tau_bar + self.m * sig_N
+        # Identify inelastic material points
+        # @todo: consider the usage of np.where()
         I = f > 1e-6
-
         sig_T = (1 - omega) * self.E_T * (s - s_pi)
-
         # Return mapping
-        delta_lambda_I = f[I] / \
-            (self.E_T / (1 - omega[I]) + self.gamma + self.K)
-
-        # update all state variables
-
+        delta_lambda_I = (
+            f[I] / (self.E_T / (1 - omega[I]) + self.gamma + self.K)
+        )
+        # Update all state variables
         s_pi[I] += (delta_lambda_I *
                     np.sign(tau_pi_trial[I] - X[I]) / (1 - omega[I]))
-
         Y = 0.5 * self.E_T * (s - s_pi)**2
-
-        omega[I] += (delta_lambda_I * (1 - omega[I])
-                     ** self.c * (Y[I] / self.S)**self.r)
-
+        omega[I] += (
+            delta_lambda_I *
+            (1 - omega[I]) ** self.c * (Y[I] / self.S)**self.r
+        )
         sig_T[I] = (1 - omega[I]) * self.E_T * (s[I] - s_pi[I])
-
         alpha[I] += delta_lambda_I * np.sign(tau_pi_trial[I] - X[I])
-
         z[I] += delta_lambda_I
-
-        # Secant stiffness
-
+        # Unloading stiffness
         E_alg_T = (1 - omega) * self.E_T
-
         # Consistent tangent operator
         if False:
             E_alg_T = (

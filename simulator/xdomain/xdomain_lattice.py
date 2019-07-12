@@ -1,41 +1,69 @@
 
 from mathkit.matrix_la import SysMtxArray, DenseMtx, SysMtxAssembly
-from mathkit.tensor import EPS, DELTA
+from mathkit.tensor import EPS
 from mpl_toolkits import mplot3d
 from simulator.i_xdomain import IXDomain
 from traits.api import \
-    provides, Property, cached_property, Array, \
-    Int, Tuple
+    Property, Array, Int, HasStrictTraits, \
+    cached_property, Tuple, provides, Instance, DelegatesTo, \
+    Constant, Bool
 from view.ui import BMCSLeafNode
 
 import matplotlib.pyplot as plt
 import numpy as np
+import traitsui.api as ui
 
 
-DD = np.hstack([DELTA, np.zeros_like(DELTA)])
-EEPS = np.hstack([np.zeros_like(EPS), EPS])
-GAMMA = np.einsum(
-    'ik,jk->kij', DD, DD
-) + np.einsum(
-    'ikj->kij', np.fabs(EEPS)
-)
-GAMMA_inv = np.einsum(
-    'ik,jk->kij', DD, DD
-) + 0.5 * np.einsum(
-    'ikj->kij', np.fabs(EEPS)
-)
+class LatticeTessellation(BMCSLeafNode):
+    '''Lattice tessellation
+    '''
+    node_name = 'tessellation'
 
-GG = np.einsum(
-    'mij,nkl->mnijkl', GAMMA_inv, GAMMA_inv
-)
+    X_Ia = Array(np.float_,
+                 MESH=True,
+                 input=True,
+                 unit=r'm',
+                 symbol=r'$X_{Ia}$',
+                 auto_set=False, enter_set=True,
+                 desc='node coordinates')
+    I_Li = Array(np.int_,
+                 MESH=True,
+                 input=True,
+                 unit='-',
+                 symbol='$I_{Li}$',
+                 auto_set=False, enter_set=True,
+                 desc='connectivity')
+    view = ui.View(
+        ui.Item('X_Ia'),
+        ui.Item('I_La'),
+    )
+
+    dof_offset = Int(0)
+
+    n_dofs = Property()
+
+    def _get_n_dofs(self):
+        return len(self.X_Ia) * 6
+
+    tree_view = view
+
+    vtk_expand_operator = Array(np.float_, value=np.identity(3))
+
+    n_nodal_dofs = Constant(3)
 
 
 @provides(IXDomain)
 class XDomainLattice(BMCSLeafNode):
 
-    X_Ia = Array(dtype=np.float_, MESH=True)
+    hidden = Bool(False)
 
-    I_Li = Array(dtype=np.int_, MESH=True)
+    mesh = Instance(LatticeTessellation)
+
+    X_Ia = DelegatesTo('mesh')
+    I_Li = DelegatesTo('mesh')
+    n_dofs = DelegatesTo('mesh')
+    vtk_expand_operator = DelegatesTo('mesh')
+    n_nodal_dofs = DelegatesTo('mesh')
 
     U_var_shape = Property(Int)
 
@@ -51,7 +79,7 @@ class XDomainLattice(BMCSLeafNode):
 
     @cached_property
     def _get_nT_Lba(self):
-        X_Lia = self.X_Ia[I_Li]
+        X_Lia = self.X_Ia[self.I_Li]
         Tu_La = X_Lia[..., 1, :] - X_Lia[..., 0, :]
         I = np.fabs(Tu_La[..., 0]) > np.fabs(Tu_La[..., 2])
         Tvv_La = np.c_[0 * Tu_La[..., 0], -Tu_La[..., 2], Tu_La[..., 1]]
@@ -70,7 +98,7 @@ class XDomainLattice(BMCSLeafNode):
     @cached_property
     def _get_B_Lipac(self):
         DELTA2 = np.identity(2)
-        X_Lia = X_Ia[I_Li]
+        X_Lia = self.X_Ia[self.I_Li]
         Xm_La = np.einsum('ii,Lia->La', DELTA2, X_Lia) / 2
         Xm_Lia = Xm_La[..., np.newaxis, :]
         dXm_Lia = Xm_Lia - X_Lia
@@ -95,7 +123,7 @@ class XDomainLattice(BMCSLeafNode):
 
     @cached_property
     def _get_o_Ipa(self):
-        n_I, _ = X_Ia.shape
+        n_I, _ = self.X_Ia.shape
         n_a = 3
         n_p = 2
         return np.arange(n_I * n_p * n_a, dtype=np.int_).reshape(-1, n_p, n_a)
@@ -119,14 +147,54 @@ class XDomainLattice(BMCSLeafNode):
         return o_L.flatten(), f_Li.flatten()
 
     def map_field_to_K(self, D_Lbc):
-        print('D\n', D_Lbc)
         K_Lipbjqd = np.einsum(
-            'Lipabjqcd,Lbc->Lipajqd', self.B_Lipabjqcd, D_Lbc
+            'Lipabjqcd,Lac->Lipbjqd', self.B_Lipabjqcd, D_Lbc
         )
         _, n_i, n_p, n_c, _, _, _ = K_Lipbjqd.shape
         K_Lij = K_Lipbjqd.reshape(-1, n_i * n_p * n_c, n_i * n_p * n_c)
         o_Li = self.o_Lipa.reshape(-1, n_i * n_p * n_c)
         return SysMtxArray(mtx_arr=K_Lij, dof_map_arr=o_Li)
+
+    Xm_Lia = Property
+
+    def _get_Xm_Lia(self):
+        X_Lia = self.X_Ia[self.I_Li]
+        DELTA2 = np.identity(2)
+        Xm_La = np.einsum('ii,Lia->La', DELTA2, X_Lia) / 2
+        return Xm_La[..., np.newaxis, :]
+
+    dXm_Lia = Property
+
+    def _get_dXm_Lia(self):
+        X_Lia = self.X_Ia[self.I_Li]
+        return self.Xm_Lia - X_Lia
+
+    def get_vis3d(self):
+        X_Lia = self.X_Ia[self.I_Li]
+        X_aiL = np.einsum('Lia->aiL', X_Lia)
+        X_Lai = np.einsum('Lia->Lai', X_Lia)
+        Um_trans_Lia = U_Ia[I_Li]
+        Phi_Lia = Phi_Ia[I_Li]
+        Um_rot_Lia = np.einsum('abc,...b,...c->...a',
+                               EPS, Phi_Lia, self.dXm_Lia)
+        Um_Lia = Um_trans_Lia + Um_rot_Lia
+        #---
+        Um_trans_aiL = np.einsum('Lia->aiL', Um_trans_Lia)
+        XU_aiL = X_aiL + Um_trans_aiL
+        XUm_aiL = np.einsum('Lia->aiL', (self.Xm_Lia + Um_Lia))
+        XUIm_aiL = np.concatenate(
+            [
+                np.einsum('iaL->aiL',
+                          np.array([XU_aiL[:, 0, ...], XUm_aiL[:, 0, ...]])),
+                np.einsum('iaL->aiL',
+                          np.array([XU_aiL[:, 1, ...], XUm_aiL[:, 1, ...]]))
+            ], axis=-1
+        )
+        XU_Lai = np.einsum('aiL->Lai', XU_aiL)
+        XUm_Lai = np.einsum('aiL->Lai', XUm_aiL)
+        XUIm_Lai = np.einsum('aiL->Lai', XUIm_aiL)
+
+        return X_Lai, XU_Lai, XUm_Lai, XUIm_Lai
 
 
 def test01_spring():
@@ -157,7 +225,10 @@ def test01_spring():
         ], dtype=np.float_
     )
 
-    return X_Ia, I_Li, U_Ia, Phi_Ia
+    fixed_dofs = [0, 1, 2, 3, 4, 5,
+                  8, 9, 10, 11]
+    control_dofs = []
+    return X_Ia, I_Li, U_Ia, Phi_Ia, fixed_dofs, control_dofs
 
 
 def test02_quad():
@@ -197,7 +268,10 @@ def test02_quad():
         ], dtype=np.float_
     )
 
-    return X_Ia, I_Li, U_Ia, Phi_Ia
+    fixed_dofs = []
+    control_dofs = []
+
+    return X_Ia, I_Li, U_Ia, Phi_Ia, fixed_dofs, control_dofs
 
 
 def test03_tetrahedron():
@@ -239,7 +313,14 @@ def test03_tetrahedron():
         ], dtype=np.float_
     )
 
-    return X_Ia, I_Li, U_Ia, Phi_Ia
+    fixed_dofs = [0, 1, 2, 3, 4, 5,
+                  7, 8, 9, 10, 11,
+                  12, 14, 15, 16, 17,
+                  21, 23]
+
+    control_dofs = [22]
+
+    return X_Ia, I_Li, U_Ia, Phi_Ia, fixed_dofs, control_dofs
 
 
 def test04_pyramide():
@@ -282,7 +363,9 @@ def test04_pyramide():
         ], dtype=np.float_
     )
 
-    return X_Ia, I_Li, U_Ia, Phi_Ia
+    fixed_dofs = []
+    control_dofs = []
+    return X_Ia, I_Li, U_Ia, Phi_Ia, fixed_dofs, control_dofs
 
 
 def plot3d(X_Ia, I_Li):
@@ -324,20 +407,16 @@ def plot_u3d(X_Lai, XU_Lai, XUm_Lai, XUIm_Lai):
 
 
 if __name__ == '__main__':
-    X_Ia, I_Li, U_Ia, Phi_Ia = test03_tetrahedron()
-    xdomain = XDomainLattice(X_Ia=X_Ia, I_Li=I_Li)
+    X_Ia, I_Li, U_Ia, Phi_Ia, fixed_dofs, control_dofs = test03_tetrahedron()
+    lt = LatticeTessellation(X_Ia=X_Ia, I_Li=I_Li)
+    xdomain = XDomainLattice(mesh=lt)
     U_pLia = np.array([U_Ia[I_Li], Phi_Ia[I_Li]])
     U = np.einsum('pLia->Lipa', U_pLia).flatten()
     eps_La = xdomain.map_U_to_field(U)
-    D_Lab = 1. * np.array(
-        [
-            [
-                [100000.0, 0, 0],
-                [0, 1.0, 0],
-                [0, 0, 1.0]
-            ]
-        ], dtype=np.float_)
-    sig_La = np.einsum('...ab,...b->...a', D_Lab, eps_La)
+
+    from ibvpy.mats.mats3D_ifc import MATS3DIfcElastic
+    mats = MATS3DIfcElastic()
+    sig_La, D_Lab = mats.get_corr_pred(eps_La, 1.0)
     L_O, F_Lo = xdomain.map_field_to_F(sig_La)
     F_int = np.bincount(L_O, weights=F_Lo)
 
@@ -345,75 +424,31 @@ if __name__ == '__main__':
     K = SysMtxAssembly()
     K.sys_mtx_arrays.append(k_mtx_array)
     K_dense = DenseMtx(assemb=K)
-    K.register_constraint(a=0,  u_a=0.)  # node 1
-    K.register_constraint(a=1,  u_a=0.)  #
-    K.register_constraint(a=2,  u_a=0.)  #
+    print(K_dense)
 
-    K.register_constraint(a=3,  u_a=0.)  #
-    K.register_constraint(a=4,  u_a=0.)  #
-    K.register_constraint(a=5,  u_a=0.)  #
+    for dof in fixed_dofs:
+        K.register_constraint(a=dof, u_a=0)
 
-#    K.register_constraint(a=6,  u_a=0.)  # node 2
-    K.register_constraint(a=7,  u_a=0.)  #
-    K.register_constraint(a=8,  u_a=0.)  #
-
-    K.register_constraint(a=9,  u_a=0.)  #
-    K.register_constraint(a=10,  u_a=0.)  #
-    K.register_constraint(a=11,  u_a=0.)  #
-
-    K.register_constraint(a=12,  u_a=0.)  # node 3
-#    K.register_constraint(a=13,  u_a=0.)  #
-    K.register_constraint(a=14,  u_a=0.)  #
-
-    K.register_constraint(a=15,  u_a=0.)  #
-    K.register_constraint(a=16,  u_a=0.)  #
-    K.register_constraint(a=17,  u_a=0.)  #
-
-#    K.register_constraint(a=20,  u_a=-.3)  # clamped end
-    K.register_constraint(a=21,  u_a=0.0)  # clamped end
     K.register_constraint(a=22,  u_a=0.3)  # clamped end
-    K.register_constraint(a=23,  u_a=0.0)  # clamped end
     F_ext = np.zeros_like(F_int)
-    F_ext[20] = -10
+    F_ext[20] = -100000
     K.apply_constraints(F_ext)
-    print(F_ext)
-    K_dense = DenseMtx(assemb=K)
+    # print(F_ext)
+    #K_dense = DenseMtx(assemb=K)
     print('Rank 2', np.linalg.matrix_rank(K_dense.mtx))
     U, pd = K.solve()
     U_Ia = U[xdomain.o_Ipa][..., 0, :]
     Phi_Ia = U[xdomain.o_Ipa][..., 1, :]
 
-    X_Lia = X_Ia[I_Li]
-    X_aiL = np.einsum('Lia->aiL', X_Lia)
-    X_Lai = np.einsum('Lia->Lai', X_Lia)
-    DELTA2 = np.identity(2)
-    Xm_La = np.einsum('ii,Lia->La', DELTA2, X_Lia) / 2
-    Xm_Lia = Xm_La[..., np.newaxis, :]
-    dXm_Lia = Xm_Lia - X_Lia
+    eps_La = xdomain.map_U_to_field(U)
+    sig_La, D_Lab = mats.get_corr_pred(eps_La, 1.0)
+    L_O, F_Lo = xdomain.map_field_to_F(sig_La)
+    F_int = np.bincount(L_O, weights=F_Lo)
+    #print('F_int 2\n', F_int)
 
-    Um_trans_Lia = U_Ia[I_Li]
-    Phi_Lia = Phi_Ia[I_Li]
-    Um_rot_Lia = np.einsum('abc,...b,...c->...a',
-                           EPS, Phi_Lia, dXm_Lia)
-    Um_Lia = Um_trans_Lia + Um_rot_Lia
+    #Fu = np.einsum('ij,j->i', K_dense.mtx, U)
+    # print(Fu)
 
-    #---
-    Um_trans_aiL = np.einsum('Lia->aiL', Um_trans_Lia)
-    XU_aiL = X_aiL + Um_trans_aiL
-    XUm_aiL = np.einsum('Lia->aiL', (Xm_Lia + Um_Lia))
-    XUIm_aiL = np.concatenate(
-        [
-            np.einsum('iaL->aiL',
-                      np.array([XU_aiL[:, 0, ...], XUm_aiL[:, 0, ...]])),
-            np.einsum('iaL->aiL',
-                      np.array([XU_aiL[:, 1, ...], XUm_aiL[:, 1, ...]]))
-        ], axis=-1
-    )
-    #----
-    XU_Lai = np.einsum('aiL->Lai', XU_aiL)
-    XUm_Lai = np.einsum('aiL->Lai', XUm_aiL)
-    XUIm_Lai = np.einsum('aiL->Lai', XUIm_aiL)
-#    plot3d(X_Ia[I_Li])
-#    XU_Lia = X_Ia[I_Li] + U_Ia[I_Li]
+    X_Lai, XU_Lai, XUm_Lai, XUIm_Lai = xdomain.get_vis3d()
     plot_u3d(X_Lai, XU_Lai, XUm_Lai, XUIm_Lai)
     plt.show()
