@@ -141,6 +141,13 @@ class Viz3DLattice(Viz3D):
         tube_J = m.pipeline.tube(self.warp_vector_J,
                                  tube_radius=self.tube_radius)
         self.lines_J = m.pipeline.surface(tube_J, color=(0.1, 0.1, 0.1))
+        glyph = m.pipeline.glyph(self.warp_vector_J)
+
+        glyph.glyph.glyph_source.glyph_source = glyph.glyph.glyph_source.glyph_dict[
+            'cube_source']
+        glyph.glyph.glyph.range = np.array([0., 0.1])
+        glyph.glyph.scale_mode = 'scale_by_vector'
+        glyph.glyph.color_mode = 'color_by_vector'
 
     tube_radius = tr.Float(0.01)
 

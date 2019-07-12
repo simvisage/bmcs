@@ -8,6 +8,7 @@ from traits.api import  \
 from view.ui import BMCSTreeNode
 
 import numpy as np
+import traitsui.api as ui
 
 
 @provides(IMATSEval)
@@ -42,3 +43,10 @@ class MATS3DIfcElastic(MATSEval):
         grid_shape = tuple([1 for _ in range(len(u_r.shape[:-1]))])
         D = self.D_rs.reshape(grid_shape + self.D_rs.shape)
         return tau, D
+
+    traits_view = ui.View(
+        ui.Item('E_s'),
+        ui.Item('E_n')
+    )
+
+    tree_view = traits_view

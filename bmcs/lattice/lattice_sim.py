@@ -401,8 +401,40 @@ def test03_tetrahedron():
     return X_Ia, I_Li, fixed_dofs, control_dofs, w_max
 
 
+def test04_mgrid():
+    Lx, Ly, Lz = 1, 1, 1
+    nx, ny, nz = 20, 20, 20
+    x, y, z = np.mgrid[:Lx:20j, :Ly:20j, :Lz:20j]
+    X_Ia = np.einsum('aI->Ia',
+                     np.array([x.flatten(), y.flatten(), z.flatten()],
+                              dtype=np.float_)
+                     )
+    I = np.arange(nx * ny * nz).reshape(nx, ny, nz)
+    Ix_Li = np.array([I[:-1, :, :].flatten(), I[1:, :, :].flatten()])
+    Iy_Li = np.array([I[:, :-1, :].flatten(), I[:, 1:, :].flatten()])
+    Iz_Li = np.array([I[:, :, :-1].flatten(), I[:, :, 1:].flatten()])
+    I_Li = np.vstack([Ix_Li.T, Iy_Li.T, Iz_Li.T])
+    bot_nodes = I[:, :, 0].flatten()
+    top_nodes = I[:, :, -1].flatten()
+
+    fix_top = top_nodes[:, np.newaxis] * 6 + np.array([1, 5], np.int_)
+    fix_bot = bot_nodes[:, np.newaxis] * 6 + np.arange(6)[np.newaxis, :]
+    fixed_dofs = np.hstack([fix_bot.flatten(), fix_top.flatten()])
+
+    control_dofs = top_nodes[:, np.newaxis] * 6 + np.array([1, 0], np.int_)
+    w_max = -0.2
+
+    np.savez('myfile.npz', X_Ia=X_Ia, I_Li=I_Li, fixed_dofs=fixed_dofs,
+             control_dofs=control_dofs)
+    npzfile = np.load('myfile.npz')
+    X_Ia = npzfile['X_Ia']
+
+    return X_Ia, I_Li, fixed_dofs.flatten(), control_dofs.flatten(), w_max
+
+
 if __name__ == '__main__':
-    X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test03_tetrahedron()
+    X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test04_mgrid()
+    #X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test03_tetrahedron()
     #X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test01_couple()
     tes = LatticeTessellation(
         X_Ia=X_Ia,
@@ -414,13 +446,12 @@ if __name__ == '__main__':
         control_dofs=control_dofs,
         w_max=w_max
     )
+    sim.mats_eval.trait_set(E_n=1e+6, E_s=10)
     sim.tstep.init_state()
     sim.tloop.k_max = 3
-    sim.tline.step = 1.0
+    sim.tline.step = 0.01
     sim.tloop.verbose = True
-    sim.tstep.debug = True
+    sim.tstep.debug = False
     w = sim.get_window()
     time.sleep(1)
     w.configure_traits()
-    print(sim.hist.F_t[-1])
-    print(sim.hist.U_t[-1])
