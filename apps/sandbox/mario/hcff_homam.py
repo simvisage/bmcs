@@ -214,6 +214,7 @@ class HCFF(tr.HasStrictTraits):
     plot = tr.Button
     add_plot = tr.Button
     add_creep_plot = tr.Button
+    clear_plot = tr.Button
     parse_csv_to_npy = tr.Button
     generate_filtered_npy = tr.Button
     add_columns_average = tr.Button
@@ -288,6 +289,10 @@ class HCFF(tr.HasStrictTraits):
             c for c in original_file_name if c in valid_chars)
         return new_valid_file_name
 
+    def _clear_plot_fired(self):
+        self.figure.clear()
+        self.data_changed = True
+
 #     def _add_columns_average_fired(self):
 #         columns_average = ColumnsAverage(
 #             columns_names=self.columns_headers_list)
@@ -327,8 +332,9 @@ class HCFF(tr.HasStrictTraits):
                 disp_rest = disp[peak_force_before_cycles_index:]
                 disp_ascending = savgol_filter(
                     disp_ascending, window_length=51, polyorder=2)
-                disp_rest = disp_rest[force_max_min_indices]
-                filtered_disp = np.concatenate((disp_ascending, disp_rest))
+                disp_rest_filtered = disp_rest[force_max_min_indices]
+                filtered_disp = np.concatenate(
+                    (disp_ascending, disp_rest_filtered))
                 np.save(os.path.join(self.npy_folder_path, self.file_name + '_' +
                                      self.columns_headers_list[i] + '_filtered.npy'), filtered_disp)
 
@@ -348,6 +354,9 @@ class HCFF(tr.HasStrictTraits):
         # TODO I skipped time with presuming it's the first column
         for i in range(1, len(self.columns_headers_list)):
             if self.columns_headers_list[i] != str(self.force_name):
+                disp = np.load(os.path.join(self.npy_folder_path, self.file_name +
+                                            '_' + self.columns_headers_list[i] + '.npy')).flatten()
+                disp_rest = disp[peak_force_before_cycles_index:]
                 disp_rest_maxima = disp_rest[force_max_indices_cutted]
                 disp_rest_minima = disp_rest[force_min_indices_cutted]
                 np.save(os.path.join(self.npy_folder_path, self.file_name + '_' +
@@ -418,15 +427,15 @@ class HCFF(tr.HasStrictTraits):
     #=========================================================================
     # Plotting
     #=========================================================================
-    plot_figure_num = tr.Int(0)
+
+    plot_list_current_elements_num = tr.Int(0)
 
     def _plot_fired(self):
         ax = self.figure.add_subplot()
 
-    def x_plot_fired(self):
-        self.plot_figure_num += 1
-        plt.draw()
-        plt.show()
+    def _plot_list_changed(self):
+        if len(self.plot_list) > self.plot_list_current_elements_num:
+            self.plot_list_current_elements_num = len(self.plot_list)
 
     data_changed = tr.Event
 
@@ -462,8 +471,7 @@ class HCFF(tr.HasStrictTraits):
         print('Adding Plot...')
         mpl.rcParams['agg.path.chunksize'] = 50000
 
-#        plt.figure(self.plot_figure_num)
-        ax = self.figure.add_subplot(1, 1, 1)
+        ax = self.apply_new_subplot()
 
         ax.set_xlabel('Displacement [mm]')
         ax.set_ylabel('kN')
@@ -477,26 +485,25 @@ class HCFF(tr.HasStrictTraits):
     def apply_new_subplot(self):
         plt = self.figure
         if (self.plots_num == 1):
-            plt.add_subplot(1, 1, 1)
+            return plt.add_subplot(1, 1, 1)
         elif (self.plots_num == 2):
             plot_location = int('12' + str(len(self.plot_list) + 1))
-            plt.add_subplot(plot_location)
+            return plt.add_subplot(plot_location)
         elif (self.plots_num == 3):
             plot_location = int('13' + str(len(self.plot_list) + 1))
-            plt.add_subplot(plot_location)
+            return plt.add_subplot(plot_location)
         elif (self.plots_num == 4):
             plot_location = int('22' + str(len(self.plot_list) + 1))
-            plt.add_subplot(plot_location)
+            return plt.add_subplot(plot_location)
         elif (self.plots_num == 6):
             plot_location = int('23' + str(len(self.plot_list) + 1))
-            plt.add_subplot(plot_location)
+            return plt.add_subplot(plot_location)
         elif (self.plots_num == 9):
             plot_location = int('33' + str(len(self.plot_list) + 1))
-            plt.add_subplot(plot_location)
+            return plt.add_subplot(plot_location)
 
     def _add_creep_plot_fired(self):
 
-        plt = self.figure
         if (len(self.plot_list) >= self.plots_num):
             dialog = MessageDialog(
                 title='Attention!', message='Max plots number is {}'.format(self.plots_num))
@@ -513,16 +520,18 @@ class HCFF(tr.HasStrictTraits):
         print('Adding creep plot...')
         mpl.rcParams['agg.path.chunksize'] = 50000
 
-        self.apply_new_subplot()
-        plt.xlabel('Cycles number')
-        plt.ylabel('mm')
-        plt.title('Fatigue creep curve', fontsize=20)
-        plt.plot(np.arange(0, disp_max.size), disp_max,
-                 'k', linewidth=0.8, color='red')
-        plt.plot(np.arange(0, disp_min.size), disp_min,
-                 'k', linewidth=0.8, color='green')
+        ax = self.apply_new_subplot()
 
-        self.plot_list.append('Plot {}'.format(len(self.plot_list) + 1))
+        ax.set_xlabel('Cycles number')
+        ax.set_ylabel('mm')
+        ax.set_title('Fatigue creep curve', fontsize=20)
+
+        ax.plot(np.arange(0, disp_max.size), disp_max,
+                'k', linewidth=0.8, color='red')
+        ax.plot(np.arange(0, disp_min.size), disp_min,
+                'k', linewidth=0.8, color='green')
+
+        self.data_changed = True
 
         print('Finished adding creep plot!')
 
@@ -547,7 +556,7 @@ class HCFF(tr.HasStrictTraits):
                     label='Filter parameters'
                 ),
                 ui.VGroup(
-                    ui.Item('plots_num'),
+                    ui.HGroup(ui.Item('plots_num'), ui.Item('clear_plot')),
                     ui.HGroup(ui.Item('x_axis'), ui.Item('x_axis_multiplier')),
                     ui.HGroup(ui.Item('y_axis'), ui.Item('y_axis_multiplier')),
                     ui.HGroup(ui.Item('add_plot', show_label=False),
@@ -574,28 +583,28 @@ class HCFF(tr.HasStrictTraits):
             ui.UItem('figure', editor=MPLFigureEditor(),
                      resizable=True,
                      springy=True,
-                     width=0.3,
+                     width=0.8,
                      label='2d plots'),
         ),
         title='HCFF Filter',
         resizable=True,
-        width=0.6,
-        height=0.6
+        width=0.85,
+        height=0.7
 
     )
 
 
 if __name__ == '__main__':
-    #     hcff = HCFF(file_csv='C:\\Users\\hspartali\\Desktop\\BeamEnd_Results')
-    hcff = HCFF2()
-    cut_initial = HCFFilter(name='cut')
-    hcff.hcf.add_filter(cut_initial)
-
-    custom_filter = HCFFilter(name='custom')
-    cut_initial.add_filter(custom_filter)
-
-    custom_filter.add_filter(HCFFilter(name='average'))
-    cut_initial.add_filter(HCFFilter(name='custom differently'))
+    hcff = HCFF(file_csv='C:\\Users\\hspartali\\Desktop\\BeamEnd_Results')
+#     hcff = HCFF2()
+#     cut_initial = HCFFilter(name='cut')
+#     hcff.hcf.add_filter(cut_initial)
+#
+#     custom_filter = HCFFilter(name='custom')
+#     cut_initial.add_filter(custom_filter)
+#
+#     custom_filter.add_filter(HCFFilter(name='average'))
+#     cut_initial.add_filter(HCFFilter(name='custom differently'))
 
 
 #    plot_options = [PlotOptions()]
