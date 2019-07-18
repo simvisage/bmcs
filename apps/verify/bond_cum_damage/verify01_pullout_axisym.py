@@ -2,6 +2,9 @@
 Created on 30.04.2019 
  
 @author: fseemab 
+
+Class implementation of crossection, geometry and the axisymmetric 
+pullout for the axisymmetric pullout tests 
 '''
 import time
 

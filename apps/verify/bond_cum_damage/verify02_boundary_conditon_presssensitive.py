@@ -2,6 +2,9 @@
 Created on 30.04.2019 
  
 @author: fseemab 
+
+Implementation of the boundary condition to apply lateral
+confinement 
 '''
 import time
 
@@ -245,10 +248,10 @@ def verify01_unit_length_test():
     return s
 
 
-def verify02_quasi_pullout(f_lateral=5.0):
+def verify02_quasi_pullout(f_lateral=0.0):
     d_s = 14
-    L_x = 3 * d_s
-    s = PullOut2D(n_x=50, L_x=L_x,
+    L_x = 5 * d_s
+    s = PullOut2D(n_x=30, L_x=L_x,
                   r_steel=d_s / 2,
                   r_concrete=d_s * 10,
                   perimeter=d_s,
@@ -258,30 +261,30 @@ def verify02_quasi_pullout(f_lateral=5.0):
                       E_N=1e9,
                       tau_bar=4.2,  # 4.0,
                       K=11.0, gamma=55,  # 10,
-                      c=2.8, S=4.8e-4, r=0.51,
+                      c=2.6, S=4.8e-4, r=0.51,
                       m=0.3,
                       algorithmic=False)
     s.f_lateral = f_lateral
-    s.u_max = 0.8
+    s.u_max = 0.3
     s.tloop.k_max = 10000
     s.tloop.verbose = True
     s.tline.step = 0.0005  # 0.005
-    s.tline.step = 0.05
+    s.tline.step = 0.1
     s.tstep.fe_domain.serialized_subdomains
     return s
 
 
 if __name__ == '__main__':
     ax = p.subplot(111)
-    s = verify02_quasi_pullout(f_lateral=5.0)
+    s = verify02_quasi_pullout(f_lateral=-200)
     s.run()
     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
     w = s.get_window()
     w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
 
     # s = verify02_quasi_pullout(f_lateral=-100)
-    s.f_lateral = 5.0
-    s.tline.step = 0.0005
+    s.f_lateral = -10
+    s.tline.step = 0.1
     s.run()
     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
     #w = s.get_window()
