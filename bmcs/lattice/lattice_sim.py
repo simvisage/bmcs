@@ -402,9 +402,10 @@ def test03_tetrahedron():
 
 
 def test04_mgrid():
-    Lx, Ly, Lz = 1, 1, 1
-    nx, ny, nz = 20, 20, 20
-    x, y, z = np.mgrid[:Lx:20j, :Ly:20j, :Lz:20j]
+    Lx, Ly, Lz = 1, 1, 5
+    nx, ny, nz = 10, 5, 5
+    nx_, ny_, nz_ = complex(nx), complex(ny), complex(nz)
+    x, y, z = np.mgrid[:Lx:nx_, :Ly:ny_, :Lz:nz_]
     X_Ia = np.einsum('aI->Ia',
                      np.array([x.flatten(), y.flatten(), z.flatten()],
                               dtype=np.float_)
@@ -446,7 +447,7 @@ if __name__ == '__main__':
         control_dofs=control_dofs,
         w_max=w_max
     )
-    sim.mats_eval.trait_set(E_n=1e+6, E_s=10)
+    sim.mats_eval.trait_set(E_n=1, E_s=1)
     sim.tstep.init_state()
     sim.tloop.k_max = 3
     sim.tline.step = 0.01
