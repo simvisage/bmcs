@@ -284,7 +284,7 @@ if __name__ == '__main__':
 
     # s = verify02_quasi_pullout(f_lateral=-100)
     s.f_lateral = -10
-    s.tline.step = 0.1
+    s.tline.step = 0.005
     s.run()
     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
     #w = s.get_window()

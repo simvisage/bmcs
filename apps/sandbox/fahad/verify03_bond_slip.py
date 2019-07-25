@@ -9,7 +9,7 @@ of the paper
 '''
 import time
 
-from apps.verify.bond_cum_damage.pullout_axisym import PullOutAxiSym
+from apps.verify.bond_cum_damage.verify02_pullout_axisym_bc_check import PullOutAxiSym
 import numpy as np
 
 
@@ -43,7 +43,7 @@ def verify_bond_slip_axisym_cum_damage():
                       c=2.8, S=0.00048, r=0.51)
     s.tloop.k_max = 1000
     s.tloop.verbose = True
-    s.tline.step = 0.005
+    s.tline.step = 0.01
     s.tstep.fe_domain.serialized_subdomains
     w = s.get_window()
     w.run()
