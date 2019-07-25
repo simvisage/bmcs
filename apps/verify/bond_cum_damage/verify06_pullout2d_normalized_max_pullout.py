@@ -9,12 +9,11 @@ from ibvpy.fets import FETS2D4Q
 from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
 from view.window.bmcs_window import BMCSWindow
 
+from apps.verify.bond_cum_damage.verify01_pullout2d_bc_check import PullOut2D, verify02_quasi_pullout
 import matplotlib.pyplot as plt
 import numpy as np
 import pylab as p
 import traits.api as tr
-
-from .verify02_bond_slip_2d_cum_damage import PullOut2D, verify02_quasi_pullout
 
 
 def verify_normalized_pullout_force():
