@@ -6,7 +6,6 @@ Created on 30.04.2019
 Implementation of the boundary condition to apply lateral
 confinement 
 '''
-import time
 
 from ibvpy.bcond import BCSlice
 from ibvpy.bcond.bc_dof import BCDof
