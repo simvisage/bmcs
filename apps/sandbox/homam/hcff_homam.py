@@ -13,177 +13,44 @@ from scipy.signal import savgol_filter
 from util.traits.editors import MPLFigureEditor
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import traits.api as tr
 import traitsui.api as ui
+from traitsui.extras.checkbox_column \
+    import CheckboxColumn
 
-from .hcff_filters.hcff_filter import HCFFilter, HCFFChild, HCFFParent
-
-
-class PlotOptions(tr.HasTraits):
-    columns_headers_list = tr.List([])
-    x_axis = tr.Enum(values='columns_headers_list')
-    y_axis = tr.Enum(values='columns_headers_list')
-    x_axis_multiplier = tr.Enum(1, -1)
-    y_axis_multiplier = tr.Enum(-1, 1)
-    plot = tr.Button
-
-    view = ui.View(
-        ui.HGroup(ui.Item('x_axis'), ui.Item('x_axis_multiplier')),
-        ui.HGroup(ui.Item('y_axis'), ui.Item('y_axis_multiplier')),
-        ui.Item('plot', show_label=False)
-    )
+average_columns_editor = ui.TableEditor(
+    sortable=False,
+    configurable=False,
+    auto_size=False,
+    columns=[CheckboxColumn(name='selected', label='Select',
+                            width=0.12),
+             ui.ObjectColumn(name='column_name', editable=False, width=0.24,
+                             horizontal_alignment='left')])
 
 
-class FileImportManager(tr.HasTraits):
-    file_csv = tr.File
-    open_file_csv = tr.Button('Input file')
-    decimal = tr.Enum(',', '.')
-    delimiter = tr.Str(';')
-    skip_rows = tr.Int(4, auto_set=False, enter_set=True)
-    columns_headers_list = tr.List([])
-
-    parse_csv_to_npy = tr.Button
-
-    view = ui.View(ui.VGroup(
-        ui.HGroup(
-            ui.UItem('open_file_csv'),
-            ui.UItem('file_csv', style='readonly'),
-        ),
-        ui.Item('skip_rows'),
-        ui.Item('decimal'),
-        ui.Item('delimiter'),
-        ui.Item('parse_csv_to_npy', show_label=False),
-    ))
-
-    def _open_file_csv_fired(self):
-        """ Handles the user clicking the 'Open...' button.
-        """
-        extns = ['*.csv', ]  # seems to handle only one extension...
-        wildcard = '|'.join(extns)
-
-        dialog = FileDialog(title='Select text file',
-                            action='open', wildcard=wildcard,
-                            default_path=self.file_csv)
-        dialog.open()
-        self.file_csv = dialog.path
-
-        """ Fill columns_headers_list """
-        headers_array = np.array(
-            pd.read_csv(
-                self.file_csv, delimiter=self.delimiter, decimal=self.decimal,
-                nrows=1, header=None
-            )
-        )[0]
-        for i in range(len(headers_array)):
-            headers_array[i] = self.get_valid_file_name(headers_array[i])
-        self.columns_headers_list = list(headers_array)
-
-        """ Saving file name and path and creating NPY folder """
-        dir_path = os.path.dirname(self.file_csv)
-        self.npy_folder_path = os.path.join(dir_path, 'NPY')
-        if os.path.exists(self.npy_folder_path) == False:
-            os.makedirs(self.npy_folder_path)
-
-        self.file_name = os.path.splitext(os.path.basename(self.file_csv))[0]
-
-    def get_valid_file_name(self, original_file_name):
-        valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
-        new_valid_file_name = ''.join(
-            c for c in original_file_name if c in valid_chars)
-        return new_valid_file_name
-
-    def _parse_csv_to_npy_fired(self):
-        print('Parsing csv into npy files...')
-
-        for i in range(len(self.columns_headers_list)):
-            column_array = np.array(pd.read_csv(
-                self.file_csv, delimiter=self.delimiter, decimal=self.decimal, skiprows=self.skip_rows, usecols=[i]))
-            np.save(os.path.join(self.npy_folder_path, self.file_name +
-                                 '_' + self.columns_headers_list[i] + '.npy'), column_array)
-
-        print('Finsihed parsing csv into npy files.')
+class Column(tr.HasStrictTraits):
+    column_name = tr.Str
+    selected = tr.Bool(False)
 
 
-class HCFFRoot(HCFFParent):
+class ColumnsAverage(tr.HasStrictTraits):
+    columns = tr.List(Column)
 
-    #name = tr.Str('root')
+    print_ = tr.Button
 
-    import_manager = tr.Instance(FileImportManager, ())
-
-    plot_options = tr.List(PlotOptions)
-
-    output_npy = tr.Property()
-
-    tree_view = ui.View(
-        ui.VGroup(
-            ui.Item('import_manager', style='custom', show_label=False)
-        )
-    )
-
-    traits_view = tree_view
-
-
-tree_editor = ui.TreeEditor(
-    orientation='vertical',
-    nodes=[
-        # The first node specified is the top level one
-        ui.TreeNode(node_for=[HCFFRoot],
-                    auto_open=True,
-                    children='filters',
-                    label='=HCF',
-                    #                    view=ui.View()  # Empty view
-                    ),
-        ui.TreeNode(node_for=[HCFFilter],
-                    auto_open=True,
-                    children='filters',
-                    label='name',
-                    #                    view=ui.View()
-                    ),
-        ui.TreeNode(node_for=[PlotOptions],
-                    auto_open=True,
-                    children='',
-                    label='=Plot Options',
-                    view='view'
-                    )
-    ]
-)
-
-
-class HCFF2(tr.HasStrictTraits):
-    '''High-Cycle Fatigue Filter
-    '''
-
-    hcf = tr.Instance(HCFFRoot)
-
-    def _hcf_default(self):
-        return HCFFRoot(import_manager=FileImportManager())
-
-    figure = tr.Instance(Figure)
-
-    def _figure_default(self):
-        figure = Figure(facecolor='white')
-        figure.set_tight_layout(True)
-        return figure
-
+    # Trait view definitions:
     traits_view = ui.View(
-        ui.HSplit(
-            ui.Item(name='hcf',
-                    editor=tree_editor,
-                    show_label=False,
-                    width=0.3
-                    ),
-            ui.UItem('figure', editor=MPLFigureEditor(),
-                     resizable=True,
-                     springy=True,
-                     label='2d plots')
-        ),
-        title='HCF Filter',
-        resizable=True,
-        width=0.6,
-        height=0.6
+        ui.Item('columns',
+                show_label=False,
+                editor=average_columns_editor
+                ),
+        buttons=[ui.OKButton, ui.CancelButton],
+        title='Select arrays to be averaged',
+        width=0.15,
+        height=0.3,
+        resizable=True
     )
 
 
@@ -211,7 +78,6 @@ class HCFF(tr.HasStrictTraits):
     peak_force_before_cycles = tr.Float(30)
     plots_num = tr.Enum(1, 2, 3, 4, 6, 9)
     plot_list = tr.List()
-    plot = tr.Button
     add_plot = tr.Button
     add_creep_plot = tr.Button
     clear_plot = tr.Button
@@ -220,13 +86,17 @@ class HCFF(tr.HasStrictTraits):
     add_columns_average = tr.Button
     force_max = tr.Float(100)
     force_min = tr.Float(40)
+    min_cycle_force_range = tr.Float(50)
+    cutting_method = tr.Enum(
+        'Define Max, Min', 'Define min cycle range(force difference)')
+    columns_to_be_averaged = tr.List(tr.List)
 
     figure = tr.Instance(Figure)
 
-#     plots_list = tr.List(editor=ui.SetEditor(
-#         values=['kumquats', 'pomegranates', 'kiwi'],
-#         can_move_all=False,
-#         left_column_title='List'))
+    def _figure_default(self):
+        figure = Figure(facecolor='white')
+        figure.set_tight_layout(True)
+        return figure
 
     #=========================================================================
     # File management
@@ -263,23 +133,29 @@ class HCFF(tr.HasStrictTraits):
 
         self.file_name = os.path.splitext(os.path.basename(self.file_csv))[0]
 
-    #=========================================================================
-    # Parameters of the filter algorithm
-    #=========================================================================
-
-    def _figure_default(self):
-        figure = Figure(facecolor='white')
-        figure.set_tight_layout(True)
-        return figure
-
     def _parse_csv_to_npy_fired(self):
         print('Parsing csv into npy files...')
 
-        for i in range(len(self.columns_headers_list)):
+        for i in range(len(self.columns_headers_list) - len(self.columns_to_be_averaged) + 1):
             column_array = np.array(pd.read_csv(
-                self.file_csv, delimiter=self.delimiter, decimal=self.decimal, skiprows=self.skip_rows, usecols=[i]))
+                self.file_csv, delimiter=self.delimiter, decimal=self.decimal,
+                skiprows=self.skip_rows, usecols=[i]))
             np.save(os.path.join(self.npy_folder_path, self.file_name +
-                                 '_' + self.columns_headers_list[i] + '.npy'), column_array)
+                                 '_' + self.columns_headers_list[i] + '.npy'),
+                    column_array)
+
+        # Exporting npy arrays of averaged columns
+        for columns_names in self.columns_to_be_averaged:
+            temp = np.zeros((1))
+            for column_name in columns_names:
+                temp = temp + np.load(os.path.join(self.npy_folder_path,
+                                                   self.file_name + '_' + column_name + '.npy')).flatten()
+            avg = temp / len(columns_names)
+            avg_suffex = 'avg_' + '_'.join(columns_names)
+            np.save(os.path.join(self.npy_folder_path, self.file_name +
+                                 '_' + avg_suffex + '.npy'), avg)
+
+            self.columns_headers_list.append(avg_suffex)
 
         print('Finsihed parsing csv into npy files.')
 
@@ -293,11 +169,20 @@ class HCFF(tr.HasStrictTraits):
         self.figure.clear()
         self.data_changed = True
 
-#     def _add_columns_average_fired(self):
-#         columns_average = ColumnsAverage(
-#             columns_names=self.columns_headers_list)
-#         # columns_average.set_columns_headers_list(self.columns_headers_list)
-#         columns_average.configure_traits()
+    def _add_columns_average_fired(self):
+        columns_average = ColumnsAverage()
+        for name in self.columns_headers_list:
+            columns_average.columns.append(Column(column_name=name))
+
+        # kind='modal' pauses the implementation until the window is closed
+        columns_average.configure_traits(kind='modal')
+
+        columns_to_be_averaged_temp = []
+        for i in columns_average.columns:
+            if i.selected:
+                columns_to_be_averaged_temp.append(i.column_name)
+
+        self.columns_to_be_averaged.append(columns_to_be_averaged_temp)
 
     def _generate_filtered_npy_fired(self):
 
@@ -341,14 +226,22 @@ class HCFF(tr.HasStrictTraits):
         # 3- Export creep for displacements
         # Cutting unwanted max min values to get correct full cycles and remove
         # false min/max values caused by noise
-        force_max_indices_cutted, force_min_indices_cutted = self.cut_indices_in_range(force_rest,
-                                                                                       force_max_indices,
-                                                                                       force_min_indices,
-                                                                                       self.force_max,
-                                                                                       self.force_min)
+        if self.cutting_method == "Define Max, Min":
+            force_max_indices_cutted, force_min_indices_cutted = \
+                self.cut_indices_of_min_max_range(force_rest,
+                                                  force_max_indices,
+                                                  force_min_indices,
+                                                  self.force_max,
+                                                  self.force_min)
+        elif self.cutting_method == "Define min cycle range(force difference)":
+            force_max_indices_cutted, force_min_indices_cutted = \
+                self.cut_indices_of_defined_range(force_rest,
+                                                  force_max_indices,
+                                                  force_min_indices,
+                                                  self.min_cycle_force_range)
 
         print("Cycles number= ", len(force_min_indices))
-        print("Cycles number after cutting unwanted max-min range= ",
+        print("Cycles number after cutting fake cycles because of noise= ",
               len(force_min_indices_cutted))
 
         # TODO I skipped time with presuming it's the first column
@@ -366,7 +259,7 @@ class HCFF(tr.HasStrictTraits):
 
         print('Filtered npy files are generated.')
 
-    def cut_indices_in_range(self, array, max_indices, min_indices, range_upper_value, range_lower_value):
+    def cut_indices_of_min_max_range(self, array, max_indices, min_indices, range_upper_value, range_lower_value):
         cutted_max_indices = []
         cutted_min_indices = []
 
@@ -376,6 +269,17 @@ class HCFF(tr.HasStrictTraits):
         for min_index in min_indices:
             if abs(array[min_index]) < abs(range_lower_value):
                 cutted_min_indices.append(min_index)
+        return cutted_max_indices, cutted_min_indices
+
+    def cut_indices_of_defined_range(self, array, max_indices, min_indices, range_):
+        cutted_max_indices = []
+        cutted_min_indices = []
+
+        for max_index, min_index in zip(max_indices, min_indices):
+            if abs(array[max_index] - array[min_index]) > range_:
+                cutted_max_indices.append(max_index)
+                cutted_min_indices.append(min_index)
+
         return cutted_max_indices, cutted_min_indices
 
     def get_array_max_and_min_indices(self, input_array):
@@ -430,9 +334,6 @@ class HCFF(tr.HasStrictTraits):
 
     plot_list_current_elements_num = tr.Int(0)
 
-    def _plot_fired(self):
-        ax = self.figure.add_subplot()
-
     def _plot_list_changed(self):
         if len(self.plot_list) > self.plot_list_current_elements_num:
             self.plot_list_current_elements_num = len(self.plot_list)
@@ -441,7 +342,7 @@ class HCFF(tr.HasStrictTraits):
 
     def _add_plot_fired(self):
 
-        if False:  # (len(self.plot_list) >= self.plots_num):
+        if (len(self.plot_list) >= self.plots_num):
             dialog = MessageDialog(
                 title='Attention!', message='Max plots number is {}'.format(self.plots_num))
             dialog.open()
@@ -476,7 +377,8 @@ class HCFF(tr.HasStrictTraits):
         ax.set_xlabel('Displacement [mm]')
         ax.set_ylabel('kN')
         ax.set_title('Original data', fontsize=20)
-        ax.plot(x_axis_array, y_axis_array, 'k', linewidth=0.8)
+        ax.plot(x_axis_array, y_axis_array, 'k',
+                linewidth=0.8, color=np.random.rand(3,))
 
         self.plot_list.append('{}, {}'.format(x_axis_name, y_axis_name))
         self.data_changed = True
@@ -563,7 +465,6 @@ class HCFF(tr.HasStrictTraits):
                               ui.Item('apply_filters')),
                     ui.HGroup(ui.Item('add_creep_plot', show_label=False)),
                     ui.Item('plot_list'),
-                    ui.Item('plot', show_label=False),
                     show_border=True,
                     label='Plotting settings'),
             ),
@@ -572,8 +473,16 @@ class HCFF(tr.HasStrictTraits):
                 ui.HGroup(ui.Item('peak_force_before_cycles'),
                           show_border=True, label='Skip noise of ascending branch:'),
                 #                     ui.Item('plots_list'),
-                ui.VGroup(ui.Item('force_max'),
-                          ui.Item('force_min'),
+                ui.VGroup(ui.Item('cutting_method'),
+                          ui.VGroup(ui.Item('force_max'),
+                                    ui.Item('force_min'),
+                                    label='Max, Min:',
+                                    show_border=True,
+                                    enabled_when='cutting_method == "Define Max, Min"'),
+                          ui.VGroup(ui.Item('min_cycle_force_range'),
+                                    label='Min cycle force range:',
+                                    show_border=True,
+                                    enabled_when='cutting_method == "Define min cycle range(force difference)"'),
                           show_border=True,
                           label='Cut fake cycles for creep:'),
                 ui.Item('generate_filtered_npy', show_label=False),
@@ -595,17 +504,6 @@ class HCFF(tr.HasStrictTraits):
 
 
 if __name__ == '__main__':
-    hcff = HCFF(file_csv='C:\\Users\\hspartali\\Desktop\\BeamEnd_Results')
-#     hcff = HCFF2()
-#     cut_initial = HCFFilter(name='cut')
-#     hcff.hcf.add_filter(cut_initial)
-#
-#     custom_filter = HCFFilter(name='custom')
-#     cut_initial.add_filter(custom_filter)
-#
-#     custom_filter.add_filter(HCFFilter(name='average'))
-#     cut_initial.add_filter(HCFFilter(name='custom differently'))
+    hcff = HCFF(file_csv='D:\\CSV files')
 
-
-#    plot_options = [PlotOptions()]
     hcff.configure_traits()

@@ -31,7 +31,7 @@ import traitsui.api as ui
 from traitsui.tabular_adapter \
     import TabularAdapter
 
-from .hcff_filters.hcff_filter import HCFFilter, HCFFChild, HCFFParent
+from .hcff_filters.hcff_filter import *
 from .hcff_import_manager import FileImportManager
 
 
@@ -56,8 +56,7 @@ class HCFFRoot(HCFFParent):
 
     import_manager = tr.Instance(FileImportManager, ())
 
-    output_table = tr.Property(tr.Dict,
-                               depends_on='+inputs')
+    output_table = tr.Property(tr.Dict, depends_on='+inputs')
 
     def _get_output_table(self):
         return {
@@ -82,11 +81,20 @@ tree_editor = ui.TreeEditor(
                     auto_open=True,
                     children='filters',
                     label='=HCF',
+                    # Add an 'add' button to right-click menu
+                    add=[CutAscendingPartNoiseFilter]
                     #                    view=ui.View()  # Empty view
                     ),
         ui.TreeNode(node_for=[HCFFilter],
                     auto_open=True,
                     children='filters',
+                    label='name',
+                    # Add an 'add' button to right-click menu
+                    add=[CutAscendingPartNoiseFilter]
+                    #                    view=ui.View()
+                    ),
+        ui.TreeNode(node_for=[CutAscendingPartNoiseFilter],
+                    auto_open=True,
                     label='name',
                     #                    view=ui.View()
                     ),
@@ -99,10 +107,20 @@ class HCFF(tr.HasStrictTraits):
     '''High-Cycle Fatigue Filter
     '''
 
-    hcf = tr.Instance(HCFFRoot)
+    plot_settings = tr.Instance(PlotSettings)
 
-    def _hcf_default(self):
+    def _plot_settings_default(self):
+        return PlotSettings(figure='figure')
+
+    hcffroot = tr.Instance(HCFFRoot)
+
+    def _hcffroot_default(self):
         return HCFFRoot(import_manager=FileImportManager())
+
+    @tr.on_trait_change('hcffroot.import_manager.columns_headers_list')
+    def update_plot_settings(self):
+        self.plot_settings.columns_headers_list = \
+            self.hcffroot.import_manager.columns_headers_list
 
     figure = tr.Instance(Figure)
 
@@ -126,20 +144,18 @@ class HCFF(tr.HasStrictTraits):
 
     traits_view = ui.View(
         ui.HSplit(
-            ui.Item(name='hcf',
-                    editor=tree_editor,
-                    show_label=False,
-                    width=0.3
-                    ),
-            ui.VSplit(
-                ui.UItem('figure', editor=MPLFigureEditor(),
-                         resizable=True,
-                         springy=True,
-                         label='2d plots'
-                         ),
-            ),
-
-
+            ui.VSplit(ui.Item(name='hcffroot',
+                              editor=tree_editor,
+                              show_label=False,
+                              width=0.3
+                              ),
+                      ui.Item('plot_settings', style='custom')
+                      ),
+            ui.UItem('figure', editor=MPLFigureEditor(),
+                     resizable=True,
+                     springy=True,
+                     label='2d plots'
+                     ),
         ),
         title='HCF Filter',
         resizable=True,
@@ -152,20 +168,8 @@ if __name__ == '__main__':
 
     hcff = HCFF()
 
-    cut_initial = HCFFilter(name='cut')
-    hcff.hcf.add_filter(cut_initial)
+#     no_filter = NoFilter()
 
-    directly_make_average = HCFFilter(name='average1')
-    hcff.hcf.add_filter(directly_make_average)
+#     hcff.hcffroot.add_filter(no_filter)
 
-    #hcff.selected_filter = cut_initial
-
-    custom_filter = HCFFilter(name='custom')
-    cut_initial.add_filter(custom_filter)
-
-    custom_filter.add_filter(HCFFilter(name='average'))
-    cut_initial.add_filter(HCFFilter(name='custom differently'))
-
-
-#    plot_options = [PlotOptions()]
     hcff.configure_traits()
