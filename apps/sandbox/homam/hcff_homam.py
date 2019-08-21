@@ -88,8 +88,8 @@ class HCFF(tr.HasStrictTraits):
     force_min = tr.Float(40)
     min_cycle_force_range = tr.Float(50)
     cutting_method = tr.Enum(
-        'Define Max, Min', 'Define min cycle range(force difference)')
-    columns_to_be_averaged = tr.List(tr.List)
+        'Define min cycle range(force difference)', 'Define Max, Min')
+    columns_to_be_averaged = tr.List
 
     figure = tr.Instance(Figure)
 
@@ -103,6 +103,9 @@ class HCFF(tr.HasStrictTraits):
     #=========================================================================
 
     def _open_file_csv_fired(self):
+
+        self.reset()
+
         """ Handles the user clicking the 'Open...' button.
         """
         extns = ['*.csv', ]  # seems to handle only one extension...
@@ -136,7 +139,7 @@ class HCFF(tr.HasStrictTraits):
     def _parse_csv_to_npy_fired(self):
         print('Parsing csv into npy files...')
 
-        for i in range(len(self.columns_headers_list) - len(self.columns_to_be_averaged) + 1):
+        for i in range(len(self.columns_headers_list)):
             column_array = np.array(pd.read_csv(
                 self.file_csv, delimiter=self.delimiter, decimal=self.decimal,
                 skiprows=self.skip_rows, usecols=[i]))
@@ -151,6 +154,7 @@ class HCFF(tr.HasStrictTraits):
                 temp = temp + np.load(os.path.join(self.npy_folder_path,
                                                    self.file_name + '_' + column_name + '.npy')).flatten()
             avg = temp / len(columns_names)
+
             avg_suffex = 'avg_' + '_'.join(columns_names)
             np.save(os.path.join(self.npy_folder_path, self.file_name +
                                  '_' + avg_suffex + '.npy'), avg)
@@ -167,6 +171,7 @@ class HCFF(tr.HasStrictTraits):
 
     def _clear_plot_fired(self):
         self.figure.clear()
+        self.plot_list = []
         self.data_changed = True
 
     def _add_columns_average_fired(self):
@@ -182,7 +187,8 @@ class HCFF(tr.HasStrictTraits):
             if i.selected:
                 columns_to_be_averaged_temp.append(i.column_name)
 
-        self.columns_to_be_averaged.append(columns_to_be_averaged_temp)
+        if columns_to_be_averaged_temp:  # If it's not empty
+            self.columns_to_be_averaged.append(columns_to_be_averaged_temp)
 
     def _generate_filtered_npy_fired(self):
 
@@ -429,14 +435,31 @@ class HCFF(tr.HasStrictTraits):
         ax.set_title('Fatigue creep curve', fontsize=20)
 
         ax.plot(np.arange(0, disp_max.size), disp_max,
-                'k', linewidth=0.8, color='red')
+                'k', linewidth=0.8, color='red', label='Max loading level')
         ax.plot(np.arange(0, disp_min.size), disp_min,
-                'k', linewidth=0.8, color='green')
+                'k', linewidth=0.8, color='green', label='Min loading level')
 
+        ax.legend()
+
+        self.plot_list.append('Creep: {}, {}'.format(self.x_axis, self.y_axis))
         self.data_changed = True
 
         print('Finished adding creep plot!')
 
+    def reset(self):
+        self.delimiter = ';'
+        self.skip_rows = 4
+        self.columns_headers_list = []
+        self.npy_folder_path = ''
+        self.file_name = ''
+        self.apply_filters = False
+        self.force_name = 'Kraft'
+        self.peak_force_before_cycles = 30.0
+        self.plot_list = []
+        self.force_max = 100.0
+        self.force_min = 40.0
+        self.min_cycle_force_range = 50.0
+        self.columns_to_be_averaged = []
     #=========================================================================
     # Configuration of the view
     #=========================================================================
