@@ -1,7 +1,8 @@
 '''
 Created on Apr 24, 2019
 
-@author: rch
+@author: rch, Homam Spartali
+
 '''
 import os
 import string
@@ -38,8 +39,6 @@ class Column(tr.HasStrictTraits):
 class ColumnsAverage(tr.HasStrictTraits):
     columns = tr.List(Column)
 
-    print_ = tr.Button
-
     # Trait view definitions:
     traits_view = ui.View(
         ui.Item('columns',
@@ -63,6 +62,7 @@ class HCFF(tr.HasStrictTraits):
     #=========================================================================
     decimal = tr.Enum(',', '.')
     delimiter = tr.Str(';')
+    records_per_second = tr.Float(100)
     file_csv = tr.File
     open_file_csv = tr.Button('Input file')
     skip_rows = tr.Int(4, auto_set=False, enter_set=True)
@@ -79,7 +79,7 @@ class HCFF(tr.HasStrictTraits):
     plots_num = tr.Enum(1, 2, 3, 4, 6, 9)
     plot_list = tr.List()
     add_plot = tr.Button
-    add_creep_plot = tr.Button
+    add_creep_plot = tr.Button(desc='Creep plot of X axis array')
     clear_plot = tr.Button
     parse_csv_to_npy = tr.Button
     generate_filtered_npy = tr.Button
@@ -143,11 +143,20 @@ class HCFF(tr.HasStrictTraits):
             column_array = np.array(pd.read_csv(
                 self.file_csv, delimiter=self.delimiter, decimal=self.decimal,
                 skiprows=self.skip_rows, usecols=[i]))
+
+            """ TODO! Create time array supposing the it's column is the
+            first one in the file and that we have 100 reads in 1 second """
+            if i == 0:
+                column_array = np.arange(start=0.0,
+                                         stop=len(column_array) /
+                                         self.records_per_second,
+                                         step=1.0 / self.records_per_second)
+
             np.save(os.path.join(self.npy_folder_path, self.file_name +
                                  '_' + self.columns_headers_list[i] + '.npy'),
                     column_array)
 
-        # Exporting npy arrays of averaged columns
+        """ Exporting npy arrays of averaged columns """
         for columns_names in self.columns_to_be_averaged:
             temp = np.zeros((1))
             for column_name in columns_names:
@@ -252,16 +261,15 @@ class HCFF(tr.HasStrictTraits):
 
         # TODO I skipped time with presuming it's the first column
         for i in range(1, len(self.columns_headers_list)):
-            if self.columns_headers_list[i] != str(self.force_name):
-                disp = np.load(os.path.join(self.npy_folder_path, self.file_name +
-                                            '_' + self.columns_headers_list[i] + '.npy')).flatten()
-                disp_rest = disp[peak_force_before_cycles_index:]
-                disp_rest_maxima = disp_rest[force_max_indices_cutted]
-                disp_rest_minima = disp_rest[force_min_indices_cutted]
-                np.save(os.path.join(self.npy_folder_path, self.file_name + '_' +
-                                     self.columns_headers_list[i] + '_max.npy'), disp_rest_maxima)
-                np.save(os.path.join(self.npy_folder_path, self.file_name + '_' +
-                                     self.columns_headers_list[i] + '_min.npy'), disp_rest_minima)
+            array = np.load(os.path.join(self.npy_folder_path, self.file_name +
+                                         '_' + self.columns_headers_list[i] + '.npy')).flatten()
+            array_rest = array[peak_force_before_cycles_index:]
+            array_rest_maxima = array_rest[force_max_indices_cutted]
+            array_rest_minima = array_rest[force_min_indices_cutted]
+            np.save(os.path.join(self.npy_folder_path, self.file_name + '_' +
+                                 self.columns_headers_list[i] + '_max.npy'), array_rest_maxima)
+            np.save(os.path.join(self.npy_folder_path, self.file_name + '_' +
+                                 self.columns_headers_list[i] + '_min.npy'), array_rest_minima)
 
         print('Filtered npy files are generated.')
 
@@ -474,6 +482,7 @@ class HCFF(tr.HasStrictTraits):
                 ),
                 ui.Item('add_columns_average', show_label=False),
                 ui.VGroup(
+                    ui.Item('records_per_second'),
                     ui.Item('skip_rows'),
                     ui.Item('decimal'),
                     ui.Item('delimiter'),
