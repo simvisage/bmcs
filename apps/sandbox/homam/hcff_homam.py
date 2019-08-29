@@ -3,6 +3,9 @@ Created on Apr 24, 2019
 
 @author: rch, Homam Spartali
 
+Note: To use this tool, the csv file should have the columns headers in
+the first row. Also the time column should be the first column.
+
 '''
 import os
 import string
@@ -389,10 +392,12 @@ class HCFF(tr.HasStrictTraits):
         ax = self.apply_new_subplot()
 
         ax.set_xlabel('Displacement [mm]')
-        ax.set_ylabel('kN')
+        ax.set_ylabel('Force [kN]')
         ax.set_title('Original data', fontsize=20)
         ax.plot(x_axis_array, y_axis_array, 'k',
-                linewidth=0.8, color=np.random.rand(3,))
+                linewidth=1.5, color=np.random.rand(3,), label=self.file_name)
+
+        ax.legend()
 
         self.plot_list.append('{}, {}'.format(x_axis_name, y_axis_name))
         self.data_changed = True
@@ -443,9 +448,9 @@ class HCFF(tr.HasStrictTraits):
         ax.set_title('Fatigue creep curve', fontsize=20)
 
         ax.plot(np.arange(0, disp_max.size), disp_max,
-                'k', linewidth=0.8, color='red', label='Max loading level')
+                'k', linewidth=1.2, color='red', label='Max loading level')
         ax.plot(np.arange(0, disp_min.size), disp_min,
-                'k', linewidth=0.8, color='green', label='Min loading level')
+                'k', linewidth=1.2, color='green', label='Min loading level')
 
         ax.legend()
 
@@ -462,11 +467,7 @@ class HCFF(tr.HasStrictTraits):
         self.file_name = ''
         self.apply_filters = False
         self.force_name = 'Kraft'
-        self.peak_force_before_cycles = 30.0
         self.plot_list = []
-        self.force_max = 100.0
-        self.force_min = 40.0
-        self.min_cycle_force_range = 50.0
         self.columns_to_be_averaged = []
     #=========================================================================
     # Configuration of the view
