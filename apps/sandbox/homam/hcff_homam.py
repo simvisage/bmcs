@@ -142,7 +142,9 @@ class HCFF(tr.HasStrictTraits):
     def _parse_csv_to_npy_fired(self):
         print('Parsing csv into npy files...')
 
-        for i in range(len(self.columns_headers_list)):
+        print(len(self.columns_headers_list))
+        print(len(self.columns_to_be_averaged))
+        for i in range(len(self.columns_headers_list) - len(self.columns_to_be_averaged)):
             column_array = np.array(pd.read_csv(
                 self.file_csv, delimiter=self.delimiter, decimal=self.decimal,
                 skiprows=self.skip_rows, usecols=[i]))
@@ -167,13 +169,16 @@ class HCFF(tr.HasStrictTraits):
                                                    self.file_name + '_' + column_name + '.npy')).flatten()
             avg = temp / len(columns_names)
 
-            avg_suffex = 'avg_' + '_'.join(columns_names)
+            avg_file_suffex = self.get_suffex_for_columns_to_be_averaged(
+                columns_names)
             np.save(os.path.join(self.npy_folder_path, self.file_name +
-                                 '_' + avg_suffex + '.npy'), avg)
-
-            self.columns_headers_list.append(avg_suffex)
+                                 '_' + avg_file_suffex + '.npy'), avg)
 
         print('Finsihed parsing csv into npy files.')
+
+    def get_suffex_for_columns_to_be_averaged(self, columns_names):
+        suffex_for_saved_file_name = 'avg_' + '_'.join(columns_names)
+        return suffex_for_saved_file_name
 
     def get_valid_file_name(self, original_file_name):
         valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
@@ -201,6 +206,10 @@ class HCFF(tr.HasStrictTraits):
 
         if columns_to_be_averaged_temp:  # If it's not empty
             self.columns_to_be_averaged.append(columns_to_be_averaged_temp)
+
+            avg_file_suffex = self.get_suffex_for_columns_to_be_averaged(
+                columns_to_be_averaged_temp)
+            self.columns_headers_list.append(avg_file_suffex)
 
     def _generate_filtered_npy_fired(self):
 
@@ -395,7 +404,8 @@ class HCFF(tr.HasStrictTraits):
         ax.set_ylabel('Force [kN]')
         ax.set_title('Original data', fontsize=20)
         ax.plot(x_axis_array, y_axis_array, 'k',
-                linewidth=1.5, color=np.random.rand(3,), label=self.file_name)
+                linewidth=1.5, color=np.random.rand(3,), label=self.file_name +
+                ', ' + x_axis_name)
 
         ax.legend()
 
