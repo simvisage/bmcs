@@ -76,7 +76,8 @@ class MATS3DIfcCumSlip(MATSEval):
     #-------------------------------------------------------------------------
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
-    def get_corr_pred(self, u_b, t_n1, omega_w, r_w, omega_s,
+    def get_corr_pred(self, u_b, t_n1,
+                      omega_w, r_w, omega_s,
                       z_s, alpha_s_a, s_p_a):
         w = u_b[..., 0]
         s_a = u_b[..., 1:]
