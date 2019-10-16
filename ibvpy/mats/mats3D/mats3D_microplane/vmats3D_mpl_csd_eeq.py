@@ -605,6 +605,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
         # calculation of the stress tensor
         sig_Emab = einsum('...abcd,...cd->...ab', D_Emabcd, eps_e_Emab)
+        print(sig_Emab)
 
         return D_Emabcd, sig_Emab
 
