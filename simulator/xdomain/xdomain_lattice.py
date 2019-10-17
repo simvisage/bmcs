@@ -57,6 +57,17 @@ class XDomainLattice(BMCSLeafNode):
 
     hidden = Bool(False)
 
+    #=========================================================================
+    # Methods needed by XDomain to chain the subdomains
+    #=========================================================================
+    dof_offset = DelegatesTo('mesh')
+
+    def set_next(self, next_):
+        self.mesh.next_grid = next_.mesh
+
+    def set_prev(self, prev):
+        self.mesh.prev_grid = prev.mesh
+
     mesh = Instance(LatticeTessellation)
 
     X_Ia = DelegatesTo('mesh')
