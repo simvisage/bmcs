@@ -1,34 +1,32 @@
 '''
-Created on 12.01.2016
-@author: RChudoba, ABaktheer, Yingxiong
+Created on 28.08.2019
 
-'''
-'''
-Created on 12.01.2016
-@author: RChudoba, ABaktheer, Yingxiong
-
-@todo: derive the size of the state array.
+@author: abaktheer
 '''
 
+
+import time
 from bmcs.time_functions import \
     LoadingScenario, Viz2DLoadControlFunction
 from ibvpy.api import \
-    IMATSEval, TLine, BCSlice
+    IMATSEval, BCSlice
 from ibvpy.core.bcond_mngr import BCondMngr
-from ibvpy.core.vtloop import TimeLoop
-from ibvpy.dots.vdots_grid3d import DOTSGrid
 from ibvpy.fets import FETS3D8H
 from ibvpy.mats.mats3D import \
-    MATS3DMplDamageODF, MATS3DMplDamageEEQ, MATS3DElastic, MATS3DMplCSDEEQ, MATS3DMplCSDODF
+    MATS3DMplDamageODF, MATS3DMplDamageEEQ, MATS3DElastic, \
+    MATS3DScalarDamage
+from ibvpy.mats.viz3d_tensor_field import \
+    Vis3DTensorField, Viz3DTensorField
+from simulator.api import Simulator, XDomainFEGrid
 from traits.api import \
     Property, Instance, cached_property, \
     List, Float, Trait, Int, on_trait_change
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
-#from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 from view.ui import BMCSLeafNode
-from view.window import BMCSModel, BMCSWindow
+from view.ui.bmcs_tree_node import itags_str
+from view.window import BMCSWindow
 
 import numpy as np
 import traits.api as tr
@@ -115,12 +113,12 @@ class Geometry(BMCSLeafNode):
     tree_view = view
 
 
-class UniaxialTestModel(BMCSModel, Vis2D):
+class BendingTestModel(Simulator, Vis2D):
 
     #=========================================================================
     # Tree node attributes
     #=========================================================================
-    node_name = 'uniaxial test simulation'
+    node_name = 'bending test simulation'
 
     tree_node_list = List([])
 
@@ -131,8 +129,9 @@ class UniaxialTestModel(BMCSModel, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.fixed_left_bc,
-            self.fixed_right_bc,
+            # self.fixed_left_bc,
+            # self.fixed_right_bc,
+            self.fixed_bottom_bc,
             self.control_bc
         ]
 
@@ -142,25 +141,11 @@ class UniaxialTestModel(BMCSModel, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
-            self.fixed_left_bc,
-            self.fixed_right_bc,
+            # self.fixed_left_bc,
+            # self.fixed_right_bc,
+            self.fixed_bottom_bc,
             self.control_bc
         ]
-
-    #=========================================================================
-    # Interactive control of the time loop
-    #=========================================================================
-    def init(self):
-        self.tloop.init()
-
-    def eval(self):
-        return self.tloop.eval()
-
-    def pause(self):
-        self.tloop.paused = True
-
-    def stop(self):
-        self.tloop.restart = True
 
     #=========================================================================
     # Test setup parameters
@@ -187,22 +172,21 @@ class UniaxialTestModel(BMCSModel, Vis2D):
     n_e_y = Int(1, auto_set=False, enter_set=True)
     n_e_z = Int(1, auto_set=False, enter_set=True)
 
-    w_max = Float(1.0, BC=True, auto_set=False, enter_set=True)
+    w_max = Float(-50, BC=True, auto_set=False, enter_set=True)
 
-#     controlled_elem = Property
-#
-#     def _get_controlled_elem(self):
-#         return self.n_e_x / 2
+    controlled_elem = Property(Int)
+
+    def _get_controlled_elem(self):
+        return int(self.n_e_x / 2)
 
     #=========================================================================
     # Material model
     #=========================================================================
-    mats_eval_type = Trait('microplane damage (eeg)',
+    mats_eval_type = Trait('microplane damage (eeq)',
                            {'elastic': MATS3DElastic,
                             'microplane damage (eeq)': MATS3DMplDamageEEQ,
-                            'microplane CSD (eeq)': MATS3DMplCSDEEQ,
                             'microplane damage (odf)': MATS3DMplDamageODF,
-                            'microplane CSD (odf)': MATS3DMplCSDODF,
+                            'scalar damage': MATS3DScalarDamage,
                             },
                            MAT=True
                            )
@@ -238,30 +222,45 @@ class UniaxialTestModel(BMCSModel, Vis2D):
     def _get_fets_eval(self):
         return FETS3D8H()
 
-    bcond_mngr = Property(Instance(BCondMngr),
-                          depends_on='CS,BC,MESH')
+    bc = Property(Instance(BCondMngr),
+                  depends_on='GEO,CS,BC,MAT,MESH')
     '''Boundary condition manager
     '''
     @cached_property
-    def _get_bcond_mngr(self):
-        bc_list = [self.fixed_left_bc,
-                   self.fixed_right_bc,
-                   # self.fixed_middle_bc,
-                   self.control_bc]
-        return BCondMngr(bcond_list=bc_list)
+    def _get_bc(self):
+        return [  # self.fixed_left_bc,
+            # self.fixed_right_bc,
+            self.fixed_bottom_bc,
+            self.fixed_bottom_left_bc,
+            # self.fixed_middle_bc,
+            self.control_bc]
 
-    fixed_left_bc = Property(depends_on='CS, BC,GEO,MESH')
+#     fixed_left_bc = Property(depends_on='CS, BC,GEO,MESH')
+#     '''Foxed boundary condition'''
+#     @cached_property
+#     def _get_fixed_left_bc(self):
+#         return BCSlice(slice=self.fe_grid[0, 0, :, 0, 0, :],
+#                        var='u', dims=[1], value=0)
+
+#     fixed_right_bc = Property(depends_on='CS,BC,GEO,MESH')
+#     '''Foxed boundary condition'''
+#     @cached_property
+#     def _get_fixed_right_bc(self):
+#         return BCSlice(slice=self.fe_grid[-1, 0, :, -1, 0, :],
+#                        var='u', dims=[1], value=0)
+
+    fixed_bottom_bc = Property(depends_on='CS,BC,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
-    def _get_fixed_left_bc(self):
-        return BCSlice(slice=self.fe_grid[0, 0, :, 0, 0, :],
+    def _get_fixed_bottom_bc(self):
+        return BCSlice(slice=self.fe_grid[:, 0, :, :, 0, :],
                        var='u', dims=[1], value=0)
 
-    fixed_right_bc = Property(depends_on='CS,BC,GEO,MESH')
+    fixed_bottom_left_bc = Property(depends_on='CS,BC,GEO,MESH')
     '''Foxed boundary condition'''
     @cached_property
-    def _get_fixed_right_bc(self):
-        return BCSlice(slice=self.fe_grid[0, :, :, 0, :, :],
+    def _get_fixed_bottom_left_bc(self):
+        return BCSlice(slice=self.fe_grid[0, 0, :, 0, 0, :],
                        var='u', dims=[0], value=0)
 
 #     fixed_middle_bc = Property(depends_on='CS,BC,GEO,MESH')
@@ -269,9 +268,21 @@ class UniaxialTestModel(BMCSModel, Vis2D):
 #     @cached_property
 #     def _get_fixed_middle_bc(self):
 #         return BCSlice(
-#             slice=self.fe_grid[0, :, :, 0, :, :],
+#             slice=self.fe_grid[self.controlled_elem, -1, :, 0, -1, :],
 #             var='u', dims=[0], value=0
 #         )
+
+#     control_bc = Property(depends_on='CS,BC,GEO,MESH')
+#     '''Control boundary condition - make it accessible directly
+#     for the visualization adapter as property
+#     '''
+#     @cached_property
+#     def _get_control_bc(self):
+#         return BCSlice(
+#             slice=self.fe_grid[self.controlled_elem, -1, :, :, -1, :],
+#             var='u', dims=[1], value=-self.w_max
+#         )
+#
 
     control_bc = Property(depends_on='CS,BC,GEO,MESH')
     '''Control boundary condition - make it accessible directly
@@ -279,72 +290,64 @@ class UniaxialTestModel(BMCSModel, Vis2D):
     '''
     @cached_property
     def _get_control_bc(self):
-
-        ls = self.loading_scenario
-
         return BCSlice(
-            #             slice=self.fe_grid[-1, :, :, -1, :, :],
-            #             var='u', dims=[0], value=self.w_max
-            slice=self.fe_grid[-1, :, :, -1, :, :],
-            var='u', dims=[0], value=self.w_max, time_function=ls
+            slice=self.fe_grid[:, -1, :, :, -1, :],
+            var='u', dims=[1], value=-self.w_max
         )
 
-    dots_grid = Property(Instance(DOTSGrid),
-                         depends_on='CS,MAT,GEO,MESH,FE')
+    xdomain = Property(depends_on='CS,MAT,GEO,MESH,FE')
     '''Discretization object.
     '''
     @cached_property
-    def _get_dots_grid(self):
+    def _get_xdomain(self):
         cs = self.cross_section
         geo = self.geometry
-        return DOTSGrid(
-            L_x=geo.L, L_y=cs.h, L_z=cs.b,
-            n_x=self.n_e_x, n_y=self.n_e_y, n_z=self.n_e_z,
-            fets=self.fets_eval, mats=self.mats_eval
-        )
+        dgrid = XDomainFEGrid(dim_u=3,
+                              coord_max=(geo.L, cs.h, cs.b),
+                              shape=(self.n_e_x, self.n_e_y, self.n_e_z),
+                              fets=self.fets_eval)
+        return dgrid
+        L = self.geometry.L / 2.0
+        L_c = self.geometry.L_c
+        x_x, _, _ = dgrid.mesh.geo_grid.point_x_grid
+        L_1 = x_x[1, 0]
+        d_L = L_c - L_1
+        x_x[1:, :, :] += d_L * (L - x_x[1:, :]) / (L - L_1)
+        return dgrid
 
     fe_grid = Property
 
     def _get_fe_grid(self):
-        return self.dots_grid.mesh
+        return self.xdomain.mesh
 
-    tline = Instance(TLine)
+    domains = Property(depends_on=itags_str)
 
-    def _tline_default(self):
-        t_max = 1.0
-        d_t = 0.1
-        return TLine(min=0.0, step=d_t, max=t_max,
-                     time_change_notifier=self.time_changed,
-                     )
+    @cached_property
+    def _get_domains(self):
+        return [(self.xdomain, self.mats_eval)]
 
     k_max = Int(200,
                 ALG=True)
-    tolerance = Float(1e-4,
-                      ALG=True)
-    tloop = Property(Instance(TimeLoop),
-                     depends_on='MAT,GEO,MESH,CS,TIME,ALG,BC')
-    '''Algorithm controlling the time stepping.
-    '''
-    @cached_property
-    def _get_tloop(self):
+    acc = Float(1e-4,
+                ALG=True)
+
+    @on_trait_change('ALG')
+    def _reset_tloop(self):
         k_max = self.k_max
-        tolerance = self.tolerance
-        return TimeLoop(ts=self.dots_grid, k_max=k_max,
-                        tolerance=tolerance,
-                        tline=self.tline,
-                        bc_mngr=self.bcond_mngr)
+        acc = self.acc
+        self.tloop.trait_set(
+            k_max=k_max,
+            acc=acc,
+        )
 
     def get_PW(self):
         record_dofs = self.fe_grid[
-            -1, :, :, -1, :, :].dofs[:, :, 0].flatten()
-        print(record_dofs)
+            self.controlled_elem, -1, :, :, -1, :].dofs[:, :, 1].flatten()
         Fd_int_t = np.array(self.tloop.F_int_record)
-        print(Fd_int_t)
         Ud_t = np.array(self.tloop.U_record)
-        print(Ud_t)
-        F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=0)
+        F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
         U_t = -Ud_t[:, record_dofs[0]]
-        return -F_int_t, -U_t
+        return F_int_t, U_t
 
     viz2d_classes = {'F-w': Viz2DForceDeflectionX,
                      'load function': Viz2DLoadControlFunction,
@@ -355,55 +358,59 @@ class UniaxialTestModel(BMCSModel, Vis2D):
     tree_view = traits_view
 
 
-def run_uniaxial_test():
+def run_bending3pt_mic_odf(*args, **kw):
 
-    ut = UniaxialTestModel(n_e_x=1, n_e_y=1, n_e_z=1,
-                           k_max=50,
-                           #mats_eval_type='microplane damage (eeq)'
-                           #mats_eval_type='microplane damage (odf)'
-                           mats_eval_type='microplane CSD (eeq)'
-                           #mats_eval_type='microplane CSD (odf)'
-                           )
-    ut.mats_eval.set(
+    bt = BendingTestModel(n_e_x=1, n_e_y=1, n_e_z=1,
+                          k_max=500,
+                          mats_eval_type='microplane damage (eeq)'
+                          #mats_eval_type='microplane damage (eeq)'
+                          #mats_eval_type='microplane damage (odf)'
+                          # mats_eval_type='elastic'
+                          )
+    E_c = 28000  # MPa
+    f_ct = 3.0  # MPa
+    epsilon_0 = f_ct / E_c  # [-]
+
+    print(bt.mats_eval_type)
+    bt.mats_eval.trait_set(
         # stiffness='algorithmic',
-        # epsilon_0=0.001,
-        # epsilon_f=0.005
+        epsilon_0=epsilon_0,
+        epsilon_f=epsilon_0 * 10
     )
 
-    ut.loading_scenario.set(loading_type='monotonic')
-    ut.loading_scenario.set(number_of_cycles=1)
-    ut.loading_scenario.set(maximum_loading=-0.0075)
-    ut.loading_scenario.set(unloading_ratio=0.1)
-    ut.loading_scenario.set(amplitude_type="constant")
-    ut.loading_scenario.set(loading_range="non-symmetric")
+    bt.w_max = 0.01
+    bt.tline.step = 0.005
+    bt.cross_section.h = 1
+    bt.geometry.L = 1
+    bt.loading_scenario.trait_set(loading_type='monotonic')
 
-    # ut.loading_scenario.set(loading_type='monotonic')
-    # ut.loading_scenario.set(maximum_loading=-0.01)
-    #ut.w_max = -0.00001
-    ut.tline.step = 0.005
-    ut.cross_section.h = 1
-    ut.geometry.L = 1
+    bt.record = {
+        #       'Pw': Vis2DFW(bc_right=right_x_s, bc_left=left_x_s),
+        #       'slip': Vis2DField(var='slip'),
+        'strain': Vis3DTensorField(var='eps_ab'),
+        'stress': Vis3DTensorField(var='sig_ab'),
+        'damage': Vis3DTensorField(var='phi_ab'),
+    }
 
-    # ut.get_PW()
+    w = BMCSWindow(sim=bt)
+#    bt.add_viz2d('load function', 'load-time')
+#    bt.add_viz2d('F-w', 'load-displacement')
 
-    # print(ut.get_PW())
+    viz_stress = Viz3DTensorField(vis3d=bt.hist['strain'])
+    viz_strain = Viz3DTensorField(vis3d=bt.hist['stress'])
+    viz_damage = Viz3DTensorField(vis3d=bt.hist['damage'])
 
-    w = BMCSWindow(model=ut)
-    ut.add_viz2d('load function', 'load-time')
-    ut.add_viz2d('F-w', 'load-displacement')
-
-    vis3d = Vis3DPoll()
-    ut.tloop.response_traces.append(vis3d)
-    viz3d = Viz3DPoll(vis3d=vis3d)
-    w.viz_sheet.add_viz3d(viz3d)
+    w.viz_sheet.add_viz3d(viz_stress)
+    w.viz_sheet.add_viz3d(viz_strain)
+    w.viz_sheet.add_viz3d(viz_damage)
     w.viz_sheet.monitor_chunk_size = 1
 
-#    w.run()
+    w.run()
+    time.sleep(10)
     w.offline = False
 #    w.finish_event = True
     w.configure_traits()
 
 
 if __name__ == '__main__':
-    run_uniaxial_test()
-    # run_with_new_state()
+    run_bending3pt_mic_odf()
