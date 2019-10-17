@@ -23,17 +23,18 @@ from traits.api import \
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
-from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
-from .bending3pt_2d import \
-    Viz2DForceDeflection, Vis2DCrackBand
 
 import numpy as np
 import traits.api as tr
+
+from .bending3pt_2d import \
+    Viz2DForceDeflection, Vis2DCrackBand
 from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyRatesPlot
 
 
+#from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 class Viz2DForceDeflectionX(Viz2D):
 
     '''Plot adaptor for the pull-out simulator.
