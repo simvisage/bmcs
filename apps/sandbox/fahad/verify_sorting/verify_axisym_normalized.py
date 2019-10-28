@@ -23,9 +23,10 @@ def verify_normalized_pullout_force():
                          R_f=ds / 2)
         s = PullOutAxiSym(geometry=g,
                           cross_section=c,
-                          n_x=30,
+                          n_x=10,
                           n_y_concrete=1,
                           n_y_steel=1)
+        s.tloop.k_max = 1000
         s.f_lateral = f_lateral
         s.xd_steel.trait_set(coord_min=(0, 0),
                              coord_max=(g.L_x, c.R_f),
