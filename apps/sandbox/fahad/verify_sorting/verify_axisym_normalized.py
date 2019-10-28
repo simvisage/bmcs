@@ -16,9 +16,9 @@ def verify_normalized_pullout_force():
 
     f_list = [0]  # -40000, -50000, -60000
     for f_lateral in f_list:  # [0, -100]
-        ds = 1 / np.pi  # 16
+        ds = 16  # 16
         print('lateral confining pressure', f_lateral)
-        g = Geometry(L_x=1)  # ds * 5)
+        g = Geometry(L_x=ds * 5)  # ds * 5)
         c = CrossSection(R_m=75,
                          R_f=ds / 2)
         s = PullOutAxiSym(geometry=g,
@@ -46,7 +46,7 @@ def verify_normalized_pullout_force():
                           m=0.175,
                           algorithmic=False)
 
-        s.u_max = 20
+        s.u_max = 0.005
         s.tline.step = 0.01
         s.tloop.verbose = True
         s.run()
