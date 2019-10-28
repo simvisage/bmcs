@@ -13,8 +13,10 @@ def verify_normalized_pullout_force():
 
     ax = p.subplot(111)
 
-    f_list = [0]  # -40000, -50000, -60000
-    for f_lateral in f_list:  # [0, -100]
+    f_lateral = 0
+    u_max = 0.1
+    dt_list = [0.5, 0.25]
+    for dt in dt_list:  # [0, -100]
         ds = 16
         print('lateral confining pressure', f_lateral)
         g = Geometry(L_x=ds * 5)
@@ -22,7 +24,7 @@ def verify_normalized_pullout_force():
                          R_f=ds / 2)
         s = PullOutAxiSym(geometry=g,
                           cross_section=c,
-                          n_x=10,
+                          n_x=5,
                           n_y_concrete=1,
                           n_y_steel=1)
         s.tloop.k_max = 1000
@@ -46,8 +48,8 @@ def verify_normalized_pullout_force():
                           m=0.175,
                           algorithmic=False)
 
-        s.u_max = 0.005
-        s.tline.step = 0.1
+        s.u_max = u_max
+        s.tline.step = dt
         s.tloop.verbose = True
         s.run()
 
@@ -64,10 +66,11 @@ def verify_normalized_pullout_force():
 #         result = np.array(s.record['Pw'].sim.hist.F_t,
 #                           s.record['slip'].sim.hist.F_t).transpose()
 #         np.savetxt("Pullout%s.txt" % f_lateral, result)
-    p.show()
+    return w
 
 
 if __name__ == '__main__':
     #     abc = open('sigNnew1.txt', 'w')
     #     abc.close()
-    verify_normalized_pullout_force()
+    w = verify_normalized_pullout_force()
+    p.show()
