@@ -1,22 +1,26 @@
 '''
-Created on 23.07.2019
+Created on 30.09.2019
 
 @author: fseemab
 '''
-from apps.verify.bond_cum_damage.pullout_2d_model.pullout2d_model import PullOut2D
+from apps.verify.bond_cum_damage.pullout_axisymmetric_model.pullout_axisym_model import PullOutAxiSym, Geometry, CrossSection
 import numpy as np
 import pylab as p
 
 
-def verify02_quasi_pullout(f_lateral=0.0):
+def verify_pullout_axisym(f_lateral=0.0):
     d_s = 14
     L_x = 5 * d_s
-    s = PullOut2D(n_x=30, L_x=L_x,
-                  r_steel=d_s / 2,
-                  r_concrete=d_s * 10,
-                  perimeter=d_s,
-                  u_max=0.5
-                  )
+    g = Geometry(L_x=L_x)
+    c = CrossSection(R_m=d_s * 10,
+                     R_f=d_s / 2,
+                     )
+    s = PullOutAxiSym(geometry=g,
+                      cross_section=c,
+                      n_x=30,
+                      u_max=0.5
+                      )
+
     s.m_ifc.trait_set(E_T=12900,
                       E_N=1e9,
                       tau_bar=4.2,  # 4.0,
@@ -28,15 +32,14 @@ def verify02_quasi_pullout(f_lateral=0.0):
     s.u_max = 0.3
     s.tloop.k_max = 10000
     s.tloop.verbose = True
-    s.tline.step = 0.005  # 0.005
-    s.tline.step = 0.1
+    s.tline.step = 0.1  # 0.005
     s.tstep.fe_domain.serialized_subdomains
     return s
 
 
 if __name__ == '__main__':
     ax = p.subplot(111)
-    s = verify02_quasi_pullout(f_lateral=-200)
+    s = verify_pullout_axisym(f_lateral=-200)
     s.run()
     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
     print('f_lateral =', s.f_lateral)
@@ -44,11 +47,11 @@ if __name__ == '__main__':
     w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
 
     # s = verify02_quasi_pullout(f_lateral=-100)
-    s.f_lateral = -10
-    s.tline.step = 0.005
-    s.run()
-    print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
-    print('f_lateral =', s.f_lateral)
-    #w = s.get_window()
-    w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+#     s.f_lateral = -10
+#     s.tline.step = 0.1
+#     s.run()
+#     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
+#     print('f_lateral =', s.f_lateral)
+#     #w = s.get_window()
+#     w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
     p.show()

@@ -1,9 +1,10 @@
 '''
-Created on 23.07.2019
+Created on 29.07.2019
 
 @author: fseemab
 '''
-from apps.verify.bond_cum_damage.pullout_2d_model.pullout2d_model import PullOut2D
+
+from apps.verify.bond_cum_damage.pullout_axisymmetric_model.pullout_axisym_model import PullOutAxiSym
 import numpy as np
 import pylab as p
 
@@ -11,12 +12,16 @@ import pylab as p
 def verify02_quasi_pullout(f_lateral=0.0):
     d_s = 14
     L_x = 5 * d_s
-    s = PullOut2D(n_x=30, L_x=L_x,
-                  r_steel=d_s / 2,
-                  r_concrete=d_s * 10,
-                  perimeter=d_s,
-                  u_max=0.5
-                  )
+    r_steel = d_s / 2
+    r_concrete = d_s * 10
+    perimeter = d_s
+    s = PullOutAxiSym(n_x=2,
+                      u_max=0.5
+                      )
+    s.cross_section.trait_set(R_f=r_steel,
+                              R_m=r_concrete
+                              )
+    s.geometry.L_x = L_x
     s.m_ifc.trait_set(E_T=12900,
                       E_N=1e9,
                       tau_bar=4.2,  # 4.0,
@@ -36,7 +41,7 @@ def verify02_quasi_pullout(f_lateral=0.0):
 
 if __name__ == '__main__':
     ax = p.subplot(111)
-    s = verify02_quasi_pullout(f_lateral=-200)
+    s = verify02_quasi_pullout(f_lateral=-100)
     s.run()
     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
     print('f_lateral =', s.f_lateral)
@@ -45,7 +50,7 @@ if __name__ == '__main__':
 
     # s = verify02_quasi_pullout(f_lateral=-100)
     s.f_lateral = -10
-    s.tline.step = 0.005
+    s.tline.step = 0.1
     s.run()
     print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
     print('f_lateral =', s.f_lateral)
