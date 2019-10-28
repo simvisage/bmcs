@@ -3,11 +3,10 @@ Created on 01.10.2019
 
 @author: fseemab
 '''
-from apps.verify.bond_cum_damage.pullout_axisymmetric_model.pullout_axisym_model import PullOutAxiSym, Geometry, CrossSection
-import matplotlib.pyplot as plt
 import numpy as np
 import pylab as p
-import traits.api as tr
+
+from .pullout_axisym_model import PullOutAxiSym, Geometry, CrossSection
 
 
 def verify_normalized_pullout_force():
@@ -26,6 +25,7 @@ def verify_normalized_pullout_force():
                           n_x=30,
                           n_y_concrete=1,
                           n_y_steel=1)
+        s.tloop.k_max = 1000
         s.f_lateral = f_lateral
         s.xd_steel.trait_set(coord_min=(0, 0),
                              coord_max=(g.L_x, c.R_f),
@@ -46,7 +46,7 @@ def verify_normalized_pullout_force():
                           m=0.175,
                           algorithmic=False)
 
-        s.u_max = 0.5
+        s.u_max = 0.005
         s.tline.step = 0.1
         s.tloop.verbose = True
         s.run()
