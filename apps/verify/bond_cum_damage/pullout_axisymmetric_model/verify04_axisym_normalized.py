@@ -53,8 +53,6 @@ def verify_normalized_pullout_force():
         s.tloop.verbose = True
         s.run()
 
-#         YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
-
         print('P_max', np.max(s.record['Pw'].sim.hist.F_t))
         print('P_end', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
 
