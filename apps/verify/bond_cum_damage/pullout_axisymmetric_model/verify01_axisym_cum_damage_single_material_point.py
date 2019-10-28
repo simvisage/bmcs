@@ -5,7 +5,7 @@ Created on 30.04.2019
 '''
 import time
 
-from apps.verify.bond_cum_damage.pullout_axisym_model import PullOutAxiSym
+from apps.verify.bond_cum_damage.pullout_axisymmetric_model.pullout_axisym_model import PullOutAxiSym
 import numpy as np
 
 

@@ -1,5 +1,5 @@
 '''
-Created on 18.06.2019
+Created on 30.09.2019
 
 @author: fseemab
 '''
@@ -38,10 +38,10 @@ def verify_normalized_pullout_force():
                              shape=(n_x, 1)
                              )
         s.xd_concrete.trait_set(coord_min=(0, r_steel),
-                                coord_max=(L_x, r_concrete),
+                                coord_max=(r_steel, r_concrete),
                                 shape=(n_x, n_y)
                                 )
-        s.u_max = 0.2
+        s.u_max = 0.1
         s.tline.step = 0.01
         s.run()
         print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))

@@ -231,8 +231,8 @@ class PullOutAxiSym(Simulator):
             tau_bar=4.2,
             S=0.005,
             r=1.0,
-            c=1.0,
-            m=0.0,
+            c=2.8,
+            m=0.175,
             algorithmic=True)  # omega_fn_type='li',
 
     domains = tr.Property(depends_on=itags_str)
