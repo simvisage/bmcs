@@ -13,7 +13,7 @@ def verify_normalized_pullout_force():
 
     ax = p.subplot(111)
 
-    f_list = [0, -4000]  # -40000, -50000, -60000
+    f_list = [0]  # -40000, -50000, -60000
     for f_lateral in f_list:  # [0, -100]
         ds = 16
         print('lateral confining pressure', f_lateral)
@@ -22,7 +22,7 @@ def verify_normalized_pullout_force():
                          R_f=ds / 2)
         s = PullOutAxiSym(geometry=g,
                           cross_section=c,
-                          n_x=30,
+                          n_x=10,
                           n_y_concrete=1,
                           n_y_steel=1)
         s.tloop.k_max = 1000
@@ -50,6 +50,8 @@ def verify_normalized_pullout_force():
         s.tline.step = 0.1
         s.tloop.verbose = True
         s.run()
+
+#         YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
 
         print('P_max', np.max(s.record['Pw'].sim.hist.F_t))
         print('P_end', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
