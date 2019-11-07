@@ -11,7 +11,7 @@ import os
 import string
 
 from matplotlib.figure import Figure
-from pyface.api import FileDialog, MessageDialog
+from pyface.api import FileDialog, MessageDialog, OK
 from scipy.signal import argrelextrema
 from scipy.signal import savgol_filter
 from util.traits.editors import MPLFigureEditor
@@ -23,6 +23,7 @@ import traits.api as tr
 import traitsui.api as ui
 from traitsui.extras.checkbox_column \
     import CheckboxColumn
+
 
 average_columns_editor = ui.TableEditor(
     sortable=False,
@@ -68,7 +69,7 @@ class HCFF(tr.HasStrictTraits):
     records_per_second = tr.Float(100)
     file_csv = tr.File
     open_file_csv = tr.Button('Input file')
-    skip_rows = tr.Int(4, auto_set=False, enter_set=True)
+    skip_rows = tr.Int(3, auto_set=False, enter_set=True)
     columns_headers_list = tr.List([])
     x_axis = tr.Enum(values='columns_headers_list')
     y_axis = tr.Enum(values='columns_headers_list')
@@ -77,6 +78,7 @@ class HCFF(tr.HasStrictTraits):
     npy_folder_path = tr.Str
     file_name = tr.Str
     apply_filters = tr.Bool
+    normalize_cycles = tr.Bool
     force_name = tr.Str('Kraft')
     peak_force_before_cycles = tr.Float(30)
     plots_num = tr.Enum(1, 2, 3, 4, 6, 9)
@@ -85,7 +87,7 @@ class HCFF(tr.HasStrictTraits):
     add_creep_plot = tr.Button(desc='Creep plot of X axis array')
     clear_plot = tr.Button
     parse_csv_to_npy = tr.Button
-    generate_filtered_npy = tr.Button
+    generate_filtered_and_creep_npy = tr.Button
     add_columns_average = tr.Button
     force_max = tr.Float(100)
     force_min = tr.Float(40)
@@ -117,8 +119,15 @@ class HCFF(tr.HasStrictTraits):
         dialog = FileDialog(title='Select text file',
                             action='open', wildcard=wildcard,
                             default_path=self.file_csv)
-        dialog.open()
-        self.file_csv = dialog.path
+
+        result = dialog.open()
+
+        """ Test if the user opened a file to avoid throwing an exception if he 
+        doesn't """
+        if result == OK:
+            self.file_csv = dialog.path
+        else:
+            return
 
         """ Filling x_axis and y_axis with values """
         headers_array = np.array(
@@ -142,9 +151,8 @@ class HCFF(tr.HasStrictTraits):
     def _parse_csv_to_npy_fired(self):
         print('Parsing csv into npy files...')
 
-        print(len(self.columns_headers_list))
-        print(len(self.columns_to_be_averaged))
-        for i in range(len(self.columns_headers_list) - len(self.columns_to_be_averaged)):
+        for i in range(len(self.columns_headers_list) -
+                       len(self.columns_to_be_averaged)):
             column_array = np.array(pd.read_csv(
                 self.file_csv, delimiter=self.delimiter, decimal=self.decimal,
                 skiprows=self.skip_rows, usecols=[i]))
@@ -166,7 +174,9 @@ class HCFF(tr.HasStrictTraits):
             temp = np.zeros((1))
             for column_name in columns_names:
                 temp = temp + np.load(os.path.join(self.npy_folder_path,
-                                                   self.file_name + '_' + column_name + '.npy')).flatten()
+                                                   self.file_name +
+                                                   '_' + column_name +
+                                                   '.npy')).flatten()
             avg = temp / len(columns_names)
 
             avg_file_suffex = self.get_suffex_for_columns_to_be_averaged(
@@ -211,11 +221,17 @@ class HCFF(tr.HasStrictTraits):
                 columns_to_be_averaged_temp)
             self.columns_headers_list.append(avg_file_suffex)
 
-    def _generate_filtered_npy_fired(self):
+    def _generate_filtered_and_creep_npy_fired(self):
+
+        if self.npy_files_exist(os.path.join(
+                self.npy_folder_path, self.file_name + '_' + self.force_name
+                + '.npy')) == False:
+            return
 
         # 1- Export filtered force
         force = np.load(os.path.join(self.npy_folder_path,
-                                     self.file_name + '_' + self.force_name + '.npy')).flatten()
+                                     self.file_name + '_' + self.force_name
+                                     + '.npy')).flatten()
         peak_force_before_cycles_index = np.where(
             abs((force)) > abs(self.peak_force_before_cycles))[0][0]
         force_ascending = force[0:peak_force_before_cycles_index]
@@ -231,15 +247,18 @@ class HCFF(tr.HasStrictTraits):
         force_rest_filtered = force_rest[force_max_min_indices]
         force_filtered = np.concatenate((force_ascending, force_rest_filtered))
         np.save(os.path.join(self.npy_folder_path, self.file_name +
-                             '_' + self.force_name + '_filtered.npy'), force_filtered)
+                             '_' + self.force_name + '_filtered.npy'),
+                force_filtered)
 
         # 2- Export filtered displacements
         # TODO I skipped time with presuming it's the first column
         for i in range(1, len(self.columns_headers_list)):
             if self.columns_headers_list[i] != str(self.force_name):
 
-                disp = np.load(os.path.join(self.npy_folder_path, self.file_name +
-                                            '_' + self.columns_headers_list[i] + '.npy')).flatten()
+                disp = np.load(os.path.join(self.npy_folder_path, self.file_name
+                                            + '_' +
+                                            self.columns_headers_list[i]
+                                            + '.npy')).flatten()
                 disp_ascending = disp[0:peak_force_before_cycles_index]
                 disp_rest = disp[peak_force_before_cycles_index:]
                 disp_ascending = savgol_filter(
@@ -247,8 +266,9 @@ class HCFF(tr.HasStrictTraits):
                 disp_rest_filtered = disp_rest[force_max_min_indices]
                 filtered_disp = np.concatenate(
                     (disp_ascending, disp_rest_filtered))
-                np.save(os.path.join(self.npy_folder_path, self.file_name + '_' +
-                                     self.columns_headers_list[i] + '_filtered.npy'), filtered_disp)
+                np.save(os.path.join(self.npy_folder_path, self.file_name + '_'
+                                     + self.columns_headers_list[i] +
+                                     '_filtered.npy'), filtered_disp)
 
         # 3- Export creep for displacements
         # Cutting unwanted max min values to get correct full cycles and remove
@@ -274,7 +294,8 @@ class HCFF(tr.HasStrictTraits):
         # TODO I skipped time with presuming it's the first column
         for i in range(1, len(self.columns_headers_list)):
             array = np.load(os.path.join(self.npy_folder_path, self.file_name +
-                                         '_' + self.columns_headers_list[i] + '.npy')).flatten()
+                                         '_' + self.columns_headers_list[i]
+                                         + '.npy')).flatten()
             array_rest = array[peak_force_before_cycles_index:]
             array_rest_maxima = array_rest[force_max_indices_cutted]
             array_rest_minima = array_rest[force_min_indices_cutted]
@@ -283,9 +304,10 @@ class HCFF(tr.HasStrictTraits):
             np.save(os.path.join(self.npy_folder_path, self.file_name + '_' +
                                  self.columns_headers_list[i] + '_min.npy'), array_rest_minima)
 
-        print('Filtered npy files are generated.')
+        print('Filtered and creep npy files are generated.')
 
-    def cut_indices_of_min_max_range(self, array, max_indices, min_indices, range_upper_value, range_lower_value):
+    def cut_indices_of_min_max_range(self, array, max_indices, min_indices,
+                                     range_upper_value, range_lower_value):
         cutted_max_indices = []
         cutted_min_indices = []
 
@@ -360,6 +382,35 @@ class HCFF(tr.HasStrictTraits):
 
     plot_list_current_elements_num = tr.Int(0)
 
+    def npy_files_exist(self, path):
+        if os.path.exists(path) == True:
+            return True
+        else:
+            dialog = MessageDialog(
+                title='Attention!',
+                message='Please parse csv file to generate npy files first.'.format(self.plots_num))
+            dialog.open()
+            return False
+
+    def filtered_and_creep_npy_files_exist(self, path):
+        if os.path.exists(path) == True:
+            return True
+        else:
+            dialog = MessageDialog(
+                title='Attention!',
+                message='Please generate filtered and creep npy files first.'.format(self.plots_num))
+            dialog.open()
+            return False
+
+    def max_plots_number_is_reached(self):
+        if len(self.plot_list) >= self.plots_num:
+            dialog = MessageDialog(
+                title='Attention!', message='Max plots number is {}'.format(self.plots_num))
+            dialog.open()
+            return True
+        else:
+            return False
+
     def _plot_list_changed(self):
         if len(self.plot_list) > self.plot_list_current_elements_num:
             self.plot_list_current_elements_num = len(self.plot_list)
@@ -368,32 +419,49 @@ class HCFF(tr.HasStrictTraits):
 
     def _add_plot_fired(self):
 
-        if (len(self.plot_list) >= self.plots_num):
-            dialog = MessageDialog(
-                title='Attention!', message='Max plots number is {}'.format(self.plots_num))
-            dialog.open()
+        if self.max_plots_number_is_reached() == True:
             return
 
-        print('Loading npy files...')
-
         if self.apply_filters:
+
+            if self.filtered_and_creep_npy_files_exist(os.path.join(
+                    self.npy_folder_path, self.file_name + '_' + self.x_axis
+                    + '_filtered.npy')) == False:
+                return
+
             x_axis_name = self.x_axis + '_filtered'
             y_axis_name = self.y_axis + '_filtered'
+
+            print('Loading npy files...')
+
             x_axis_array = self.x_axis_multiplier * \
                 np.load(os.path.join(self.npy_folder_path,
-                                     self.file_name + '_' + self.x_axis + '_filtered.npy'))
+                                     self.file_name + '_' + self.x_axis
+                                     + '_filtered.npy'))
             y_axis_array = self.y_axis_multiplier * \
                 np.load(os.path.join(self.npy_folder_path,
-                                     self.file_name + '_' + self.y_axis + '_filtered.npy'))
+                                     self.file_name + '_' + self.y_axis
+                                     + '_filtered.npy'))
         else:
+
+            if self.npy_files_exist(os.path.join(
+                    self.npy_folder_path, self.file_name + '_' + self.x_axis
+                    + '.npy')) == False:
+                return
+
             x_axis_name = self.x_axis
             y_axis_name = self.y_axis
+
+            print('Loading npy files...')
+
             x_axis_array = self.x_axis_multiplier * \
                 np.load(os.path.join(self.npy_folder_path,
-                                     self.file_name + '_' + self.x_axis + '.npy'))
+                                     self.file_name + '_' + self.x_axis
+                                     + '.npy'))
             y_axis_array = self.y_axis_multiplier * \
                 np.load(os.path.join(self.npy_folder_path,
-                                     self.file_name + '_' + self.y_axis + '.npy'))
+                                     self.file_name + '_' + self.y_axis
+                                     + '.npy'))
 
         print('Adding Plot...')
         mpl.rcParams['agg.path.chunksize'] = 50000
@@ -402,9 +470,8 @@ class HCFF(tr.HasStrictTraits):
 
         ax.set_xlabel('Displacement [mm]')
         ax.set_ylabel('Force [kN]')
-        ax.set_title('Original data', fontsize=20)
         ax.plot(x_axis_array, y_axis_array, 'k',
-                linewidth=1.5, color=np.random.rand(3,), label=self.file_name +
+                linewidth=1.2, color=np.random.rand(3,), label=self.file_name +
                 ', ' + x_axis_name)
 
         ax.legend()
@@ -435,10 +502,12 @@ class HCFF(tr.HasStrictTraits):
 
     def _add_creep_plot_fired(self):
 
-        if (len(self.plot_list) >= self.plots_num):
-            dialog = MessageDialog(
-                title='Attention!', message='Max plots number is {}'.format(self.plots_num))
-            dialog.open()
+        if self.filtered_and_creep_npy_files_exist(os.path.join(
+                self.npy_folder_path, self.file_name + '_' + self.x_axis
+                + '_max.npy')) == False:
+            return
+
+        if self.max_plots_number_is_reached() == True:
             return
 
         disp_max = self.x_axis_multiplier * \
@@ -454,13 +523,23 @@ class HCFF(tr.HasStrictTraits):
         ax = self.apply_new_subplot()
 
         ax.set_xlabel('Cycles number')
-        ax.set_ylabel('mm')
+        ax.set_ylabel('Displacement [mm]')
         ax.set_title('Fatigue creep curve', fontsize=20)
 
-        ax.plot(np.arange(0, disp_max.size), disp_max,
-                'k', linewidth=1.2, color='red', label='Max loading level')
-        ax.plot(np.arange(0, disp_min.size), disp_min,
-                'k', linewidth=1.2, color='green', label='Min loading level')
+        if self.normalize_cycles:
+            ax.plot(np.arange(0, 1., 1. / disp_max.size), disp_max,
+                    'k', linewidth=1.2, color='red', label='Max' + ', ' +
+                    self.file_name + ', ' + self.x_axis)
+            ax.plot(np.arange(0, 1., 1. / disp_max.size), disp_min,
+                    'k', linewidth=1.2, color='green', label='Min' + ', ' +
+                    self.file_name + ', ' + self.x_axis)
+        else:
+            ax.plot(np.arange(0, disp_max.size), disp_max,
+                    'k', linewidth=1.2, color='red', label='Max' + ', ' +
+                    self.file_name + ', ' + self.x_axis)
+            ax.plot(np.arange(0, disp_min.size), disp_min,
+                    'k', linewidth=1.2, color='green', label='Min' + ', ' +
+                    self.file_name + ', ' + self.x_axis)
 
         ax.legend()
 
@@ -471,7 +550,7 @@ class HCFF(tr.HasStrictTraits):
 
     def reset(self):
         self.delimiter = ';'
-        self.skip_rows = 4
+        self.skip_rows = 3
         self.columns_headers_list = []
         self.npy_folder_path = ''
         self.file_name = ''
@@ -506,7 +585,8 @@ class HCFF(tr.HasStrictTraits):
                     ui.HGroup(ui.Item('y_axis'), ui.Item('y_axis_multiplier')),
                     ui.HGroup(ui.Item('add_plot', show_label=False),
                               ui.Item('apply_filters')),
-                    ui.HGroup(ui.Item('add_creep_plot', show_label=False)),
+                    ui.HGroup(ui.Item('add_creep_plot', show_label=False),
+                              ui.Item('normalize_cycles')),
                     ui.Item('plot_list'),
                     show_border=True,
                     label='Plotting settings'),
@@ -528,7 +608,8 @@ class HCFF(tr.HasStrictTraits):
                                     enabled_when='cutting_method == "Define min cycle range(force difference)"'),
                           show_border=True,
                           label='Cut fake cycles for creep:'),
-                ui.Item('generate_filtered_npy', show_label=False),
+                ui.Item('generate_filtered_and_creep_npy',
+                        show_label=False),
                 show_border=True,
                 label='Filters'
             ),
