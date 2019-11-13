@@ -67,6 +67,7 @@ class HCFF(tr.HasStrictTraits):
     decimal = tr.Enum(',', '.')
     delimiter = tr.Str(';')
     records_per_second = tr.Float(100)
+    take_time_from_first_column = tr.Bool
     file_csv = tr.File
     open_file_csv = tr.Button('Input file')
     skip_rows = tr.Int(3, auto_set=False, enter_set=True)
@@ -157,13 +158,12 @@ class HCFF(tr.HasStrictTraits):
                 self.file_csv, delimiter=self.delimiter, decimal=self.decimal,
                 skiprows=self.skip_rows, usecols=[i]))
 
-            """ TODO! Create time array supposing the it's column is the
+            """ TODO! Create time array supposing it's column is the
             first one in the file and that we have 100 reads in 1 second """
-            if i == 0:
+            if i == 0 and self.take_time_from_first_column == False:
                 column_array = np.arange(start=0.0,
-                                         stop=len(column_array) /
-                                         self.records_per_second,
-                                         step=1.0 / self.records_per_second)
+                                         stop=len(column_array),
+                                         step=1.0)
 
             np.save(os.path.join(self.npy_folder_path, self.file_name +
                                  '_' + self.columns_headers_list[i] + '.npy'),
@@ -567,12 +567,16 @@ class HCFF(tr.HasStrictTraits):
             ui.VSplit(
                 ui.HGroup(
                     ui.UItem('open_file_csv'),
-                    ui.UItem('file_csv', style='readonly'),
+                    ui.UItem('file_csv', style='readonly', width=0.1),
                     label='Input data'
                 ),
                 ui.Item('add_columns_average', show_label=False),
                 ui.VGroup(
-                    ui.Item('records_per_second'),
+                    ui.VGroup(ui.Item('records_per_second',
+                                      enabled_when='take_time_from_first_column == False'),
+                              ui.Item('take_time_from_first_column'),
+                              label='Time calculation',
+                              show_border=True),
                     ui.Item('skip_rows'),
                     ui.Item('decimal'),
                     ui.Item('delimiter'),
@@ -589,7 +593,7 @@ class HCFF(tr.HasStrictTraits):
                               ui.Item('normalize_cycles')),
                     ui.Item('plot_list'),
                     show_border=True,
-                    label='Plotting settings'),
+                    label='Plotting settings')
             ),
             ui.VGroup(
                 ui.Item('force_name'),
@@ -617,7 +621,7 @@ class HCFF(tr.HasStrictTraits):
                      resizable=True,
                      springy=True,
                      width=0.8,
-                     label='2d plots'),
+                     label='2d plots')
         ),
         title='HCFF Filter',
         resizable=True,
