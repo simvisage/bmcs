@@ -81,7 +81,11 @@ class HCFF(tr.HasStrictTraits):
     apply_filters = tr.Bool
     normalize_cycles = tr.Bool
     force_name = tr.Str('Kraft')
-    peak_force_before_cycles = tr.Float(30)
+    old_peak_force_before_cycles = tr.Float
+    peak_force_before_cycles = tr.Float
+    window_length = tr.Int(31)
+    polynomial_order = tr.Int(2)
+    activate = tr.Bool(False)
     plots_num = tr.Enum(1, 2, 3, 4, 6, 9)
     plot_list = tr.List()
     add_plot = tr.Button
@@ -251,7 +255,7 @@ class HCFF(tr.HasStrictTraits):
                 force_filtered)
 
         # 2- Export filtered displacements
-        # TODO I skipped time with presuming it's the first column
+        # TODO I skipped time presuming it's the first column
         for i in range(1, len(self.columns_headers_list)):
             if self.columns_headers_list[i] != str(self.force_name):
 
@@ -261,8 +265,12 @@ class HCFF(tr.HasStrictTraits):
                                             + '.npy')).flatten()
                 disp_ascending = disp[0:peak_force_before_cycles_index]
                 disp_rest = disp[peak_force_before_cycles_index:]
-                disp_ascending = savgol_filter(
-                    disp_ascending, window_length=51, polyorder=2)
+
+                if self.activate == True:
+                    disp_ascending = savgol_filter(
+                        disp_ascending, window_length=self.window_length,
+                        polyorder=self.polynomial_order)
+
                 disp_rest_filtered = disp_rest[force_max_min_indices]
                 filtered_disp = np.concatenate(
                     (disp_ascending, disp_rest_filtered))
@@ -375,6 +383,21 @@ class HCFF(tr.HasStrictTraits):
                 to_delete_from_minima.append(i)
         force_min_indices = np.delete(force_min_indices, to_delete_from_minima)
         return force_min_indices
+
+    def _activate_changed(self):
+        if self.activate == False:
+            self.old_peak_force_before_cycles = self.peak_force_before_cycles
+            self.peak_force_before_cycles = 0
+        else:
+            self.peak_force_before_cycles = self.old_peak_force_before_cycles
+
+    def _window_length_changed(self, old, new):
+
+        if new % 2 == 0 or new <= 0:
+            dialog = MessageDialog(
+                title='Attention!',
+                message='Window length must be odd positive integer.')
+            dialog.open()
 
     #=========================================================================
     # Plotting
@@ -597,8 +620,14 @@ class HCFF(tr.HasStrictTraits):
             ),
             ui.VGroup(
                 ui.Item('force_name'),
-                ui.HGroup(ui.Item('peak_force_before_cycles'),
-                          show_border=True, label='Skip noise of ascending branch:'),
+                ui.VGroup(ui.Item('activate'),
+                          ui.VGroup(
+                              ui.Item('peak_force_before_cycles'),
+                              ui.Item('window_length'),
+                              ui.Item('polynomial_order'),
+                              enabled_when='activate == True'),
+                          show_border=True,
+                          label='Smooth ascending branch using Savitzky-Golay filter:'),
                 #                     ui.Item('plots_list'),
                 ui.VGroup(ui.Item('cutting_method'),
                           ui.VGroup(ui.Item('force_max'),
