@@ -166,8 +166,9 @@ class HCFF(tr.HasStrictTraits):
             first one in the file and that we have 100 reads in 1 second """
             if i == 0 and self.take_time_from_first_column == False:
                 column_array = np.arange(start=0.0,
-                                         stop=len(column_array),
-                                         step=1.0)
+                                         stop=len(column_array) /
+                                         self.records_per_second,
+                                         step=1.0 / self.records_per_second)
 
             np.save(os.path.join(self.npy_folder_path, self.file_name +
                                  '_' + self.columns_headers_list[i] + '.npy'),
