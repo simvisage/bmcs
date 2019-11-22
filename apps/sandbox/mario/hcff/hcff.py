@@ -149,7 +149,7 @@ class HCFF(tr.HasStrictTraits):
 
 
 if __name__ == '__main__':
-    #     hcff = HCFF(file_csv='C:\\Users\\hspartali\\Desktop\\BeamEnd_Results')
+
     hcff = HCFF()
 
     cut_initial = HCFFilter(name='cut')
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     directly_make_average = HCFFilter(name='average1')
     hcff.hcf.add_filter(directly_make_average)
 
-    hcff.selected_filter = cut_initial
+    #hcff.selected_filter = cut_initial
 
     custom_filter = HCFFilter(name='custom')
     cut_initial.add_filter(custom_filter)
