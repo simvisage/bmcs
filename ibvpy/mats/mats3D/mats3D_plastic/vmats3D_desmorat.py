@@ -158,7 +158,6 @@ class MATS3DDesmorat(MATS3DEval):
             a, a)
         )
         f = norm_a - self.tau_bar - self.K * z_a
-
         # identify the inelastic material points to perform return mapping
         I = np.where(f > 1e-6)
         delta_pi_I = (
