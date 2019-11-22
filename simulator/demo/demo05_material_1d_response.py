@@ -1,3 +1,4 @@
+
 from bmcs.time_functions import \
     LoadingScenario
 from ibvpy.bcond import BCDof
@@ -17,4 +18,7 @@ s.tstep.debug = False
 s.tloop.verbose = True
 s.run()
 s.join_thread()
-print(s.hist.F_t)
+
+#print(s.hist.F_t)
+#print(s.hist.U_t)
+

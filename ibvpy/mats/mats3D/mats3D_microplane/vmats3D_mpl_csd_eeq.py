@@ -16,19 +16,30 @@ from numpy import array,\
     einsum, zeros_like, identity, sign,\
     sqrt
 from traits.api import Constant,\
-    Float, Property, cached_property, Dict
+    Float, Property, cached_property, Dict, List
 from traitsui.api import \
     View, VGroup, Item
+    
+from simulator.api import \
+    TLoopImplicit, TStepBC    
 
 import numpy as np
 import traits.api as tr
 
 
 class MATS3DMplCSDEEQ(MATS3DEval):
+    # implements(IMATSEval)
+    
+    # To use the model directly in the simulator specify the
+    # time stepping classes
+    tloop_type = TLoopImplicit
+    tstep_type = TStepBC
 
     node_name = 'Microplane CSD model (EEQ)'
-    # implements(IMATSEval)
-
+    
+    
+    tree_node_list = List([])
+    
     #---------------------------------------
     # Tangential constitutive law parameters
     #---------------------------------------
@@ -155,6 +166,12 @@ class MATS3DMplCSDEEQ(MATS3DEval):
                         desc="Yield stress in compression",
                         enter_set=True,
                         auto_set=False)
+    
+    
+    
+    U_var_shape = (6,)
+    '''Shape of the primary variable required by the TStepState.
+    '''
 
     state_var_shapes = Property(Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
@@ -225,7 +242,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         return omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn
 
     #--------------------------------------------------------------
-    # microplane constitutive law (normal behavior CP + TD) (using cumulative normal strain for fatigue under tension)
+    # microplane constitutive law (normal behavior CP + TD) 
     #--------------------------------------------------------------
     def get_normal_law(self, eps_N_Emn, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
 
@@ -528,18 +545,11 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         eps_N_Emn = self._get_e_N_Emn_2(eps_Emab)
         eps_T_Emna = self._get_e_T_Emna_2(eps_Emab)
 
-#         # plastic normal strains
-#         eps_N_p_Emn = self.get_normal_law(
-# eps_N_Emn, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn)[5]
-
+        # plastic normal strains
         eps_N_p_Emn = self._get_eps_N_p_Emn(
             eps_Emab, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn)
 
-#         # sliding tangential strains
-#         eps_T_pi_Emna = self.get_tangential_law(
-# eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna,
-# sigma_N_Emn)[4]
-
+        # sliding tangential strains
         eps_T_pi_Emna = self._get_eps_T_pi_Emna(
             eps_Emab, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
@@ -556,23 +566,22 @@ class MATS3DMplCSDEEQ(MATS3DEval):
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, eps_Emab_n1, deps_Emab, tn, tn1,
-                      update_state, algorithmic,
+    def get_corr_pred(self, eps_Emab_n1, tn1,
                       omegaN, z_N_Emn,
                       alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
                       w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna):
 
         # Corrector predictor computation.
-        if update_state:
+        #if update_state:
 
-            eps_Emab_n = eps_Emab_n1 - deps_Emab
+        #eps_Emab_n = eps_Emab_n1 - deps_Emab
 
-            eps_N_Emn = self._get_e_N_Emn_2(eps_Emab_n)
-            eps_T_Emna = self._get_e_T_Emna_2(eps_Emab_n)
+        eps_N_Emn = self._get_e_N_Emn_2(eps_Emab_n1)
+        eps_T_Emna = self._get_e_T_Emna_2(eps_Emab_n1)
 
-            omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn = self.get_normal_law(
+        omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn = self.get_normal_law(
                 eps_N_Emn, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn)
-            w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna = self.get_tangential_law(
+        w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna = self.get_tangential_law(
                 eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
         #------------------------------------------------------------------
@@ -605,9 +614,9 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
         # calculation of the stress tensor
         sig_Emab = einsum('...abcd,...cd->...ab', D_Emabcd, eps_e_Emab)
-        print(sig_Emab)
+        #print(sig_Emab)
 
-        return D_Emabcd, sig_Emab
+        return sig_Emab, D_Emabcd
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D

@@ -14,7 +14,7 @@ from ibvpy.core.bcond_mngr import BCondMngr
 from ibvpy.fets import FETS3D8H
 from ibvpy.mats.mats3D import \
     MATS3DMplDamageODF, MATS3DMplDamageEEQ, MATS3DElastic, \
-    MATS3DScalarDamage, MATS3DMplCSDEEQ
+    MATS3DScalarDamage
 from ibvpy.mats.viz3d_tensor_field import \
     Vis3DTensorField, Viz3DTensorField
 from simulator.api import Simulator, XDomainFEGrid
@@ -31,15 +31,15 @@ from view.window import BMCSWindow
 import numpy as np
 import traits.api as tr
 
-# 
+
 class Viz2DForceDeflectionX(Viz2D):
- 
+
     '''Plot adaptor for the pull-out simulator.
     '''
     label = 'F-W'
- 
+
     show_legend = tr.Bool(True, auto_set=False, enter_set=True)
- 
+
     def plot(self, ax, vot, *args, **kw):
         P, W = self.vis2d.get_PW()
         ymin, ymax = np.min(P), np.max(P)
@@ -59,16 +59,16 @@ class Viz2DForceDeflectionX(Viz2D):
         if self.show_legend:
             ax.legend(loc=4)
         self.plot_marker(ax, vot)
- 
+
     def plot_marker(self, ax, vot):
         P, W = self.vis2d.get_PW()
         idx = self.vis2d.tloop.get_time_idx(vot)
         P, w = P[idx], W[idx]
         ax.plot([w], [P], 'o', color='black', markersize=10)
- 
+
     def plot_tex(self, ax, vot, *args, **kw):
         self.plot(ax, vot, *args, **kw)
- 
+
     traits_view = View(
         Item('name', style='readonly'),
         Item('show_legend'),
@@ -85,7 +85,6 @@ class CrossSection(BMCSLeafNode):
               CS=True,
               auto_set=False, enter_set=True,
               desc='cross-section width [mm2]')
-    
     h = Float(1.0,
               CS=True,
               auto_set=False, enter_set=True,
@@ -112,15 +111,14 @@ class Geometry(BMCSLeafNode):
     )
 
     tree_view = view
-    
 
 
-class CompressionTestModel(Simulator, Vis2D):
+class BendingTestModel(Simulator, Vis2D):
 
     #=========================================================================
     # Tree node attributes
     #=========================================================================
-    node_name = 'compression test simulation'
+    node_name = 'bending test simulation'
 
     tree_node_list = List([])
 
@@ -131,6 +129,8 @@ class CompressionTestModel(Simulator, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
+            # self.fixed_left_bc,
+            # self.fixed_right_bc,
             self.fixed_bottom_bc,
             self.control_bc
         ]
@@ -141,6 +141,8 @@ class CompressionTestModel(Simulator, Vis2D):
             self.mats_eval,
             self.cross_section,
             self.geometry,
+            # self.fixed_left_bc,
+            # self.fixed_right_bc,
             self.fixed_bottom_bc,
             self.control_bc
         ]
@@ -170,18 +172,20 @@ class CompressionTestModel(Simulator, Vis2D):
     n_e_y = Int(1, auto_set=False, enter_set=True)
     n_e_z = Int(1, auto_set=False, enter_set=True)
 
-    w_max = Float(-1, BC=True, auto_set=False, enter_set=True)
+    w_max = Float(-50, BC=True, auto_set=False, enter_set=True)
 
     controlled_elem = Property(Int)
+
+    def _get_controlled_elem(self):
+        return int(self.n_e_x / 2)
 
     #=========================================================================
     # Material model
     #=========================================================================
-    mats_eval_type = Trait('microplane damage (eeq)',
+    mats_eval_type = Trait('elastic',
                            {'elastic': MATS3DElastic,
                             'microplane damage (eeq)': MATS3DMplDamageEEQ,
                             'microplane damage (odf)': MATS3DMplDamageODF,
-                            'microplane CSD (eeq)': MATS3DMplCSDEEQ,
                             'scalar damage': MATS3DScalarDamage,
                             },
                            MAT=True
@@ -224,11 +228,26 @@ class CompressionTestModel(Simulator, Vis2D):
     '''
     @cached_property
     def _get_bc(self):
-        return [
+        return [  # self.fixed_left_bc,
+            # self.fixed_right_bc,
             self.fixed_bottom_bc,
             self.fixed_bottom_left_bc,
+            # self.fixed_middle_bc,
             self.control_bc]
 
+#     fixed_left_bc = Property(depends_on='CS, BC,GEO,MESH')
+#     '''Foxed boundary condition'''
+#     @cached_property
+#     def _get_fixed_left_bc(self):
+#         return BCSlice(slice=self.fe_grid[0, 0, :, 0, 0, :],
+#                        var='u', dims=[1], value=0)
+
+#     fixed_right_bc = Property(depends_on='CS,BC,GEO,MESH')
+#     '''Foxed boundary condition'''
+#     @cached_property
+#     def _get_fixed_right_bc(self):
+#         return BCSlice(slice=self.fe_grid[-1, 0, :, -1, 0, :],
+#                        var='u', dims=[1], value=0)
 
     fixed_bottom_bc = Property(depends_on='CS,BC,GEO,MESH')
     '''Foxed boundary condition'''
@@ -244,6 +263,26 @@ class CompressionTestModel(Simulator, Vis2D):
         return BCSlice(slice=self.fe_grid[0, 0, :, 0, 0, :],
                        var='u', dims=[0], value=0)
 
+#     fixed_middle_bc = Property(depends_on='CS,BC,GEO,MESH')
+#     '''Foxed boundary condition'''
+#     @cached_property
+#     def _get_fixed_middle_bc(self):
+#         return BCSlice(
+#             slice=self.fe_grid[self.controlled_elem, -1, :, 0, -1, :],
+#             var='u', dims=[0], value=0
+#         )
+
+#     control_bc = Property(depends_on='CS,BC,GEO,MESH')
+#     '''Control boundary condition - make it accessible directly
+#     for the visualization adapter as property
+#     '''
+#     @cached_property
+#     def _get_control_bc(self):
+#         return BCSlice(
+#             slice=self.fe_grid[self.controlled_elem, -1, :, :, -1, :],
+#             var='u', dims=[1], value=-self.w_max
+#         )
+#
 
     control_bc = Property(depends_on='CS,BC,GEO,MESH')
     '''Control boundary condition - make it accessible directly
@@ -268,7 +307,6 @@ class CompressionTestModel(Simulator, Vis2D):
                               shape=(self.n_e_x, self.n_e_y, self.n_e_z),
                               fets=self.fets_eval)
         return dgrid
-    
         L = self.geometry.L / 2.0
         L_c = self.geometry.L_c
         x_x, _, _ = dgrid.mesh.geo_grid.point_x_grid
@@ -302,42 +340,42 @@ class CompressionTestModel(Simulator, Vis2D):
             acc=acc,
         )
 
-#     def get_PW(self):
-#         record_dofs = self.fe_grid[
-#             self.controlled_elem, -1, :, :, -1, :].dofs[:, :, 1].flatten()
-#         Fd_int_t = np.array(self.tloop.F_int_record)
-#         Ud_t = np.array(self.tloop.U_record)
-#         F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
-#         U_t = -Ud_t[:, record_dofs[0]]
-#         return F_int_t, U_t
-# 
-#     viz2d_classes = {'F-w': Viz2DForceDeflectionX,
-#                      'load function': Viz2DLoadControlFunction,
-#                      }
-# 
-#     traits_view = View(Item('mats_eval_type'),)
-# 
-#     tree_view = traits_view
+    def get_PW(self):
+        record_dofs = self.fe_grid[
+            self.controlled_elem, -1, :, :, -1, :].dofs[:, :, 1].flatten()
+        Fd_int_t = np.array(self.tloop.F_int_record)
+        Ud_t = np.array(self.tloop.U_record)
+        F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
+        U_t = -Ud_t[:, record_dofs[0]]
+        return F_int_t, U_t
+
+    viz2d_classes = {'F-w': Viz2DForceDeflectionX,
+                     'load function': Viz2DLoadControlFunction,
+                     }
+
+    traits_view = View(Item('mats_eval_type'),)
+
+    tree_view = traits_view
 
 
-def run_compression_test(*args, **kw):
+def run_bending3pt_mic_odf(*args, **kw):
 
-    bt = CompressionTestModel(n_e_x=1, n_e_y=1, n_e_z=1,
+    bt = BendingTestModel(n_e_x=1, n_e_y=1, n_e_z=1,
                           k_max=500,
-                          #mats_eval_type='microplane damage (eeq)'
+                          mats_eval_type='microplane damage (eeq)'
                           #mats_eval_type='microplane damage (eeq)'
                           #mats_eval_type='microplane damage (odf)'
                           # mats_eval_type='elastic'
                           )
-    #E_c = 28000  # MPa
-    #f_ct = 3.0  # MPa
-    #epsilon_0 = f_ct / E_c  # [-]
+    E_c = 28000  # MPa
+    f_ct = 3.0  # MPa
+    epsilon_0 = f_ct / E_c  # [-]
 
     print(bt.mats_eval_type)
     bt.mats_eval.trait_set(
         # stiffness='algorithmic',
-        #epsilon_0=epsilon_0,
-        #epsilon_f=epsilon_0 * 10
+        epsilon_0=epsilon_0,
+        epsilon_f=epsilon_0 * 10
     )
 
     bt.w_max = 0.001
@@ -345,15 +383,7 @@ def run_compression_test(*args, **kw):
     bt.cross_section.h = 1
     bt.geometry.L = 1
     bt.loading_scenario.trait_set(loading_type='monotonic')
-    
-    
-#     w = BMCSWindow(sim=bt)
-#     #bt.add_viz2d('load function', 'load-time')
-#     w.configure_traits()
-#     
-#     w.run()
-#     time.sleep(10)
-    
+
     bt.record = {
         #       'Pw': Vis2DFW(bc_right=right_x_s, bc_left=left_x_s),
         #       'slip': Vis2DField(var='slip'),
@@ -361,20 +391,20 @@ def run_compression_test(*args, **kw):
         'stress': Vis3DTensorField(var='sig_ab'),
         'damage': Vis3DTensorField(var='phi_ab'),
     }
- 
+
     w = BMCSWindow(sim=bt)
 #    bt.add_viz2d('load function', 'load-time')
 #    bt.add_viz2d('F-w', 'load-displacement')
- 
-    #viz_stress = Viz3DTensorField(vis3d=bt.hist['strain'])
-    #viz_strain = Viz3DTensorField(vis3d=bt.hist['stress'])
-    #viz_damage = Viz3DTensorField(vis3d=bt.hist['damage'])
- 
-    #w.viz_sheet.add_viz3d(viz_stress)
-    #w.viz_sheet.add_viz3d(viz_strain)
-    #w.viz_sheet.add_viz3d(viz_damage)
-    #w.viz_sheet.monitor_chunk_size = 1
- 
+
+    viz_stress = Viz3DTensorField(vis3d=bt.hist['strain'])
+    viz_strain = Viz3DTensorField(vis3d=bt.hist['stress'])
+    viz_damage = Viz3DTensorField(vis3d=bt.hist['damage'])
+
+    w.viz_sheet.add_viz3d(viz_stress)
+    w.viz_sheet.add_viz3d(viz_strain)
+    w.viz_sheet.add_viz3d(viz_damage)
+    w.viz_sheet.monitor_chunk_size = 1
+
     w.run()
     time.sleep(10)
     w.offline = False
@@ -383,4 +413,4 @@ def run_compression_test(*args, **kw):
 
 
 if __name__ == '__main__':
-    run_compression_test()
+    run_bending3pt_mic_odf()
