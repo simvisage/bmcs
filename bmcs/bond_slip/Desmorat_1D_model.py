@@ -37,7 +37,7 @@ def get_stress_strain(sig_arr, sig_0, E1, E2, K, gamma, S):
 
         sig_pi_i = (E1 / (E1 + E2)) * sig_i - \
             (((E1 * E2) * (1. - w_i)) / (E1 + E2)) * eps_pi_i
-        print sig_pi_i
+        print(sig_pi_i)
 
         sig_pi_i_eff = sig_pi_i / (1. - w_i)
 
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     for i in range(len(s_levels_2) - 1):
         sig_part = np.linspace(s_history_2[i], s_history_2[i + 1], inc)
         sig_arr_2 = np.hstack((sig_arr_2, sig_part[:-1]))
-    print sig_arr_2
+    print(sig_arr_2)
 
     # material parameters input
     eps_arr_1, sig_arr_1, w_arr_1, eps_pi_arr_1, eps_pi_cum_1, i1 = get_stress_strain(

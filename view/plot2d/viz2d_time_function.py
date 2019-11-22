@@ -5,7 +5,7 @@ Created on Mar 16, 2017
 '''
 
 import numpy as np
-from viz2d import Viz2D
+from .viz2d import Viz2D
 
 
 class Viz2DTimeFunction(Viz2D):

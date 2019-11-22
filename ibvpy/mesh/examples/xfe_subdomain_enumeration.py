@@ -42,7 +42,7 @@ if __name__ == '__main__':
                                        fe_grid_slice = fe_grid1[  '(X - 2) **2 - 0.5 ' ] )
             fe_xdomain.deactivate_sliced_elems()
 
-        print 'elem_dof_map', fe_xdomain.elem_dof_map
+        print('elem_dof_map', fe_xdomain.elem_dof_map)
 
         fe_domain = FEDomain()
         fe_level1 = FERefinementGrid( domain = fe_domain, fets_eval = fets_eval )
@@ -59,7 +59,7 @@ if __name__ == '__main__':
                                        fe_grid_slice = fe_grid1[  'cos(X) - 0.5' ] )
             fe_xdomain.deactivate_sliced_elems()
 
-        print 'elem_dof_map2', fe_xdomain.elem_dof_map
+        print('elem_dof_map2', fe_xdomain.elem_dof_map)
 
 
 if __name__ == '__main__':

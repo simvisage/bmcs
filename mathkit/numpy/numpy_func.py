@@ -1,3 +1,5 @@
+import numpy as np
+
+
 def Heaviside(x):
-    ''' Heaviside function '''
-    return x >= 0
+    return 0.5 * np.sign(x) + 0.5

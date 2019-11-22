@@ -41,7 +41,7 @@ class Item (Item):
         # --------------------------------
         # append metadata 'unit' to the label string if it exists:
         dict_ = trait.__dict__
-        if dict_.has_key('unit'):
+        if 'unit' in dict_:
             unit_str = ' [' + dict_['unit'] + ']'
         else:
             unit_str = ' '
@@ -52,7 +52,7 @@ class Item (Item):
         if tlabel is None:
             return label
 
-        if isinstance(tlabel, basestring):
+        if isinstance(tlabel, str):
             if tlabel[0:3] == '...':
                 return label + tlabel[3:]
             if tlabel[-3:] == '...':

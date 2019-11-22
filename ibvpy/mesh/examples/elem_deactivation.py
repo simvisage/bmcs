@@ -51,9 +51,9 @@ if __name__ == '__main__':
                       BCSlice( var = 'u', dims = [0], slice = fe_grid[ -1, -1 ], value = 1.0 ) ]
 
     fe_grid.inactive_elems = list( interior_elems )
-    print 'elems', interior_bc.elems
-    print 'dofs', interior_bc.dofs
-    print 'nodes', interior_bc.dof_nodes
+    print('elems', interior_bc.elems)
+    print('dofs', interior_bc.dofs)
+    print('nodes', interior_bc.dof_nodes)
 
     rtrace_list = [RTraceDomainListField( name = 'sig_app' ,
                                       var = 'sig_app',

@@ -10,7 +10,7 @@ from traits.api import \
     Str, List, Button, Bool
 from traitsui.api import \
     View, Group, UItem, Include, EnumEditor, HGroup
-from viz2d import Viz2D
+from .viz2d import Viz2D
 
 
 class Viz2DDict(HasStrictTraits):
@@ -30,7 +30,7 @@ class Viz2DDict(HasStrictTraits):
         if viz2d == None:
             viz2d_class = self.viz2d_classes.get(key, None)
             if viz2d_class == None:
-                raise KeyError, 'No vizualization class with key %s' % key
+                raise KeyError('No vizualization class with key %s' % key)
             viz2d = viz2d_class(name=key, vis2d=self.vis2d)
             self._viz2d_objects[key] = viz2d
         return viz2d
@@ -59,6 +59,13 @@ class Vis2D(HasStrictTraits):
     from Visual3D which introduces a dictionary viz3d objects.
     '''
 
+    def setup(self):
+        pass
+
+    sim = WeakRef
+    '''Root of the simulation to extract the data
+    '''
+
     vot = Float(0.0, time_change=True)
     '''Visual object time
     '''
@@ -73,7 +80,7 @@ class Vis2D(HasStrictTraits):
     '''
     @cached_property
     def _get_viz2d_class_names(self):
-        return self.viz2d_classes.keys()
+        return list(self.viz2d_classes.keys())
 
     selected_viz2d_class = Str
 
@@ -87,7 +94,7 @@ class Vis2D(HasStrictTraits):
 
     def _add_selected_viz2d_fired(self):
         viz2d_class_name = self.selected_viz2d_class
-        self.add_viz2d(viz2d_class_name)
+        self.add_viz2d(viz2d_class_name, '<unnamed>')
 
     def add_viz2d(self, class_name, name, **kw):
         if name == '':

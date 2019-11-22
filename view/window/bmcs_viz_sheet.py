@@ -4,10 +4,11 @@ Created on Mar 2, 2017
 @author: rch
 '''
 
-from __builtin__ import len
+from builtins import len
 import os
 import tempfile
 from threading import Thread
+
 from matplotlib.figure import \
     Figure
 from mayavi.core.ui.api import \
@@ -18,7 +19,8 @@ from traits.api import \
     Str, Instance,  Event, Enum, \
     Tuple, List, Range, Int, Float, \
     Property, cached_property, \
-    on_trait_change, Bool, Button, Directory
+    on_trait_change, Bool, Button, Directory, \
+    HasStrictTraits, WeakRef
 from traitsui.api import \
     View, Item, UItem, VGroup, VSplit, \
     HSplit, HGroup, Tabbed, TabularEditor
@@ -32,7 +34,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import traits.api as tr
 from traitsui.api \
-    import View, Item, TableEditor
+    import TableEditor
 from traitsui.extras.checkbox_column \
     import CheckboxColumn
 from traitsui.table_column \
@@ -64,17 +66,7 @@ class Viz2DAdapter(TabularAdapter):
 
 
 # The tabular editor works in conjunction with an adapter class, derived from
-tabular_editor = TabularEditor(
-    adapter=Viz2DAdapter(),
-    operations=['delete', 'move', 'edit'],
-    # Row titles are not supported in WX:
-    drag_move=True,
-    auto_update=True,
-    selected='selected_viz2d',
-)
-
-
-# The 'players' trait table editor:
+# the 'players' trait table editor:
 viz2d_list_editor = TableEditor(
     sortable=False,
     configurable=False,
@@ -86,6 +78,81 @@ viz2d_list_editor = TableEditor(
              ObjectColumn(name='name', editable=False, width=0.24,
                           horizontal_alignment='left'),
              ])
+
+# The tabular editor works in conjunction with an adapter class, derived from
+# the 'players' trait table editor:
+viz3d_list_editor = TableEditor(
+    sortable=False,
+    configurable=False,
+    auto_size=False,
+    selected='selected_viz3d',
+    #    click='viz3d_list_editor_clicked',
+    columns=[CheckboxColumn(name='visible',  label='visible',
+                            width=0.12),
+             ObjectColumn(name='name', editable=False, width=0.24,
+                          horizontal_alignment='left'),
+             ])
+
+
+class AnimationDialog(HasStrictTraits):
+    '''Animation parameters for a diagram.
+    '''
+    sheet = WeakRef
+
+    export_path = Directory
+    status_message = Str('')
+
+    animate_from = Float(0.0, auto_set=False, enter_set=True)
+    animate_to = Float(1.0, auto_set=False, enter_set=True)
+    animate_steps = Int(30, auto_set=False, enter_set=True)
+
+    animate_button = Button(label='Animate selected diagram')
+
+    def _animate_button_fired(self):
+
+        if self.export_path == '':
+            dir_ = tempfile.mkdtemp()
+        else:
+            dir_ = self.export_path
+        name = self.sheet.selected_viz2d.name
+        path = os.path.join(dir_, name)
+
+        if os.path.exists(path):
+            self.status_message = 'overwriting animation %s' % name
+        else:
+            os.makedirs(path)
+
+        for i, vot in enumerate(np.linspace(self.animate_from,
+                                            self.animate_to,
+                                            self.animate_steps)):
+            fname = os.path.join(path, 'step%03d.jpg' % i)
+            self.sheet.selected_viz2d.savefig_animate(
+                vot, fname,
+                (self.sheet.fig_width,
+                 self.sheet.fig_height)
+            )
+        self.status_message = 'animation stored in %s' % path
+
+    traits_view = View(
+        VGroup(
+            VGroup(
+                HGroup(
+                    UItem('animate_from', full_size=True, springy=True),
+                    UItem('animate_to', springy=True),
+                    UItem('animate_steps', springy=True),
+                ),
+                label='Animation range'
+            ),
+            Item('export_path'),
+            HGroup(
+                UItem('status_message', style='readonly')
+            ),
+            UItem('animate_button',
+                  springy=False, resizable=True),
+        ),
+        buttons=['OK', 'Cancel'],
+        title='Animation dialog'
+    )
 
 
 class BMCSVizSheet(ROutputSection):
@@ -191,9 +258,8 @@ class BMCSVizSheet(ROutputSection):
     def run_finished(self):
         self.skipped_steps = self.monitor_chunk_size
         # self.update_pipeline(1.0)
-        self.running = False
-        print 'RUN finshed'
         self.replot()
+        self.running = False
         self.offline = True
 
     monitor_chunk_size = Int(10, label='Monitor each # steps')
@@ -210,10 +276,12 @@ class BMCSVizSheet(ROutputSection):
             return
         for ax, viz2d in zip(self.axes, self.visible_viz2d_list):
             ax.clear()
+            viz2d.clear()
             viz2d.plot(ax, self.vot)
         if self.reference_viz2d:
             ax = self.reference_axes
             ax.clear()
+            self.reference_viz2d.clear()
             self.reference_viz2d.plot(ax, self.vot)
         self.data_changed = True
         self.skipped_steps = 0
@@ -237,7 +305,7 @@ class BMCSVizSheet(ROutputSection):
     '''
 
     def _get_viz2d_names(self):
-        return self.viz2d_dict.keys()
+        return list(self.viz2d_dict.keys())
 
     viz2d_list_editor_clicked = Tuple
     viz2d_list_changed = Event
@@ -291,46 +359,21 @@ class BMCSVizSheet(ROutputSection):
         fig.show()
 
     def _export_button_fired(self, vot=0):
-        print 'in export button fired'
+        print('in export button fired')
         Thread(target=self.plot_in_window).start()
-        print 'thread started'
+        print('thread started')
 
-    export_path = Directory
-    status_message = Str('')
-
-    animate_button = Button(label='Animate selected diagram')
-
-    def _animate_button_fired(self):
-
-        if self.export_path == '':
-            dir_ = tempfile.mkdtemp()
-        else:
-            dir_ = self.export_path
-        name = self.selected_viz2d.name
-        path = os.path.join(dir_, name)
-
-        if os.path.exists(path):
-            self.status_message = 'overwriting animation %s' % name
-        else:
-            os.makedirs(path)
-
-        for i, vot in enumerate(np.linspace(self.animate_from,
-                                            self.animate_to,
-                                            self.animate_steps)):
-            fname = os.path.join(path, 'step%03d.jpg' % i)
-            self.selected_viz2d.savefig_animate(vot, fname,
-                                                (self.fig_width,
-                                                 self.fig_height))
-        self.status_message = 'animation stored in %s' % path
-
-    animate_from = Float(0.0, auto_set=False, enter_set=True)
-    animate_to = Float(1.0, auto_set=False, enter_set=True)
-    animate_steps = Int(30, auto_set=False, enter_set=True)
     fig_width = Float(8.0, auto_set=False, enter_set=True)
     fig_height = Float(5.0, auto_set=False, enter_set=True)
 
     save_button = Button(label='Save selected diagram')
 
+    animate_button = Button(label='Animate selected diagram')
+
+    def _animate_button_fired(self):
+        ad = AnimationDialog(sheet=self)
+        ad.edit_traits()
+        return
     #=========================================================================
     # Reference figure serving for orientation.
     #=========================================================================
@@ -413,8 +456,9 @@ class BMCSVizSheet(ROutputSection):
         n_cols = self.n_cols
         n_rows = (n_fig + n_cols - 1) / self.n_cols
         self.figure.clear()
-        return [self.figure.add_subplot(n_rows, self.n_cols, i + 1)
+        axes = [self.figure.add_subplot(n_rows, self.n_cols, i + 1)
                 for i in range(n_fig)]
+        return axes
 
     data_changed = Event
 
@@ -452,13 +496,14 @@ class BMCSVizSheet(ROutputSection):
         '''Add a new visualization objectk.'''
         viz3d.ftv = self
         vis3d = viz3d.vis3d
-        label = '%s[%s:%s]-%s' % (viz3d.label,
+        name = viz3d.name
+        label = '%s[%s:%s]-%s' % (name,
                                   str(vis3d.__class__),
                                   str(viz3d.__class__),
                                   vis3d
                                   )
-        if self.viz3d_dict.has_key(label):
-            raise KeyError, 'viz3d object named %s already registered' % label
+        if label in self.viz3d_dict:
+            raise KeyError('viz3d object named %s already registered' % label)
         viz3d.order = order
         self.viz3d_dict[label] = viz3d
 
@@ -498,6 +543,11 @@ class BMCSVizSheet(ROutputSection):
             viz3d.plot(vot)
         fig.scene.disable_render = False
 
+    selected_viz3d = Instance(Viz3D)
+
+    def _selected_viz3d_changed(self):
+        print('selection done')
+
     # Traits view definition:
     traits_view = View(
         VSplit(
@@ -521,6 +571,11 @@ class BMCSVizSheet(ROutputSection):
                               width=100),
                         UItem('selected_viz2d@',
                               width=200),
+                        UItem('viz3d_list@',
+                              editor=viz3d_list_editor,
+                              width=100),
+                        UItem('selected_viz3d@',
+                              width=200),
                         VGroup(
                             #                             UItem('export_button',
                             #                                   springy=False, resizable=True),
@@ -534,18 +589,6 @@ class BMCSVizSheet(ROutputSection):
                             #                             ),
                             UItem('animate_button',
                                   springy=False, resizable=True),
-                            VGroup(
-                                HGroup(
-                                    UItem('animate_from', springy=True),
-                                    UItem('animate_to', springy=True),
-                                    UItem('animate_steps', springy=True),
-                                ),
-                                label='Animation range'
-                            ),
-                            Item('export_path'),
-                            HGroup(
-                                UItem('status_message', style='readonly')
-                            ),
                         ),
                         VGroup(
                             UItem('reference_viz2d_name', resizable=True),
@@ -575,26 +618,11 @@ class BMCSVizSheet(ROutputSection):
 
 
 if __name__ == '__main__':
-    import traits.api as tr
-    from ibvpy.dots.vdots_grid import DOTSGrid
-    from ibvpy.fets.fets2D.vfets2D4q import FETS2D4Q
-    dots = DOTSGrid(n_x=5, n_y=2, fets=FETS2D4Q())
-
-    n_elems = dots.mesh.n_active_elems
-    U = np.random.random(n_elems * 4 * 3).reshape(-1, 3) * 10.0
-
-    class TLoop(tr.HasTraits):
-
-        U_record = tr.List()
-        ts = tr.Instance(dots)
-
-    tl = TLoop(ts=dots)
-    tl.U_record.append(U)
-    viz3d = Viz3D()
-    viz3d.set_tloop(tloop=tl)
-
+    viz3d_1 = Viz3D(label='first')
+    viz3d_2 = Viz3D(label='second')
     vs = BMCSVizSheet()
-    vs.add_viz3d(viz3d)
+    vs.add_viz3d(viz3d_1)
+    vs.add_viz3d(viz3d_2)
     vs.run_started()
     vs.replot()
     vs.run_finished()

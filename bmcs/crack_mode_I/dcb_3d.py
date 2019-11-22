@@ -30,7 +30,7 @@ from view.window import BMCSModel, BMCSWindow
 
 import numpy as np
 import traits.api as tr
-from viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
+from .viz3d_energy import Viz2DEnergy, Vis2DEnergy, Viz2DEnergyReleasePlot
 
 
 class Viz2DForceDeflectionX(Viz2D):
@@ -250,7 +250,7 @@ class DCBTestModel(BMCSModel, Vis2D):
     def _get_fixed_left_x(self):
         a_L = self.geometry.a / self.geometry.L
         n_a = int(a_L * self.n_e_y)
-        print 'n_a', n_a
+        print('n_a', n_a)
         return BCSlice(slice=self.fe_grid[0, n_a:, :, 0, -1, :],
                        var='u', dims=[0], value=0)
 
@@ -317,7 +317,7 @@ class DCBTestModel(BMCSModel, Vis2D):
     def _get_dots_grid(self):
         cs = self.cross_section
         geo = self.geometry
-        print self.mats_eval
+        print(self.mats_eval)
         return DOTSGrid(
             L_x=cs.h, L_y=geo.L, L_z=cs.b,
             n_x=self.n_e_x, n_y=self.n_e_y, n_z=self.n_e_z,

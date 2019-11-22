@@ -42,18 +42,18 @@ class MATS2DMicroplaneDamageTraceGfmac(RTDofGraph):
 
         xarray = array(self._xdata)[:, self.idx_x]
         yarray = array(self._ydata)[:, self.idx_y]
-        print 'in Gf_mac: ydata', yarray
+        print('in Gf_mac: ydata', yarray)
 
         # macroscopic total energy:
         E_t = self._get_E_t(xarray, yarray)
-        print 'E_t_mac = %.10f' % (E_t)
+        print('E_t_mac = %.10f' % (E_t))
 
         # macroscopic elastic energy:
         U_t = self._get_U_t(xarray, yarray)
-        print 'U_t_mac = %.10f' % (U_t)
+        print('U_t_mac = %.10f' % (U_t))
 
         G_f = E_t - U_t
-        print 'G_f_mac = %.10f' % (G_f)
+        print('G_f_mac = %.10f' % (G_f))
 
         self.trace.xdata = array(self._trace, dtype=float)
         self.trace.ydata = G_f * ones(self.trace.xdata.shape, dtype=float)

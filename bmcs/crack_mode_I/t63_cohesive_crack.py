@@ -53,7 +53,7 @@ for L, c in zip(L_arr, colors):
     U = np.hstack([U_el, U_w])
 
     l = E * G_f / f_t**2
-    print 'l', l, L
+    print('l', l, L)
 
     p.subplot(2, 2, 1)
     p.plot(eps, sig, lw=3, color=c, label='L=%d' % L)

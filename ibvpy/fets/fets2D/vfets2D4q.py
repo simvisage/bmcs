@@ -73,12 +73,12 @@ class FETS2D4Q(FETSEval):
     '''
     @tr.cached_property
     def _get_shape_function_values(self):
-        N_mi = np.array([N_xi_i.subs(zip([xi_1, xi_2], xi))
+        N_mi = np.array([N_xi_i.subs(list(zip([xi_1, xi_2], xi)))
                          for xi in self.xi_m], dtype=np.float_)
         N_im = np.einsum('mi->im', N_mi)
-        dN_mir = np.array([dN_xi_ir.subs(zip([xi_1, xi_2], xi))
+        dN_mir = np.array([dN_xi_ir.subs(list(zip([xi_1, xi_2], xi)))
                            for xi in self.xi_m], dtype=np.float_).reshape(4, 4, 2)
-        dN_nir = np.array([dN_xi_ir.subs(zip([xi_1, xi_2], xi))
+        dN_nir = np.array([dN_xi_ir.subs(list(zip([xi_1, xi_2], xi)))
                            for xi in self.vtk_r], dtype=np.float_).reshape(4, 4, 2)
         dN_imr = np.einsum('mir->imr', dN_mir)
         dN_inr = np.einsum('nir->inr', dN_nir)
@@ -104,3 +104,8 @@ class FETS2D4Q(FETSEval):
 
     def _get_dN_inr(self):
         return self.shape_function_values[2]
+
+
+if __name__ == '__main__':
+    fe = FETS2D4Q()
+    fe.configure_traits()

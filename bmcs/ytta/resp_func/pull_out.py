@@ -11,12 +11,12 @@ from math import pi, e
 from numpy import hstack, linspace, infty, array, linspace, tanh, sign, sqrt, \
     argmax, where, sign, all, cos
 from scipy.optimize import fsolve, brentq
-from traits.api import Float, implements, Instance, DelegatesTo, \
+from traits.api import Float, Instance, DelegatesTo, \
     Property, Interface, Str, List, HasTraits, Bool
 from traitsui.api import View, Item, VGroup
 from util.traits.either_type import EitherType
 
-from parameters import Geometry, Material, Plot
+from .parameters import Geometry, Material, Plot
 
 
 def Heaviside(x):
@@ -166,7 +166,7 @@ class PullOut(HasTraits):
     def continuous_infinite(self):
         ''' returns the u and P array for infinite embedded length '''
 
-        #L is infinite
+        # L is infinite
         ''' returns the u and P array without considering the breaking stress '''
         L = self.L
         Ef = self.Ef
@@ -216,7 +216,6 @@ class PullOut(HasTraits):
             return self.value_infinite()
         else:
             return self.continuous_infinite()
-
 
 ###############################################################
 # class evaluating x,y (P,u) for finite embedded fibre length #
@@ -298,7 +297,7 @@ class PullOut(HasTraits):
                     ydata = hstack((0, P_deb, 0))
                 else:
                     # max force reached before the debonding has started
-                    u_max = Pu / (tanh(w * self.L) * Ef * A *
+                    u_max = Pu / (tanh(w * self.L) * Ef * A * 
                                   w) + Pu * self.l / A / Ef
                     xdata = array([0, u_max, u_max])
                     ydata = array([0, Pu, 0])
@@ -316,7 +315,6 @@ class PullOut(HasTraits):
             xdata = hstack((0, u_deb, u_pull))
             ydata = hstack((0, P_deb, P_pull))
             return xdata, ydata
-
 
 #################################################
 #    evaluating x,y (P,u) for clamped fibre end #

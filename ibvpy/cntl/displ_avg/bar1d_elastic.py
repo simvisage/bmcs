@@ -31,7 +31,7 @@ from numpy import \
 
 from math import exp, fabs
 
-from rt_nonlocal_averaging import \
+from .rt_nonlocal_averaging import \
     RTNonlocalAvg, QuarticAF
 
 from ibvpy.mesh.fe_grid import FEGrid

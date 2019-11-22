@@ -14,15 +14,14 @@
 
 from math import copysign, sin
 
-from ibvpy.mats.mats1D.mats1D_eval import MATS1DEval
-from ibvpy.mats.mats_eval import IMATSEval
 from traits.api import \
     Float,  \
     Trait,    \
-    implements, Dict
+    Dict
 from traitsui.api import \
     Item, View, Group, Spring
 
+from ibvpy.mats.mats1D.mats1D_eval import MATS1DEval
 import numpy as np
 
 
@@ -41,8 +40,6 @@ class MATS1DPlastic(MATS1DEval):
     '''
     Scalar Damage Model.
     '''
-
-    implements(IMATSEval)
 
     E = Float(1.,  # 34e+3,
               label="E",
@@ -231,6 +228,7 @@ class MATS1DPlastic(MATS1DEval):
         ]
         c['tline'] = TLine(step=0.3, max=10)
         return c
+
 
 if __name__ == '__main__':
 

@@ -7,7 +7,7 @@ from traitsui.api import Item, View, Group, Handler, HGroup
 from traitsui.menu import NoButtons, OKButton, CancelButton, Action, CloseAction, Menu, \
     MenuBar, Separator
 
-from mfn_line import MFnLineArray
+from .mfn_line import MFnLineArray
 
 import time
 import math

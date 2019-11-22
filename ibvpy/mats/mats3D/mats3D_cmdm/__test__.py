@@ -12,7 +12,7 @@
 #
 # Created on Aug 19, 2009 by: rch
 
-from mats3D_cmdm import \
+from .mats3D_cmdm import \
     MATS3DMicroplaneDamage, PhiFnStrainSoftening, PhiFnStrainHardening
 
 from ibvpy.mats.mats3D.__test__ import TestMATS3D

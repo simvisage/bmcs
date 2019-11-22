@@ -29,11 +29,6 @@ from os.path import exists
 from os.path import expanduser
 from string import replace
 
-from chaco.api import \
-    Plot, AbstractPlotData, ArrayPlotData, \
-    ArrayDataSource
-from chaco.tools.api import \
-    PanTool, ZoomTool
 from enable.component_editor import \
     ComponentEditor
 from numpy import \
@@ -47,12 +42,13 @@ from traits.api import \
 from traitsui.api import \
     View, Item, HSplit, VGroup, \
     TableEditor
-from traitsui.file_dialog  \
-    import open_file, FileInfo, TextInfo, ImageInfo
 from traitsui.menu import \
     OKButton, CancelButton
 from traitsui.table_column import \
     ObjectColumn
+
+from traitsui.file_dialog  \
+    import open_file, FileInfo, TextInfo, ImageInfo
 from traitsui.table_filter \
     import EvalFilterTemplate, MenuFilterTemplate, RuleFilterTemplate, \
     EvalTableFilter
@@ -268,6 +264,7 @@ class ExRun(HasTraits):
 # ExDesignReader
 #-------------------------------------------------------------------------
 
+
 exrun_table_editor = TableEditor(
     columns_name='exdesign_table_columns',
     selection_mode='rows',
@@ -399,29 +396,29 @@ class EXDesignReader(HasTraits):
         '''
         '''
         runs, xlabels, ylabels, xlabels_afit, ylabels_afit, xlins, ylins = self._generate_data_labels()
-        for name in self.plot.plots.keys():
+        for name in list(self.plot.plots.keys()):
             self.plot.delplot(name)
 
         for idx, exrun in enumerate(self.selected_exruns):
-            if not self.plot.datasources.has_key(xlabels[idx]):
+            if xlabels[idx] not in self.plot.datasources:
                 self.plot.datasources[xlabels[idx]] = ArrayDataSource(exrun.xdata,
                                                                       sort_order='none')
-            if not self.plot.datasources.has_key(ylabels[idx]):
+            if ylabels[idx] not in self.plot.datasources:
                 self.plot.datasources[ylabels[idx]] = ArrayDataSource(exrun.ydata,
                                                                       sort_order='none')
 
-            if not self.plot.datasources.has_key(xlabels_afit[idx]):
+            if xlabels_afit[idx] not in self.plot.datasources:
                 self.plot.datasources[xlabels_afit[idx]] = ArrayDataSource(exrun.xdata_asc_fit,
                                                                            sort_order='none')
 
-            if not self.plot.datasources.has_key(ylabels_afit[idx]):
+            if ylabels_afit[idx] not in self.plot.datasources:
                 self.plot.datasources[ylabels_afit[idx]] = ArrayDataSource(exrun.ydata_asc_fit,
                                                                            sort_order='none')
             xlin, ylin = exrun.get_linear_data()
-            if not self.plot.datasources.has_key(xlins[idx]):
+            if xlins[idx] not in self.plot.datasources:
                 self.plot.datasources[xlins[idx]] = ArrayDataSource(xlin,
                                                                     sort_order='none')
-            if not self.plot.datasources.has_key(ylins[idx]):
+            if ylins[idx] not in self.plot.datasources:
                 self.plot.datasources[ylins[idx]] = ArrayDataSource(ylin,
                                                                     sort_order='none')
 
@@ -435,13 +432,13 @@ class EXDesignReader(HasTraits):
     def _generate_data_labels(self):
         ''' Generate the labels consisting of the axis and run-number.
         '''
-        return (map(lambda e: e.std_num, self.selected_exruns),
-                map(lambda e: 'x-%d' % e.std_num, self.selected_exruns),
-                map(lambda e: 'y-%d' % e.std_num, self.selected_exruns),
-                map(lambda e: 'x-%d-fitted' % e.std_num, self.selected_exruns),
-                map(lambda e: 'y-%d-fitted' % e.std_num, self.selected_exruns),
-                map(lambda e: 'x-%d-lin' % e.std_num, self.selected_exruns),
-                map(lambda e: 'y-%d-lin' % e.std_num, self.selected_exruns),
+        return ([e.std_num for e in self.selected_exruns],
+                ['x-%d' % e.std_num for e in self.selected_exruns],
+                ['y-%d' % e.std_num for e in self.selected_exruns],
+                ['x-%d-fitted' % e.std_num for e in self.selected_exruns],
+                ['y-%d-fitted' % e.std_num for e in self.selected_exruns],
+                ['x-%d-lin' % e.std_num for e in self.selected_exruns],
+                ['y-%d-lin' % e.std_num for e in self.selected_exruns],
                 )
 
     plot = Instance(Plot)

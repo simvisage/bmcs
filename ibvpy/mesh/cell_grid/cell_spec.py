@@ -203,38 +203,38 @@ if __name__ == '__main__':
 
     mgc = GridCell( grid_cell_spec = cc )
 
-    print 'cell_shape'
-    print cc.get_cell_shape()
+    print('cell_shape')
+    print(cc.get_cell_shape())
 
-    print 'grid_cell_coords'
-    print mgc.grid_cell_coords
+    print('grid_cell_coords')
+    print(mgc.grid_cell_coords)
 
-    print 'node_map'
-    print mgc.node_map
+    print('node_map')
+    print(mgc.node_map)
 
-    print 'node distribution'
-    print mgc._get_node_distribution()
+    print('node distribution')
+    print(mgc._get_node_distribution())
 
     node_bool_map = repeat( False, mgc.n_nodes ).reshape( cc.get_cell_shape() )
-    print '*** construct the full boolean map of the grid cell'
-    print 'node_bool_map'
-    print node_bool_map
+    print('*** construct the full boolean map of the grid cell')
+    print('node_bool_map')
+    print(node_bool_map)
 
     node_bool_map[:, -1] = True
-    print '*** make the slice'
-    print 'node_bool_map[:,-1]'
-    print node_bool_map
+    print('*** make the slice')
+    print('node_bool_map[:,-1]')
+    print(node_bool_map)
 
-    print '*** apply the node map to the full boolean sliced array'
-    print 'node_map[ node_bool_map]'
+    print('*** apply the node map to the full boolean sliced array')
+    print('node_map[ node_bool_map]')
     node_selection = mgc[:, -1]
-    print node_selection
+    print(node_selection)
 
-    print '*** get the numbers of nodes within the slice'
-    print 'node_map[ node_bool_map]'
-    print mgc.node_map[ node_selection]
+    print('*** get the numbers of nodes within the slice')
+    print('node_map[ node_bool_map]')
+    print(mgc.node_map[ node_selection])
 
-    print '*** get the point coordinates within the selection'
-    print 'points'
-    print mgc._get_points()[ node_selection ]
+    print('*** get the point coordinates within the selection')
+    print('points')
+    print(mgc._get_points()[ node_selection ])
 

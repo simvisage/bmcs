@@ -26,8 +26,8 @@ if __name__ == '__main__':
         fe_subgrid1 = FERefinementLevel(parent=fe_domain1,
                                         fine_cell_shape=(1, 1))
 
-        print 'children'
-        print fe_domain1.children
+        print('children')
+        print(fe_domain1.children)
 
         fe_subgrid1.refine_elem((5, 5))
         fe_subgrid1.refine_elem((6, 5))
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         tloop = TLoop(tstepper=ts,
                       tline=TLine(min=0.0, step=1, max=1.0))
 #
-        print tloop.eval()
+        print(tloop.eval())
         from ibvpy.plugins.ibvpy_app import IBVPyApp
         ibvpy_app = IBVPyApp(ibv_resource=tloop)
         ibvpy_app.main()

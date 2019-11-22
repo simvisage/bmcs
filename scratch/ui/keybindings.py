@@ -10,7 +10,7 @@ class CodeHandler(Handler, HasTraits):
     info = Any
 
     def action1(self, info):
-        print info
+        print(info)
 
 
 class show_trace(HasTraits):

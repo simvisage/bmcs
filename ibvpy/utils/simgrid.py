@@ -136,13 +136,13 @@ if __name__ == '__main__':
                               support_slices[1], support_dirs,
                               loading_slices[1], 1, 0.01, 1, ['u'] )
     
-    print 'u1'
+    print('u1')
     for idx, u in enumerate( u1 ):
-        print '[', idx, ']', u
+        print('[', idx, ']', u)
     
-    print 'u2'
+    print('u2')
     for idx, u in enumerate( u2 ):
-        print '[', idx, ']', u
+        print('[', idx, ']', u)
     
     
         

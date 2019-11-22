@@ -4,10 +4,10 @@ Created on Jul 9, 2017
 @author: rch
 '''
 
-from StringIO import StringIO
+from io import StringIO
 from traits.api import \
     HasStrictTraits, Interface, Str, \
-    Dict, Property, implements, Missing
+    Dict, Property, provides, Missing
 import numpy as np
 
 
@@ -24,13 +24,12 @@ class RItem(HasStrictTraits):
     '''
 
 
+@provides(IRItem)
 class RInputRecord(RItem):
     '''This class scans the parameters
     that have as metadata one of the input tags and 
     specified in the input tag list.
     '''
-
-    implements(IRItem)
 
     name = Str
 
@@ -38,7 +37,7 @@ class RInputRecord(RItem):
 
     def get_subrecords(self):
         subrecords = {}
-        for name, value in self.trait_get(report=True).items():
+        for name, value in list(self.trait_get(report=True).items()):
             subrecords[name] = value
         return subrecords
 
@@ -49,20 +48,20 @@ class RInputRecord(RItem):
         if itags == None:
             itags = self.itags
         input_traits = {}
-        for itag in itags.keys():
+        for itag in list(itags.keys()):
             input_traits.update(self.traits(**{itag: True}))
         return input_traits
 
     def yield_rinput_traits(self, path='', itags=None):
         return {path + '.' + name: trait
-                for name, trait in self._get_rinput_traits(itags).items()
+                for name, trait in list(self._get_rinput_traits(itags).items())
                 }
 
     def _get_rinputs(self, itags=None):
         if itags == None:
             itags = self.itags
         rinput_traits = {}
-        for itag in itags.keys():
+        for itag in list(itags.keys()):
             rinput_traits.update(self.trait_get(**{itag: True}))
         return rinput_traits
 
@@ -72,7 +71,7 @@ class RInputRecord(RItem):
         \begin{array}{lrrl}\hline
         ''')
         itraits = self._get_rinput_traits()
-        for name, trait in itraits.items():
+        for name, trait in list(itraits.items()):
             value = getattr(self, name, Missing)
             unit = trait.unit
             symbol = trait.symbol
@@ -83,7 +82,7 @@ class RInputRecord(RItem):
         io.write(r'''\hline
         ''')
         records = self.get_subrecord_traits()
-        for name, trait in records.items():
+        for name, trait in list(records.items()):
             value = getattr(self, name, Missing)
             clname = value.__class__.__name__
             desc = trait.desc
@@ -96,7 +95,7 @@ class RInputRecord(RItem):
 
     def write_tex_table_record_entries(self, f, path='', itags=None):
         itraits = self._get_rinput_traits(itags)
-        for name, trait in itraits.items():
+        for name, trait in list(itraits.items()):
             value = getattr(self, name, Missing)
             unit = trait.unit
             symbol = trait.symbol
@@ -114,7 +113,7 @@ class RInputRecord(RItem):
             tag_io, path, rdir, rel_study_path, itags)
         f.write(tag_io.getvalue())
         records = self.get_subrecords()
-        for name, record in records.items():
+        for name, record in list(records.items()):
             tag_io = StringIO()
             clname = record.__class__.__name__
             nm = name.replace('_', '\_')
@@ -169,7 +168,7 @@ class RInputRecord(RItem):
 
     def yield_rinput_section(self, path='', itags=None):
         rinput_traits = self.yield_rinput_traits(path, itags)
-        for name, trait in self.get_subrecords().items():
+        for name, trait in list(self.get_subrecords().items()):
             rinput_traits.update(
                 trait.yield_rinput_section(path + name + '.', itags))
         return rinput_traits
@@ -183,9 +182,8 @@ class ROutputItem(RItem):
         f.write(tag_io.getvalue())
 
 
+@provides(IRItem)
 class ROutputSection(RItem):
-
-    implements(IRItem)
 
     def write_records(self, f, rdir=None, rel_study_path=None, itags=None):
         records = self.get_subrecords()

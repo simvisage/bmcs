@@ -65,7 +65,7 @@ class BCDofProportional3D(BCDof):
 
     @on_trait_change('phi,theta,max_strain')
     def _reset(self):
-        print 'reseting bcond'
+        print('reseting bcond')
         value, coeff = self.get_value_and_coeff(
             self.max_strain, self.phi, self.theta)
         self.value = value
@@ -99,8 +99,8 @@ class BCDofProportional3D(BCDof):
                link_dofs = [1, 2],
                link_coeffs = [-sin(phi)/cos(phi), - cos(theta) / sin(theta) / cos(phi)] )
         '''
-        print 'phi', phi
-        print 'theta', theta
+        print('phi', phi)
+        print('theta', theta)
         coeff = [-sin(phi) / cos(phi), - cos(theta) / sin(theta) / cos(phi)]
         value = a / sin(theta) / cos(phi)
         return value, coeff

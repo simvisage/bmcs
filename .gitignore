@@ -52,6 +52,7 @@ coverage.xml
 # Translations
 *.mo
 *.pot
+*.bak
 
 # Django stuff:
 *.log
@@ -95,3 +96,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# numpy binary files
+.npz
+.npz

@@ -1,6 +1,5 @@
 
 from math import fabs
-from types import ListType
 
 from numpy import allclose, arange, eye, linalg, ones, ix_, array, zeros, \
     hstack, meshgrid, vstack, dot, newaxis, c_, r_, copy, where, \
@@ -9,9 +8,9 @@ from traits.api import \
     HasTraits, Int, Array, Property, cached_property, List, Trait, Dict, \
     Any, Bool, Float
 
-from coo_mtx import COOSparseMtx
-from dense_mtx import DenseMtx
-from sys_mtx_array import SysMtxArray
+from .coo_mtx import COOSparseMtx
+from .dense_mtx import DenseMtx
+from .sys_mtx_array import SysMtxArray
 
 
 class Constraint(HasTraits):
@@ -165,7 +164,8 @@ class SysMtxAssembly(HasTraits):
             self._c[a] = constraint
 
             if self.debug:
-                print 'new constraint: a:', a, 'u_a', u_a, 'alpha', alpha, 'ix_a', ix_a
+                print('new constraint: a:', a, 'u_a',
+                      u_a, 'alpha', alpha, 'ix_a', ix_a)
 
         else:
             # duplicate specification, if it is identical with the
@@ -180,7 +180,7 @@ class SysMtxAssembly(HasTraits):
                 #
                 constraint.freeze()
                 if self.debug:
-                    print 'frozen constraint:', constraint
+                    print('frozen constraint:', constraint)
             elif u_a == 0 and len(alpha) == 0 and len(ix_a) == 0:
                 # set the existing constraint to zero-constraint
                 # ignore the non-zero value and the coefficients
@@ -189,15 +189,14 @@ class SysMtxAssembly(HasTraits):
                 constraint.alpha = alpha
                 constraint.ix_a = ix_a
                 if self.debug:
-                    print 'frozen constraint:', constraint
+                    print('frozen constraint:', constraint)
             elif not constraint.u_a == u_a or \
                     not allclose(constraint.alpha, alpha, rtol=1e-4) or \
                     not array_equal(constraint.ix_a, ix_a):
-                raise ValueError, \
-                    'contradicting constraint definition:\n' \
-                    'a = %d, u = %f, alpha = %s, ix_a = %s\n' \
-                    'previous constraint:\n%s' % (
-                        a, u_a, alpha, ix_a, constraint)
+                raise ValueError('contradicting constraint definition:\n'
+                                 'a = %d, u = %f, alpha = %s, ix_a = %s\n'
+                                 'previous constraint:\n%s' % (
+                                     a, u_a, alpha, ix_a, constraint))
 
         return constraint
 
@@ -212,8 +211,8 @@ class SysMtxAssembly(HasTraits):
             if swapped_values == False:
                 return sorted_c
         # exception - the cyclic specification of constraints
-        raise ValueError, 'maximum number of reorderings (1000) reached\n' \
-            'this is probably due to cyclic constraints specification'
+        raise ValueError('maximum number of reorderings (1000) reached\n'
+                         'this is probably due to cyclic constraints specification')
 
     def _get_simply_sorted_c(self, constraints):
         # first test if one of the indices in ix_a is already in _c
@@ -255,10 +254,10 @@ class SysMtxAssembly(HasTraits):
         '''
 
         if self.debug:
-            print 'SysMtxAssembly:', id(self)
+            print('SysMtxAssembly:', id(self))
 
         if rhs is None and self._rhs is None:
-            raise ValueError, 'No right hand side available'
+            raise ValueError('No right hand side available')
 
         if not rhs is None:
             self.apply_constraints(rhs)
@@ -285,14 +284,14 @@ class SysMtxAssembly(HasTraits):
     def print_constraints(self):
         # apply the constraints
         for constraint in self.constraints:
-            print constraint
+            print(constraint)
 
     def apply_constraints(self, rhs):
         # apply the constraints
         for constraint, ix_maps in zip(self.sorted_constraints,
                                        self.cached_addresses):
             if self.debug:
-                print 'applying constraint', constraint
+                print('applying constraint', constraint)
 
             self._apply_constraint(rhs, constraint, ix_maps)
 
@@ -325,9 +324,9 @@ class SysMtxAssembly(HasTraits):
 
         # link
 
-        if type(alpha) == ListType:
+        if type(alpha) == list:
             alpha = array(alpha, dtype=float)
-        if type(ix_a) == ListType:
+        if type(ix_a) == list:
             ix_a = array(ix_a, dtype=int)
 
         if alpha.shape[0] == 0:

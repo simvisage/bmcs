@@ -1,6 +1,6 @@
 
 
-from traits.api import Interface, List, Int, Array, Property, Class, Instance
+from traits.api import Interface, List, Int, Array, Property
 
 class IFEParentDomain( Interface ):
     '''

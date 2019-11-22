@@ -269,7 +269,7 @@ class DCBTestModel(BMCSModel, Vis2D):
         bot = self.fe_grid[-1, 0, -1, 0]
         linked = self.fe_grid[-1, 1:, -1, 0]
 
-        print 'SHAPE', top.dof_X.shape
+        print('SHAPE', top.dof_X.shape)
         Ty = top.dof_X[0, 0, 1]
         By = bot.dof_X[0, 0, 1]
 
@@ -309,7 +309,7 @@ class DCBTestModel(BMCSModel, Vis2D):
     def _get_dots_grid(self):
         cs = self.cross_section
         geo = self.geometry
-        print self.mats_eval
+        print(self.mats_eval)
         return DOTSGrid(
             L_x=cs.h, L_y=geo.L,
             n_x=self.n_e_x, n_y=self.n_e_y,
@@ -375,10 +375,12 @@ def run_dcb_2d(*args, **kw):
                       )
     bt.mats_eval.trait_set(
         stiffness='algorithmic',
-        epsilon_0=59e-6,
-        epsilon_f=100e-4,
         E=30000.0,
         nu=0.2
+    )
+    bt.mats_eval.omega_fn.trait_set(
+        f_t=3.0,
+        G_f=0.004
     )
 
     bt.w_max = 0.1

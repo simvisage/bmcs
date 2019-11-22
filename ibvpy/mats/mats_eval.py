@@ -1,28 +1,23 @@
 
-from ibvpy.core.i_tstepper_eval import \
-    ITStepperEval
-from ibvpy.core.tstepper_eval import \
-    TStepperEval
-from numpy import zeros, linalg, tensordot, dot, min, max, argmax, array, pi, \
-    append
-from scipy.linalg import eigh
+import copy
+from simulator.api import Model
 from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasStrictTraits, Interface, implements, \
-    Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
-    on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property, \
-    Dict, Constant
+    provides,  \
+    Int, Str, Callable, \
+    Tuple, Property, cached_property, \
+    Dict, Interface
+from view.ui import BMCSTreeNode
+
+import numpy as np
 
 
-#-------------------------------------------------------------------
-# IMATSEval - interface for fe-numerical quadrature
-#-------------------------------------------------------------------
-class IMATSEval(ITStepperEval):
+class IMATSEval(Interface):
+    '''Interface for material model classes
+    '''
 
-    def get_state_array_size(self):
-        pass
+    state_var_shapes = Dict(Str, Tuple)
 
-    def setup(self, sctx):
-        pass
+    var_dict = Dict(Str, Callable)
 
     explorer_rtrace_list = Property
 
@@ -33,10 +28,36 @@ class IMATSEval(ITStepperEval):
 #-------------------------------------------------------------------
 
 
-class MATSEval(HasStrictTraits, TStepperEval):
+@provides(IMATSEval)
+class MATSEval(Model, BMCSTreeNode):
 
-    implements(IMATSEval)
+    state_var_shapes = Dict(Str, Tuple, {})
+    '''Shape of state variables
+    '''
 
+    #=========================================================================
+    # Response variables
+    #=========================================================================
+    def get_eps(self, eps, tn1, **state):
+        return eps
+
+    def get_sig(self, eps, tn1, **state):
+        state_copy = copy.deepcopy(state)
+        sig, _ = self.get_corr_pred(
+            eps, tn1, **state_copy
+        )
+        return sig
+
+    var_dict = Property(Dict(Str, Callable))
+    '''Dictionary of response variables
+    '''
+    @cached_property
+    def _get_var_dict(self):
+        return dict(eps=self.get_eps,
+                    sig=self.get_sig)
+
+
+class NotUsed:
     # Callable specifying spatial profile of an initial strain field
     # the parameter is X - global coordinates of the material point
     #
@@ -46,10 +67,6 @@ class MATSEval(HasStrictTraits, TStepperEval):
     # the parameter is X - global coordinates of the material point
     #
     initial_stress = Callable
-
-    # number of spatial dimensions of an integration cell for the material model
-    #
-    n_dims = Constant(Float)
 
     id_number = Int
 
@@ -66,13 +83,6 @@ class MATSEval(HasStrictTraits, TStepperEval):
     map_sig_mtx_to_eng = Callable(transient=True)
     compliance_mapping = Callable(transient=True)
     map_tns4_to_tns2 = Callable(transient=True)
-
-    state_array_size = Int(0)
-    '''Number of entries to be reserved at the level of a material point.
-    '''
-
-    def get_state_array_size(self):
-        return 0
 
     def setup(self, sctx):
         pass
@@ -92,12 +102,12 @@ class MATSEval(HasStrictTraits, TStepperEval):
         @param sctx:
         @param eps_app_eng:
         '''
-        sig_eng, D_mtx = self.get_corr_pred(sctx, eps_app_eng, 0, 0, 0)
-        ms_vct = zeros(3)
+        sig_eng, _ = self.get_corr_pred(sctx, eps_app_eng, 0, 0, 0)
+        ms_vct = np.zeros(3)
         shape = sig_eng.shape[0]
         if shape == 3:
             s_mtx = self.map_sig_eng_to_mtx(sig_eng)
-            m_sig, m_vct = linalg.eigh(s_mtx)
+            m_sig, m_vct = np.linalg.eigh(s_mtx)
 
             # @todo: - this must be written in a more readable way
             #
@@ -106,24 +116,24 @@ class MATSEval(HasStrictTraits, TStepperEval):
                 ms_vct[:2] = m_sig[-1] * m_vct[-1]
         elif shape == 6:
             s_mtx = self.map_sig_eng_to_mtx(sig_eng)
-            m_sig = linalg.eigh(s_mtx)
+            m_sig = np.linalg.eigh(s_mtx)
             if m_sig[0][-1] > 0:
                 # multiply biggest positive stress with its vector
                 ms_vct = m_sig[0][-1] * m_sig[1][-1]
         return ms_vct
 
     def get_msig_pm(self, sctx, eps_app_eng, *args, **kw):
-        sig_eng, D_mtx = self.get_corr_pred(sctx, eps_app_eng, 0, 0, 0)
-        t_field = zeros(9)
+        sig_eng, _ = self.get_corr_pred(sctx, eps_app_eng, 0, 0, 0)
+        t_field = np.zeros(9)
         shape = sig_eng.shape[0]
         if shape == 3:
             s_mtx = self.map_sig_eng_to_mtx(sig_eng)
-            m_sig = linalg.eigh(s_mtx)
+            m_sig = np.linalg.eigh(s_mtx)
             if m_sig[0][-1] > 0:
                 t_field[0] = m_sig[0][-1]  # biggest positive stress
         elif shape == 6:
             s_mtx = self.map_sig_eng_to_mtx(sig_eng)
-            m_sig = linalg.eigh(s_mtx)
+            m_sig = np.linalg.eigh(s_mtx)
             if m_sig[0][-1] > 0:
                 t_field[0] = m_sig[0][-1]
         return t_field
@@ -134,22 +144,22 @@ class MATSEval(HasStrictTraits, TStepperEval):
         @param sctx:
         @param eps_app_eng:
         '''
-        sig_eng, D_mtx = self.get_corr_pred(sctx, eps_app_eng, 0, 0, 0)
+        sig_eng, _ = self.get_corr_pred(sctx, eps_app_eng, 0, 0, 0)
         s_mtx = self.map_sig_eng_to_mtx(sig_eng)
-        m_sig, m_vct = linalg.eigh(s_mtx)
+        m_sig, _ = np.linalg.eigh(s_mtx)
         max_principle_sig = max(m_sig[:])
         # return max_principle_sig
-        return array([max_principle_sig], dtype='float')
+        return np.array([max_principle_sig], dtype='float')
 
     def get_sig_app(self, sctx, eps_app_eng, *args, **kw):
-        sig_eng, D_mtx = self.get_corr_pred(
+        sig_eng, _ = self.get_corr_pred(
             sctx, eps_app_eng, 0, 0, 0, *args, **kw)
-        s_tensor = zeros((3, 3))
+        s_tensor = np.zeros((3, 3))
         s_tensor[:self.n_dims, :self.n_dims] = self.map_sig_eng_to_mtx(sig_eng)
         return s_tensor
 
     def get_eps_app(self, sctx, eps_app_eng, *args, **kw):
-        e_tensor = zeros((3, 3))
+        e_tensor = np.zeros((3, 3))
         e_tensor[:self.n_dims, :self.n_dims] = self.map_eps_eng_to_mtx(
             eps_app_eng)
         return e_tensor
@@ -162,17 +172,16 @@ class MATSEval(HasStrictTraits, TStepperEval):
 
         # first principle strain unit vector
         #
-        eigval, eigvec = eigh(self.map_eps_eng_to_mtx(eps_app_eng))
+        _, eigvec = np.linalg.eigh(self.map_eps_eng_to_mtx(eps_app_eng))
 
-        # Get the eigenvector associated with maximum aigenvalue
+        # Get the eigenvector associated with maximum eigenvalue
         # it is located in the last column of the matrix
         # of eigenvectors eigvec
         #
         eps_one = eigvec[:, -1]
-        print X_mtx
         # Project the coordinate vectors into the determined direction
         #
-        proj = dot(X_mtx, eps_one)
+        proj = np.dot(X_mtx, eps_one)
 
         # Find the maximum distance between the projected coordinates
         #
@@ -182,7 +191,7 @@ class MATSEval(HasStrictTraits, TStepperEval):
     def get_strain_energy(self, sctx, eps_app_eng, *args, **kw):
         sig_app = self.get_sig_app(sctx, eps_app_eng)
         eps_app = self.get_eps_app(sctx, eps_app_eng)
-        energy = tensordot(sig_app, eps_app) * 0.5
+        energy = np.tensordot(sig_app, eps_app) * 0.5
         return energy
 
     # Declare and fill-in the explorer config

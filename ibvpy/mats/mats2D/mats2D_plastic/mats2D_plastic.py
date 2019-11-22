@@ -1,21 +1,24 @@
 
 from math import pi as Pi, cos, sin, exp, sqrt as scalar_sqrt
+
+from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
+from ibvpy.mats.mats_eval import IMATSEval
 from numpy import \
     array, zeros, dot, \
-    sqrt, vdot,  \
+    sqrt, vdot, \
     float_, diag
 from scipy.linalg import eig, inv, norm
 from traits.api import \
     Array, Bool, Callable, Enum, Float, HasTraits, \
     Instance, Int, Trait, Range, HasTraits, on_trait_change, Event, \
-    implements, Dict, Property, cached_property, Delegate
+    Dict, Property, cached_property, Delegate
 from traitsui.api import \
     Item, View, HSplit, VSplit, VGroup, Group, Spring
-from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
-from ibvpy.mats.mats_eval import IMATSEval
-import numpy as np
 from util.traits.either_type import EitherType
-from yield_face2D import IYieldFace2D, J2, DruckerPrager, Gurson, CamClay
+
+import numpy as np
+
+from .yield_face2D import IYieldFace2D, J2, DruckerPrager, Gurson, CamClay
 
 
 #---------------------------------------------------------------------------
@@ -26,7 +29,7 @@ class MATS2DPlastic(MATS2DEval):
     Elastic Model.
     '''
 
-    implements(IMATSEval)
+    # implements(IMATSEval)
 
     #-------------------------------------------------------------------------
     # Parameters of the numerical algorithm (integration)
@@ -184,7 +187,7 @@ class MATS2DPlastic(MATS2DEval):
         int_count = 1
         while f_trial > self.tolerance or norm(R_k) > self.tolerance:
             if int_count > self.max_iter:
-                print "Maximal number of iteration reached"
+                print("Maximal number of iteration reached")
                 break
             diff1s = self.yf.get_diff1s(
                 eps_app_eng, self.E, self.nu, sctx)
@@ -194,8 +197,8 @@ class MATS2DPlastic(MATS2DEval):
                 raise NotImplementedError
             else:
                 if self.algorithm == "cutting plane":
-                    delta_gamma_2 = (f_trial /
-                                     (dot(dot(diff1s, self.D_el), diff1s) +
+                    delta_gamma_2 = (f_trial / 
+                                     (dot(dot(diff1s, self.D_el), diff1s) + 
                                       dot(dot(diff1q, self.H_mtx), diff1q)))
 
                     delta_gamma += delta_gamma_2
@@ -212,7 +215,7 @@ class MATS2DPlastic(MATS2DEval):
                     A_mtx_inv = inv(self.D_el) + delta_gamma * diff2ss
                     # self.delta_gamma *  diff2sq))
                     A_mtx = inv(A_mtx_inv)
-                    delta_gamma_2 = ((f_trial - dot(dot(diff1s, A_mtx), R_k)) /
+                    delta_gamma_2 = ((f_trial - dot(dot(diff1s, A_mtx), R_k)) / 
                                      (dot(dot(diff1s, A_mtx), diff1s)))
 
                     delta_eps_p = dot(dot(inv(self.D_el), A_mtx),
@@ -279,13 +282,14 @@ class MATS2DPlastic(MATS2DEval):
                 'sig_norm': self.get_sig_norm,
                 'eps_p': self.get_eps_p}
 
+
 if __name__ == '__main__':
     #-------------------------------------------------------------------------
     # Example using the mats2d_explore
     #-------------------------------------------------------------------------
     from ibvpy.api import RTDofGraph
     from ibvpy.mats.mats2D.mats2D_explore import MATS2DExplore
-    from yield_face2D import J2
+    from .yield_face2D import J2
     mats2D_explore = \
         MATS2DExplore(mats2D_eval=MATS2DPlastic(yf=J2()),
                       rtrace_list=[RTDofGraph(name='strain 0 - stress 0',

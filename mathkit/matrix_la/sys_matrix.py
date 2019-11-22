@@ -237,23 +237,23 @@ if __name__ == '__main__':
     #print data.shape[0]
     sp_mtx = SysSparseMtx(n_dofs, el_dof_map )
      
-    print 'ij_map',sp_mtx.ij_map
+    print('ij_map',sp_mtx.ij_map)
     
     sp_mtx.set_data( array( data_l ) )
     #sp_mtx.set_nond_row_zero(0)
     #sp_mtx.set_nond_col_zero(0)
     sp_mtx.set_nond_zero(0)
-    print "class ", sp_mtx.__class__
+    print("class ", sp_mtx.__class__)
     #K_aa =  sp_mtx[0,:]       
     #sp_mtx[0] = 0.
     #sp_mtx[:,0] = 0.
     #sp_mtx[0,0] = 1.
-    print "K_aa ",sp_mtx.get_diag_elem(2)
+    print("K_aa ",sp_mtx.get_diag_elem(2))
     U_s = sp_mtx.solve(rhs)
-    print "U_s ", U_s
+    print("U_s ", U_s)
     ts_end = time()
     difs = ts_end - ts_start
-    print "Sparse Matrix: %8.2f sec" %difs
+    print("Sparse Matrix: %8.2f sec" %difs)
 
 #    for i in range(5,0,-1):
 #        print "i ",i

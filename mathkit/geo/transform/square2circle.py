@@ -12,22 +12,21 @@
 #
 # Created on Jan 20, 2011 by: rch
 
-from traits.api import \
-    HasTraits, Float, Array, implements, Property, cached_property, Instance, Enum, \
-    Dict, Bool, Int, Callable
-
 from numpy import \
     array, tensordot, dot, zeros, c_, ix_, mgrid, arange, \
     where, sum, sin, cos, vstack, hstack, argmax, newaxis, size, \
     shape, sqrt, frompyfunc, ones_like, zeros_like, ones, any, all, \
     sort, argsort, concatenate, add
-
 from numpy import where, zeros_like, fabs, sign, ma
+from traits.api import \
+    HasTraits, Float, Array, Property, cached_property, Instance, Enum, \
+    Dict, Bool, Int, Callable
+
 
 class GeoSquare2Circle(HasTraits):
     '''Geometry definition.
     '''
-    circle_center = Array('float_', value = [0.0, 0.0])
+    circle_center = Array('float_', value=[0.0, 0.0])
     circle_radius = Float(0.38)
     square_edge = Float(2.0)
 
@@ -105,8 +104,8 @@ class GeoSquare2Circle(HasTraits):
         idx_top = where((fabs(xi) < R) & (fabs(yi) >= R))
 
         xii, yii = xi[ idx_corner], yi[idx_corner ]
-        print R
-        print D
+        print(R)
+        print(D)
         a = 1.0 / (R ** 2 - 2 * D * R + D ** 2)
         b = -D / (R ** 2 - 2 * D * R + D ** 2)
         c = -D / (R ** 2 - 2 * D * R + D ** 2)
@@ -130,7 +129,8 @@ class GeoSquare2Circle(HasTraits):
 
         return Xi + cx, Yi + cy
 
+
 if __name__ == '__main__':
 
-    s2c = GeoSquare2Circle(circle_center = [0.2, 0.2], circle_radius = 0.4, square_edge = 2.0)
-    print 'result', s2c(array([[ 0.3, 0.5, 0 ]], dtype = float))
+    s2c = GeoSquare2Circle(circle_center=[0.2, 0.2], circle_radius=0.4, square_edge=2.0)
+    print('result', s2c(array([[ 0.3, 0.5, 0 ]], dtype=float)))

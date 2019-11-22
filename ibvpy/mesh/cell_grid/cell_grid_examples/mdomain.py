@@ -23,8 +23,9 @@ from ibvpy.plugins.mayavi_util.pipelines import \
     MVPolyData, MVPointLabels, MVStructuredGrid
 
 
-from mcell import MGridCellSpec, MGridCell
-from elem_array_view import ElemArrayView
+from .mcell import MGridCellSpec, MGridCell
+from .elem_array_view import ElemArrayView
+from functools import reduce
 
 
 class MGridDomain(SDomain):

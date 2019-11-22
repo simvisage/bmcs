@@ -62,7 +62,7 @@ def combined_fe2D4q_with_fe2D4q8u():
 
     # apply the boundary condition on a subgrid
     #
-    print fe_grid_level2.fe_subgrids
+    print(fe_grid_level2.fe_subgrids)
     fe_first_grid = fe_grid_level2.fe_subgrids[0]
 
     ts = TS( dof_resultants = True,
@@ -89,7 +89,7 @@ def combined_fe2D4q_with_fe2D4q8u():
     tloop = TLoop( tstepper = ts,
                    tline = TLine( min = 0.0, step = 1, max = 1.0 ) )
 
-    print tloop.eval()
+    print(tloop.eval())
     from ibvpy.plugins.ibvpy_app import IBVPyApp
     ibvpy_app = IBVPyApp( ibv_resource = tloop )
     ibvpy_app.main()

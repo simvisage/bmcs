@@ -7,7 +7,7 @@ from numpy import \
 from scipy.linalg import \
      inv
 
-from fets3D import FETS3D
+from .fets3D import FETS3D
 
 #-----------------------------------------------------------------------------------
 # FETS3D8H16U - 16 nodes Subparametric 3D volume element: rs-direction: quadratic (serendipity)

@@ -17,7 +17,7 @@ from traits.api import Instance, Int, Str
 from traitsui.basic_editor_factory import BasicEditorFactory
 from util.traits.editors import MPLFigureEditor
 
-from mfn_plot_adapter import MFnPlotAdapter
+from .mfn_plot_adapter import MFnPlotAdapter
 
 
 class _MFnMatplotlibEditor(MPLFigureEditor):
@@ -78,7 +78,7 @@ class _MFnMatplotlibEditor(MPLFigureEditor):
             self.figure.canvas.SetMinSize((a.min_size))
 
         if a.padding:
-            for side, pad in a.padding.items():
+            for side, pad in list(a.padding.items()):
                 setattr(self.figure.subplotpars, side, pad)
 
         return panel
@@ -103,7 +103,7 @@ class _MFnMatplotlibEditor(MPLFigureEditor):
         else:
             label_y = a.label_y
 
-        styles_m = a.line_style.values()
+        styles_m = list(a.line_style.values())
         #  line_color = self.line_color_matplotlib[ a.line_color ]
         line_color = a.line_color[0]
         line_style = styles_m[0]

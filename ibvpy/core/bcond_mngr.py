@@ -1,10 +1,11 @@
 
-from ibvpy.core.i_bcond import IBCond
 from traits.api import \
     Instance,  \
     List
 from traitsui.api import \
     TableEditor, ObjectColumn
+
+from ibvpy.core.i_bcond import IBCond
 from view.ui import BMCSTreeNode
 
 
@@ -54,7 +55,9 @@ class BCondMngr(BMCSTreeNode):
 #                        kind='subpanel',
 #                        )
 
+
 if __name__ == '__main__':
     from ibvpy.api import BCDof
     bc = BCondMngr(bcond_list=[BCDof(), BCDof()])
+    print(bc)
     bc.configure_traits()

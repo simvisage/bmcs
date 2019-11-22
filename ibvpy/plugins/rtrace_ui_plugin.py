@@ -125,14 +125,14 @@ def main():
 
     # Get the default mayavi plugins.
     plugins = get_plugins()
-    from rtrace_plugin import RTracePlugin
-    from rtrace_service import RTraceService
+    from .rtrace_plugin import RTracePlugin
+    from .rtrace_service import RTraceService
 
     # Inject our plugin up front so our perspective becomes the default.
     #plugins = [ RTracePlugin() ]
     plugins.insert(0, RTracePlugin())
 
-    from ibvpy_workbench_application import IBVPyWorkbenchApplication
+    from .ibvpy_workbench_application import IBVPyWorkbenchApplication
     # Create an Envisage application.
     id = 'rtrace_service.rtrace_service'
     application = IBVPyWorkbenchApplication(id=id, plugins=plugins)

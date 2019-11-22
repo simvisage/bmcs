@@ -234,7 +234,7 @@ class RTraceDomainField(RTraceDomain):
         elif shape == (1,) or shape == (3,):
             field = self.field_arr  # is scalar or 3D vector  does not need treatment
         else:
-            raise TraitError, 'wrong field format of tracer %s: %s' % (self.var, shape)
+            raise TraitError('wrong field format of tracer %s: %s' % (self.var, shape))
 
         return field
 

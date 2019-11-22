@@ -1,16 +1,14 @@
 
-from traits.api import \
-    HasTraits, Instance, DelegatesTo, HasStrictTraits, Directory, \
-    on_trait_change
-
-from tloop import TLoop
-
-from ibv_resource import IBVResource
-
 import os
 
+from traits.api import \
+    Instance, DelegatesTo, Directory, \
+    on_trait_change
 from traits.util.home_directory import \
     get_home_directory
+
+from .ibv_resource import IBVResource
+from .tloop import TLoop
 
 
 class IBVModel(IBVResource):
@@ -51,13 +49,13 @@ class IBVModel(IBVResource):
         sim_data_dir = os.path.join(home_dir, 'simdb', 'simdata')
         if not os.path.exists(sim_data_dir):
             os.mkdir(sim_data_dir)
-            print "simdata directory created"
+            print("simdata directory created")
 
         mod_path = os.path.join(sim_data_dir, mod_base_name)
 
         if not os.path.exists(mod_path):
             os.mkdir(mod_path)
-            print mod_base_name, " directory created"
+            print(mod_base_name, " directory created")
 
         return mod_path
 
@@ -85,6 +83,7 @@ class IBVModel(IBVResource):
 
     def _create_rtrace(self):
         pass
+
 
 if __name__ == '__main__':
     ibvmodel = IBVModel()

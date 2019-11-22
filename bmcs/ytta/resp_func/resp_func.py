@@ -35,11 +35,11 @@ class ResponseFunctionBase( HasTraits ):
             params = {}
             for param_name in self.param_names:
                 params[ param_name ] = self.traits()[param_name]
-            print params
+            print(params)
             return params 
         else:
             params = {}
-            for name, trait in self.traits().items():
+            for name, trait in list(self.traits().items()):
                 if trait.trait_type.__class__ is Float:
                     params[name] = trait
             return params

@@ -40,7 +40,7 @@ class RTraceViz2D(Viz2D):
             ax.plot([x, x], [y_min, y_max])
 
     def reset(self, ax):
-        print 'CLEAR'
+        print('CLEAR')
         self.vis2d.clear()
 
 
@@ -84,7 +84,7 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
 
     @on_trait_change('print_button')
     def print_values(self, event=None):
-        print 'x:\t', self.trace.xdata, '\ny:\t', self.trace.ydata
+        print('x:\t', self.trace.xdata, '\ny:\t', self.trace.ydata)
 
     _xdata = List(Array(float))
     _ydata = List(Array(float))
@@ -95,13 +95,13 @@ class RTDofGraph(RTrace, BMCSLeafNode, Vis2D):
         '''
         self.var_x_eval = self.rmgr.rte_dict.get(self.var_x, None)
         if self.var_x_eval == None:
-            raise KeyError, 'Variable %s not present in the dictionary:\n%s' % \
-                            (self.var_x, self.rmgr.rte_dict.keys())
+            raise KeyError('Variable %s not present in the dictionary:\n%s' % \
+                            (self.var_x, list(self.rmgr.rte_dict.keys())))
 
         self.var_y_eval = self.rmgr.rte_dict.get(self.var_y, None)
         if self.var_y_eval == None:
-            raise KeyError, 'Variable %s not present in the dictionary:\n%s' % \
-                            (self.var_y, self.rmgr.rte_dict.keys())
+            raise KeyError('Variable %s not present in the dictionary:\n%s' % \
+                            (self.var_y, list(self.rmgr.rte_dict.keys())))
 
     def setup(self):
         self.clear()

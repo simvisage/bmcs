@@ -1,5 +1,5 @@
 
-from mfn_polar import MFnPolar
+from .mfn_polar import MFnPolar
 import unittest
 
 class TestSequenceFunctions(unittest.TestCase):

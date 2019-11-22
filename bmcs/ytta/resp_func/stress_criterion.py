@@ -5,17 +5,17 @@ from math import e
 from numpy import sqrt, hstack, linspace, infty, array, linspace, tanh, argmax, \
     where
 from traits.api import HasTraits, Instance, on_trait_change, \
-    implements, Property, DelegatesTo, Tuple, Array, Bool, Any
+    Property, DelegatesTo, Tuple, Array, Bool, Any
 from traitsui.api import View, Item, VGroup
 from traitsui.menu import OKButton
 from util.traits.either_type import EitherType
 
-from parameters import Geometry
-from parameters import Material
-from pull_out import PullOut
+from .parameters import Geometry
+from .parameters import Material
+from .pull_out import PullOut
 
 
-#from stress_criterion_bond import StressCriterionBond
+# from stress_criterion_bond import StressCriterionBond
 class StressCriterion(PullOut):
 
     param_names = ['Ef', 'k', 'qf', 'qy', 'f', 'fu']

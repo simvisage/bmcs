@@ -7,12 +7,12 @@
    package dependency - window depends on reporter
    parametric studies?
 '''
-from reporter import Reporter, ReportStudy
+from .reporter import Reporter, ReportStudy
 from traits.api import \
     Float,\
     Instance, Int
 
-from report_item import \
+from .report_item import \
     RInputRecord, ROutputSection
 
 

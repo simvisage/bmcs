@@ -21,7 +21,7 @@ from numpy import \
 from scipy.linalg import \
     eigh
 from traits.api import \
-    Constant, implements,\
+    Constant, provides,\
     Float, HasTraits, \
     Property, cached_property
 from traitsui.api import \
@@ -29,6 +29,7 @@ from traitsui.api import \
 import matplotlib.pyplot as plt
 
 
+@provides(IMATSEval)
 class MATSEvalMicroplaneFatigue(HasTraits):
     #--------------------------
     # material model parameters
@@ -159,14 +160,14 @@ class MATSEvalMicroplaneFatigue(HasTraits):
         r_N = r_N + delta_lamda
         alpha_N = alpha_N + delta_lamda * sign(sigma_n_trial - X)
 
-        Z_N = lambda z_N: 1. / self.Ad * (-z_N) / (1 + z_N)
+        def Z_N(z_N): return 1. / self.Ad * (-z_N) / (1 + z_N)
         Y_N = 0.5 * H * E_N * eps ** 2
         Y_0 = 0.5 * E_N * self.eps_0 ** 2
         f = Y_N - (Y_0 + Z_N(z_N))
 
         thres_2 = f > 1e-6
 
-        f_w = lambda Y: 1 - 1. / (1 + self.Ad * (Y - Y_0))
+        def f_w(Y): return 1 - 1. / (1 + self.Ad * (Y - Y_0))
         w_N = f_w(Y_N) * thres_2
         z_N = - w_N * thres_2
 
@@ -203,17 +204,17 @@ class MATSEvalMicroplaneFatigue(HasTraits):
         plas_1 = f > 1e-6
         elas_1 = f < 1e-6
 
-        delta_lamda =   f   / \
+        delta_lamda = f / \
             (E_T / (1.0 - w_T) + self.gamma_T + self.K_T) * plas_1
 
         norm_2 = 1.0 * elas_1 + sqrt(
             einsum('nj,nj -> n', (sig_pi_trial - X), (sig_pi_trial - X))) * plas_1
 
-        eps_T_pi[:, 0] = eps_T_pi[:, 0] + plas_1 *  delta_lamda * \
+        eps_T_pi[:, 0] = eps_T_pi[:, 0] + plas_1 * delta_lamda * \
             ((sig_pi_trial[:, 0] - X[:, 0]) / (1.0 - w_T)) / norm_2
-        eps_T_pi[:, 1] = eps_T_pi[:, 1] +  plas_1 * delta_lamda * \
+        eps_T_pi[:, 1] = eps_T_pi[:, 1] + plas_1 * delta_lamda * \
             ((sig_pi_trial[:, 1] - X[:, 1]) / (1.0 - w_T)) / norm_2
-        eps_T_pi[:, 2] = eps_T_pi[:, 2] +  plas_1 * delta_lamda * \
+        eps_T_pi[:, 2] = eps_T_pi[:, 2] + plas_1 * delta_lamda * \
             ((sig_pi_trial[:, 2] - X[:, 2]) / (1.0 - w_T)) / norm_2
 
         Y = 0.5 * E_T * \
@@ -223,11 +224,11 @@ class MATSEvalMicroplaneFatigue(HasTraits):
             (delta_lamda * (Y / self.S) ** self.r) * \
             (self.tau_pi_bar / (self.tau_pi_bar - self.a * sigma_kk / 3.0))
 
-        alpha_T[:, 0] = alpha_T[:, 0]   + plas_1 * delta_lamda *\
+        alpha_T[:, 0] = alpha_T[:, 0] + plas_1 * delta_lamda *\
             (sig_pi_trial[:, 0] - X[:, 0]) / norm_2
-        alpha_T[:, 1] = alpha_T[:, 1]   + plas_1 * delta_lamda *\
+        alpha_T[:, 1] = alpha_T[:, 1] + plas_1 * delta_lamda *\
             (sig_pi_trial[:, 1] - X[:, 1]) / norm_2
-        alpha_T[:, 2] = alpha_T[:, 2]   + plas_1 * delta_lamda *\
+        alpha_T[:, 2] = alpha_T[:, 2] + plas_1 * delta_lamda *\
             (sig_pi_trial[:, 2] - X[:, 2]) / norm_2
 
         z_T = z_T + delta_lamda
@@ -240,6 +241,7 @@ class MATSEvalMicroplaneFatigue(HasTraits):
         return new_sctx
 
 
+@provides(IMATSEval)
 class MATSXDMicroplaneDamageFatigueJir(MATSEvalMicroplaneFatigue):
 
     '''
@@ -520,9 +522,8 @@ class MATSXDMicroplaneDamageFatigueJir(MATSEvalMicroplaneFatigue):
         return sig_eng, D4_mdm_ijmn
 
 
+@provides(IMATSEval)
 class MATS3DMicroplaneDamageJir(MATSXDMicroplaneDamageFatigueJir, MATS3DEval):
-
-    implements(IMATSEval)
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D
@@ -772,6 +773,6 @@ if __name__ == '__main__':
             eps_2[:, 0, 0], eps_P_N_2[:, i], linewidth=1, label='plastic strain')
 
         plt.xlabel('Strain')
-        plt.ylabel('sliding_strain')
+        # plt.ylabel('sliding_strain')
 
     plt.show()

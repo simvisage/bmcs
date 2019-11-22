@@ -1,37 +1,30 @@
 
-from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasTraits, Interface, implements, \
-    Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
-    on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property
-
-from traitsui.api import \
-    Item, View, HGroup, ListEditor, VGroup, Group
-
-from traitsui.menu import \
-    NoButtons, OKButton, CancelButton, Action, CloseAction, Menu, \
-    MenuBar, Separator
-
 from math  import \
     pow, fabs
-
-from numpy import \
-    array, zeros, int_, float_, ix_, dot, linspace, hstack, vstack, arange, \
-    identity
-
-from scipy.linalg import \
-    inv, det
-
 import time
 
 from ibvpy.fets.fets_eval import FETSEval
 from ibvpy.mats.mats_eval import MATSEval
-
+from numpy import \
+    array, zeros, int_, float_, ix_, dot, linspace, hstack, vstack, arange, \
+    identity
+from scipy.linalg import \
+    inv, det
+from traits.api import \
+    Array, Bool, Callable, Enum, Float, HasTraits, Interface, \
+    Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
+    on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property
+from traitsui.api import \
+    Item, View, HGroup, ListEditor, VGroup, Group
+from traitsui.menu import \
+    NoButtons, OKButton, CancelButton, Action, CloseAction, Menu, \
+    MenuBar, Separator
 from tvtk.api import tvtk
+
 
 #-----------------------------------------------------------------------------
 # FEQ16sub - 16 nodes subparametric quadrilateral (2D, cubic, Lagrange family)
 #-----------------------------------------------------------------------------
-
 #-------------------------------------------------------------------------
 # Element Information:
 #-------------------------------------------------------------------------
@@ -59,8 +52,6 @@ from tvtk.api import tvtk
 #                             [  1/3, 1/3 ]])
 #
 #-------------------------------------------------------------------------
-
-
 class FETS2D4Q16U(FETSEval):
     debug_on = True
 
@@ -245,7 +236,7 @@ class FETS2D4Q16U(FETSEval):
         r = r_pnt[0]
         s = r_pnt[1]
         dNr = zeros((2, 16), dtype='float_')
-        dNr[0, 0] = ((3 * r - 1) * (3 * r + 1) * (-1 + s) * (3 * s - 1) * (3 * s + 1)) / 0.256e3 + 0.3e1 / 0.256e3 * (-1 + r) * (3 *
+        dNr[0, 0] = ((3 * r - 1) * (3 * r + 1) * (-1 + s) * (3 * s - 1) * (3 * s + 1)) / 0.256e3 + 0.3e1 / 0.256e3 * (-1 + r) * (3 * 
                                                                                                                                  r + 1) * (-1 + s) * (3 * s - 1) * (3 * s + 1) + 0.3e1 / 0.256e3 * (-1 + r) * (3 * r - 1) * (-1 + s) * (3 * s - 1) * (3 * s + 1)
         dNr[0, 1] = -0.3e1 / 0.256e3 * (3 * r + 1) * (1 + r) * (-1 + s) * (3 * s - 1) * (3 * s + 1) - 0.3e1 / 0.256e3 * (3 * r - 1) * (
             1 + r) * (-1 + s) * (3 * s - 1) * (3 * s + 1) - ((3 * r - 1) * (3 * r + 1) * (-1 + s) * (3 * s - 1) * (3 * s + 1)) / 0.256e3
@@ -279,7 +270,7 @@ class FETS2D4Q16U(FETSEval):
             1 + r) * (-1 + s) * (3 * s + 1) * (1 + s) - 0.81e2 / 0.256e3 * (-1 + r) * (3 * r - 1) * (-1 + s) * (3 * s + 1) * (1 + s)
         dNr[0, 15] = 0.81e2 / 0.256e3 * (3 * r + 1) * (1 + r) * (-1 + s) * (3 * s + 1) * (1 + s) + 0.243e3 / 0.256e3 * (-1 + r) * (
             1 + r) * (-1 + s) * (3 * s + 1) * (1 + s) + 0.81e2 / 0.256e3 * (-1 + r) * (3 * r + 1) * (-1 + s) * (3 * s + 1) * (1 + s)
-        dNr[1, 0] = ((-1 + r) * (3 * r - 1) * (3 * r + 1) * (3 * s - 1) * (3 * s + 1)) / 0.256e3 + 0.3e1 / 0.256e3 * (-1 + r) * (3 *
+        dNr[1, 0] = ((-1 + r) * (3 * r - 1) * (3 * r + 1) * (3 * s - 1) * (3 * s + 1)) / 0.256e3 + 0.3e1 / 0.256e3 * (-1 + r) * (3 * 
                                                                                                                                  r - 1) * (3 * r + 1) * (-1 + s) * (3 * s + 1) + 0.3e1 / 0.256e3 * (-1 + r) * (3 * r - 1) * (3 * r + 1) * (-1 + s) * (3 * s - 1)
         dNr[1, 1] = -((3 * r - 1) * (3 * r + 1) * (1 + r) * (3 * s - 1) * (3 * s + 1)) / 0.256e3 - 0.3e1 / 0.256e3 * (3 * r - 1) * \
             (3 * r + 1) * (1 + r) * (-1 + s) * (3 * s + 1) - 0.3e1 / 0.256e3 * \
@@ -334,21 +325,21 @@ if __name__ == '__main__':
         TStepper as TS, RTDofGraph, RTraceDomainListField, TLoop, \
         TLine, BCDofGroup, IBVPSolve as IS
 
-    #from lib.mats.mats2D.mats_cmdm2D.mats_mdm2d import MACMDM
-    #from lib.mats.mats2D.mats2D_sdamage.mats2D_sdamage import MATS2DScalarDamage
-    #from lib.mats.mats2D.mats2D_sdamage.strain_norm2d import *
+    # from lib.mats.mats2D.mats_cmdm2D.mats_mdm2d import MACMDM
+    # from lib.mats.mats2D.mats2D_sdamage.mats2D_sdamage import MATS2DScalarDamage
+    # from lib.mats.mats2D.mats2D_sdamage.strain_norm2d import *
     from ibvpy.mats.mats2D.mats2D_elastic.mats2D_elastic import MATS2DElastic
 
-    #fets_eval = FETS2D4Q16U(mats_eval = MATS2DScalarDamage(strain_norm = Euclidean()))
-    #fets_eval = FEQ16U(mats_eval = MACMDM())
+    # fets_eval = FETS2D4Q16U(mats_eval = MATS2DScalarDamage(strain_norm = Euclidean()))
+    # fets_eval = FEQ16U(mats_eval = MACMDM())
     fets_eval = FETS2D4Q16U(mats_eval=MATS2DElastic())
 
     from ibvpy.mesh.fe_grid import FEGrid
 
     # Discretization
     domain = FEGrid(coord_max=(3., 3., 0.),
-                    shape = (2, 2),
-                    fets_eval = fets_eval)
+                    shape=(2, 2),
+                    fets_eval=fets_eval)
 
     right_dof = 2
     ts = TS(

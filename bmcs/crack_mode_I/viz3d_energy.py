@@ -13,53 +13,49 @@ import traits.api as tr
 
 class Vis2DEnergy(Vis2D):
 
-    model = tr.WeakRef
-    tloop = tr.Property
-
-    def _get_tloop(self):
-        return self.model.tloop
-
     U_bar_t = tr.List()
 
-    def setup(self, tl):
+    def setup(self):
         self.U_bar_t = []
 
-    def update(self, U, t):
-        tloop = self.model.tloop
-        ts = tloop.ts
-        mats = ts.mats
-        fets = ts.fets
+    def update(self):
+        mats = self.sim.mats
+        tstep = self.sim.tstep
+        xdomain = self.sim.xdomain
+        U = tstep.U_k
+        t = tstep.t_n1
+        fets = xdomain.fets
         n_c = fets.n_nodal_dofs
         U_Ia = U.reshape(-1, n_c)
-        U_Eia = U_Ia[ts.I_Ei]
+        U_Eia = U_Ia[xdomain.I_Ei]
+        d = xdomain.integ_factor  # thickness
         eps_Emab = np.einsum(
-            'Eimabc,Eic->Emab', ts.B_Eimabc, U_Eia
+            'Eimabc,Eic->Emab',
+            xdomain.B_Eimabc, U_Eia
         )
-        deps_Emab = np.zeros_like(eps_Emab)
-        D_Emabef, sig_Emab = mats.get_corr_pred(
-            eps_Emab, deps_Emab, t, t, False, False,
-            **ts.state_arrays
+        sig_Emab, _ = mats.get_corr_pred(
+            eps_Emab, t, **tstep.fe_domain[0].state_n)
+        w_m = fets.w_m
+        det_J_Em = xdomain.det_J_Em
+        U_bar = d / 2.0 * np.einsum(
+            'm,Em,Emab,Emab',
+            w_m, det_J_Em, sig_Emab, eps_Emab
         )
-        w_m = fets.ip_weights
-        det_J_Em = ts.det_J_Em
-        d = ts.integ_factor  # thickness
-        U_bar = d / 2.0 * np.einsum('m,Em,Emab,Emab',
-                                    w_m, det_J_Em, sig_Emab, eps_Emab)
         self.U_bar_t.append(U_bar)
 
     def get_t(self):
-        return np.array(self.tloop.t_record, dtype=np.float_)
+        return self.sim.hist.t
 
     def get_w(self):
-        _, w = self.model.get_PW()
+        _, w = self.sim.hist['Pw'].Pw
         return w
 
     def get_W_t(self):
-        P, w = self.model.get_PW()
-        w_t = []
-        for i, _ in enumerate(w):
-            w_t.append(np.trapz(P[:i + 1], w[:i + 1]))
-        return w_t
+        P, w = self.sim.hist['Pw'].Pw
+        return [
+            np.trapz(P[:i + 1], w[:i + 1])
+            for i, _ in enumerate(w)
+        ]
 
     def get_G_t(self):
         U_bar_t = np.array(self.U_bar_t, dtype=np.float_)
