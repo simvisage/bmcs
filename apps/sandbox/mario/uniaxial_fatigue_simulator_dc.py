@@ -86,14 +86,17 @@ def get_K_OP(D_abcd):
         'OPabcd,abcd->OP', GG, D_abcd
     )
 
+# The above operators provide the three mappings
+# map the primary variable to from vector to field
+# map the residuum field to evctor (assembly operator)
+# map the gradient of the residuum field to system matrix
 
-# In[11]:
 
 from .vmats3D_mpl_csd_eeq import MATS3DMplCSDEEQ
 m = MATS3DMplCSDEEQ()
 
 
-def get_UF_t(eps_max, F, n_t):
+def get_UF_t(eps_max, time_function, n_t):
     state_vars = {
         name: np.zeros(shape, dtype=np.float_)[np.newaxis, ...]
         for name, shape in m.state_var_shapes.items()
@@ -104,6 +107,12 @@ def get_UF_t(eps_max, F, n_t):
     F_ext = np.zeros((n_O,), np.float_)
     F_O = np.zeros((n_O,), np.float_)
     U_k_O = np.zeros((n_O,), dtype=np.float_)
+    # Construct index maps distinguishing the controlled displacements
+    # and free displacements. Here we simply say the the control displacement
+    # is the first one. Then index maps are constructed using the np.where
+    # function returning the indexes of True positions in a logical array.
+    CONTROL = 0
+    FREE = slice(1, None)  # This means all except the first index, i.e. [1:]
     # Setup the system matrix with displacement constraints
     # Time stepping parameters
     t_n1, t_max, t_step = 0, 1, 1 / n_t
@@ -117,7 +126,7 @@ def get_UF_t(eps_max, F, n_t):
     while t_n1 <= t_max:
         print('t:', t_n1)
         # Get the displacement increment for this step
-        delta_U = eps_max * (F(t_n1) - F(t_n))
+        delta_U = eps_max * (time_function(t_n1) - time_function(t_n))
         k = 0
         # Equilibrium iteration loop
         while k < k_max:
@@ -132,22 +141,24 @@ def get_UF_t(eps_max, F, n_t):
             F_O = get_sig_O(sig_ab)
             # System matrix
             K_OP = get_K_OP(D_abcd[0])
-            # Get the balancing forces
-            KU = K_OP[:, 0] * delta_U
+            # Get the balancing forces - NOTE - for more displacements
+            # this should be an assembly operator.
+            # KU remains a 2-d array so we have to make it a vector
+            KU = K_OP[:, CONTROL] * delta_U
             # Residuum
             R_O = F_ext - F_O - KU
             # Convergence criterion
-            R_norm = np.linalg.norm(R_O[1:])
+            R_norm = np.linalg.norm(R_O[FREE])
             if R_norm < R_acc:
                 # Convergence reached
                 state_vars = copy.deepcopy(trial_state_vars)
                 break
-            # Next iteration
-            delta_U_O = np.linalg.solve(K_OP[1:, 1:], R_O[1:])
+            # Next iteration -
+            delta_U_O = np.linalg.solve(K_OP[FREE, FREE], R_O[FREE])
             # Update total displacement
-            U_k_O[1:] += delta_U_O
+            U_k_O[FREE] += delta_U_O
             # Update control displacement
-            U_k_O[0] += delta_U
+            U_k_O[CONTROL] += delta_U
             # Note - control displacement nonzero only in the first iteration.
             delta_U = 0
             k += 1
@@ -175,7 +186,7 @@ def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
 
 U, F, S = get_UF_t(
     eps_max=-0.02,
-    F=lambda t: loading_history(t),
+    time_function=lambda t: loading_history(t),
     n_t=50
 )
 
