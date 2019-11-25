@@ -590,9 +590,11 @@ class MATS3DMplCSDEEQ(MATS3DEval):
                       omegaN, z_N_Emn, sigma_N_Emn, eps_N_p_Emn,
                       r_N_Emn, alpha_T_Emna, w_T_Emn, z_T_Emn):
 
-        beta_Emabcd = self._get_beta_Emabcd(eps_Emab_n1, omegaN, z_N_Emn,
-                                            alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                                            w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna)
+        beta_Emabcd = self._get_beta_Emabcd(
+            eps_Emab_n1, omegaN, z_N_Emn,
+            alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
+            w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna
+        )
 
         #------------------------------------------------------------------
         # Damaged stiffness tensor calculated based on the damage tensor beta4:
@@ -603,9 +605,10 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         # Return stresses (corrector) and damaged secant stiffness matrix (predictor)
         #----------------------------------------------------------------------
         # plastic strain tensor
-        eps_p_Emab = self._get_eps_p_Emab(eps_Emab_n1, omegaN, z_N_Emn,
-                                          alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                                          w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
+        eps_p_Emab = self._get_eps_p_Emab(
+            eps_Emab_n1, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
+            w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn
+        )
 
         # elastic strain tensor
         eps_e_Emab = eps_Emab_n1 - eps_p_Emab
