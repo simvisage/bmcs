@@ -13,11 +13,17 @@
 
 import copy
 
+from ibvpy.mats.mats3D.mats3D_microplane import MATS3DMplCSDEEQ
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import MATS3DDesmorat
 from ibvpy.mats.mats3D.mats3D_sdamage.vmats3D_sdamage import MATS3DScalarDamage
+
 import matplotlib.pyplot as plt
 import numpy as np
 import sympy as sp
+
+#from .vmats3D_mpl_csd_eeq import MATS3DMplCSDEEQ
+
+
 sp.init_printing()
 
 
@@ -92,8 +98,8 @@ def get_K_OP(D_abcd):
 # map the gradient of the residuum field to system matrix
 
 
-from .vmats3D_mpl_csd_eeq import MATS3DMplCSDEEQ
 m = MATS3DMplCSDEEQ()
+m.configure_traits()
 
 
 def get_UF_t(eps_max, time_function, n_t):
