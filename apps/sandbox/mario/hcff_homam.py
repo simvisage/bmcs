@@ -1,8 +1,7 @@
 '''
 Created on Apr 24, 2019
 
-Remarks to code
- - Homam please keep the line length at the maximum 80 characters
+@author: rch
 '''
 import os
 import string
@@ -20,7 +19,7 @@ import pandas as pd
 import traits.api as tr
 import traitsui.api as ui
 
-from .hcff_filters.hcff_filter import HCFFilter, HCFFParent
+from .hcff_filters.hcff_filter import HCFFilter, HCFFChild, HCFFParent
 
 
 class PlotOptions(tr.HasTraits):
@@ -263,117 +262,9 @@ class HCFF(tr.HasStrictTraits):
 
         self.file_name = os.path.splitext(os.path.basename(self.file_csv))[0]
 
-        """ Saving file name and path and creating NPY folder """
-        dir_path = os.path.dirname(self.file_csv)
-        self.npy_folder_path = os.path.join(dir_path, 'NPY')
-        if os.path.exists(self.npy_folder_path) == False:
-            os.makedirs(self.npy_folder_path)
-
-        self.file_name = os.path.splitext(os.path.basename(self.file_csv))[0]
-
     #=========================================================================
     # Parameters of the filter algorithm
     #=========================================================================
-
-    #=========================================================================
-    # Parameters of the filter algorithm
-    #=========================================================================
-
-    chunk_size = tr.Int(10000, auto_set=False, enter_set=True)
-
-    skip_rows = tr.Int(4, auto_set=False, enter_set=True)
-
-    # 1) use the decorator
-    @tr.on_trait_change('chunk_size, skip_rows')
-    def whatever_name_size_changed(self):
-        print('chunk-size changed')
-
-    # 2) use the _changed or _fired extension
-    def _chunk_size_changed(self):
-        print('chunk_size changed - calling the named function')
-
-    data = tr.Array(dtype=np.float_)
-
-    read_loadtxt_button = tr.Button()
-
-    def _read_loadtxt_button_fired(self):
-        self.data = np.loadtxt(
-            self.file_csv, skiprows=self.skip_rows, delimiter=self.delimiter)
-        print(self.data.shape)
-
-    read_csv_button = tr.Button
-    read_hdf5_button = tr.Button
-
-    def _read_csv_button_fired(self):
-        self.read_csv()
-
-    def _read_hdf5_button_fired(self):
-        self.read_hdf5_no_filter()
-
-    def read_csv(self):
-        '''Read the csv file and transform it to the hdf5 format.
-        The output file has the same name as the input csv file
-        with an extension hdf5
-        '''
-        path_csv = self.file_csv
-        # Following splitext splits the path into a pair (root, extension)
-        self.path_hdf5 = os.path.splitext(path_csv)[0] + '.hdf5'
-
-        for i, chunk in enumerate(pd.read_csv(path_csv, delimiter=self.delimiter, decimal=self.decimal, skiprows=self.skip_rows, chunksize=self.chunk_size)):
-            chunk_array = np.array(chunk)
-            chunk_data_frame = pd.DataFrame(
-                chunk_array, columns=['a', 'b', 'c', 'd', 'e', 'f'])
-            if i == 0:
-                chunk_data_frame.to_hdf(
-                    self.path_hdf5, 'all_data', mode='w', format='table')
-            else:
-                chunk_data_frame.to_hdf(
-                    self.path_hdf5, 'all_data', append=True)
-
-    def read_hdf5_no_filter(self):
-
-        # reading hdf files is really memory-expensive!
-        force = np.array(pd.read_hdf(self.path_hdf5, columns=['b']))
-        weg = np.array(pd.read_hdf(self.path_hdf5, columns=['c']))
-        disp1 = np.array(pd.read_hdf(self.path_hdf5, columns=['d']))
-        disp2 = np.array(pd.read_hdf(self.path_hdf5, columns=['e']))
-        disp3 = np.array(pd.read_hdf(self.path_hdf5, columns=['f']))
-
-        force = np.concatenate((np.zeros((1, 1)), force))
-        weg = np.concatenate((np.zeros((1, 1)), weg))
-        disp1 = np.concatenate((np.zeros((1, 1)), disp1))
-        disp2 = np.concatenate((np.zeros((1, 1)), disp2))
-        disp3 = np.concatenate((np.zeros((1, 1)), disp3))
-
-        dir_path = os.path.dirname(self.file_csv)
-        npy_folder_path = os.path.join(dir_path, 'NPY')
-        if os.path.exists(npy_folder_path) == False:
-            os.makedirs(npy_folder_path)
-
-        file_name = os.path.splitext(os.path.basename(self.file_csv))[0]
-
-        np.save(os.path.join(npy_folder_path,
-                             file_name + '_Force_nofilter.npy'), force)
-        np.save(os.path.join(npy_folder_path, file_name +
-                             '_Displacement_machine_nofilter.npy'), weg)
-        np.save(os.path.join(npy_folder_path, file_name +
-                             '_Displacement_sliding1_nofilter.npy'), disp1)
-        np.save(os.path.join(npy_folder_path, file_name +
-                             '_Displacement_sliding2_nofilter.npy'), disp2)
-        np.save(os.path.join(npy_folder_path, file_name +
-                             '_Displacement_crack1_nofilter.npy'), disp3)
-
-        # Defining chunk size for matplotlib points visualization
-        mpl.rcParams['agg.path.chunksize'] = 50000
-
-        plt.subplot(111)
-        plt.xlabel('Displacement [mm]')
-        plt.ylabel('kN')
-        plt.title('original data', fontsize=20)
-        plt.plot(disp2, force, 'k')
-        plt.show()
-
-    figure = tr.Instance(Figure)
 
     def _figure_default(self):
         figure = Figure(facecolor='white')
@@ -412,9 +303,6 @@ class HCFF(tr.HasStrictTraits):
             abs((force)) > abs(self.peak_force_before_cycles))[0][0]
         force_ascending = force[0:peak_force_before_cycles_index]
         force_rest = force[peak_force_before_cycles_index:]
-
-        force_max_indices, force_min_indices = self.get_array_max_and_min_indices(
-            force_rest)
 
         force_max_indices, force_min_indices = self.get_array_max_and_min_indices(
             force_rest)

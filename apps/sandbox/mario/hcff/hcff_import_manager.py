@@ -76,8 +76,10 @@ class FileImportManager(tr.HasTraits):
 
         for i in range(len(self.columns_headers_list)):
             column_array = np.array(pd.read_csv(
-                self.file_csv, delimiter=self.delimiter, decimal=self.decimal, skiprows=self.skip_rows, usecols=[i]))
-            np.save(os.path.join(self.npy_folder_path, self.file_name +
-                                 '_' + self.columns_headers_list[i] + '.npy'), column_array)
+                self.file_csv, delimiter=self.delimiter, decimal=self.decimal,
+                skiprows=self.skip_rows, usecols=[i]))
+            np.save(os.path.join(self.npy_folder_path, self.file_name + '_'
+                                 + self.columns_headers_list[i] + '.npy'),
+                    column_array)
 
         print('Finsihed parsing csv into npy files.')

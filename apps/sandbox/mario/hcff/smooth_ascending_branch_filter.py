@@ -12,7 +12,7 @@ import numpy as np
 import traits.api as tr
 import traitsui.api as ui
 
-from .hcff_filter import HCFFilter
+from apps.sandbox.mario.hcff.hcff_filter import HCFFilter
 
 
 class SmoothAscendingBranchFilter(HCFFilter):
