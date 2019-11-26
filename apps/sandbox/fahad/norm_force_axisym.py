@@ -12,10 +12,11 @@ from ibvpy.mats.viz3d_tensor_field import \
 from mayavi import mlab
 from simulator.demo.mlab_decorators import decorate_figure
 
-from apps.sandbox.fahad.verify_sorting.pulloutaxisymdemomodel import \
-    PullOutAxiSym, Geometry, CrossSection
 import numpy as np
 import pylab as p
+
+from .pulloutaxisymdemomodel import \
+PullOutAxiSym, Geometry, CrossSection
 
 dir = os.path.expanduser('~')
 
@@ -24,8 +25,8 @@ def verify_normalized_pullout_force():
 
     ax = p.subplot(111)
 
-    f_lateral = 0
-    dt_list = [0.4]
+    f_lateral = 1000
+    dt_list = [0.05]
     for dt in dt_list:  # [0, -100]
         ds = 16
         print('lateral confining pressure', f_lateral)
