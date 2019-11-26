@@ -13,10 +13,9 @@ from mayavi import mlab
 from simulator.demo.mlab_decorators import decorate_figure
 
 import numpy as np
-import pylab as p
-
-from .pulloutaxisymdemomodel import \
+from pulloutaxisymdemomodel import \
 PullOutAxiSym, Geometry, CrossSection
+import pylab as p
 
 dir = os.path.expanduser('~')
 
@@ -25,8 +24,8 @@ def verify_normalized_pullout_force():
 
     ax = p.subplot(111)
 
-    f_lateral = 1000
-    dt_list = [0.05]
+    f_lateral = 0
+    dt_list = [0.02]
     for dt in dt_list:  # [0, -100]
         ds = 16
         print('lateral confining pressure', f_lateral)
@@ -61,7 +60,7 @@ def verify_normalized_pullout_force():
                           #                           algorithmic=False)
                           )
 
-        s.u_max = 0.1
+        s.u_max = 2
         s.tline.step = dt
         s.tloop.verbose = True
         s.run()
@@ -69,22 +68,20 @@ def verify_normalized_pullout_force():
         print('P_max', np.max(s.record['Pw'].sim.hist.F_t))
         print('P_end', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
         
-        #=======================================================================
-        # mlab.options.backend = 'envisage'
-        # print(s.hist['stress'])
-        # f_stress = mlab.figure()
-        # scene = mlab.get_engine().scenes[-1]
-        # scene.name = 'stress'
-        # stress_viz = Viz3DTensorField(vis3d=s.hist['stress'])
-        # stress_viz.setup()
-        # stress_viz.warp_vector.filter.scale_factor = 100.0
-        # stress_viz.plot(s.tstep.t_n)
-        # lut_manager = mlab.colorbar(title='sig_ab', orientation='horizontal', nb_labels=5)
-        # # fix the range
+        mlab.options.backend = 'envisage'
+        print(s.hist['stress'])
+        f_stress = mlab.figure()
+        scene = mlab.get_engine().scenes[-1]
+        scene.name = 'stress'
+        stress_viz = Viz3DTensorField(vis3d=s.hist['stress'])
+        stress_viz.setup()
+        stress_viz.warp_vector.filter.scale_factor = 100.0
+        stress_viz.plot(s.tstep.t_n)
+        lut_manager = mlab.colorbar(title='sig_ab', orientation='horizontal', nb_labels=5)
+        # fix the range
         # print(s.record['stress'])
-        # # scalar_lut_manager.data_range = array([0., 1.])
-        # lut_manager.data_range = np.array([np.min(s.record['stress']), np.max(s.record['stress'])])
-        #=======================================================================
+        # scalar_lut_manager.data_range = array([0., 1.])
+       # lut_manager.data_range = np.array([np.min(s.record['stress']), np.max(s.record['stress'])])
         
         #=======================================================================
         # f_strain = mlab.figure()
@@ -129,7 +126,7 @@ if __name__ == '__main__':
     #     abc = open('sigNnew1.txt', 'w')
     #     abc.close()
     w = verify_normalized_pullout_force()
-    w.configure_traits()
-    # p.show()
-    # mlab.show()
+    # w.configure_traits()
+    p.show()
+    mlab.show()
     
