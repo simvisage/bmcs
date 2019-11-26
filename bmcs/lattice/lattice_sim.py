@@ -7,6 +7,7 @@ Created on 12.01.2016
 @todo: introduce a switch for left and right supports
 '''
 
+import os
 import time
 
 from bmcs.time_functions import \
@@ -433,8 +434,26 @@ def test04_mgrid():
     return X_Ia, I_Li, fixed_dofs.flatten(), control_dofs.flatten(), w_max
 
 
+def test05_lattice():
+    home_dir = os.path.expanduser('~')
+    ldir = os.path.join(home_dir, 'simdb', 'simdata', 'lattice_example')
+    X_Ia = np.loadtxt(os.path.join(ldir, 'nodes.inp'),
+                      skiprows=1, usecols=(1, 2, 3))
+    vertices = np.loadtxt(os.path.join(ldir, 'vertices.inp'),
+                          skiprows=1, usecols=(1, 2, 3))
+    I_Li = np.loadtxt(os.path.join(ldir, 'mechElems.inp'),
+                      skiprows=1, usecols=(1, 2), dtype=np.int_)
+    fixed_dofs = np.arange(20, dtype=np.int_)
+    n_nodes = len(X_Ia)
+    control_dofs = np.arange(n_nodes - 20, n_nodes - 1, dtype=np.int_)
+    return X_Ia, I_Li, fixed_dofs.flatten(), control_dofs.flatten(), -0.01
+
+
 if __name__ == '__main__':
-    X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test04_mgrid()
+    X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test05_lattice()
+    # print(X_Ia.shape)
+    # print(I_Li.shape)
+    #X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test04_mgrid()
     #X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test03_tetrahedron()
     #X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test01_couple()
     tes = LatticeTessellation(
