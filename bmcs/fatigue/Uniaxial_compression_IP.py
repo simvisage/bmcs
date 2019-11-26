@@ -62,7 +62,7 @@ if __name__ == '__main__':
     #print(U_t)
     print (t)
     print(type(state_vars))
-    print(type(a))
+    print(np.array([sv['omegaN'] for sv in state_vars[-1]]))
     
     
 #------------------------------------------------------------------------------ 
@@ -71,6 +71,7 @@ if __name__ == '__main__':
     plt.subplot(111)
 
     plt.plot(-U_t[:,0], -F_t[:,0], 'k', linewidth=1, alpha=1.0)
+    
     #plt.plot(-U_t[:,1], -F_t[:,0], 'k', linewidth=1, alpha=1.0)
 
     plt.show()
