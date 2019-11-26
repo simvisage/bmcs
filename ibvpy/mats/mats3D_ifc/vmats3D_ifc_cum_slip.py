@@ -61,8 +61,8 @@ class MATS3DIfcCumSlip(MATSEval):
                     r_w=(),
                     omega_s=(),
                     z_s=(),
-                    alpha_s_a=(2),
-                    s_p_a=(2))
+                    alpha_s_a=(2,),
+                    s_p_a=(2,))
 
     def init(self, *args):
         r'''
@@ -83,29 +83,35 @@ class MATS3DIfcCumSlip(MATSEval):
         s_a = u_b[..., 1:]
         # For normal - distinguish tension and compression
         T = w > 0.0
-        sigma = self.E_n * w
-        delta_lambda = 0.5 * self.E_n * (w * T)**2.0 * self.Ad * (1 + r_w)**2
+        H_w_N = np.array(w <= 0.0, dtype=np.float_)
+        E_alg_N = H_w_N * self.E_N
+
+        sigma = self.E_N * w
+        delta_lambda = 0.5 * self.E_N * (w * T)**2.0 * self.Ad * (1 + r_w)**2
         omega_w += delta_lambda
         r_w -= delta_lambda
-        sigma[T] = (1.0 - omega_w[T]) * self.E_n * (w[T])
+        sigma[T] = (1.0 - omega_w[T]) * self.E_N * (w[T])
         # For tangential
-        E_s = self.E_s
-        tau_trial_a = E_s * (s_a - s_p_a)
+        E_T = self.E_T
+        tau_trial_a = E_T * (s_a - s_p_a)
         Z_s = self.K_T * z_s
         X_s_a = self.gamma_T * alpha_s_a
         q_a = tau_trial_a - X_s_a
+        print(tau_trial_a.shape, X_s_a.shape)
         norm_q = sqrt(einsum('...a,...a->...', q_a, q_a))
         f = norm_q - self.tau_pi_bar - Z_s + self.a * sigma
         plas_1 = f > 1e-6
         elas_1 = f < 1e-6
         delta_lamda = (
-            f / (E_s / (1 - omega_s) + self.gamma_T + self.K_T) * plas_1
+            f / (E_T / (1 - omega_s) + self.gamma_T + self.K_T) * plas_1
         )
         norm_q_plas = 1.0 * elas_1 + sqrt(
             einsum('...a,...a->...', q_a, q_a)) * plas_1
+        print(plas_1.shape, delta_lambda.shape,
+              omega_s.shape, q_a.shape, norm_q_plas.shape)
         s_p_a += plas_1 * delta_lamda / (1.0 - omega_s) * q_a / norm_q_plas
         s_el_a = s_a - s_p_a
-        Y = 0.5 * E_s * \
+        Y = 0.5 * E_T * \
             einsum('...a,...a->...', s_el_a, s_el_a)
         omega_s += ((1.0 - omega_s) ** self.c_T) * \
             (delta_lamda * (Y / self.S_T) ** self.r_T)  # * \
@@ -121,8 +127,9 @@ class MATS3DIfcCumSlip(MATSEval):
         E_TN = np.einsum('abEm->Emab',
                          np.array(
                              [
-                                 #                                  [E_alg_N, np.zeros_like(E_alg_T)],
-                                 #                                  [np.zeros_like(E_alg_N), E_alg_T]
+                                 [E_alg_N, np.zeros_like(E_alg_T)],
+                                 [np.zeros_like(
+                                     E_alg_N), E_alg_T]
                              ])
                          )
         return sig, E_TN
