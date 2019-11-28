@@ -11,10 +11,10 @@ Microplane Fatigue model 2D
 Using Jirasek homogenization approach [1999]
 '''
 
-from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from traits.api import Constant, \
     Float, Dict, Property, cached_property
 
+from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.matsXD.vmatsXD_eval import MATSXDEval
 import numpy as np
 
@@ -607,7 +607,7 @@ class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D
     #-----------------------------------------------
-    n_mp = Constant(28)
+    n_mp = Constant(360)
 
     _alpha_list = Property(depends_on='n_mp')
 
