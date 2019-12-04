@@ -11,12 +11,12 @@ Microplane Fatigue model 3D
 Using Jirasek homogenization approach [1999]
 '''
 
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from traits.api import Constant,\
     Float, Property, cached_property, Dict
 from traitsui.api import \
     View, VGroup, Item
 
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 import numpy as np
 import numpy as np
 import traits.api as tr

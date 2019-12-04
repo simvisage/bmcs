@@ -222,7 +222,7 @@ def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
 
 
 U, F, S = get_UF_t(
-    F=lambda t: -30 * loading_history(t),
+    F=lambda t: -20 * loading_history(t),
     n_t=10 * n_cycles
 )
 
@@ -232,53 +232,51 @@ U, F, S = get_UF_t(
 
 # print(np.array([sv['w_T_Emn'] for sv in S2]))
 # z_N_Emn
-norm_alphaT1 = norm_alphaT2 = norm_eps_pT1 = norm_eps_pT2 = np.zeros(len(F))
+norm_alphaT = norm_eps_pT = np.zeros((len(S), len(F)))
 
+for j in range(len(F)):
+    for i in range(len(S)):
 
-for i in range(len(F)):
-    norm_alphaT1[i] = np.linalg.norm(S[i, 9, 8:11])
-    norm_alphaT2[i] = np.linalg.norm(S[i, 18, 8:11])
-    norm_eps_pT1[i] = np.linalg.norm(S[i, 9, 11:14])
-    norm_eps_pT2[i] = np.linalg.norm(S[i, 18, 11:14])
-print(norm_alphaT1)
+        norm_alphaT[i, j] = np.linalg.norm(S[j, i, 8:11])
+        norm_eps_pT[i, j] = np.linalg.norm(S[j, i, 11:14])
+
 
 t = np.arange(len(F))
 fig, axs = plt.subplots(2, 5)
-
-axs[0, 0].plot(F[:, 0], S[:, 9, 0], 'g')
-axs[0, 0].plot(F[:, 0], S[:, 18, 0], 'r')
+for i in range(len(S)):
+    axs[0, 0].plot(F[:, 0], S[:, i, 0])
 axs[0, 0].set_title('omegaN')
 
-axs[0, 1].plot(F[:, 0], S[:, 9, 1], 'g')
-axs[0, 1].plot(F[:, 0], S[:, 18, 1], 'r')
+for i in range(len(S)):
+    axs[0, 1].plot(F[:, 0], S[:, i, 1])
 axs[0, 1].set_title('rN')
 
-axs[0, 2].plot(F[:, 0], S[:, 6, 2], 'g')
-#axs[0, 2].plot(F[:, 0], S[:, 26, 2], 'r')
+for i in range(len(S)):
+    axs[0, 2].plot(F[:, 0], S[:, i, 2])
 axs[0, 2].set_title('alphaN')
 
-axs[0, 3].plot(F[:, 0], S[:, 6, 3], 'g')
-#axs[0, 2].plot(F[:, 0], S[:, 26, 2], 'r')
+for i in range(len(S)):
+    axs[0, 3].plot(F[:, 0], S[:, i, 3])
 axs[0, 3].set_title('zN')
 
-axs[0, 4].plot(F[:, 0], S[:, 6, 4], 'g')
-#axs[0, 2].plot(F[:, 0], S[:, 26, 2], 'r')
+for i in range(len(S)):
+    axs[0, 4].plot(F[:, 0], S[:, i, 4])
 axs[0, 4].set_title('eps_pN')
 
-axs[1, 0].plot(F[:, 0], S[:, 9, 6], 'g')
-axs[1, 0].plot(F[:, 0], S[:, 18, 6], 'r')
+for i in range(len(S)):
+    axs[1, 0].plot(F[:, 0], S[:, i, 6])
 axs[1, 0].set_title('omegaT')
 
-axs[1, 1].plot(F[:, 0], S[:, 9, 7], 'g')
-axs[1, 1].plot(F[:, 0], S[:, 18, 7], 'r')
+for i in range(len(S)):
+    axs[1, 1].plot(F[:, 0], S[:, i, 7])
 axs[1, 1].set_title('zT')
 
-axs[1, 2].plot(F[:, 0], norm_alphaT1, 'g')
-axs[1, 2].plot(F[:, 0], norm_alphaT2, 'r')
+for i in range(len(S)):
+    axs[1, 2].plot(F[:, 0], norm_alphaT[i, :])
 axs[1, 2].set_title('alphaT')
 
-axs[1, 3].plot(F[:, 0], norm_eps_pT1, 'g')
-axs[1, 2].plot(F[:, 0], norm_eps_pT2, 'r')
+for i in range(len(S)):
+    axs[1, 2].plot(F[:, 0], norm_eps_pT[i, :])
 axs[1, 3].set_title('eps_pT')
 
 # axs[1, 4].plot(F[:, 0], S[:, 6, 4], 'g')

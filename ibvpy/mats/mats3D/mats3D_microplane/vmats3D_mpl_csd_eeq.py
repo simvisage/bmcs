@@ -212,27 +212,31 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         r_N_Emn = r_N_Emn + delta_lamda
         alpha_N_Emn = alpha_N_Emn + delta_lamda * sign(sigma_n_trial - X)
 
-#     # using the thermodynamic formulated tensile damage law
-#         def Z_N(z_N_Emn): return 1.0 / self.Ad * (-z_N_Emn) / (1.0 + z_N_Emn)
-#         Y_N = 0.5 * H * E_N * eps_N_Emn ** 2.0
-#         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
-#         f = Y_N - (Y_0 + Z_N(z_N_Emn))
-#
-#         thres_2 = f > 1e-6
-#
-#         def f_w(Y): return 1.0 - 1.0 / (1.0 + self.Ad * (Y - Y_0))
-#         omegaN = omegaN + f_w(Y_N) * thres_2
-#         z_N_Emn = z_N_Emn - f_w(Y_N) * thres_2
+    # using the thermodynamic formulated tensile damage law
+        def Z_N(z_N_Emn): return 1.0 / self.Ad * (-z_N_Emn) / (1.0 + z_N_Emn)
+        Y_N = 0.5 * H * E_N * eps_N_Emn ** 2.0
+        Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
+        f = Y_N - (Y_0 + Z_N(z_N_Emn))
 
-    # using Jirasek damage function
-        f_trial_Emn = eps_N_Emn - self.eps_0
-        f_idx = np.where(f_trial_Emn > 0)
-        # print(f_idx.shape)
-        print(f_trial_Emn.shape)
-        print(eps_N_Emn.shape)
-        z_N_Emn[f_idx] = eps_N_Emn[f_idx]
-        omegaN[f_idx] = (1. -
-                         (self.eps_0 / z_N_Emn[f_idx]) * np.exp(- (z_N_Emn[f_idx] - self.eps_0) / (self.eps_f - self.eps_0)))
+        thres_2 = f > 1e-6
+
+        def f_w(Y): return 1.0 - 1.0 / (1.0 + self.Ad * (Y - Y_0))
+        omegaN = omegaN + f_w(Y_N) * thres_2
+        z_N_Emn = z_N_Emn - f_w(Y_N) * thres_2
+
+#     # using Jirasek damage function
+#         f_trial_Emn = eps_N_Emn - self.eps_0
+#         f_idx = f_trial_Emn > 1e-6
+#         f_idx = (f_idx * 1)
+#
+#         z_N_Emn = z_N_Emn.reshape(1, 28)
+#         omegaN = omegaN.reshape(1, 28)
+#
+#         z_N_Emn[f_trial_Emn > 1e-6] = eps_N_Emn[f_trial_Emn > 1e-6]
+#
+#         omegaN[f_trial_Emn > 1e-6] = omegaN[f_trial_Emn > 1e-6] + (1. -
+#                                                                    (self.eps_0 / z_N_Emn[f_trial_Emn > 1e-6]) * np.exp(- (z_N_Emn[f_trial_Emn > 1e-6] - self.eps_0) / (self.eps_f - self.eps_0)))
+#
 
         sigma_N_Emn = (1.0 - H * omegaN) * E_N * (eps_N_Emn - eps_N_p_Emn)
 
