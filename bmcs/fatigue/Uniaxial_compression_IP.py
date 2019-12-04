@@ -62,7 +62,7 @@ if __name__ == '__main__':
     #print(U_t)
     print (t)
     print(type(state_vars))
-    print(np.array([sv['omegaN'] for sv in state_vars[-1]]))
+    print(np.array([sv['w_T_Emn'] for sv in state_vars[0]]))
     
     
 #------------------------------------------------------------------------------ 
