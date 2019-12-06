@@ -212,16 +212,15 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         r_N_Emn = r_N_Emn + delta_lamda
         alpha_N_Emn = alpha_N_Emn + delta_lamda * sign(sigma_n_trial - X)
 
-<<<<<<< HEAD
-=======
 
->>>>>>> master
+
+
     # using the thermodynamic formulated tensile damage law
         def Z_N(z_N_Emn): return 1.0 / self.Ad * (-z_N_Emn) / (1.0 + z_N_Emn)
         Y_N = 0.5 * H * E_N * eps_N_Emn ** 2.0
         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
         f = Y_N - (Y_0 + Z_N(z_N_Emn))
-<<<<<<< HEAD
+
 
         thres_2 = f > 1e-6
 
@@ -233,14 +232,14 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 #         f_trial_Emn = eps_N_Emn - self.eps_0
 #         f_idx = f_trial_Emn > 1e-6
 #         f_idx = (f_idx * 1)
-=======
+
 
 #     # using the thermodynamic formulated tensile damage law
 #         def Z_N(z_N_Emn): return 1.0 / self.Ad * (-z_N_Emn) / (1.0 + z_N_Emn)
 #         Y_N = 0.5 * H * E_N * eps_N_Emn ** 2.0
 #         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
 #         f = Y_N - (Y_0 + Z_N(z_N_Emn))
->>>>>>> master
+
 #
 #         z_N_Emn = z_N_Emn.reshape(1, 28)
 #         omegaN = omegaN.reshape(1, 28)
@@ -281,7 +280,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 #         omegaN[f_idx] = (1. -
 #                          (self.eps_0 / z_N_Emn[f_idx]) * np.exp(- (z_N_Emn[f_idx] - self.eps_0) / (self.eps_f - self.eps_0)))
 # 
->>>>>>> master
+
         sigma_N_Emn = (1.0 - H * omegaN) * E_N * (eps_N_Emn - eps_N_p_Emn)
 
         return omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn
