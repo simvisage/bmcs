@@ -212,15 +212,11 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         r_N_Emn = r_N_Emn + delta_lamda
         alpha_N_Emn = alpha_N_Emn + delta_lamda * sign(sigma_n_trial - X)
 
-
-
-
     # using the thermodynamic formulated tensile damage law
         def Z_N(z_N_Emn): return 1.0 / self.Ad * (-z_N_Emn) / (1.0 + z_N_Emn)
         Y_N = 0.5 * H * E_N * eps_N_Emn ** 2.0
         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
         f = Y_N - (Y_0 + Z_N(z_N_Emn))
-
 
         thres_2 = f > 1e-6
 
@@ -249,9 +245,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 #         omegaN[f_trial_Emn > 1e-6] = omegaN[f_trial_Emn > 1e-6] + (1. -
 #                                                                    (self.eps_0 / z_N_Emn[f_trial_Emn > 1e-6]) * np.exp(- (z_N_Emn[f_trial_Emn > 1e-6] - self.eps_0) / (self.eps_f - self.eps_0)))
 #
-<<<<<<< HEAD
 
-=======
 #         def f_w(Y): return 1.0 - 1.0 / (1.0 + self.Ad * (Y - Y_0))
 #         omegaN = omegaN + f_w(Y_N) * thres_2
 #         z_N_Emn = z_N_Emn - f_w(Y_N) * thres_2
@@ -268,7 +262,6 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         omegaN[f_idx] = (1. -
                          (self.eps_0 / z_N_Emn[f_idx]) * np.exp(- (z_N_Emn[f_idx] - self.eps_0) / (self.eps_f - self.eps_0)))
 
-
         def f_w(Y): return 1.0 - 1.0 / (1.0 + self.Ad * (Y - Y_0))
         omegaN = f_w(Y_N) * thres_2
         z_N_Emn = - omegaN * thres_2
@@ -279,7 +272,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 #         z_N_Emn[f_idx] = eps_N_Emn[f_idx]
 #         omegaN[f_idx] = (1. -
 #                          (self.eps_0 / z_N_Emn[f_idx]) * np.exp(- (z_N_Emn[f_idx] - self.eps_0) / (self.eps_f - self.eps_0)))
-# 
+#
 
         sigma_N_Emn = (1.0 - H * omegaN) * E_N * (eps_N_Emn - eps_N_p_Emn)
 
@@ -605,9 +598,8 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         eps_p_Emab = einsum('n,...n,na,nb->...ab', self._MPW, eps_N_p_Emn, self._MPN, self._MPN) + \
             0.5 * (einsum('n,...nf,na,fb->...ab', self._MPW, eps_T_pi_Emna, self._MPN, delta) +
                    einsum('n,...nf,nb,fa->...ab', self._MPW, eps_T_pi_Emna, self._MPN, delta))
-            
-            
-        #print ('eps_p_Emab', eps_p_Emab)    
+
+        #print ('eps_p_Emab', eps_p_Emab)
 
         return eps_p_Emab
 
