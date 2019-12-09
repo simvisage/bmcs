@@ -12,7 +12,7 @@
 # In[1]:
 
 
-from apps.sandbox.mario.Micro2Dplot import Micro2Dplot
+from apps.sandbox.mario.Micro2Dplot_d import Micro2Dplot_d
 from apps.sandbox.mario.vmats2D_mpl_csd_eeq import MATSXDMplCDSEEQ
 from apps.sandbox.mario.vmats2D_mpl_d_eeq import MATSXDMicroplaneDamageEEQ
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import MATS3DDesmorat
@@ -61,24 +61,18 @@ def get_K_OP(D_abcd):
     return K_OP
 
 
-m = MATSXDMplCDSEEQ()
-plot = Micro2Dplot()
+m = MATSXDMicroplaneDamageEEQ()
+plot = Micro2Dplot_d()
 
 
 def get_UF_t(F, n_t):
 
     n_mp = 360
-    omegaN = np.zeros((n_mp, ))
-    z_N_Emn = np.zeros((n_mp, ))
-    alpha_N_Emn = np.zeros((n_mp, ))
-    r_N_Emn = np.zeros((n_mp, ))
-    eps_N_p_Emn = np.zeros((n_mp, ))
-    sigma_N_Emn = np.zeros((n_mp, ))
-    w_T_Emn = np.zeros((n_mp, ))
-    z_T_Emn = np.zeros((n_mp, ))
-    alpha_T_Emna = np.zeros((n_mp, 2))
-    eps_T_pi_Emna = np.zeros((n_mp, 2))
-    sctx = np.zeros((n_mp, 12))
+    omega = np.zeros((n_mp, ))
+    kappa = np.zeros((n_mp, ))
+    eps_T = np.zeros((n_mp, 2))
+    eps_T = np.zeros((n_mp, ))
+    sctx = np.zeros((n_mp, 5))
     sctx = sctx[np.newaxis, :, :]
 
     # total number of DOFs
@@ -107,9 +101,7 @@ def get_UF_t(F, n_t):
             # Stress and material stiffness
 
             D_abcd, sig_ab = m.get_corr_pred(
-                eps_ab, 1, omegaN, z_N_Emn,
-                alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
-                w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna
+                eps_ab, 1, kappa
             )
 
             # Internal force
@@ -133,26 +125,15 @@ def get_UF_t(F, n_t):
             break
 
         # Update states variables after convergence
-        [omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, w_T_Emn, z_T_Emn,
-            alpha_T_Emna, eps_T_pi_Emna] = m._get_state_variables(
-                eps_ab, 1, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
-                w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna)
+        kappa = m.update_state_variables(eps_ab,  kappa)
+        omega = m._get_omega(kappa)
+        eps_T = m._get_e_T_Emna(eps_ab)
+        eps_N = m._get_e_N_Emn(eps_ab)
 
-        omegaN = omegaN.reshape(n_mp, )
-        z_N_Emn = z_N_Emn.reshape(n_mp, )
-        alpha_N_Emn = alpha_N_Emn.reshape(n_mp, )
-        r_N_Emn = r_N_Emn.reshape(n_mp, )
-        eps_N_p_Emn = eps_N_p_Emn.reshape(n_mp, )
-        sigma_N_Emn = sigma_N_Emn.reshape(n_mp,)
-        w_T_Emn = w_T_Emn.reshape(n_mp, )
-        z_T_Emn = z_T_Emn.reshape(n_mp, )
-        alpha_T_Emna = alpha_T_Emna.reshape(n_mp, 2)
-        eps_T_pi_Emna = eps_T_pi_Emna.reshape(n_mp, 2)
+#         omegaN = omegaN.reshape(n_mp, )
 
-        sctx_aux = np.concatenate((omegaN.reshape(n_mp, 1), z_N_Emn.reshape(n_mp, 1), alpha_N_Emn.reshape(n_mp, 1),
-                                   r_N_Emn.reshape(n_mp, 1), eps_N_p_Emn.reshape(
-                                       n_mp, 1), sigma_N_Emn.reshape(n_mp, 1),
-                                   w_T_Emn.reshape(n_mp, 1), z_T_Emn.reshape(n_mp, 1), alpha_T_Emna, eps_T_pi_Emna), axis=1)
+        sctx_aux = np.concatenate(
+            (kappa.reshape(n_mp, 1), omega.reshape(n_mp, 1), eps_T, eps_N.reshape(n_mp, 1)), axis=1)
 
         sctx_aux = sctx_aux[np.newaxis, :, :]
         sctx = np.concatenate((sctx, sctx_aux))
@@ -173,7 +154,7 @@ def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
 
 
 U, F, S = get_UF_t(
-    F=lambda t: -60 * loading_history(t),
+    F=lambda t: -80 * loading_history(t),
     n_t=50 * n_cycles
 )
 
@@ -182,23 +163,17 @@ U, F, S = get_UF_t(
 # Plot the axial strain against the lateral strain
 
 
-eps_N = np.zeros((len(S), len(S[1])))
-eps_T = np.zeros((len(S), len(S[1])))
-norm_alphaT = np.zeros((len(S), len(S[1])))
-norm_eps_pT = np.zeros((len(S), len(S[1])))
-
+# eps_N = np.zeros((len(S), len(S[1])))
+# eps_T = np.zeros((len(S), len(S[1])))
+# norm_alphaT = np.zeros((len(S), len(S[1])))
+norm_eps_T = np.zeros((len(S), len(S[1])))
+#
 for i in range(len(F)):
-    eps = get_eps_ab(U[i])
-    eps_N[i] = m._get_e_N_Emn_2(eps)
-    eps_T_aux = m._get_e_T_Emna(eps)
-    eps_T[i] = np.sqrt(np.einsum('...i,...i->... ', eps_T_aux, eps_T_aux))
-    norm_alphaT[i] = np.sqrt(
-        np.einsum('...i,...i->... ', S[i, :, 8:10], S[i, :, 8:10]))
-    norm_eps_pT[i] = np.sqrt(
-        np.einsum('...i,...i->... ', S[i, :, 10:12], S[i, :, 10:12]))
-
-
-t = np.arange(len(F))
+    norm_eps_T[i] = np.sqrt(
+        np.einsum('...i,...i->... ', S[i, :, 2:4], S[i, :, 2:4]))
+#
+#
+# t = np.arange(len(F))
 # fig, axs = plt.subplots(2, 5)
 # for i in range(len(S[1])):
 #     axs[0, 0].plot(F[:, 0], S[:, i, 0])
@@ -244,12 +219,11 @@ t = np.arange(len(F))
 # plt.show()
 #
 #
-# f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 4))
-# ax1.plot(U[:, 0], U[:, 1])
-# ax2.plot(U[:, 0], F[:, 0])
-#
-# plt.show()
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 4))
+ax1.plot(U[:, 0], U[:, 1])
+ax2.plot(U[:, 0], F[:, 0])
+
+plt.show()
 
 n_mp = 360
-plot.get_2Dviz(n_mp, eps_N, S[:, :, 0], S[:, :, 4],
-               eps_T, S[:, :, 6], norm_eps_pT)
+plot.get_2Dviz(n_mp, S[:, :, 0], S[:, :, 1], norm_eps_T, S[:, :, 4])
