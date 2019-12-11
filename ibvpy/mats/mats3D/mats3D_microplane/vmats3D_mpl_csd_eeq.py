@@ -53,7 +53,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
                 enter_set=True,
                 auto_set=False)
 
-    S_T = Float(0.0001,
+    S_T = Float(0.000001,
                 label="S",
                 desc="Damage strength",
                 enter_set=True,
@@ -86,7 +86,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
     #-------------------------------------------
     # Normal_Tension constitutive law parameters (without cumulative normal strain)
     #-------------------------------------------
-    Ad = Float(500.0,
+    Ad = Float(100.0,
                label="Ad",
                desc="Brittleness coefficient",
                enter_set=True,
@@ -98,68 +98,23 @@ class MATS3DMplCSDEEQ(MATS3DEval):
                   enter_set=True,
                   auto_set=False)
 
-    eps_f = Float(0.000002,
-                  label="eps_f",
-                  desc="Damage function shape",
-                  enter_set=True,
-                  auto_set=False)
-
-    #-------------------------------------------
-    # Normal_Tension constitutive law parameters
-    # (using cumulative normal plastic strain)
-    #-------------------------------------------
-    gamma_N_pos = Float(5000.,
-                        label="Gamma N",
-                        desc=" Tangential Kinematic hardening modulus",
-                        enter_set=True,
-                        auto_set=False)
-
-    K_N_pos = Float(0.0,
-                    label="K N",
-                    desc="Tangential Isotropic harening",
-                    enter_set=True,
-                    auto_set=False)
-
-    S_N = Float(0.005,
-                label="S N",
-                desc="Damage strength",
-                enter_set=True,
-                auto_set=False)
-
-    r_N = Float(1.0,
-                label="r N",
-                desc="Damage cumulation parameter",
-                enter_set=True,
-                auto_set=False)
-
-    c_N = Float(1.0,
-                label="c N",
-                desc="Damage cumulation parameter",
-                enter_set=True,
-                auto_set=False)
-
-    sigma_0_pos = Float(15.0,
-                        label="sigma_0",
-                        desc="Reversibility limit",
-                        enter_set=True,
-                        auto_set=False)
 
     #-----------------------------------------------
     # Normal_Compression constitutive law parameters
     #-----------------------------------------------
-    K_N_neg = Float(20.,
+    K_N = Float(20.,
                     label="K N compression",
                     desc=" Normal isotropic harening",
                     enter_set=True,
                     auto_set=False)
 
-    gamma_N_neg = Float(100000.,
+    gamma_N = Float(100000.,
                         label="gamma_compression",
                         desc="Normal kinematic hardening",
                         enter_set=True,
                         auto_set=False)
 
-    sigma_0_neg = Float(15.,
+    sigma_0 = Float(15.,
                         label="sigma 0 compression",
                         desc="Yield stress in compression",
                         enter_set=True,
@@ -186,7 +141,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
                 'eps_T_pi_Emna': (self.n_mp, 3), }
 
     #--------------------------------------------------------------
-    # microplane constitutive law (normal behavior CP + TD) (without cumulative normal strain)
+    # microplane constitutive law (normal behavior CP + TD) 
     #--------------------------------------------------------------
     def get_normal_law(self, eps_N_Emn, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
 
@@ -197,17 +152,17 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
         sigma_n_trial = (1.0 - H * omegaN) * \
             E_N * (eps_N_Emn - eps_N_p_Emn)
-        Z = self.K_N_neg * r_N_Emn
-        X = self.gamma_N_neg * alpha_N_Emn
+        Z = self.K_N * r_N_Emn
+        X = self.gamma_N * alpha_N_Emn
 
-        h = self.sigma_0_neg + Z
+        h = self.sigma_0 + Z
         pos_iso = h > 1e-6
         f_trial = abs(sigma_n_trial - X) - h * pos_iso
 
         thres_1 = f_trial > 1e-6
 
         delta_lamda = f_trial / \
-            (E_N + abs(self.K_N_neg) + self.gamma_N_neg) * thres_1
+            (E_N + abs(self.K_N) + self.gamma_N) * thres_1
         eps_N_p_Emn = eps_N_p_Emn + delta_lamda * sign(sigma_n_trial - X)
         r_N_Emn = r_N_Emn + delta_lamda
         alpha_N_Emn = alpha_N_Emn + delta_lamda * sign(sigma_n_trial - X)
@@ -218,90 +173,17 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         Y_N = 0.5 * H * E_N * eps_N_Emn ** 2.0
         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
         f = Y_N - (Y_0 + Z_N(z_N_Emn))
-
-#     # using the thermodynamic formulated tensile damage law
-#         def Z_N(z_N_Emn): return 1.0 / self.Ad * (-z_N_Emn) / (1.0 + z_N_Emn)
-#         Y_N = 0.5 * H * E_N * eps_N_Emn ** 2.0
-#         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
-#         f = Y_N - (Y_0 + Z_N(z_N_Emn))
-#
-#         thres_2 = f > 1e-6
-#
-#         def f_w(Y): return 1.0 - 1.0 / (1.0 + self.Ad * (Y - Y_0))
-#         omegaN = omegaN + f_w(Y_N) * thres_2
-#         z_N_Emn = z_N_Emn - f_w(Y_N) * thres_2
-
-        thres_2 = f > 1e-6
-
-    # using Jirasek damage function
-        f_trial_Emn = eps_N_Emn - self.eps_0
-        f_idx = np.where(f_trial_Emn > 0)
-        # print(f_idx.shape)
-        print(f_trial_Emn.shape)
-        print(eps_N_Emn.shape)
-        z_N_Emn[f_idx] = eps_N_Emn[f_idx]
-        omegaN[f_idx] = (1. -
-                         (self.eps_0 / z_N_Emn[f_idx]) * np.exp(- (z_N_Emn[f_idx] - self.eps_0) / (self.eps_f - self.eps_0)))
-
-
+        thres_2 = f > 1e-6
         def f_w(Y): return 1.0 - 1.0 / (1.0 + self.Ad * (Y - Y_0))
         omegaN = f_w(Y_N) * thres_2
         z_N_Emn = - omegaN * thres_2
 
-#     # using Jirasek damage function
-#         f_trial_Emn = eps_N_Emn - self.eps_0
-#         f_idx = np.where(f_trial_Emn > 0)
-#         z_N_Emn[f_idx] = eps_N_Emn[f_idx]
-#         omegaN[f_idx] = (1. -
-#                          (self.eps_0 / z_N_Emn[f_idx]) * np.exp(- (z_N_Emn[f_idx] - self.eps_0) / (self.eps_f - self.eps_0)))
-# 
+
         sigma_N_Emn = (1.0 - H * omegaN) * E_N * (eps_N_Emn - eps_N_p_Emn)
 
         return omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn
 
-    #--------------------------------------------------------------
-    # microplane constitutive law (normal behavior CP + TD)
-    #--------------------------------------------------------------
-    def xget_normal_law(self, eps_N_Emn, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
 
-        E_N = self.E / (1.0 - 2.0 * self.nu)
-
-        ten = eps_N_Emn > 0.0
-        comp = eps_N_Emn <= 0.0
-
-        sigma_n_trial = (E_N * (eps_N_Emn - eps_N_p_Emn)) * \
-            ten + (E_N * (eps_N_Emn - eps_N_p_Emn)) * comp
-
-        Z = (self.K_N_pos * r_N_Emn) * ten + (self.K_N_neg * r_N_Emn) * comp
-        X = (self.gamma_N_pos * alpha_N_Emn) * ten + \
-            (self.gamma_N_neg * alpha_N_Emn) * comp
-
-        h = self.sigma_0_pos * ten + self.sigma_0_neg * comp + Z
-        pos_iso = h > 1e-6
-        f_trial = abs(sigma_n_trial - X) - h * pos_iso
-
-        thres_1 = f_trial > 1e-6
-
-        delta_lamda = f_trial / \
-            (E_N / (1. - omegaN) + abs(self.K_N_pos * ten + self.K_N_neg * comp) +
-             (self.gamma_N_pos * ten + self.gamma_N_neg * comp)) * thres_1
-
-        eps_N_p_Emn = eps_N_p_Emn + delta_lamda * \
-            sign(sigma_n_trial - X) / (1.0 - omegaN)
-
-        Y = 0.5 * E_N * ((eps_N_Emn - eps_N_p_Emn) * ten) ** 2.0
-
-        omegaN += ((1. - omegaN) ** self.c_N) * \
-            (delta_lamda * (Y / self.S_N) ** self.r_N)
-
-        # print 'w_N', omegaN
-
-        r_N_Emn = r_N_Emn + delta_lamda
-        alpha_N_Emn = alpha_N_Emn + delta_lamda * sign(sigma_n_trial - X)
-
-        sigma_N_Emn = (1.0 - omegaN) * E_N * (eps_N_Emn - eps_N_p_Emn)
-
-        return omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn
 
     #-------------------------------------------------------------------------
     # microplane constitutive law (Tangential CSD)-(Pressure sensitive cumulative damage)
@@ -326,10 +208,6 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         delta_lamda = f / \
             (E_T / (1.0 - w_T_Emn) + self.gamma_T + self.K_T) * plas_1
 
-#         print 'f', f
-#         print 'w_T_Emn', w_T_Emn
-#         print 'delta_lamda', delta_lamda
-#         print '*****'
 
         norm_2 = 1.0 * elas_1 + sqrt(
             einsum('...na,...na->...n', (sig_pi_trial - X), (sig_pi_trial - X))) * plas_1
@@ -406,16 +284,16 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         return MPTT_nijr
 
     def _get_e_N_Emn_2(self, eps_Emab):
-        # Projection of apparent strain onto the individual microplanes
+        # get the normal strain array for each microplane
         return einsum('nij,...ij->...n', self._MPNN, eps_Emab)
 
     def _get_e_T_Emna_2(self, eps_Emab):
-        # get the normal strain array for each microplane
+        # get the tangential strain vector array for each microplane
         MPTT_ijr = self._get__MPTT()
         return einsum('nija,...ij->...na', MPTT_ijr, eps_Emab)
 
     def _get_e_Emna_2(self, eps_Emab):
-        # get the tangential strain vector array for each microplane
+        
         return self._get_e_N_Emn_2(eps_Emab) * self._MPN +\
             self._get_e_T_Emna_2(eps_Emab)
 
@@ -495,8 +373,12 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         w_Emn[idx_2] = w_T_Emn[idx_2]
 
         phi_Emn = sqrt(1.0 - w_Emn)
+        
+        print('omegaN', omegaN)
+        print('w_T_Emn', w_T_Emn)
+        print('w_Emn', w_Emn)
+        print('phi_Emn', phi_Emn)
 
-        #phi_Emn = sqrt(1.0 - omegaN)
 
         return phi_Emn
 
@@ -525,35 +407,42 @@ class MATS3DMplCSDEEQ(MATS3DEval):
                               einsum('...jl,ik->...ijkl', phi_Emab, delta))
 
         return beta_Emabcd
+    
+    
+    
+    #---------------------------------------------------------------------
+    # Extra homogenization of damage tensor in case of two damage parameters
+    # Returns the 4th order damage tensor 'beta4' using (ref. [Baz99], Eq.(63))
+    #---------------------------------------------------------------------
+ 
+    def _get_beta_Emabcd_2(self, eps_Emab, omegaN, z_N_Emn,
+                     alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
+                     w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna,  sigma_N_Emn):
+ 
+        # Returns the 4th order damage tensor 'beta4' using
+        #(cf. [Baz99], Eq.(63))
+ 
+        delta = identity(3)
+        beta_N = sqrt(1. - omegaN)
+        beta_T = sqrt(1. - w_T_Emn)
+        
+        beta_N = 1. -omegaN
+        beta_T = 1. - w_T_Emn
+        
+        print ('omegaN ', omegaN )
+        print ('omegaT ', w_T_Emn )
+        print ('beta_N ', beta_N)
+        print ('beta_T ', beta_T)
+ 
+        beta_ijkl = einsum('n, ...n,ni, nj, nk, nl -> ...ijkl', self._MPW, beta_N, self._MPN, self._MPN, self._MPN, self._MPN) + \
+            0.25 * (einsum('n, ...n,ni, nk, jl -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, delta) +
+                    einsum('n, ...n,ni, nl, jk -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, delta) +
+                    einsum('n, ...n,nj, nk, il -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, delta) +
+                    einsum('n, ...n,nj, nl, ik -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, delta) -
+                    4.0 * einsum('n, ...n, ni, nj, nk, nl -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, self._MPN, self._MPN))
+ 
+        return beta_ijkl
 
-#     #----------------------------------------------------------------------
-#     # Returns the 4th order damage tensor 'beta4' using product-type symmetrization
-#     #(cf. [Baz97], Eq.(87))
-#     #----------------------------------------------------------------------
-#     def _get_beta_tns_product_type(self, sctx, eps_app_eng, sigma_kk):
-#
-#         delta = identity(2)
-#
-#         phi_mtx = self._get_phi_mtx(sctx, eps_app_eng, sigma_kk)
-#
-#         n_dim = 2
-#         phi_eig_value, phi_eig_mtx = eigh(phi_mtx)
-#         phi_eig_value_real = array([pe.real for pe in phi_eig_value])
-#         phi_pdc_mtx = zeros((n_dim, n_dim), dtype=float)
-#         for i in range(n_dim):
-#             phi_pdc_mtx[i, i] = phi_eig_value_real[i]
-#         # w_mtx = tensorial square root of the second order damage tensor:
-#         w_pdc_mtx = sqrt(phi_pdc_mtx)
-#
-#         # transform the matrix w back to x-y-coordinates:
-#         w_mtx = einsum('ik,kl,lj -> ij', phi_eig_mtx, w_pdc_mtx, phi_eig_mtx)
-#         #w_mtx = dot(dot(phi_eig_mtx, w_pdc_mtx), transpose(phi_eig_mtx))
-#
-#         beta_ijkl = 0.5 * \
-#             (einsum('ik,jl -> ijkl', w_mtx, w_mtx) +
-#              einsum('il,jk -> ijkl', w_mtx, w_mtx))
-#
-#         return beta_ijkl
 
     #-----------------------------------------------------------
     # Integration of the (inelastic) strains for each microplane
@@ -562,16 +451,6 @@ class MATS3DMplCSDEEQ(MATS3DEval):
                         alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
                         w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna,  sigma_N_Emn):
 
-        #         eps_N_Emn = self._get_e_N_Emn_2(eps_Emab)
-        #         eps_T_Emna = self._get_e_T_Emna_2(eps_Emab)
-        #
-        #         # plastic normal strains
-        #         eps_N_p_Emn = self._get_eps_N_p_Emn(
-        #             eps_Emab, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn)
-        #
-        #         # sliding tangential strains
-        #         eps_T_pi_Emna = self._get_eps_T_pi_Emna(
-        # eps_Emab, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
         delta = identity(3)
 
@@ -579,9 +458,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         eps_p_Emab = einsum('n,...n,na,nb->...ab', self._MPW, eps_N_p_Emn, self._MPN, self._MPN) + \
             0.5 * (einsum('n,...nf,na,fb->...ab', self._MPW, eps_T_pi_Emna, self._MPN, delta) +
                    einsum('n,...nf,nb,fa->...ab', self._MPW, eps_T_pi_Emna, self._MPN, delta))
-            
-            
-        #print ('eps_p_Emab', eps_p_Emab)    
+
 
         return eps_p_Emab
 
@@ -617,7 +494,12 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
         phi_Emab = self._get_phi_Emab(phi_Emn)
 
-        beta_Emabcd = self._get_beta_Emabcd(phi_Emab)
+        #beta_Emabcd = self._get_beta_Emabcd(phi_Emab)
+        
+        beta_Emabcd = self._get_beta_Emabcd_2(eps_Emab_n1, omegaN, z_N_Emn,
+                                    alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
+                                    w_T_Emn, z_T_Emn, alpha_T_Emna,
+                                    eps_T_pi_Emna, sigma_N_Emn)
 
         #------------------------------------------------------------------
         # Damaged stiffness tensor calculated based on the damage tensor beta4:
@@ -751,22 +633,13 @@ class MATS3DMplCSDEEQ(MATS3DEval):
             VGroup(
                 Item('Ad'),
                 Item('eps_0', full_size=True, resizable=True),
-                Item('eps_f'),
                 label='Normal_Tension (no cumulative normal strain)'
             ),
+
             VGroup(
-                Item('gamma_N_pos', full_size=True, resizable=True),
-                Item('K_N_pos'),
-                Item('S_N'),
-                Item('r_N'),
-                Item('c_N'),
-                Item('sigma_0_pos'),
-                label='Normal_Tension (cumulative normal plastic strain)',
-            ),
-            VGroup(
-                Item('K_N_neg', full_size=True, resizable=True),
-                Item('gamma_N_neg'),
-                Item('sigma_0_neg'),
+                Item('K_N', full_size=True, resizable=True),
+                Item('gamma_N'),
+                Item('sigma_0'),
                 label='Normal_compression parameters'
             )
         )

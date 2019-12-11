@@ -3,8 +3,8 @@ import sys
 
 from PIL import Image
 import PIL
-import cv2
-import cv2
+#import cv2
+#import cv2
 from matplotlib import cm
 import matplotlib
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 import matplotlib.pyplot as plt
 import mayavi.mlab as m
 import mayavi.mlab as m
-import moviepy.editor as mpy
+#import moviepy.editor as mpy
 import numpy as np
 import numpy as np
 import numpy as np

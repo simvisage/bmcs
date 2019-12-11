@@ -29,7 +29,7 @@ if __name__ == '__main__':
     )
     
     bc = BCDof(
-        var='u', dof=0, value=-0.01,
+        var='u', dof=0, value=-0.05,
         time_function=LoadingScenario()
     )
     
@@ -44,7 +44,8 @@ if __name__ == '__main__':
 #------------------------------------------------------------------------------ 
     bc.time_function.trait_set(loading_type='monotonic')
     
-    s.tline.step = 0.05
+    s.tline.step = 0.01
+    s.tloop.k_max = 1000
     s.bc = [bc]
     s.run()
 
@@ -61,8 +62,8 @@ if __name__ == '__main__':
     #print(F_t)
     #print(U_t)
     print (t)
-    print(type(state_vars))
-    print(np.array([sv['w_T_Emn'] for sv in state_vars[0]]))
+    #print(state_vars)
+    #print(np.array([sv['w_T_Emn'] for sv in state_vars[0]]))
     
     
 #------------------------------------------------------------------------------ 
