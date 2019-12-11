@@ -17,9 +17,10 @@ from traits.api import Constant, \
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 from ibvpy.mats.matsXD.vmatsXD_eval import MATSXDEval
 import numpy as np
+import traits.api as tr
 
 
-class MATSXDMplCDSEEQ(MATSXDEval):
+class MATS2DMplCSDEEQ(MATS2DEval):
 
     #---------------------------------------
     # Tangential constitutive law parameters
@@ -75,7 +76,7 @@ class MATSXDMplCDSEEQ(MATSXDEval):
                enter_set=True,
                auto_set=False)
 
-    eps_0 = Float(0.002,
+    eps_0 = Float(0.0002,
                   label="a",
                   desc="threshold strain",
                   enter_set=True,
@@ -150,6 +151,40 @@ class MATSXDMplCDSEEQ(MATSXDEval):
     state_var_shapes = Property(Dict(), depends_on='n_mp')
     '''Dictionary of state variable entries with their array shapes.
     '''
+    #-------------------------------------------------------------------------
+    # Cached elasticity tensors
+    #-------------------------------------------------------------------------
+
+    E = tr.Float(34e+3,
+                 label="E",
+                 desc="Young's Modulus",
+                 auto_set=False,
+                 input=True)
+
+    nu = tr.Float(0.2,
+                  label='nu',
+                  desc="Poison ratio",
+                  auto_set=False,
+                  input=True)
+
+    def _get_lame_params(self):
+        la = self.E * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
+        # second Lame parameter (shear modulus)
+        mu = self.E / (2. + 2. * self.nu)
+        return la, mu
+
+    D_abef = tr.Property(tr.Array, depends_on='+input')
+
+    @tr.cached_property
+    def _get_D_abef(self):
+        la = self._get_lame_params()[0]
+        mu = self._get_lame_params()[1]
+        delta = np.identity(2)
+        D_abef = (np.einsum(',ij,kl->ijkl', la, delta, delta) +
+                  np.einsum(',ik,jl->ijkl', mu, delta, delta) +
+                  np.einsum(',il,jk->ijkl', mu, delta, delta))
+
+        return D_abef
 
     @cached_property
     def _get_state_var_shapes(self):
@@ -169,18 +204,17 @@ class MATSXDMplCDSEEQ(MATSXDEval):
     # microplane constitutive law (normal behavior CP + TD)
     # (without cumulative normal strain for fatigue under tension)
     #--------------------------------------------------------------
-    def xget_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn,
-                        alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
+    def get_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn,
+                       alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
 
         E_N = self.E / (1.0 - 2.0 * self.nu)
 
         pos = eps_N_Emn > 1e-6
         H = 1.0 * pos
-
+        # print(eps_N_Emn)
         sigma_n_trial = (1.0 - H * w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
         Z = self.K_N_neg * r_N_Emn
         X = self.gamma_N_neg * alpha_N_Emn
-
         h = self.sigma_0_neg + Z
         pos_iso = h > 1e-6
         f_trial = abs(sigma_n_trial - X) - h * pos_iso
@@ -206,6 +240,8 @@ class MATSXDMplCDSEEQ(MATSXDEval):
         w_N_Emn = f_w(Y_N) * thres_2
         z_N_Emn = -w_N_Emn * thres_2
 
+#         print(w_N_Emn)
+
         sigma_N_Emn = (1.0 - H * w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
 
         return w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn
@@ -213,8 +249,8 @@ class MATSXDMplCDSEEQ(MATSXDEval):
     #--------------------------------------------------------------
     # microplane constitutive law (normal behavior CP + TD) (using cumulative normal strain for fatigue under tension)
     #--------------------------------------------------------------
-    def get_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn,
-                       alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn):
+    def xget_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn,
+                        alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
 
         E_N = self.E / (1.0 - 2.0 * self.nu)
 
@@ -268,7 +304,7 @@ class MATSXDMplCDSEEQ(MATSXDEval):
         X = self.gamma_T * alpha_T_Emna
         norm_1 = np.sqrt(
             np.einsum(
-                'Emna,Emna -> Emn',
+                '...na,...na->...n',
                 (sig_pi_trial - X), (sig_pi_trial - X))
         )
 
@@ -283,7 +319,7 @@ class MATSXDMplCDSEEQ(MATSXDEval):
 
         norm_2 = 1.0 * elas_1 + np.sqrt(
             np.einsum(
-                'Emna,Emna -> Emn',
+                '...na,...na->...n',
                 (sig_pi_trial - X), (sig_pi_trial - X))) * plas_1
 
 #         eps_T_pi_Emna[..., 0] = eps_T_pi_Emna[..., 0] + plas_1 * delta_lamda * \
@@ -300,7 +336,7 @@ class MATSXDMplCDSEEQ(MATSXDEval):
 
         Y = 0.5 * E_T * \
             np.einsum(
-                'Emna,Emna-> Emn',
+                '...na,...na->...n',
                 (eps_T_Emna - eps_T_pi_Emna),
                 (eps_T_Emna - eps_T_pi_Emna)
             )
@@ -333,14 +369,14 @@ class MATSXDMplCDSEEQ(MATSXDEval):
 
     def _get_e_N_Emn(self, e_Emna):
         # get the normal strain array for each microplane
-        e_N_Emn = np.einsum('Emna, na->Emn', e_Emna, self._MPN)
+
+        e_N_Emn = np.einsum('nij,...ij->...n', e_Emna, self._MPN)
         return e_N_Emn
 
     def _get_e_T_Emna(self, e_Emna):
         # get the tangential strain vector array for each microplane
-        e_N_Emn = self._get_e_N_Emn(e_Emna)
-        e_N_Emna = np.einsum('Emn,na->Emna', e_N_Emn, self._MPN)
-        return e_Emna - e_N_Emna
+        MPTT_ijr = self._get__MPTT()
+        return np.einsum('nija,...ij->...na', MPTT_ijr, e_Emna)
 
     #-------------------------------------------------
     # Alternative methods for the kinematic constraint
@@ -368,12 +404,13 @@ class MATSXDMplCDSEEQ(MATSXDEval):
 
     def _get_e_N_Emn_2(self, eps_Emab):
         # Projection of apparent strain onto the individual microplanes
-        return np.einsum('nij,Emij->Emn', self._MPNN, eps_Emab)
+
+        return np.einsum('nij,...ij->...n', self._MPNN, eps_Emab)
 
     def _get_e_T_Emnar_2(self, eps_Emab):
         # get the normal strain array for each microplane
         MPTT_ijr = self._get__MPTT()
-        return np.einsum('nija,Emij->Emna', MPTT_ijr, eps_Emab)
+        return np.einsum('nija,...ij->...na', MPTT_ijr, eps_Emab)
 
     def _get_e_Emna_2(self, eps_Emab):
         # get the tangential strain vector array for each microplane
@@ -383,20 +420,21 @@ class MATSXDMplCDSEEQ(MATSXDEval):
     #--------------------------------------------------------
     # return the state variables (Damage , inelastic strains)
     #--------------------------------------------------------
-    def _get_state_variables(self, sctx, eps_app_eng):
+    def _get_state_variables(self, eps_app_eng, tn1,
+                             omegaN, z_N_Emn,
+                             alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
+                             w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna):
 
-        e_N_arr = self._get_e_N_arr_2(eps_app_eng)
-        e_T_vct_arr = self._get_e_T_vct_arr_2(eps_app_eng)
+        e_N_arr = self._get_e_N_Emn_2(eps_app_eng)
+        e_T_vct_arr = self._get_e_T_Emna(eps_app_eng)
 
-        sctx_arr = np.zeros_like(sctx)
+        omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn = self.get_normal_law(e_N_arr,  omegaN, z_N_Emn,
+                                                                                              alpha_N_Emn, r_N_Emn, eps_N_p_Emn)
 
-        sctx_N = self.get_normal_law(e_N_arr, sctx)
-        sctx_arr[:, 0:6] = sctx_N
+        w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna = self.get_tangential_law(e_T_vct_arr, w_T_Emn, z_T_Emn,
+                                                                                alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
-        sctx_tangential = self.get_tangential_law(e_T_vct_arr, sctx)
-        sctx_arr[:, 6:12] = sctx_tangential
-
-        return sctx_arr
+        return omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna
 
     #-----------------------------------------------------------------
     # Returns a list of the plastic normal strain  for all microplanes.
@@ -429,7 +467,7 @@ class MATSXDMplCDSEEQ(MATSXDEval):
         eps_T_Emna = self._get_e_T_Emnar_2(eps_Emab)
 
         w_N_Emn = self.get_normal_law(
-            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn)[0]
+            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn)[0]
         w_T_Emn = self.get_tangential_law(
             eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)[0]
 
@@ -467,7 +505,8 @@ class MATSXDMplCDSEEQ(MATSXDEval):
                                     w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
         # integration terms for each microplanes
-        phi_Emab = np.einsum('Emn,n,nab->Emab', phi_Emn, self._MPW, self._MPNN)
+        phi_Emab = np.einsum('...n,n,nab->...ab', phi_Emn,
+                             self._MPW, self._MPNN)
 
         return phi_Emab
 
@@ -487,46 +526,50 @@ class MATSXDMplCDSEEQ(MATSXDEval):
 
         # use numpy functionality (einsum) to evaluate [Jir99], Eq.(21)
         beta_Emabcd = 0.25 * (
-            np.einsum('Emik,jl->Emijkl', phi_Emab, delta) +
-            np.einsum('Emil,jk->Emijkl', phi_Emab, delta) +
-            np.einsum('Emjk,il->Emijkl', phi_Emab, delta) +
-            np.einsum('Emjl,ik->Emijkl', phi_Emab, delta)
+            np.einsum('...ik,jl->...ijkl', phi_Emab, delta) +
+            np.einsum('...il,jk->...ijkl', phi_Emab, delta) +
+            np.einsum('...jk,il->...ijkl', phi_Emab, delta) +
+            np.einsum('...jl,ik->...ijkl', phi_Emab, delta)
         )
 
         return beta_Emabcd
 
-#     #----------------------------------------------------------------------
-#     # Returns the 4th order damage tensor 'beta4' using product-type symmetrization
-#     #(cf. [Baz97], Eq.(87))
-#     #----------------------------------------------------------------------
-#     def _get_beta_tns_product_type(self, sctx, eps_app_eng, sigma_kk):
-#
-#         delta = identity(2)
-#
-#         phi_mtx = self._get_phi_mtx(sctx, eps_app_eng, sigma_kk)
-#
-#         n_dim = 2
-#         phi_eig_value, phi_eig_mtx = eigh(phi_mtx)
-#         phi_eig_value_real = array([pe.real for pe in phi_eig_value])
-#         phi_pdc_mtx = zeros((n_dim, n_dim), dtype=float)
-#         for i in range(n_dim):
-#             phi_pdc_mtx[i, i] = phi_eig_value_real[i]
-#         # w_mtx = tensorial square root of the second order damage tensor:
-#         w_pdc_mtx = sqrt(phi_pdc_mtx)
-#
-#         # transform the matrix w back to x-y-coordinates:
-#         w_mtx = np.einsum('ik,kl,lj -> ij', phi_eig_mtx, w_pdc_mtx, phi_eig_mtx)
-#         #w_mtx = dot(dot(phi_eig_mtx, w_pdc_mtx), transpose(phi_eig_mtx))
-#
-#         beta_ijkl = 0.5 * \
-#             (einsum('ik,jl -> ijkl', w_mtx, w_mtx) +
-#              np.einsum('il,jk -> ijkl', w_mtx, w_mtx))
-#
-#         return beta_ijkl
+#---------------------------------------------------------------------
+    # Extra homogenization of damage tensor in case of two damage parameters
+    # Returns the 4th order damage tensor 'beta4' using (ref. [Baz99], Eq.(63))
+    #---------------------------------------------------------------------
 
+    def _get_beta_Emabcd_2(self, eps_Emab, omegaN, z_N_Emn,
+                           alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
+                           w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna,  sigma_N_Emn):
+
+        # Returns the 4th order damage tensor 'beta4' using
+        #(cf. [Baz99], Eq.(63))
+
+        delta = np.identity(3)
+        beta_N = np.sqrt(1. - omegaN)
+        beta_T = np.sqrt(1. - w_T_Emn)
+
+        beta_N = 1. - omegaN
+        beta_T = 1. - w_T_Emn
+
+        print('omegaN ', omegaN)
+        print('omegaT ', w_T_Emn)
+        print('beta_N ', beta_N)
+        print('beta_T ', beta_T)
+
+        beta_ijkl = np.einsum('n, ...n,ni, nj, nk, nl -> ...ijkl', self._MPW, beta_N, self._MPN, self._MPN, self._MPN, self._MPN) + \
+            0.25 * (np.einsum('n, ...n,ni, nk, jl -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, delta) +
+                    np.einsum('n, ...n,ni, nl, jk -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, delta) +
+                    np.einsum('n, ...n,nj, nk, il -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, delta) +
+                    np.einsum('n, ...n,nj, nl, ik -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, delta) -
+                    4.0 * np.einsum('n, ...n, ni, nj, nk, nl -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, self._MPN, self._MPN))
+
+        return beta_ijkl
     #-----------------------------------------------------------
     # Integration of the (inelastic) strains for each microplane
     #-----------------------------------------------------------
+
     def _get_eps_p_Emab(self, eps_Emab, w_N_Emn, z_N_Emn,
                         alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
                         w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
@@ -536,7 +579,7 @@ class MATSXDMplCDSEEQ(MATSXDEval):
 
         # plastic normal strains
         eps_N_p_Emn = self.get_normal_law(
-            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn)[4]
+            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn)[4]
 
         # sliding tangential strains
         eps_T_pi_Emna = self.get_tangential_law(
@@ -546,12 +589,12 @@ class MATSXDMplCDSEEQ(MATSXDEval):
 
         # 2-nd order plastic (inelastic) tensor
         eps_p_Emab = (
-            np.einsum('n,Emn,na,nb -> Emab',
+            np.einsum('n,...n,na,nb->...ab',
                       self._MPW, eps_N_p_Emn, self._MPN, self._MPN) +
             0.5 * (
-                np.einsum('n,Emnf,na,fb-> Emab',
+                np.einsum('n,...nf,na,fb->...ab',
                           self._MPW, eps_T_pi_Emna, self._MPN, delta) +
-                np.einsum('n,Emnf,nb,fa-> Emab', self._MPW,
+                np.einsum('n,...nf,nb,fa->...ab', self._MPW,
                           eps_T_pi_Emna, self._MPN, delta)
             )
         )
@@ -580,8 +623,9 @@ class MATSXDMplCDSEEQ(MATSXDEval):
         #------------------------------------------------------------------
         # Damaged stiffness tensor calculated based on the damage tensor beta4:
         #------------------------------------------------------------------
+
         D_Emabcd = np.einsum(
-            'Emijab, abef, Emcdef -> Emijcd', beta_Emabcd, self.D_abef, beta_Emabcd)
+            '...ijab, abef, ...cdef->...ijcd', beta_Emabcd, self.D_abef, beta_Emabcd)
         #----------------------------------------------------------------------
         # Return stresses (corrector) and damaged secant stiffness matrix (predictor)
         #----------------------------------------------------------------------
@@ -595,12 +639,12 @@ class MATSXDMplCDSEEQ(MATSXDEval):
         eps_e_Emab = eps_Emab - eps_p_Emab
 
         # calculation of the stress tensor
-        sig_Emab = np.einsum('Emabcd,Emcd -> Emab', D_Emabcd, eps_e_Emab)
+        sig_Emab = np.einsum('...abcd,...cd->...ab', D_Emabcd, eps_e_Emab)
 
         return D_Emabcd, sig_Emab
 
 
-class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
+# class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
 
     # implements(IMATSEval)
 
@@ -609,13 +653,6 @@ class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
     #-----------------------------------------------
     n_mp = Constant(360)
 
-    _alpha_list = Property(depends_on='n_mp')
-
-    @cached_property
-    def _get__alpha_list(self):
-        return np.array([np.pi / self.n_mp * (i - 0.5)
-                         for i in range(1, self.n_mp + 1)])
-
     #-----------------------------------------------
     # get the normal vectors of the microplanes
     #-----------------------------------------------
@@ -623,9 +660,14 @@ class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
 
     @cached_property
     def _get__MPN(self):
-        return np.array(
-            [[np.cos(alpha), np.sin(alpha)] for alpha in self._alpha_list]
-        )
+        # microplane normals:
+
+        alpha_list = np.linspace(0, 2 * np.pi, self.n_mp)
+
+        MPN = np.array([[np.cos(alpha), np.sin(alpha)]
+                        for alpha in alpha_list])
+
+        return MPN
 
     #-------------------------------------
     # get the weights of the microplanes
@@ -634,4 +676,10 @@ class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
 
     @cached_property
     def _get__MPW(self):
-        return np.ones(self.n_mp) / self.n_mp * 2.0
+        # Note that the values in the array must be multiplied by 6 (cf. [Baz05])!
+        # The sum of of the array equals 0.5. (cf. [BazLuz04]))
+        # The values are given for an Gaussian integration over the unit
+        # hemisphere.
+        MPW = np.ones(self.n_mp) / self.n_mp * 2
+
+        return MPW

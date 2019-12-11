@@ -11,15 +11,9 @@
 
 # In[1]:
 
-import copy
 
-from apps.sandbox.mario.Micro2Dplot import Micro2Dplot
-from apps.sandbox.mario.vmats2D_mpl_csd_eeq import MATSXDMplCDSEEQ
-from apps.sandbox.mario.vmats2D_mpl_d_eeq import MATSXDMicroplaneDamageEEQ
-from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import MATS3DDesmorat
-from ibvpy.mats.mats3D.mats3D_sdamage.vmats3D_sdamage import MATS3DScalarDamage
+from ibvpy.mats.mats2D.mats2D_microplane.vmats2D_mpl_d_eeq import MATS2DMplDamageEEQ
 
-import matplotlib.pyplot as plt
 import numpy as np
 import sympy as sp
 
@@ -77,7 +71,7 @@ def get_K_OP(D_abcd):
 
 def get_UF_t(eps_max, time_function, n_t):
 
-    m = MATSXDMicroplaneDamageEEQ()
+    m = MATS2DMplDamageEEQ()
     n_mp = 360
     omega = np.zeros((n_mp, ))
     kappa = np.zeros((n_mp, ))
@@ -167,27 +161,3 @@ def get_UF_t(eps_max, time_function, n_t):
 
     U_t, F_t = np.array(U_t_list), np.array(F_t_list)
     return U_t, F_t, sctx
-
-
-# n_cycles = 8
-# T = 1 / n_cycles
-#
-#
-# def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
-#
-#
-# U, F, S = get_UF_t(
-#     eps_max=-0.02,
-#     time_function=lambda t: loading_history(t),
-#     n_t=50
-# )
-#
-#
-# f, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
-# ax1.plot(U[:, (1, 2)], U[:, 0])
-# ax1.set_ylabel(r'$\varepsilon_{\mathrm{axial}}$')
-# ax1.set_xlabel(r'$\varepsilon_{\mathrm{lateral}}$')
-# ax2.plot(U[:, 0], F[:, 0])
-# ax2.set_ylabel(r'$\sigma_{\mathrm{axial}}$')
-# ax2.set_xlabel(r'$\varepsilon_{\mathrm{axial}}$')
-# plt.show()

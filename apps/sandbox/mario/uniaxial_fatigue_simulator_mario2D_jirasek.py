@@ -12,11 +12,8 @@
 # In[1]:
 
 
-# from apps.sandbox.mario.Micro2Dplot_d import Micro2Dplot_d
-# from apps.sandbox.mario.vmats2D_mpl_csd_eeq import MATSXDMplCDSEEQ
-from apps.sandbox.mario.vmats2D_mpl_d_eeq import MATSXDMicroplaneDamageEEQ
-# from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import MATS3DDesmorat
-# from ibvpy.mats.mats3D.mats3D_sdamage.vmats3D_sdamage import MATS3DScalarDamage
+from ibvpy.mats.mats2D.mats2D_microplane.vmats2D_mpl_d_eeq import MATS2DMplDamageEEQ
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -67,7 +64,7 @@ def get_K_OP(D_abcd):
 
 def get_UF_t(F, n_t):
 
-    m = MATSXDMicroplaneDamageEEQ()
+    m = MATS2DMplDamageEEQ()
     n_mp = 360
     omega = np.zeros((n_mp, ))
     kappa = np.zeros((n_mp, ))
@@ -144,84 +141,3 @@ def get_UF_t(F, n_t):
 
     U_t, F_t = np.array(U_t_list), np.array(F_t_list)
     return U_t, F_t, sctx
-
-
-# n_cycles = 1
-# T = 1 / n_cycles
-#
-#
-# def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
-#
-#
-# U, F, S = get_UF_t(
-#     F=lambda t: -80 * loading_history(t),
-#     n_t=50 * n_cycles
-# )
-
-# **Examples of postprocessing**:
-# Plot the axial strain against the lateral strain
-
-# eps_N = np.zeros((len(S), len(S[1])))
-# eps_T = np.zeros((len(S), len(S[1])))
-# norm_alphaT = np.zeros((len(S), len(S[1])))
-# norm_eps_T = np.zeros((len(S), len(S[1])))
-# #
-# for i in range(len(F)):
-#     norm_eps_T[i] = np.sqrt(
-#         np.einsum('...i,...i->... ', S[i, :, 2:4], S[i, :, 2:4]))
-#
-#
-# t = np.arange(len(F))
-# fig, axs = plt.subplots(2, 5)
-# for i in range(len(S[1])):
-#     axs[0, 0].plot(F[:, 0], S[:, i, 0])
-# axs[0, 0].set_title('omegaN')
-#
-# for i in range(len(S)):
-#     axs[0, 1].plot(F[:, 0], S[:, i, 1])
-# axs[0, 1].set_title('rN')
-#
-# for i in range(len(S)):
-#     axs[0, 2].plot(F[:, 0], S[:, i, 2])
-# axs[0, 2].set_title('alphaN')
-#
-# for i in range(len(S)):
-#     axs[0, 3].plot(F[:, 0], S[:, i, 3])
-# axs[0, 3].set_title('zN')
-#
-# for i in range(len(S)):
-#     axs[0, 4].plot(F[:, 0], S[:, i, 4])
-# axs[0, 4].set_title('eps_pN')
-#
-# for i in range(len(S)):
-#     axs[1, 0].plot(F[:, 0], S[:, i, 6])
-# axs[1, 0].set_title('omegaT')
-#
-# for i in range(len(S)):
-#     axs[1, 1].plot(F[:, 0], S[:, i, 7])
-# axs[1, 1].set_title('zT')
-#
-# for i in range(len(S)):
-#     axs[1, 2].plot(F[:, 0], norm_alphaT[:, i])
-# axs[1, 2].set_title('alphaT')
-#
-# for i in range(len(S[1])):
-#     axs[1, 2].plot(F[:, 0], norm_eps_pT[:, i])
-# axs[1, 3].set_title('eps_pT')
-#
-# # axs[1, 4].plot(F[:, 0], S[:, 6, 4], 'g')
-# # #axs[1, 2].plot(F[:, 0], S[:, 26, 2], 'r')
-# # axs[1, 4].set_title('eps_pN')
-#
-#
-# plt.show()
-#
-#
-#     f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 4))
-#     ax1.plot(U[:, 0], U[:, 1])
-#     ax2.plot(U[:, 0], F[:, 0])
-#
-#     plt.show()
-#
-#     n_mp = 360
-#     plot.get_2Dviz(n_mp, S[:, :, 0], S[:, :, 1], norm_eps_T, S[:, :, 4])

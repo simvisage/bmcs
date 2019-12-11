@@ -14,10 +14,8 @@
 import copy
 
 from apps.sandbox.mario.Micro2Dplot import Micro2Dplot
-from apps.sandbox.mario.vmats2D_mpl_csd_eeq import MATSXDMplCDSEEQ
-from apps.sandbox.mario.vmats2D_mpl_d_eeq import MATSXDMicroplaneDamageEEQ
-from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import MATS3DDesmorat
-from ibvpy.mats.mats3D.mats3D_sdamage.vmats3D_sdamage import MATS3DScalarDamage
+
+from ibvpy.mats.mats2D.mats2D_microplane.vmats2D_mpl_csd_eeq import MATS2DMplCSDEEQ
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -74,9 +72,12 @@ def get_K_OP(D_abcd):
 # map the residuum field to evctor (assembly operator)
 # map the gradient of the residuum field to system matrix
 
+m = MATS2DMplCSDEEQ()
+plot = Micro2Dplot()
+
 
 def get_UF_t(eps_max, time_function, n_t):
-    m = MATSXDMplCDSEEQ()
+
     n_mp = 360
     omegaN = np.zeros((n_mp, ))
     z_N_Emn = np.zeros((n_mp, ))
@@ -190,7 +191,7 @@ def get_UF_t(eps_max, time_function, n_t):
     return U_t, F_t, sctx
 
 
-# n_cycles = 8
+# n_cycles = 1
 # T = 1 / n_cycles
 #
 #
@@ -212,3 +213,22 @@ def get_UF_t(eps_max, time_function, n_t):
 # ax2.set_ylabel(r'$\sigma_{\mathrm{axial}}$')
 # ax2.set_xlabel(r'$\varepsilon_{\mathrm{axial}}$')
 # plt.show()
+#
+# eps_N = np.zeros((len(S), len(S[1])))
+# eps_T = np.zeros((len(S), len(S[1])))
+# norm_alphaT = np.zeros((len(S), len(S[1])))
+# norm_eps_pT = np.zeros((len(S), len(S[1])))
+#
+# for i in range(len(F)):
+#     eps = get_eps_ab(U[i])
+#     eps_N[i] = m._get_e_N_Emn_2(eps)
+#     eps_T_aux = m._get_e_T_Emna(eps)
+#     eps_T[i] = np.sqrt(np.einsum('...i,...i->... ', eps_T_aux, eps_T_aux))
+#     norm_alphaT[i] = np.sqrt(
+#         np.einsum('...i,...i->... ', S[i, :, 8:10], S[i, :, 8:10]))
+#     norm_eps_pT[i] = np.sqrt(
+#         np.einsum('...i,...i->... ', S[i, :, 10:12], S[i, :, 10:12]))
+#
+# n_mp = 360
+# plot.get_2Dviz(n_mp, eps_N, S[:, :, 0], S[:, :, 4],
+#                eps_T, S[:, :, 6], norm_eps_pT)
