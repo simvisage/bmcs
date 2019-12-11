@@ -12,14 +12,16 @@
 # In[1]:
 
 
-from apps.sandbox.mario.Micro2Dplot_d import Micro2Dplot_d
-from apps.sandbox.mario.vmats2D_mpl_csd_eeq import MATSXDMplCDSEEQ
+# from apps.sandbox.mario.Micro2Dplot_d import Micro2Dplot_d
+# from apps.sandbox.mario.vmats2D_mpl_csd_eeq import MATSXDMplCDSEEQ
 from apps.sandbox.mario.vmats2D_mpl_d_eeq import MATSXDMicroplaneDamageEEQ
-from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import MATS3DDesmorat
-from ibvpy.mats.mats3D.mats3D_sdamage.vmats3D_sdamage import MATS3DScalarDamage
+# from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import MATS3DDesmorat
+# from ibvpy.mats.mats3D.mats3D_sdamage.vmats3D_sdamage import MATS3DScalarDamage
 import matplotlib.pyplot as plt
 import numpy as np
 
+
+# class uniaxial(MATSXDMicroplaneDamageEEQ):
 
 def get_eps_ab(eps_O):
 
@@ -60,18 +62,16 @@ def get_K_OP(D_abcd):
 
     return K_OP
 
-
-m = MATSXDMicroplaneDamageEEQ()
-plot = Micro2Dplot_d()
+#     plot = Micro2Dplot_d()
 
 
 def get_UF_t(F, n_t):
 
+    m = MATSXDMicroplaneDamageEEQ()
     n_mp = 360
     omega = np.zeros((n_mp, ))
     kappa = np.zeros((n_mp, ))
     eps_T = np.zeros((n_mp, 2))
-    eps_T = np.zeros((n_mp, ))
     sctx = np.zeros((n_mp, 5))
     sctx = sctx[np.newaxis, :, :]
 
@@ -125,11 +125,11 @@ def get_UF_t(F, n_t):
             break
 
         # Update states variables after convergence
-        kappa = m.update_state_variables(eps_ab,  kappa)
+        kappa = m.update_state_variables(
+            eps_ab,  kappa)
         omega = m._get_omega(kappa)
         eps_T = m._get_e_T_Emna(eps_ab)
         eps_N = m._get_e_N_Emn(eps_ab)
-
 #         omegaN = omegaN.reshape(n_mp, )
 
         sctx_aux = np.concatenate(
@@ -146,31 +146,29 @@ def get_UF_t(F, n_t):
     return U_t, F_t, sctx
 
 
-n_cycles = 1
-T = 1 / n_cycles
-
-
-def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
-
-
-U, F, S = get_UF_t(
-    F=lambda t: -80 * loading_history(t),
-    n_t=50 * n_cycles
-)
-
+# n_cycles = 1
+# T = 1 / n_cycles
+#
+#
+# def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
+#
+#
+# U, F, S = get_UF_t(
+#     F=lambda t: -80 * loading_history(t),
+#     n_t=50 * n_cycles
+# )
 
 # **Examples of postprocessing**:
 # Plot the axial strain against the lateral strain
 
-
 # eps_N = np.zeros((len(S), len(S[1])))
 # eps_T = np.zeros((len(S), len(S[1])))
 # norm_alphaT = np.zeros((len(S), len(S[1])))
-norm_eps_T = np.zeros((len(S), len(S[1])))
-#
-for i in range(len(F)):
-    norm_eps_T[i] = np.sqrt(
-        np.einsum('...i,...i->... ', S[i, :, 2:4], S[i, :, 2:4]))
+# norm_eps_T = np.zeros((len(S), len(S[1])))
+# #
+# for i in range(len(F)):
+#     norm_eps_T[i] = np.sqrt(
+#         np.einsum('...i,...i->... ', S[i, :, 2:4], S[i, :, 2:4]))
 #
 #
 # t = np.arange(len(F))
@@ -219,11 +217,11 @@ for i in range(len(F)):
 # plt.show()
 #
 #
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 4))
-ax1.plot(U[:, 0], U[:, 1])
-ax2.plot(U[:, 0], F[:, 0])
-
-plt.show()
-
-n_mp = 360
-plot.get_2Dviz(n_mp, S[:, :, 0], S[:, :, 1], norm_eps_T, S[:, :, 4])
+#     f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 4))
+#     ax1.plot(U[:, 0], U[:, 1])
+#     ax2.plot(U[:, 0], F[:, 0])
+#
+#     plt.show()
+#
+#     n_mp = 360
+#     plot.get_2Dviz(n_mp, S[:, :, 0], S[:, :, 1], norm_eps_T, S[:, :, 4])

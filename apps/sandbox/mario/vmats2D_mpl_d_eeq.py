@@ -149,7 +149,9 @@ class MATSXDMicroplaneDamageEEQ(MATSXDEval):
         eps_eq_Emn = self._get_e_equiv_Emn(eps_Emab)
         f_trial_Emn = eps_eq_Emn - self.epsilon_0
         I = np.where(f_trial_Emn > 0)
-        kappa[I] = eps_eq_Emn[I]
+        II = np.where((eps_eq_Emn - kappa) > 0)
+        III = np.intersect1d(I, II)
+        kappa[III] = eps_eq_Emn[III]
         return kappa
 
     def _get_omega(self, kappa_Emn):

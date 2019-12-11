@@ -11,14 +11,22 @@
 
 # In[1]:
 
+import copy
 
 from apps.sandbox.mario.Micro2Dplot import Micro2Dplot
 from apps.sandbox.mario.vmats2D_mpl_csd_eeq import MATSXDMplCDSEEQ
 from apps.sandbox.mario.vmats2D_mpl_d_eeq import MATSXDMicroplaneDamageEEQ
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import MATS3DDesmorat
 from ibvpy.mats.mats3D.mats3D_sdamage.vmats3D_sdamage import MATS3DScalarDamage
+
 import matplotlib.pyplot as plt
 import numpy as np
+import sympy as sp
+
+#from .vmats3D_mpl_csd_eeq import MATS3DMplCSDEEQ
+
+
+sp.init_printing()
 
 
 def get_eps_ab(eps_O):
@@ -61,12 +69,14 @@ def get_K_OP(D_abcd):
     return K_OP
 
 
-m = MATSXDMplCDSEEQ()
-plot = Micro2Dplot()
+# The above operators provide the three mappings
+# map the primary variable to from vector to field
+# map the residuum field to evctor (assembly operator)
+# map the gradient of the residuum field to system matrix
 
 
-def get_UF_t(F, n_t):
-
+def get_UF_t(eps_max, time_function, n_t):
+    m = MATSXDMplCDSEEQ()
     n_mp = 360
     omegaN = np.zeros((n_mp, ))
     z_N_Emn = np.zeros((n_mp, ))
@@ -87,52 +97,69 @@ def get_UF_t(F, n_t):
     F_ext = np.zeros((n_O,), np.float_)
     F_O = np.zeros((n_O,), np.float_)
     U_k_O = np.zeros((n_O,), dtype=np.float_)
+    # Construct index maps distinguishing the controlled displacements
+    # and free displacements. Here we simply say the the control displacement
+    # is the first one. Then index maps are constructed using the np.where
+    # function returning the indexes of True positions in a logical array.
+    CONTROL = 0
+    FREE = slice(1, None)  # This means all except the first index, i.e. [1:]
     # Setup the system matrix with displacement constraints
     # Time stepping parameters
     t_n1, t_max, t_step = 0, 1, 1 / n_t
+    t_n = 0
     # Iteration parameters
-    k_max, R_acc = 1000, 1e-3
+    k_max, R_acc = 100, 1e-3
     # Record solutions
     U_t_list, F_t_list = [np.copy(U_k_O)], [np.copy(F_O)]
 
     # Load increment loop
     while t_n1 <= t_max:
         #print('t:', t_n1)
-        F_ext[0] = F(t_n1)
+        # Get the displacement increment for this step
+        delta_U = eps_max * (time_function(t_n1) - time_function(t_n))
         k = 0
         # Equilibrium iteration loop
         while k < k_max:
             # Transform the primary vector to field
             eps_ab = get_eps_ab(U_k_O)
             # Stress and material stiffness
-
             D_abcd, sig_ab = m.get_corr_pred(
                 eps_ab, 1, omegaN, z_N_Emn,
                 alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
                 w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna
             )
-
             # Internal force
             F_O = get_sig_O(sig_ab).reshape(3,)
-            # Residuum
-            R_O = F_ext - F_O
             # System matrix
             K_OP = get_K_OP(D_abcd)
+            # Get the balancing forces - NOTE - for more displacements
+            # this should be an assembly operator.
+            # KU remains a 2-d array so we have to make it a vector
+            KU = K_OP[:, CONTROL] * delta_U
+            # Residuum
+            R_O = F_ext - F_O - KU
             # Convergence criterion
-            R_norm = np.linalg.norm(R_O)
-            delta_U_O = np.linalg.solve(K_OP, R_O)
-            U_k_O += delta_U_O
+            R_norm = np.linalg.norm(R_O[FREE])
             if R_norm < R_acc:
                 # Convergence reached
                 break
-            # Next iteration
+            # Next iteration -
+            delta_U_O = np.linalg.solve(K_OP[FREE, FREE], R_O[FREE])
+            # Update total displacement
+            U_k_O[FREE] += delta_U_O
+            # Update control displacement
+            U_k_O[CONTROL] += delta_U
+            # Note - control displacement nonzero only in the first iteration.
+            delta_U = 0
             k += 1
-
         else:
             print('no convergence')
             break
 
-        # Update states variables after convergence
+        # Target time of the next load increment
+        U_t_list.append(np.copy(U_k_O))
+        F_t_list.append(F_O)
+
         [omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, w_T_Emn, z_T_Emn,
             alpha_T_Emna, eps_T_pi_Emna] = m._get_state_variables(
                 eps_ab, 1, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
@@ -156,100 +183,32 @@ def get_UF_t(F, n_t):
 
         sctx_aux = sctx_aux[np.newaxis, :, :]
         sctx = np.concatenate((sctx, sctx_aux))
-        U_t_list.append(np.copy(U_k_O))
-        F_t_list.append(F_O)
-
+        t_n = t_n1
         t_n1 += t_step
 
     U_t, F_t = np.array(U_t_list), np.array(F_t_list)
     return U_t, F_t, sctx
 
 
-n_cycles = 1
-T = 1 / n_cycles
-
-
-def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
-
-
-U, F, S = get_UF_t(
-    F=lambda t: -60 * loading_history(t),
-    n_t=50 * n_cycles
-)
-
-
-# **Examples of postprocessing**:
-# Plot the axial strain against the lateral strain
-
-
-eps_N = np.zeros((len(S), len(S[1])))
-eps_T = np.zeros((len(S), len(S[1])))
-norm_alphaT = np.zeros((len(S), len(S[1])))
-norm_eps_pT = np.zeros((len(S), len(S[1])))
-
-for i in range(len(F)):
-    eps = get_eps_ab(U[i])
-    eps_N[i] = m._get_e_N_Emn_2(eps)
-    eps_T_aux = m._get_e_T_Emna(eps)
-    eps_T[i] = np.sqrt(np.einsum('...i,...i->... ', eps_T_aux, eps_T_aux))
-    norm_alphaT[i] = np.sqrt(
-        np.einsum('...i,...i->... ', S[i, :, 8:10], S[i, :, 8:10]))
-    norm_eps_pT[i] = np.sqrt(
-        np.einsum('...i,...i->... ', S[i, :, 10:12], S[i, :, 10:12]))
-
-
-t = np.arange(len(F))
-# fig, axs = plt.subplots(2, 5)
-# for i in range(len(S[1])):
-#     axs[0, 0].plot(F[:, 0], S[:, i, 0])
-# axs[0, 0].set_title('omegaN')
-#
-# for i in range(len(S)):
-#     axs[0, 1].plot(F[:, 0], S[:, i, 1])
-# axs[0, 1].set_title('rN')
-#
-# for i in range(len(S)):
-#     axs[0, 2].plot(F[:, 0], S[:, i, 2])
-# axs[0, 2].set_title('alphaN')
-#
-# for i in range(len(S)):
-#     axs[0, 3].plot(F[:, 0], S[:, i, 3])
-# axs[0, 3].set_title('zN')
-#
-# for i in range(len(S)):
-#     axs[0, 4].plot(F[:, 0], S[:, i, 4])
-# axs[0, 4].set_title('eps_pN')
-#
-# for i in range(len(S)):
-#     axs[1, 0].plot(F[:, 0], S[:, i, 6])
-# axs[1, 0].set_title('omegaT')
-#
-# for i in range(len(S)):
-#     axs[1, 1].plot(F[:, 0], S[:, i, 7])
-# axs[1, 1].set_title('zT')
-#
-# for i in range(len(S)):
-#     axs[1, 2].plot(F[:, 0], norm_alphaT[:, i])
-# axs[1, 2].set_title('alphaT')
-#
-# for i in range(len(S[1])):
-#     axs[1, 2].plot(F[:, 0], norm_eps_pT[:, i])
-# axs[1, 3].set_title('eps_pT')
-#
-# # axs[1, 4].plot(F[:, 0], S[:, 6, 4], 'g')
-# # #axs[1, 2].plot(F[:, 0], S[:, 26, 2], 'r')
-# # axs[1, 4].set_title('eps_pN')
+# n_cycles = 8
+# T = 1 / n_cycles
 #
 #
-# plt.show()
+# def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
 #
 #
-# f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 4))
-# ax1.plot(U[:, 0], U[:, 1])
+# U, F, S = get_UF_t(
+#     eps_max=-0.02,
+#     time_function=lambda t: loading_history(t),
+#     n_t=50
+# )
+#
+#
+# f, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
+# ax1.plot(U[:, (1, 2)], U[:, 0])
+# ax1.set_ylabel(r'$\varepsilon_{\mathrm{axial}}$')
+# ax1.set_xlabel(r'$\varepsilon_{\mathrm{lateral}}$')
 # ax2.plot(U[:, 0], F[:, 0])
-#
+# ax2.set_ylabel(r'$\sigma_{\mathrm{axial}}$')
+# ax2.set_xlabel(r'$\varepsilon_{\mathrm{axial}}$')
 # plt.show()
-
-n_mp = 360
-plot.get_2Dviz(n_mp, eps_N, S[:, :, 0], S[:, :, 4],
-               eps_T, S[:, :, 6], norm_eps_pT)
