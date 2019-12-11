@@ -170,7 +170,7 @@ class MATSXDMplCDSEEQ(MATSXDEval):
     # (without cumulative normal strain for fatigue under tension)
     #--------------------------------------------------------------
     def xget_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn,
-                        alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn):
+                        alpha_N_Emn, r_N_Emn, eps_N_p_Emn):
 
         E_N = self.E / (1.0 - 2.0 * self.nu)
 
@@ -563,8 +563,8 @@ class MATSXDMplCDSEEQ(MATSXDEval):
     #-------------------------------------------------------------------------
 
     def get_corr_pred(self, eps_Emab, t_n1, w_N_Emn, z_N_Emn,
-                      alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                      w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
+                      alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
+                      w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna):
 
         # Corrector predictor computation.
 

@@ -1,42 +1,43 @@
 import os
-import sys
 
-from PIL import Image
 import PIL
+<<<<<<< HEAD
 #import cv2
 #import cv2
+=======
+
+>>>>>>> master
 from matplotlib import cm
 import matplotlib
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
+
 from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d import Axes3D
+
 from numpy import \
     array, zeros, trace, \
     einsum, zeros_like,\
     identity, sign, linspace, hstack, maximum,\
     sqrt, linalg
 from scipy.interpolate import griddata
-from scipy.linalg import \
-    eigh
-from traits.api import \
-    Constant, \
-    Float, HasTraits, \
-    Property, cached_property
+
+
 from traitsui.api import \
     View,  Include
-from tvtk.tools import visual
+
 
 import matplotlib as mpl
-import matplotlib.image as mpimg
+
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
+
 import mayavi.mlab as m
+<<<<<<< HEAD
 import mayavi.mlab as m
 #import moviepy.editor as mpy
 import numpy as np
 import numpy as np
+=======
+
+
+>>>>>>> master
 import numpy as np
 
 
