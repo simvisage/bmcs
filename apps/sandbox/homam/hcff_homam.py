@@ -492,8 +492,8 @@ class HCFF(tr.HasStrictTraits):
 
         ax = self.apply_new_subplot()
 
-        ax.set_xlabel('Displacement [mm]')
-        ax.set_ylabel('Force [kN]')
+        ax.set_xlabel(x_axis_name)
+        ax.set_ylabel(y_axis_name)
         ax.plot(x_axis_array, y_axis_array, 'k',
                 linewidth=1.2, color=np.random.rand(3,), label=self.file_name +
                 ', ' + x_axis_name)
