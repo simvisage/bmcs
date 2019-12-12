@@ -1,8 +1,9 @@
 '''
-Created on 14.06.2019
+Created on 11.11.2019
 
 @author: fseemab
 '''
+
 from ibvpy.api import MATSEval
 from simulator.i_model import IModel
 
@@ -12,7 +13,7 @@ import traitsui.api as ui
 
 
 @tr.provides(IModel)
-class MATS1D5DPCumPress1(MATSEval):
+class MATS1D5DPCumPressnew(MATSEval):
 
     node_name = 'Pressure sensitive cumulative damage plasticity'
 
@@ -46,7 +47,7 @@ class MATS1D5DPCumPress1(MATSEval):
                  MAT=True,
                  enter_set=True, auto_set=False)
 
-    c = tr.Float(1, Label='c',
+    c = tr.Float(2.8, Label='c',
                  desc='Damage accumulation parameter',
                  MAT=True,
                  enter_set=True, auto_set=False)
@@ -85,96 +86,99 @@ class MATS1D5DPCumPress1(MATSEval):
     algorithmic = tr.Bool(True)
 
     def get_corr_pred(self, u_r, t_n, s_pi, alpha, z, omega):
+
         s = u_r[..., 0]
         w = u_r[..., 1]
-
-        # For normal
-        H_w_N = np.array(w <= 0.0, dtype=np.float_)  # CRIME
+        # For normal direction
+        H_w_N = np.array(w <= 0.0, dtype=np.float_)
+        # print(len(H_w_N), np.shape(H_w_N))
         E_alg_N = H_w_N * self.E_N
         sig_N = E_alg_N * w
-
         # For tangential
-        #Y = 0.5 * self.E_T * (u_T - s_pi)**2
+        # Y = 0.5 * self.E_T * (u_T - s_pi)**2
         tau_pi_trial = self.E_T * (s - s_pi)
         Z = self.K * z
         X = self.gamma * alpha
+        f = np.fabs(tau_pi_trial - X) - Z - self.tau_bar + self.m * sig_N
+#         print(len(f), np.shape(f))
+        # Identify inelastic material points
+        # @todo: consider the usage of np.where()
+        I = f > 1e-6
+        sig_T = (1 - omega) * self.E_T * (s - s_pi)
+        # Return mapping
+        delta_lambda_I = (
+            (self.m * self.E_N * w[I] + 
+                f[I]) / (self.E_T / (1 - omega[I]) + self.gamma + self.K)
+        )
+        # Update all state variables
+        s_pi[I] += (delta_lambda_I * 
+                    np.sign(tau_pi_trial[I] - X[I]) / (1 - omega[I]))
+        Y = 0.5 * self.E_T * (s - s_pi) ** 2
+        omega[I] += (
+            delta_lambda_I * 
+            (1 - omega[I]) ** self.c * (Y[I] / self.S) ** self.r * 
+            ((self.tau_bar) / (self.tau_bar - self.m * sig_N[I]))
+        )
+        sig_T[I] = (1 - omega[I]) * self.E_T * (s[I] - s_pi[I])
+        alpha[I] += delta_lambda_I * np.sign(tau_pi_trial[I] - X[I])
+        z[I] += delta_lambda_I
+        # Unloading stiffness
+        E_alg_T = (1 - omega) * self.E_T
+        # Consistent tangent operator
+        if False:
+            E_alg_T = (
+                (1 - omega) * self.E_T - 
+                (1 - omega) * self.E_T ** 2 / 
+                (self.E_T + (self.gamma + self.K) * (1 - omega)) - 
+                ((1 - omega) ** self.c * (self.E_T ** 2) * ((Y / self.S) ** self.r)
+                 * np.sign(tau_pi_trial - X) * (s - s_pi)) / 
+                ((self.E_T / (1 - omega)) + self.gamma + self.K)
+            )
 
-        for mm in np.arange(0, 0.5, 0.1):
-            print('mm =', mm)
+        if False:
+            #             #             print('DONT COME HERE')
+            E_alg_T = (
+                (1 - omega) * self.E_T
+                -
+                ((self.E_T ** 2 * (1 - omega)) / 
+                 (self.E_T + (self.gamma + self.K) * (1 - omega)))
+                -
+                (((1 - omega) ** self.c * 
+                  (Y / self.S) ** self.r * 
+                    self.E_T ** 2 * (s - s_pi) * self.tau_bar / 
+                    (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) / 
+                    (self.E_T / (1 - omega) + self.gamma + self.K))
+                -
+                ((self.E_T * self.E_N * self.m * w * np.sign(tau_pi_trial - X) * (1 - omega)) / 
+                 ((self.E_T + (self.gamma + self.K) * (1 - omega))))
+                -
+                (((1 - omega) ** self.c * 
+                  (Y / self.S) ** self.r * self.m * self.E_T * self.E_N * w * (s - s_pi) * self.tau_bar / 
+                    (self.tau_bar - self.m * sig_N)) / 
+                    ((self.E_T / (1 - omega) + self.gamma + self.K)))
+            )
 
-            f = np.fabs(tau_pi_trial - X) - Z - self.tau_bar \
-                + mm * sig_N
-
-            I = f > 1e-6
-
-            sig_T = (1 - omega) * self.E_T * (s - s_pi)
-
-            print('m =', mm)
-            # print('sig_T =' sig_T)
-
-            # Return mapping
-            delta_lambda_I = f[I] / \
-                (self.E_T / (1 - omega[I]) + self.gamma + self.K)
-
-            # update all state variables
-            s_pi[I] += (delta_lambda_I *
-                        np.sign(tau_pi_trial[I] - X[I]) / (1 - omega[I]))
-
-            Y = 0.5 * self.E_T * (s - s_pi)**2
-
-            omega[I] += (delta_lambda_I * (1 - omega[I])
-                         ** self.c * (Y[I] / self.S)**self.r)
-
-            sig_T[I] = (1 - omega[I]) * self.E_T * (s[I] - s_pi[I])
-
-            alpha[I] += delta_lambda_I * np.sign(tau_pi_trial[I] - X[I])
-
-            z[I] += delta_lambda_I
-
-            # Secant stiffness
-
-            E_alg_T = (1 - omega) * self.E_T
-
-            # Consistent tangent operator
-
-            if False:
-                E_alg_T = (
-                    (1 - omega) * self.E_T -
-                    (1 - omega) * self.E_T ** 2 /
-                    (self.E_T + (self.gamma + self.K) * (1 - omega)) -
-                    ((1 - omega) ** self.c * (self.E_T ** 2) * ((Y / self.S) ** self.r)
-                        * np.sign(tau_pi_trial - X) * (s - s_pi)) /
-                    ((self.E_T / (1 - omega)) + self.gamma + self.K)
-                )
-
-            if False:
-                print('DONT COME HERE')
-                E_alg_T = (
-                    (1 - omega) * self.E_T -
-                    ((self.E_T**2 * (1 - omega)) /
-                     (self.E_T + (self.gamma + self.K) * (1 - omega)))
-                    -
-                    ((1 - omega)**self.c *
-                     (Y / self.S)**self.r *
-                        self.E_T**2 * (s - s_pi) * self.tau_bar /
-                        (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) /
-                    (self.E_T / (1 - omega) + self.gamma + self.K)
-                )
-
-            sig = np.zeros_like(u_r)
-            sig[..., 0] = sig_T
-            sig[..., 1] = sig_N
-            E_TN = np.einsum('abEm->Emab',
-                             np.array(
-                                 [
-                                     [E_alg_T, np.zeros_like(E_alg_T)],
-                                     [np.zeros_like(E_alg_N), E_alg_N]
-                                 ])
-                             )
-            return sig, E_TN
+        sig = np.zeros_like(u_r)
+        sig[..., 0] = sig_T
+        sig[..., 1] = sig_N
+        E_TN = np.einsum('abEm->Emab',
+                         np.array(
+                             [
+                                 [E_alg_T, np.zeros_like(E_alg_T)],
+                                 [np.zeros_like(E_alg_N), E_alg_N]
+                             ])
+                         )
+        # print('w=', w)
+        abc = open('sigNfortau10000lp5000.txt', 'a+', newline='\n')
+        for e in range(len(sig_N)):
+            abc.write('%f ' % sig_N[e][0])
+        abc.write('\n')
+        abc.close()
+        # print('s_pi=', s_pi)
+        return sig, E_TN
 
     def _get_var_dict(self):
-        var_dict = super(MATS1D5DPCumPress1, self)._get_var_dict()
+        var_dict = super(MATS1D5DPCumPressnew, self)._get_var_dict()
         var_dict.update(
             slip=self.get_slip,
             s_el=self.get_s_el,
@@ -210,6 +214,9 @@ class MATS1D5DPCumPress1(MATSEval):
         s_e = s - s_p
         return s_e
 
+#     def get_sig_N(self, u_r, tn1, **state):
+#         return self.get_sig(u_r, tn1, **state)[..., 1]
+
     tree_view = ui.View(
         ui.Item('E_N'),
         ui.Item('E_T'),
@@ -227,7 +234,7 @@ class MATS1D5DPCumPress1(MATSEval):
 
 
 if __name__ == '__main__':
-    m = MATS1D5DPCumPress1()
+    m = MATS1D5DPCumPressnew()
     print(m.D_rs)
     m.E_T = 100
     print(m.D_rs)

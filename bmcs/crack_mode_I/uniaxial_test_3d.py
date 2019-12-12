@@ -26,7 +26,7 @@ from traits.api import \
 from traitsui.api import \
     View, Item
 from view.plot2d import Viz2D, Vis2D
-from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
+#from view.plot3d.viz3d_poll import Vis3DPoll, Viz3DPoll
 from view.ui import BMCSLeafNode
 from view.window import BMCSModel, BMCSWindow
 
@@ -337,9 +337,12 @@ class UniaxialTestModel(BMCSModel, Vis2D):
     def get_PW(self):
         record_dofs = self.fe_grid[
             -1, :, :, -1, :, :].dofs[:, :, 0].flatten()
+        print(record_dofs)
         Fd_int_t = np.array(self.tloop.F_int_record)
+        print(Fd_int_t)
         Ud_t = np.array(self.tloop.U_record)
-        F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=1)
+        print(Ud_t)
+        F_int_t = -np.sum(Fd_int_t[:, record_dofs], axis=0)
         U_t = -Ud_t[:, record_dofs[0]]
         return -F_int_t, -U_t
 
@@ -352,7 +355,7 @@ class UniaxialTestModel(BMCSModel, Vis2D):
     tree_view = traits_view
 
 
-def run_uniaxial_elastic():
+def run_uniaxial_test():
 
     ut = UniaxialTestModel(n_e_x=1, n_e_y=1, n_e_z=1,
                            k_max=50,
@@ -367,8 +370,8 @@ def run_uniaxial_elastic():
         # epsilon_f=0.005
     )
 
-    ut.loading_scenario.set(loading_type='cyclic')
-    ut.loading_scenario.set(number_of_cycles=4)
+    ut.loading_scenario.set(loading_type='monotonic')
+    ut.loading_scenario.set(number_of_cycles=1)
     ut.loading_scenario.set(maximum_loading=-0.0075)
     ut.loading_scenario.set(unloading_ratio=0.1)
     ut.loading_scenario.set(amplitude_type="constant")
@@ -380,6 +383,10 @@ def run_uniaxial_elastic():
     ut.tline.step = 0.005
     ut.cross_section.h = 1
     ut.geometry.L = 1
+
+    # ut.get_PW()
+
+    # print(ut.get_PW())
 
     w = BMCSWindow(model=ut)
     ut.add_viz2d('load function', 'load-time')
@@ -398,5 +405,5 @@ def run_uniaxial_elastic():
 
 
 if __name__ == '__main__':
-    run_uniaxial_elastic()
+    run_uniaxial_test()
     # run_with_new_state()

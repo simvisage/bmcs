@@ -4,8 +4,9 @@ Created on 30.04.2019
 @author: fseemab 
 '''
 import time
+
+from apps.verify.bond_cum_damage.verify02_pullout_axisym_bc_check import PullOutAxiSym
 import numpy as np
-from .pullout_axisym import PullOutAxiSym
 
 
 def verify_pullout_axisym():

@@ -42,7 +42,10 @@ class TLoopImplicit(TLoop):
                     if self.verbose:
                         print('(%g), ' % k, end='\n')
                     break
-                self.tstep.make_iter()
+                try:
+                    self.tstep.make_iter()
+                except RuntimeError as e:
+                    raise(e)
                 k += 1
             else:  # handle unfinished iteration loop
                 if k >= self.k_max:  # add step size reduction

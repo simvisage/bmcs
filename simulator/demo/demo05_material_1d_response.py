@@ -1,3 +1,4 @@
+
 from bmcs.time_functions import \
     LoadingScenario
 from ibvpy.bcond import BCDof
@@ -6,13 +7,18 @@ from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
 from simulator.api import Simulator, XDomainSinglePoint
 
 s = Simulator(
-    model=MATS3DDesmorat(),
-    xdomain=XDomainSinglePoint()
+    domains=[(XDomainSinglePoint(), MATS3DDesmorat())]
 )
 bc = BCDof(
-    var='u', dof=0, value=-0.001,
+    var='f', dof=0, value=-0.001,
     time_function=LoadingScenario()
 )
-s.tstep.bcond_mngr.bcond_list = [bc]
+s.bc = [bc]
+s.tstep.debug = False
+s.tloop.verbose = True
 s.run()
-s.join()
+s.join_thread()
+
+#print(s.hist.F_t)
+#print(s.hist.U_t)
+

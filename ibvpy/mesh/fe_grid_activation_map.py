@@ -1,11 +1,9 @@
 from numpy import repeat, arange
 from traits.api import \
-    Array, Bool, Callable, Enum, Float, HasTraits, Interface, provides, \
-    Instance, Int, Trait, Str, Enum, Callable, List, TraitDict, Any, \
-    on_trait_change, Tuple, WeakRef, Delegate, Property, cached_property, \
-    This, self, TraitError, Dict
+    HasTraits, provides, \
+    List, \
+    Property, cached_property
 
-from .fe_domain import FEDomain
 from .i_fe_parent_domain import IFEParentDomain
 
 

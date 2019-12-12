@@ -2,6 +2,9 @@
 Created on 30.04.2019 
  
 @author: fseemab 
+Application of axisymmetry on a single material point to 
+reproduce results as depicted in the paper
+
 '''
 import time
 
@@ -111,7 +114,7 @@ class PullOutAxiSym(Simulator):
             I=self.xd_steel.mesh.I[:, -1],
             J=self.xd_concrete.mesh.I[:, 0],
             fets=FETS1D52ULRH(),
-            integ_factor=np.pi * ds / 2
+            integ_factor=np.pi * ds  # ds/2
         )
 
     m_ifc = tr.Property()
@@ -215,7 +218,7 @@ s = PullOutAxiSym()
 s.m_ifc.trait_set(E_T=12900,
                   tau_bar=4,
                   K=0, gamma=10,
-                  c=1, S=0.025, r=1)
+                  c=1, S=0.0025, r=1)
 s.tloop.k_max = 1000
 s.tloop.verbose = True
 s.tline.step = 0.005

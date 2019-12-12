@@ -8,7 +8,7 @@ from mathkit.matrix_la.sys_mtx_assembly import \
 from traits.api import \
     HasStrictTraits, provides, \
     Instance, Property, cached_property, Enum, on_trait_change, \
-    DelegatesTo, WeakRef, Event, Array, Float
+    DelegatesTo, WeakRef, Event, Array, Float, Bool
 
 import numpy as np
 
@@ -25,6 +25,8 @@ class TStepBC(HasStrictTraits):
     model = DelegatesTo('sim')
 
     hist = DelegatesTo('sim')
+
+    debug = Bool(False)
 
     primary_var_changed = Event
 
@@ -127,12 +129,19 @@ class TStepBC(HasStrictTraits):
         )
         R = F_ext - F_int
         self.K.apply_constraints(R)
+        if self.debug:
+            print('t_n1', self.t_n1)
+            print('U_k\n', self.U_k)
+            print('F_int\n', F_int)
+            print('F_ext\n', F_ext)
         return R, self.K, F_int
 
     def make_iter(self):
         '''Perform a single iteration
         '''
-        d_U_k, _ = self.K.solve()
+        d_U_k, pos_def = self.K.solve(check_pos_def=True)
+        if self.debug:
+            print('positive definite', pos_def)
         self.U_k[:] += d_U_k
         self.primary_var_changed = True
         self.step_flag = 'corrector'

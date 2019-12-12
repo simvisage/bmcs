@@ -4,11 +4,12 @@ Created on 30.04.2019
 @author: fseemab 
 
 Model calibration of the pressure sensitive cumulative 
-damage model using a pull out test
+damage model using a pull out test and reproducing the results
+of the paper
 '''
 import time
 
-from apps.sandbox.rch.pullout_axisym import PullOutAxiSym
+from apps.verify.bond_cum_damage.verify02_pullout_axisym_bc_check import PullOutAxiSym
 import numpy as np
 
 
@@ -36,7 +37,7 @@ def verify_bond_slip_axisym_cum_damage():
     s.m_steel.trait_set(E=200000, nu=0.2)
     s.m_concrete.trait_set(E=28000, nu=0.3)
     s.m_ifc.trait_set(E_T=12900,  # 12900,
-                      E_N=100000,
+                      E_N=1e+9,
                       tau_bar=4.2,  # 4.0,
                       K=11.0, gamma=55,
                       c=2.8, S=0.00048, r=0.51)

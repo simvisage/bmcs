@@ -152,7 +152,6 @@ class MATS3DScalarDamage(MATS3DEval):
                 Item('strain_norm')
             ),
             Group(
-                Item('stress_state', style='custom'),
                 Item('stiffness', style='custom'),
                 Spring(resizable=True),
                 label='Configuration parameters',

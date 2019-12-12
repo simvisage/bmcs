@@ -37,7 +37,7 @@ import traits.api as tr
 
 
 #from .mlab_decorators import decorate_figure
-u_max = 0.001
+u_max = 0.01
 #f_max = 30
 dx = 1
 r_steel = 1
@@ -207,9 +207,9 @@ class PullOut2D(Simulator):
 
 
 s = PullOut2D()
-s.m_ifc.trait_set(E_T=10000,  # 12900,
-                  tau_bar=1,  # 4.0,
-                  K=0, gamma=0,  # 10,
+s.m_ifc.trait_set(E_T=12900,  # 12900,
+                  tau_bar=4,  # 4.0,
+                  K=0, gamma=10,  # 10,
                   c=1, S=0.0025, r=1)
 s.tloop.k_max = 1000
 s.tloop.verbose = True

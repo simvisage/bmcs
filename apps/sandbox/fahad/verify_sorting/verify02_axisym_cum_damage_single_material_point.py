@@ -5,11 +5,8 @@ Created on 30.04.2019
 '''
 import time
 
-
+from apps.verify.bond_cum_damage.pullout_axisym_model import PullOutAxiSym
 import numpy as np
-
-
-from .pullout_axisym import PullOutAxiSym
 
 
 def verify_bond_slip_axisym_cum_damage():
@@ -42,7 +39,7 @@ def verify_bond_slip_axisym_cum_damage():
                       c=1, S=0.0025, r=1)
     s.tloop.k_max = 1000
     s.tloop.verbose = True
-    s.tline.step = 0.5
+    s.tline.step = 0.005
     s.tstep.fe_domain.serialized_subdomains
     w = s.get_window()
     w.run()
