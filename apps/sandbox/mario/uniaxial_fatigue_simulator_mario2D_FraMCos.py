@@ -162,43 +162,43 @@ def get_UF_t(F, n_t):
     return U_t, F_t, sctx
 
 
-# n_cycles = 1
-# T = 1 / n_cycles
-#
-#
-# def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
-#
-#
-# U, F, S = get_UF_t(
-#     F=lambda t: -60 * loading_history(t),
-#     n_t=50 * n_cycles
-# )
-#
-#
-# # **Examples of postprocessing**:
-# # Plot the axial strain against the lateral strain
-#
-# f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 4))
-# ax1.plot(U[:, 0], U[:, 1])
-# ax2.plot(U[:, 0], F[:, 0])
-#
-# plt.show()
-#
-# eps_N = np.zeros((len(S), len(S[1])))
-# eps_T = np.zeros((len(S), len(S[1])))
-# norm_alphaT = np.zeros((len(S), len(S[1])))
-# norm_eps_pT = np.zeros((len(S), len(S[1])))
-#
-# for i in range(len(F)):
-#     eps = get_eps_ab(U[i])
-#     eps_N[i] = m._get_e_N_Emn_2(eps)
-#     eps_T_aux = m._get_e_T_Emna(eps)
-#     eps_T[i] = np.sqrt(np.einsum('...i,...i->... ', eps_T_aux, eps_T_aux))
-#     norm_alphaT[i] = np.sqrt(
-#         np.einsum('...i,...i->... ', S[i, :, 8:10], S[i, :, 8:10]))
-#     norm_eps_pT[i] = np.sqrt(
-#         np.einsum('...i,...i->... ', S[i, :, 10:12], S[i, :, 10:12]))
-#
-# n_mp = 360
-# plot.get_2Dviz(n_mp, eps_N, S[:, :, 0], S[:, :, 4],
-#                eps_T, S[:, :, 6], norm_eps_pT)
+n_cycles = 1
+T = 1 / n_cycles
+
+
+def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
+
+
+U, F, S = get_UF_t(
+    F=lambda t: -100 * loading_history(t),
+    n_t=50 * n_cycles
+)
+
+
+# **Examples of postprocessing**:
+# Plot the axial strain against the lateral strain
+
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 4))
+ax1.plot(U[:, 0], U[:, 1])
+ax2.plot(U[:, 0], F[:, 0])
+
+plt.show()
+
+eps_N = np.zeros((len(S), len(S[1])))
+eps_T = np.zeros((len(S), len(S[1])))
+norm_alphaT = np.zeros((len(S), len(S[1])))
+norm_eps_pT = np.zeros((len(S), len(S[1])))
+
+for i in range(len(F)):
+    eps = get_eps_ab(U[i])
+    eps_N[i] = m._get_e_N_Emn_2(eps)
+    eps_T_aux = m._get_e_T_Emna(eps)
+    eps_T[i] = np.sqrt(np.einsum('...i,...i->... ', eps_T_aux, eps_T_aux))
+    norm_alphaT[i] = np.sqrt(
+        np.einsum('...i,...i->... ', S[i, :, 8:10], S[i, :, 8:10]))
+    norm_eps_pT[i] = np.sqrt(
+        np.einsum('...i,...i->... ', S[i, :, 10:12], S[i, :, 10:12]))
+
+n_mp = 360
+plot.get_2Dviz(n_mp, eps_N, S[:, :, 0], S[:, :, 4],
+               eps_T, S[:, :, 6], norm_eps_pT)
