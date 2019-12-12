@@ -52,33 +52,19 @@ sig_s_eps = sp.Piecewise(
     (E_s * eps_sy, eps >= eps_sy)
 )
 
-# defining a variable b
-z = sp.symbols('z', real=True)
-b, b_w, b_f, h_w = sp.symbols('b, b_w, b_f, h_w ', real=True)
-
-b_z = sp.Piecewise(
-    (b_w, z < h_w),
-    (b_f, z >= h_w)
-)
-
-b_data = {
-    b_w: 50,
-    b_f: 500,
-    h_w: 600  # zeta = 0.1
-}
-
 
 class MomentCurvature(tr.HasStrictTraits):
     r'''Class returning the moment curvature relationship.
     '''
-    get_b_z = tr.Property(depends_on='z_m')
+
+    b_z = tr.Any
+    get_b_z = tr.Property
 
     @tr.cached_property
     def _get_get_b_z(self):
-        return sp.lambdify((z), b_z.subs(b_data), 'numpy')
+        return sp.lambdify(z, self.b_z, 'numpy')
 
     h = tr.Float
-    b = tr.Float
 
     model_params = tr.Dict({
         E_ct: 24000, E_cc: 25000,
@@ -90,7 +76,7 @@ class MomentCurvature(tr.HasStrictTraits):
     })
 
     # Number of material points along the height of the cross section
-    n_m = tr.Int(200)
+    n_m = tr.Int(100)
 
     # Reinforcement
     z_j = tr.Array(np.float_, value=[10])
@@ -146,11 +132,7 @@ class MomentCurvature(tr.HasStrictTraits):
 
     def get_N_c_t(self, kappa_t, eps_bot_t):
         z_tm = self.z_m[np.newaxis, :]
-        # @TODO - handle a variable cross section
-#         N_z_tm = self.b * self.get_sig_c_z(
-#             kappa_t[:, np.newaxis], eps_bot_t[:, np.newaxis], z_tm
-#         )
-        b_z_m = self.get_b_z(z_tm)
+        b_z_m = self.get_b_z(z_tm)  # self.get_b_z(self.z_m) also OK
         N_z_tm = b_z_m * self.get_sig_c_z(
             kappa_t[:, np.newaxis], eps_bot_t[:, np.newaxis], z_tm
         )
@@ -169,7 +151,7 @@ class MomentCurvature(tr.HasStrictTraits):
 
     def _get_eps_bot_t(self):
         res = root(lambda eps_bot_t: self.get_N_t(self.kappa_t, eps_bot_t),
-                   np.zeros_like(self.kappa_t), tol=1e-10)
+                   0.0000001 + np.zeros_like(self.kappa_t), tol=1e-6)
         return res.x
 
     # POSTPROCESSING
@@ -203,9 +185,6 @@ class MomentCurvature(tr.HasStrictTraits):
 
     def _get_M_c_t(self):
         z_tm = self.z_m[np.newaxis, :]
-#         N_z_tm = self.b * self.get_sig_c_z(
-#             self.kappa_t[:, np.newaxis], self.eps_bot_t[:, np.newaxis], z_tm
-#         )
         b_z_m = self.get_b_z(z_tm)
         N_z_tm = b_z_m * self.get_sig_c_z(
             self.kappa_t[:, np.newaxis], self.eps_bot_t[:, np.newaxis], z_tm
@@ -243,7 +222,8 @@ class MomentCurvature(tr.HasStrictTraits):
     M_norm = tr.Property()
 
     def _get_M_norm(self):
-        W = (self.b * self.h**2) / 6  # Section modulus
+        # Section modulus @TODO optimize W for var b
+        W = (self.b * self.h**2) / 6
         sig_cr = self.model_params[E_ct] * self.model_params[eps_cr]
         return W * sig_cr
 
@@ -257,7 +237,8 @@ class MomentCurvature(tr.HasStrictTraits):
         ax1.plot(self.kappa_t / self.kappa_norm, self.M_t / self.M_norm)
         ax1.plot(self.kappa_t[idx] / self.kappa_norm,
                  self.M_t[idx] / self.M_norm, marker='o')
-        ax2.barh(self.z_j, self.N_s_tj[idx, :], color='red', align='center')
+        ax2.barh(self.z_j, self.N_s_tj[idx, :],
+                 height=2, color='red', align='center')
         #ax2.fill_between(eps_z_arr[idx,:], z_arr, 0, alpha=0.1);
         ax3 = ax2.twiny()
 #        ax3.plot(self.eps_tm[idx, :], self.z_m, color='k', linewidth=0.8)
@@ -269,8 +250,14 @@ class MomentCurvature(tr.HasStrictTraits):
     def plot(self, ax1, ax2):
         idx = self.idx
         ax1.plot(self.kappa_t, self.M_t / (1e6))
+        ax1.set_ylabel('Moment [kN.m]')
+        ax1.set_xlabel('Curvature [$m^{-1}$]')
         ax1.plot(self.kappa_t[idx], self.M_t[idx] / (1e6), marker='o')
-        ax2.barh(self.z_j, self.N_s_tj[idx, :], color='red', align='center')
+        ax2.barh(self.z_j, self.N_s_tj[idx, :],
+                 height=6, color='red', align='center')
+        #ax2.plot(self.N_s_tj[idx, :], self.z_j, color='red')
+        #print('Z', self.z_j)
+        #print(self.N_s_tj[idx, :])
         #ax2.fill_between(eps_z_arr[idx,:], z_arr, 0, alpha=0.1);
         ax3 = ax2.twiny()
 #        ax3.plot(self.eps_tm[idx, :], self.z_m, color='k', linewidth=0.8)
@@ -325,7 +312,7 @@ class MomentCurvature(tr.HasStrictTraits):
 # ------------------------------------------------------------------
 
 
-# Substituting:
+''' Parameters entry'''
 # -----------------------
 # Values from parametric study in paper p.11 to draw Fig. 7:
 
@@ -343,9 +330,13 @@ mu_ = 0.33
 rho_g_ = 0.003
 
 # not given in paper
-b_ = 500
-h_ = 666
 r_ = 0.0
+
+h_ = 666
+zeta = 0.15  # WHY USING 0.15, 0.2 ... gives wrong results!!!
+b_w = 50  # o = 0.1
+b_f = 500
+h_w = (1 - zeta) * h_
 
 # Substituting formulas:
 E_cc_ = gamma_ * E_ct_
@@ -356,17 +347,22 @@ eps_sy_j_ = np.array([psi_ * eps_cr_, psi_ * eps_cr_])
 E_j_ = np.array([n_ * E_ct_, n_ * E_ct_])
 z_j_ = np.array([h_ * (1 - alpha_), alpha_ * h_])
 
-# concrete section area (TODO use an integration in case of b(z))
-A_c_ = 63000  # b_ * h_
+# Defining a variable b
+b_z_ = sp.Piecewise(
+    (b_w, z < h_w),
+    (b_f, z >= h_w)
+)
+
+A_c_ = sp.integrate(b_z_, (z, 0, h_))
 A_s_t_ = rho_g_ * A_c_
 A_s_c_ = r_ * A_s_t_
 A_j_ = np.array([A_s_t_, A_s_c_])  # A_j[0] must be tension steel area
 
-# Creating MomentCurvature object
+''' Creating MomentCurvature object '''
 
-mc = MomentCurvature(idx=10, n_m=100)
-mc.b = b_
+mc = MomentCurvature(idx=25, n_m=100)
 mc.h = h_
+mc.b_z = b_z_
 mc.model_params = {E_ct: E_ct_,
                    E_cc: E_cc_,
                    eps_cr: eps_cr_,
@@ -380,12 +376,12 @@ mc.E_j = E_j_
 
 # If plot_norm is used, use the following:
 # mc.kappa_range = (0, mc.kappa_cr * 100, 100)
-# Otherwise:
-mc.kappa_range = (0, 0.00002, 100)
 
+mc.kappa_range = (0, 0.00002, 100)
 
 # print('XXX', mc.kappa_cr)
 
+# Plotting
 fig, ((ax1, ax2)) = plt.subplots(1, 2, figsize=(10, 5))
 mc.plot(ax1, ax2)
 plt.show()
