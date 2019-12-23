@@ -94,6 +94,7 @@ class MATS1D5DPCumPressnew(MATSEval):
         # print(len(H_w_N), np.shape(H_w_N))
         E_alg_N = H_w_N * self.E_N
         sig_N = E_alg_N * w
+        dot_s = np.diff(s[0])
         # For tangential
         # Y = 0.5 * self.E_T * (u_T - s_pi)**2
         tau_pi_trial = self.E_T * (s - s_pi)
@@ -107,7 +108,7 @@ class MATS1D5DPCumPressnew(MATSEval):
         sig_T = (1 - omega) * self.E_T * (s - s_pi)
         # Return mapping
         delta_lambda_I = (
-            (self.m * self.E_N * w[I] + 
+            (self.m * sig_N[I] + 
                 f[I]) / (self.E_T / (1 - omega[I]) + self.gamma + self.K)
         )
         # Update all state variables
@@ -149,13 +150,13 @@ class MATS1D5DPCumPressnew(MATSEval):
                     (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) / 
                     (self.E_T / (1 - omega) + self.gamma + self.K))
                 -
-                ((self.E_T * self.E_N * self.m * w * np.sign(tau_pi_trial - X) * (1 - omega)) / 
+                ((self.E_T * self.m * sig_N * np.sign(tau_pi_trial - X) * (1 - omega)) / 
                  ((self.E_T + (self.gamma + self.K) * (1 - omega))))
                 -
                 (((1 - omega) ** self.c * 
-                  (Y / self.S) ** self.r * self.m * self.E_T * self.E_N * w * (s - s_pi) * self.tau_bar / 
+                  (Y / self.S) ** self.r * self.m * self.E_T * sig_N * (s - s_pi) * self.tau_bar / 
                     (self.tau_bar - self.m * sig_N)) / 
-                    ((self.E_T / (1 - omega) + self.gamma + self.K)))
+                    (self.E_T / (1 - omega) + self.gamma + self.K))
             )
 
         sig = np.zeros_like(u_r)
@@ -168,7 +169,7 @@ class MATS1D5DPCumPressnew(MATSEval):
                                  [np.zeros_like(E_alg_N), E_alg_N]
                              ])
                          )
-        # print('w=', w)
+        # print('omega=', omega)
         abc = open('sigNfortau10000lp5000.txt', 'a+', newline='\n')
         for e in range(len(sig_N)):
             abc.write('%f ' % sig_N[e][0])
