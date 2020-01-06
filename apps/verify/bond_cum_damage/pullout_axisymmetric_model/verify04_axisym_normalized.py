@@ -3,10 +3,10 @@ Created on 01.10.2019
 
 @author: fseemab
 '''
+from apps.verify.bond_cum_damage.pullout_axisym import PullOutAxiSym, Geometry, CrossSection
+
 import numpy as np
 import pylab as p
-
-from .pullout_axisym_model import PullOutAxiSym, Geometry, CrossSection
 
 
 def verify_normalized_pullout_force():
@@ -14,8 +14,8 @@ def verify_normalized_pullout_force():
     ax = p.subplot(111)
 
     f_lateral = 0
-    u_max = 0.1
-    dt_list = [0.5, 0.25]
+    u_max = 1
+    dt_list = [0.1]
     for dt in dt_list:  # [0, -100]
         ds = 16
         print('lateral confining pressure', f_lateral)
