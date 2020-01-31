@@ -94,7 +94,7 @@ class MATS1D5DPCumPress(MATSEval):
         E_alg_N = H_w_N * self.E_N
         sig_N = E_alg_N * w
         # For tangential
-        #Y = 0.5 * self.E_T * (u_T - s_pi)**2
+        # Y = 0.5 * self.E_T * (u_T - s_pi)**2
         tau_pi_trial = self.E_T * (s - s_pi)
         Z = self.K * z
         X = self.gamma * alpha
@@ -108,40 +108,44 @@ class MATS1D5DPCumPress(MATSEval):
             f[I] / (self.E_T / (1 - omega[I]) + self.gamma + self.K)
         )
         # Update all state variables
-        s_pi[I] += (delta_lambda_I *
+        s_pi[I] += (delta_lambda_I * 
                     np.sign(tau_pi_trial[I] - X[I]) / (1 - omega[I]))
-        Y = 0.5 * self.E_T * (s - s_pi)**2
+        Y = 0.5 * self.E_T * (s - s_pi) ** 2
         omega[I] += (
-            delta_lambda_I *
-            (1 - omega[I]) ** self.c * (Y[I] / self.S)**self.r
+            delta_lambda_I * 
+            (1 - omega[I]) ** self.c * (Y[I] / self.S) ** self.r * (self.tau_bar / (self.tau_bar - m * sigma_N))
         )
         sig_T[I] = (1 - omega[I]) * self.E_T * (s[I] - s_pi[I])
         alpha[I] += delta_lambda_I * np.sign(tau_pi_trial[I] - X[I])
         z[I] += delta_lambda_I
         # Unloading stiffness
-        E_alg_T = (1 - omega) * self.E_T
+        #=======================================================================
+        # E_alg_T = (1 - omega) * self.E_T
+        #=======================================================================
         # Consistent tangent operator
         if False:
             E_alg_T = (
-                (1 - omega) * self.E_T -
-                (1 - omega) * self.E_T ** 2 /
-                (self.E_T + (self.gamma + self.K) * (1 - omega)) -
+                (1 - omega) * self.E_T - 
+                (1 - omega) * self.E_T ** 2 / 
+                (self.E_T + (self.gamma + self.K) * (1 - omega)) - 
                 ((1 - omega) ** self.c * (self.E_T ** 2) * ((Y / self.S) ** self.r)
-                 * np.sign(tau_pi_trial - X) * (s - s_pi)) /
+                 * np.sign(tau_pi_trial - X) * (s - s_pi)) / 
                 ((self.E_T / (1 - omega)) + self.gamma + self.K)
             )
 
-        if False:
-            print('DONT COME HERE')
-            E_alg_T = (
-                (1 - omega) * self.E_T -
-                ((self.E_T**2 * (1 - omega)) /
+        #=======================================================================
+        # if False:
+        #     print('DONT COME HERE')
+        #=======================================================================
+        E_alg_T = (
+                (1 - omega) * self.E_T - 
+                ((self.E_T ** 2 * (1 - omega)) / 
                  (self.E_T + (self.gamma + self.K) * (1 - omega)))
                 -
-                ((1 - omega)**self.c *
-                 (Y / self.S)**self.r *
-                    self.E_T**2 * (s - s_pi) * self.tau_bar /
-                    (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) /
+                ((1 - omega) ** self.c * 
+                 (Y / self.S) ** self.r * 
+                    self.E_T ** 2 * (s - s_pi) * self.tau_bar / 
+                    (self.tau_bar - self.m * sig_N) * np.sign(tau_pi_trial - X)) / 
                 (self.E_T / (1 - omega) + self.gamma + self.K)
             )
 
@@ -161,7 +165,7 @@ class MATS1D5DPCumPress(MATSEval):
             abc.write('%f ' % sig_N[e][0])
         abc.write('\n')
         abc.close()
-        #print('s_pi=', s_pi)
+        # print('s_pi=', s_pi)
         return sig, E_TN
 
     def _get_var_dict(self):
