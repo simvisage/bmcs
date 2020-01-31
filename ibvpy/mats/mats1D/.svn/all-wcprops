@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/mats1D
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/simvisage/!svn/ver/1375/src/ibvpy/mats/mats1D/__init__.py
+END
+mats1D_eval.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/simvisage/!svn/ver/2280/src/ibvpy/mats/mats1D/mats1D_eval.py
+END
+mats1D_explore.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/mats1D/mats1D_explore.py
+END

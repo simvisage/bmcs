@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/simvisage/!svn/ver/3511/src/ibvpy/bcond
+END
+bc_dofgroup.py
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/simvisage/!svn/ver/2799/src/ibvpy/bcond/bc_dofgroup.py
+END
+bc_dof.py
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/simvisage/!svn/ver/3511/src/ibvpy/bcond/bc_dof.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/simvisage/!svn/ver/525/src/ibvpy/bcond/__init__.py
+END
+bc_slice.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/simvisage/!svn/ver/3511/src/ibvpy/bcond/bc_slice.py
+END
+test_nose.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/simvisage/!svn/ver/3381/src/ibvpy/bcond/test_nose.py
+END
+demos.py
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/simvisage/!svn/ver/2813/src/ibvpy/bcond/demos.py
+END

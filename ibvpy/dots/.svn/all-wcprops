@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/simvisage/!svn/ver/3381/src/ibvpy/dots
+END
+xdots_eval.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/simvisage/!svn/ver/2794/src/ibvpy/dots/xdots_eval.py
+END
+subdots_eval.py
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/simvisage/!svn/ver/3381/src/ibvpy/dots/subdots_eval.py
+END
+dots_list_eval.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/simvisage/!svn/ver/2793/src/ibvpy/dots/dots_list_eval.py
+END
+dots_eval_avg.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/simvisage/!svn/ver/2298/src/ibvpy/dots/dots_eval_avg.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/simvisage/!svn/ver/3/src/ibvpy/dots/__init__.py
+END
+dots_eval.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/simvisage/!svn/ver/3381/src/ibvpy/dots/dots_eval.py
+END
+dots_unstructured_eval.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/simvisage/!svn/ver/2298/src/ibvpy/dots/dots_unstructured_eval.py
+END

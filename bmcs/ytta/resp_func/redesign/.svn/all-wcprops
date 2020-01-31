@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/simvisage/!svn/ver/3415/src/ytta/resp_func/redesign
+END
+rf_browser.py
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/simvisage/!svn/ver/3415/src/ytta/resp_func/redesign/rf_browser.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/simvisage/!svn/ver/2807/src/ytta/resp_func/redesign/__init__.py
+END
+clamped_onesided.py
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/simvisage/!svn/ver/2835/src/ytta/resp_func/redesign/clamped_onesided.py
+END
+free_stress_double_pullout.py
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/simvisage/!svn/ver/2817/src/ytta/resp_func/redesign/free_stress_double_pullout.py
+END
+free_stress_onesided_pullout.py
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/simvisage/!svn/ver/2807/src/ytta/resp_func/redesign/free_stress_onesided_pullout.py
+END
+brittle_filament.py
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/simvisage/!svn/ver/2807/src/ytta/resp_func/redesign/brittle_filament.py
+END
+rf_filament.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/simvisage/!svn/ver/2807/src/ytta/resp_func/redesign/rf_filament.py
+END

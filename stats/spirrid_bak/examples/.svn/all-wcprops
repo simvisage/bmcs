@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/simvisage/!svn/ver/3541/src/stats/spirrid/examples
+END
+spirrid_cython.pyx
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/simvisage/!svn/ver/3495/src/stats/spirrid/examples/spirrid_cython.pyx
+END
+gen_example_docs.py
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/simvisage/!svn/ver/3541/src/stats/spirrid/examples/gen_example_docs.py
+END
+demo.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/simvisage/!svn/ver/3444/src/stats/spirrid/examples/demo.py
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/simvisage/!svn/ver/3186/src/stats/spirrid/examples/README
+END

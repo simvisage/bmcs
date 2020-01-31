@@ -1,0 +1,3 @@
+[gui_scripts]
+bmcs = bmcs.scripts.bmcs_app:run_bmcs_launcher
+

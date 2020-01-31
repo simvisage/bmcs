@@ -54,8 +54,8 @@ class LatticeRecord(Vis2D):
         c_dof = sim.control_dofs
         U_ti = self.sim.hist.U_t
         F_ti = self.sim.hist.F_t
-        P = F_ti[:, c_dof]
-        w = U_ti[:, c_dof]
+        P = np.sum(F_ti[:, c_dof], axis=-1)
+        w = np.average(U_ti[:, c_dof], axis=-1)
         self.Pw = P, w
 
     def get_t(self):
@@ -309,11 +309,11 @@ class LatticeModelSim(Simulator):
         return self.control_bc_list + self.fixed_bc_list
 
     def get_window(self):
-        #        self.record['Pw'] = LatticeRecord()
+        self.record['Pw'] = LatticeRecord()
         self.record['eps'] = Vis3DLattice(var='eps')
         w = BMCSWindow(sim=self)
-#        fw = Viz2DLatticeFW(name='FW-curve', vis2d=self.hist['Pw'])
-#        w.viz_sheet.viz2d_list.append(fw)
+        fw = Viz2DLatticeFW(name='FW-curve', vis2d=self.hist['Pw'])
+        w.viz_sheet.viz2d_list.append(fw)
         viz3d_u_Lb = Viz3DLattice(vis3d=self.hist['eps'])
         w.viz_sheet.add_viz3d(viz3d_u_Lb)
         w.viz_sheet.monitor_chunk_size = 10
@@ -433,7 +433,7 @@ def test04_mgrid(dimensions=(1, 1, 5), shape=(10, 5, 5)):
 
     control_dofs = top_nodes[:, np.newaxis] * 6 + np.array([0], np.int_)
     print('control_top', control_dofs)
-    w_max = -0.2
+    w_max = 0.1
 
     np.savez('myfile.npz', X_Ia=X_Ia, I_Li=I_Li, fixed_dofs=fixed_dofs,
              control_dofs=control_dofs)
@@ -458,32 +458,42 @@ def test05_lattice():
     return X_Ia, I_Li, fixed_dofs.flatten(), control_dofs.flatten(), -0.01
 
 
-if __name__ == '__main__':
-    #    X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test05_lattice()
+def run_elastic():
+    X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test05_lattice()
     # print(X_Ia.shape)
     # print(I_Li.shape)
-    X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test04_mgrid(
-        shape=(1, 1, 8)
-    )
+#     X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test04_mgrid(
+#         shape=(1, 1, 2), dimensions=(1, 1, 1))
     #X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test03_tetrahedron()
     #X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test01_couple()
     tes = LatticeTessellation(
         X_Ia=X_Ia,
         I_Li=I_Li
     )
+    global sim
     sim = LatticeModelSim(
         lattice_tessellation=tes,
-        mats_eval_type='mats3d_ifc_cumslip',
+        mats_eval_type='mats3d_ifc_elastic',
         fixed_dofs=fixed_dofs,
         control_dofs=control_dofs,
         w_max=w_max
     )
-    #sim.mats_eval.trait_set(E_n=1, E_s=1)
+#     sim.mats_eval.trait_set(E_T=1, E_N=1, gamma_T=0, K_T=0,
+#                             tau_pi_bar=0.05)
+#     sim.mats_eval.configure_traits()
+    sim.mats_eval.trait_set(E_n=1, E_s=1)
     sim.tstep.init_state()
-    sim.tloop.k_max = 3
-    sim.tline.step = 0.01
+    sim.tloop.k_max = 200
+    sim.tline.step = 0.1
     sim.tloop.verbose = True
     sim.tstep.debug = False
-    w = sim.get_window()
-    time.sleep(1)
-    w.configure_traits()
+    import cProfile
+#    cProfile.run("sim.run()")
+#     w = sim.get_window()
+#     time.sleep(1)
+#     w.run()
+#     w.configure_traits()
+
+
+if __name__ == '__main__':
+    run_elastic()

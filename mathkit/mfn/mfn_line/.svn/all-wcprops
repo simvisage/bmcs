@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/simvisage/!svn/ver/3528/src/mathkit/mfn/mfn_line
+END
+mfn_matplotlib_editor.py
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/simvisage/!svn/ver/1442/src/mathkit/mfn/mfn_line/mfn_matplotlib_editor.py
+END
+mfn_plot_adapter.py
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/simvisage/!svn/ver/1702/src/mathkit/mfn/mfn_line/mfn_plot_adapter.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/simvisage/!svn/ver/42/src/mathkit/mfn/mfn_line/__init__.py
+END
+mfn_matplotlib_multiline_editor.py
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/simvisage/!svn/ver/1660/src/mathkit/mfn/mfn_line/mfn_matplotlib_multiline_editor.py
+END
+mfn_multiline.py
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/simvisage/!svn/ver/1535/src/mathkit/mfn/mfn_line/mfn_multiline.py
+END
+mfn_chaco_editor.py
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/simvisage/!svn/ver/1426/src/mathkit/mfn/mfn_line/mfn_chaco_editor.py
+END
+mfn_chaco_multiline_editor.py
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/simvisage/!svn/ver/1420/src/mathkit/mfn/mfn_line/mfn_chaco_multiline_editor.py
+END
+mfn_line.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/simvisage/!svn/ver/3217/src/mathkit/mfn/mfn_line/mfn_line.py
+END

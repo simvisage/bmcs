@@ -1,20 +1,13 @@
 
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from ibvpy.mats.mats_eval import \
     IMATSEval, MATSEval
-from numpy import array,\
-    einsum, zeros_like, identity, sign,\
-    sqrt
-from traits.api import  \
-    provides
-from traits.api import Constant,\
-    Float, Property, cached_property, Dict
 from traitsui.api import \
     View, VGroup, Item
 
 import numpy as np
-import traits.api as tr
-import traitsui.api as ui
+
+from traits.api import Constant,\
+    Float, Property, cached_property, Dict, provides, Bool
 
 
 @provides(IMATSEval)
@@ -22,47 +15,14 @@ class MATS3DIfcCumSlip(MATSEval):
 
     node_name = "Cumulative bond-slip law"
 
-    E_N = tr.Float(100, label='E_N',
-                   desc='Normal stiffness of the interface',
-                   MAT=True,
-                   enter_set=True, auto_set=False)
-
-    E_T = tr.Float(100, label='E_T',
-                   desc='Shear modulus of the interface',
-                   MAT=True,
-                   enter_set=True, auto_set=False)
-
-    gamma = tr.Float(40.0, label='gamma',
-                     desc='Kinematic Hardening Modulus',
-                     MAT=True,
-                     enter_set=True, auto_set=False)
-
-    K = tr.Float(1, label='K',
-                 desc='Isotropic hardening modulus',
-                 MAT=True,
-                 enter_set=True, auto_set=False)
-
-    c = tr.Float(1, Label='c',
-                 desc='Damage accumulation parameter',
-                 MAT=True,
-                 enter_set=True, auto_set=False)
-
-    tau_bar = tr.Float(1, label='tau_bar',
-                       desc='Reversibility limit',
-                       MAT=True,
-                       enter_set=True, auto_set=False)
-
-    state_var_shapes = Property(Dict(), depends_on='n_mp')
-    '''Dictionary of state variable entries with their array shapes.
-    '''
-    @cached_property
-    def _get_state_var_shapes(self):
-        return dict(omega_w=(),
-                    r_w=(),
-                    omega_s=(),
-                    z_s=(),
-                    alpha_s_a=(2,),
-                    s_p_a=(2,))
+    state_var_shapes = dict(
+        omega_N=(),
+        r_N=(),
+        omega_T=(),
+        z_T=(),
+        alpha_T_a=(2,),
+        s_p_a=(2,)
+    )
 
     def init(self, *args):
         r'''
@@ -71,68 +31,85 @@ class MATS3DIfcCumSlip(MATSEval):
         for a in args:
             a[...] = 0
 
-    algorithmic = tr.Bool(False)
+    algorithmic = Bool(False)
 
-    #-------------------------------------------------------------------------
-    # Evaluation - get the corrector and predictor
-    #-------------------------------------------------------------------------
-    def get_corr_pred(self, u_b, t_n1,
-                      omega_w, r_w, omega_s,
-                      z_s, alpha_s_a, s_p_a):
+    def get_corr_pred(self, u_b, t_n1, omega_N, r_N, omega_T,
+                      z_T, alpha_T_a, s_p_a):
+
         w = u_b[..., 0]
         s_a = u_b[..., 1:]
         # For normal - distinguish tension and compression
         T = w > 0.0
         H_w_N = np.array(w <= 0.0, dtype=np.float_)
         E_alg_N = H_w_N * self.E_N
+        sig_N = self.E_N * w
+        delta_lambda = 0.5 * self.E_N * (w * T)**2.0 * self.Ad * (1 + r_N)**2
+        omega_N += delta_lambda
+        r_N -= delta_lambda
+        sig_N[T] = (1.0 - omega_N[T]) * self.E_N * (w[T])
 
-        sigma = self.E_N * w
-        delta_lambda = 0.5 * self.E_N * (w * T)**2.0 * self.Ad * (1 + r_w)**2
-        omega_w += delta_lambda
-        r_w -= delta_lambda
-        sigma[T] = (1.0 - omega_w[T]) * self.E_N * (w[T])
-        # For tangential
         E_T = self.E_T
-        tau_trial_a = E_T * (s_a - s_p_a)
-        Z_s = self.K_T * z_s
-        X_s_a = self.gamma_T * alpha_s_a
-        q_a = tau_trial_a - X_s_a
-        print(tau_trial_a.shape, X_s_a.shape)
-        norm_q = sqrt(einsum('...a,...a->...', q_a, q_a))
-        f = norm_q - self.tau_pi_bar - Z_s + self.a * sigma
-        plas_1 = f > 1e-6
-        elas_1 = f < 1e-6
-        delta_lamda = (
-            f / (E_T / (1 - omega_s) + self.gamma_T + self.K_T) * plas_1
+
+        tau_a = E_T * (s_a - s_p_a)
+        Z = self.K_T * z_T
+        X_a = self.gamma_T * alpha_T_a
+        q_a = tau_a - X_a
+        norm_q = np.sqrt(np.einsum('...na,...na->...n', q_a, q_a))
+        f_trial = norm_q - self.tau_pi_bar - Z + self.a * sig_N
+
+        I = np.where(f_trial > 1e-6)
+
+        omega_T_I = omega_T[I]
+        q_a_I = q_a[I]
+        norm_q_I = norm_q[I]
+        delta_lambda_I = f_trial[I] / \
+            (E_T / (1.0 - omega_T_I) + self.gamma_T + self.K_T)
+
+        s_p_a[I, :] += (
+            delta_lambda_I / (1.0 - omega_T_I) / norm_q_I
+        )[:, np.newaxis] * q_a_I
+
+        s_el_a_I = s_a[I] - s_p_a[I]
+        Y_I = 0.5 * E_T * np.einsum('...a,...a->...', s_el_a_I, s_el_a_I)
+
+        omega_T[I] += (
+            (1.0 - omega_T[I]) ** self.c_T *
+            delta_lambda_I * (Y_I / self.S_T) ** self.r_T
         )
-        norm_q_plas = 1.0 * elas_1 + sqrt(
-            einsum('...a,...a->...', q_a, q_a)) * plas_1
-        print(plas_1.shape, delta_lambda.shape,
-              omega_s.shape, q_a.shape, norm_q_plas.shape)
-        s_p_a += plas_1 * delta_lamda / (1.0 - omega_s) * q_a / norm_q_plas
-        s_el_a = s_a - s_p_a
-        Y = 0.5 * E_T * \
-            einsum('...a,...a->...', s_el_a, s_el_a)
-        omega_s += ((1.0 - omega_s) ** self.c_T) * \
-            (delta_lamda * (Y / self.S_T) ** self.r_T)  # * \
-        #(self.tau_pi_bar / (self.tau_pi_bar - self.a * sigma_kk / 3.0))
-        alpha_s_a += plas_1 * delta_lamda * q_a / norm_q_plas
-        z_s += delta_lamda
-        tau_a = (1 - omega_s) * self.E_T * (s_a - s_p_a) * plas_1
-        E_alg_T = (1 - omega_s) * self.E_T
+        # * \
+        #(self.tau_pi_bar / (self.tau_pi_bar - self.a * sig_N)
+        alpha_T_a[I, :] += (
+            (delta_lambda_I / norm_q_I)[:, np.newaxis] * q_a_I
+        )
+        z_T += delta_lambda
+
+        tau_a[I, :] = (
+            ((1 - omega_T[I]) * self.E_T)[:, np.newaxis] * s_el_a_I
+        )
+        # Secant stiffness
+        E_alg_T = ((1 - omega_T) *
+                   self.E_T)[:, np.newaxis, np.newaxis]
         # Consistent tangent operator
         sig = np.zeros_like(u_b)
-        sig[..., 0] = sigma
+        sig[..., 0] = sig_N
         sig[..., 1:] = tau_a
-        E_TN = np.einsum('abEm->Emab',
-                         np.array(
-                             [
-                                 [E_alg_N, np.zeros_like(E_alg_T)],
-                                 [np.zeros_like(
-                                     E_alg_N), E_alg_T]
-                             ])
-                         )
-        return sig, E_TN
+        N_ab = np.zeros((3, 3), dtype=np.float_)
+        N_ab[0, 0] = 1
+        T_ab = np.zeros((3, 3), dtype=np.float_)
+        T_ab[(1, 2), (1, 2)] = 1
+        E_NT = (np.einsum('ab,...->...ab', N_ab, E_alg_N) +
+                np.einsum('ab,...ab->...ab', T_ab, E_alg_T))
+
+        tau_a = E_T * (s_a - s_p_a)
+        Z = self.K_T * z_T
+        X_a = self.gamma_T * alpha_T_a
+        q_a = tau_a - X_a
+        norm_q = np.sqrt(np.einsum('...na,...na->...n', q_a, q_a))
+        f_trial = norm_q - self.tau_pi_bar - Z + self.a * sig_N
+        print('f_trial', f_trial[np.where(f_trial > 1e-6)])
+
+        print('sig', sig)
+        return sig, E_NT
 
     def _get_var_dict(self):
         var_dict = super(MATS3DIfcCumSlip, self)._get_var_dict()
@@ -171,56 +148,46 @@ class MATS3DIfcCumSlip(MATSEval):
         s_e = s - s_p
         return s_e
 
-    tree_view = ui.View(
-        ui.Item('E_N'),
-        ui.Item('E_T'),
-        ui.Item('gamma'),
-        ui.Item('K'),
-        ui.Item('S'),
-        ui.Item('r'),
-        ui.Item('c'),
-        ui.Item('m'),
-        ui.Item('tau_bar'),
-        ui.Item('D_rs', style='readonly')
-    )
-
-    traits_view = tree_view
-
     #---------------------------------------
     # Tangential constitutive law parameters
     #---------------------------------------
+    E_T = Float(100, label='E_T',
+                desc='Shear modulus of the interface',
+                MAT=True,
+                enter_set=True, auto_set=False)
+
     gamma_T = Float(5000.,
-                    label="Gamma",
+                    label="Gamma_T",
                     desc=" Tangential Kinematic hardening modulus",
                     enter_set=True,
                     auto_set=False)
 
     K_T = Float(10.0,
-                label="K",
+                label="K_T",
                 desc="Tangential Isotropic harening",
                 enter_set=True,
                 auto_set=False)
 
     S_T = Float(0.0001,
-                label="S",
+                label="S_T",
                 desc="Damage strength",
                 enter_set=True,
                 auto_set=False)
 
     r_T = Float(1.2,
-                label="r",
+                label="r_T",
                 desc="Damage cumulation parameter",
                 enter_set=True,
                 auto_set=False)
 
     c_T = Float(1.0,
-                label="c",
+                label="c_T",
                 desc="Damage cumulation parameter",
                 enter_set=True,
                 auto_set=False)
 
     tau_pi_bar = Float(2.0,
-                       label="Tau_bar",
+                       label="Tau_bar_T",
                        desc="Reversibility limit",
                        enter_set=True,
                        auto_set=False)
@@ -234,91 +201,22 @@ class MATS3DIfcCumSlip(MATSEval):
     #-------------------------------------------
     # Normal_Tension constitutive law parameters (without cumulative normal strain)
     #-------------------------------------------
+    E_N = Float(100, label='E_N',
+                desc='Normal stiffness of the interface',
+                MAT=True,
+                enter_set=True, auto_set=False)
+
     Ad = Float(10000.0,
                label="Ad",
                desc="Brittleness coefficient",
                enter_set=True,
                auto_set=False)
 
-    eps_0 = Float(0.0000002,
-                  label="eps_0",
-                  desc="Threshold strain",
-                  enter_set=True,
-                  auto_set=False)
-
-    eps_f = Float(0.000002,
-                  label="eps_f",
-                  desc="Damage function shape",
-                  enter_set=True,
-                  auto_set=False)
-
-    #-------------------------------------------
-    # Normal_tension constitutive law parameters
-    # (using cumulative normal plastic strain)
-    #-------------------------------------------
-    gamma_N_pos = Float(5000.,
-                        label="Gamma N",
-                        desc=" Tangential Kinematic hardening modulus",
-                        enter_set=True,
-                        auto_set=False)
-
-    K_N_pos = Float(0.0,
-                    label="K N",
-                    desc="Tangential Isotropic harening",
-                    enter_set=True,
-                    auto_set=False)
-
-    S_N = Float(0.005,
-                label="S N",
-                desc="Damage strength",
-                enter_set=True,
-                auto_set=False)
-
-    r_N = Float(1.0,
-                label="r N",
-                desc="Damage cumulation parameter",
-                enter_set=True,
-                auto_set=False)
-
-    c_N = Float(1.0,
-                label="c N",
-                desc="Damage cumulation parameter",
-                enter_set=True,
-                auto_set=False)
-
-    sigma_0_pos = Float(2.0,
-                        label="sigma_0",
-                        desc="Reversibility limit",
-                        enter_set=True,
-                        auto_set=False)
-
-    #-----------------------------------------------
-    # Normal_Compression constitutive law parameters
-    #-----------------------------------------------
-    K_N_neg = Float(10000.,
-                    label="K N compression",
-                    desc=" Normal isotropic harening",
-                    enter_set=True,
-                    auto_set=False)
-
-    gamma_N_neg = Float(15000.,
-                        label="gamma_compression",
-                        desc="Normal kinematic hardening",
-                        enter_set=True,
-                        auto_set=False)
-
-    sigma_0_neg = Float(20.,
-                        label="sigma 0 compression",
-                        desc="Yield stress in compression",
-                        enter_set=True,
-                        auto_set=False)
-
     traits_view = View(
         VGroup(
             VGroup(
-                Item('E_s', full_size=True, resizable=True),
-                Item('E_n', full_size=True, resizable=True),
-                Item('nu'),
+                Item('E_T', full_size=True, resizable=True),
+                Item('E_N', full_size=True, resizable=True),
                 label='Elastic parameters'
             ),
             VGroup(
@@ -333,25 +231,8 @@ class MATS3DIfcCumSlip(MATSEval):
             ),
             VGroup(
                 Item('Ad'),
-                Item('eps_0', full_size=True, resizable=True),
-                Item('eps_f'),
                 label='Normal_Tension (no cumulative normal strain)'
             ),
-            VGroup(
-                Item('gamma_N_pos', full_size=True, resizable=True),
-                Item('K_N_pos'),
-                Item('S_N'),
-                Item('r_N'),
-                Item('c_N'),
-                Item('sigma_0_pos'),
-                label='Normal_Tension (cumulative normal plastic strain)',
-            ),
-            VGroup(
-                Item('K_N_neg', full_size=True, resizable=True),
-                Item('gamma_N_neg'),
-                Item('sigma_0_neg'),
-                label='Normal_compression parameters'
-            )
         )
     )
     tree_view = traits_view

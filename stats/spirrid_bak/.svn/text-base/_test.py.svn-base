@@ -1,0 +1,120 @@
+#-------------------------------------------------------------------------------
+#
+# Copyright (c) 2009, IMB, RWTH Aachen.
+# All rights reserved.
+#
+# This software is provided without warranty under the terms of the BSD
+# license included in simvisage/LICENSE.txt and may be redistributed only
+# under the conditions described in the aforementioned license.  The license
+# is also available online at http://www.simvisage.com/licenses/BSD.txt
+#
+# Thanks for using Simvisage open source!
+#
+# Created on Oct 5, 2011 by: rch
+
+'''Unit tests for spirrid.
+
+ 1) limit case (no random variable changed)
+ 2) state changes
+  
+'''
+
+import unittest
+
+from stats.spirrid import \
+    SPIRRID, RV, RF, IRF
+from stats.spirrid import SPIRRIDLAB, Heaviside
+import numpy as np
+from enthought.traits.api import implements, Str
+
+#===========================================================================
+# Response function
+#===========================================================================
+class fiber_tt_2p(RF):
+    '''Linear elastic, brittle filament.
+    '''
+    implements(IRF)
+
+    title = Str('brittle filament')
+
+    def __call__(self, e, la, xi):
+        ''' Response function of a single fiber '''
+        return la * e * Heaviside(xi - e)
+
+    C_code = '''
+            // Computation of the q( ... ) function
+            if ( eps < 0 || eps > xi ){
+                q = 0.0;
+            }else{
+                  q = la * eps;
+            }
+        '''
+
+class TestSPIRRID(unittest.TestCase):
+    '''
+    Test functionality connected with the application of
+    boundary conditions.
+    '''
+    def setUp(self):
+
+        np.random.seed(2356)
+        #===========================================================================
+        # Control variable
+        #===========================================================================
+        e_arr = np.linspace(0, 0.012, 80)
+
+
+        m_la, std_la = 10., 1.0
+        m_xi, std_xi = 1.0, 0.1
+
+        #===========================================================================
+        # Randomization
+        #===========================================================================
+
+        self.s = SPIRRID(q = fiber_tt_2p(),
+                         evars = [e_arr],
+                         n_int = 10,
+                         tvars = dict(la = RV('norm', m_la, std_la),
+                                      xi = RV('norm', m_xi, std_xi)
+                                      ),
+                         )
+
+    def test_tgrid(self):
+        '''Check the result of the computation for T-grid'''
+        self.s.sampling_type = 'T-grid'
+        max_mu_q = np.max(self.s.mu_q_arr)
+        self.assertAlmostEqual(max_mu_q, 0.11999724956278124, 10)
+
+    def test_pgrid(self):
+        '''Check the result of the computation for P-grid'''
+        self.s.sampling_type = 'P-grid'
+        max_mu_q = np.max(self.s.mu_q_arr)
+        self.assertAlmostEqual(max_mu_q, 0.11999999999999997, 10)
+
+    def test_monte_carlo(self):
+        '''Check the result of the computation for Monte Carlo'''
+        self.s.sampling_type = 'Monte-Carlo'
+        max_mu_q = np.max(self.s.mu_q_arr)
+        self.assertAlmostEqual(max_mu_q, 0.11955714830161569, 10)
+
+    def test_lhs(self):
+        '''Check the result of the computation for LHS'''
+        self.s.sampling_type = 'LHS'
+        max_mu_q = np.max(self.s.mu_q_arr)
+        self.assertAlmostEqual(max_mu_q, 0.11999999999999995, 10)
+
+    def test_variance_tgrid(self):
+        '''Check the variance of the computation for T-grid'''
+        self.s.sampling_type = 'T-grid'
+        max_var_q = np.max(self.s.var_q_arr)
+        self.assertAlmostEqual(max_var_q, 0.00014429189095519629, 10)
+
+    def test_variance_lhs(self):
+        '''Check the mean and variance of the computation for LHS'''
+        self.s.sampling_type = 'LHS'
+        max_var_q = np.max(self.s.var_q_arr)
+        self.assertAlmostEqual(max_var_q, 0.00014217258709777608, 10)
+        # check cached values
+        max_mu_q = np.max(self.s.mu_q_arr)
+        self.assertAlmostEqual(max_mu_q, 0.11999999999999995, 10)
+

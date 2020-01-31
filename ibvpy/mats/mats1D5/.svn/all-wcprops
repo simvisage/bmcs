@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/mats1D5
+END
+mats1D5_explore.py
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/mats1D5/mats1D5_explore.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/simvisage/!svn/ver/3511/src/ibvpy/mats/mats1D5/__init__.py
+END
+mats1D5bond_elastic_frictional.py
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/mats1D5/mats1D5bond_elastic_frictional.py
+END
+mats1D5_pressure_sensitive.py
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/mats1D5/mats1D5_pressure_sensitive.py
+END
+mats1D5_bond.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/simvisage/!svn/ver/3410/src/ibvpy/mats/mats1D5/mats1D5_bond.py
+END
+mats1D5bond.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/mats1D5/mats1D5bond.py
+END
+mats1D5bondAC.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/mats1D5/mats1D5bondAC.py
+END
+mats1D5_eval.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/simvisage/!svn/ver/2280/src/ibvpy/mats/mats1D5/mats1D5_eval.py
+END

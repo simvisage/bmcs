@@ -1,0 +1,15 @@
+Metadata-Version: 1.1
+Name: bmcs
+Version: 0.0.2a23
+Summary: Suite of educational packages for to the course on Brittle-Matrix Composite Structures.
+Home-page: http://packages.python.org/bmcs
+Author: Rostislav Chudoba, Yionxiung Li, Abedulgader Baktheer, Alexander Scholzen
+Author-email: rostislav.chudoba@rwth-aachen.de
+License: BSD
+Description-Content-Type: UNKNOWN
+Description: UNKNOWN
+Keywords: brittle matrix composite structures
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Topic :: Utilities
+Classifier: License :: OSI Approved :: BSD License

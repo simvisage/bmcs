@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/simvisage/!svn/ver/2960/src/mathkit/mfn/mfn_polar
+END
+__test__.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/simvisage/!svn/ver/517/src/mathkit/mfn/mfn_polar/__test__.py
+END
+mfn_polar.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/simvisage/!svn/ver/2960/src/mathkit/mfn/mfn_polar/mfn_polar.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/simvisage/!svn/ver/42/src/mathkit/mfn/mfn_polar/__init__.py
+END
+mfn_polar_editor.py
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/simvisage/!svn/ver/1489/src/mathkit/mfn/mfn_polar/mfn_polar_editor.py
+END

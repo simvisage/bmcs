@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/simvisage/!svn/ver/3542/src/stats/spirrid/docs
+END
+front.rst
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/simvisage/!svn/ver/3430/src/stats/spirrid/docs/front.rst
+END
+modules.rst
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/simvisage/!svn/ver/3531/src/stats/spirrid/docs/modules.rst
+END
+intro.rst
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/simvisage/!svn/ver/3531/src/stats/spirrid/docs/intro.rst
+END
+gen_docs.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/simvisage/!svn/ver/3531/src/stats/spirrid/docs/gen_docs.py
+END
+conf.py
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/simvisage/!svn/ver/3531/src/stats/spirrid/docs/conf.py
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/simvisage/!svn/ver/3430/src/stats/spirrid/docs/Makefile
+END
+index.rst
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/simvisage/!svn/ver/3531/src/stats/spirrid/docs/index.rst
+END

@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/simvisage/!svn/ver/3542/src/stats/spirrid
+END
+sampling.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/simvisage/!svn/ver/3426/src/stats/spirrid/sampling.py
+END
+code_gen_factory.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/simvisage/!svn/ver/3397/src/stats/spirrid/code_gen_factory.py
+END
+code_gen_numpy.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/simvisage/!svn/ver/3447/src/stats/spirrid/code_gen_numpy.py
+END
+spirrid.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/simvisage/!svn/ver/3495/src/stats/spirrid/spirrid.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/simvisage/!svn/ver/3426/src/stats/spirrid/__init__.py
+END
+i_rf.py
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/simvisage/!svn/ver/3397/src/stats/spirrid/i_rf.py
+END
+code_gen_compiled.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/simvisage/!svn/ver/3422/src/stats/spirrid/code_gen_compiled.py
+END
+code_gen.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/simvisage/!svn/ver/3397/src/stats/spirrid/code_gen.py
+END
+test_nose.py
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/simvisage/!svn/ver/3397/src/stats/spirrid/test_nose.py
+END
+rf_filament.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/simvisage/!svn/ver/3397/src/stats/spirrid/rf_filament.py
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/simvisage/!svn/ver/3482/src/stats/spirrid/Makefile
+END
+rf.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/simvisage/!svn/ver/3397/src/stats/spirrid/rf.py
+END
+rv.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/simvisage/!svn/ver/3397/src/stats/spirrid/rv.py
+END

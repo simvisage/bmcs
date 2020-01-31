@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/mats2D/mats2D_sdamage
+END
+__test__.py
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/simvisage/!svn/ver/1305/src/ibvpy/mats/mats2D/mats2D_sdamage/__test__.py
+END
+mats2D_sdamage.py
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/mats2D/mats2D_sdamage/mats2D_sdamage.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/simvisage/!svn/ver/155/src/ibvpy/mats/mats2D/mats2D_sdamage/__init__.py
+END
+strain_norm2d.py
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/simvisage/!svn/ver/1762/src/ibvpy/mats/mats2D/mats2D_sdamage/strain_norm2d.py
+END

@@ -1,0 +1,131 @@
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/simvisage/!svn/ver/3530/src/ibvpy/core
+END
+sdomain.py
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/simvisage/!svn/ver/941/src/ibvpy/core/sdomain.py
+END
+.directory
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/simvisage/!svn/ver/3/src/ibvpy/core/.directory
+END
+tloop.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/simvisage/!svn/ver/3530/src/ibvpy/core/tloop.py
+END
+i_bcond.py
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/simvisage/!svn/ver/2284/src/ibvpy/core/i_bcond.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/simvisage/!svn/ver/3/src/ibvpy/core/__init__.py
+END
+ibv_model.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/simvisage/!svn/ver/2131/src/ibvpy/core/ibv_model.py
+END
+i_sdomain.py
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/simvisage/!svn/ver/715/src/ibvpy/core/i_sdomain.py
+END
+rtrace_mngr.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/simvisage/!svn/ver/3530/src/ibvpy/core/rtrace_mngr.py
+END
+astrategy.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/simvisage/!svn/ver/2712/src/ibvpy/core/astrategy.py
+END
+tstepper.py
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/simvisage/!svn/ver/2791/src/ibvpy/core/tstepper.py
+END
+scontext.py
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/simvisage/!svn/ver/2298/src/ibvpy/core/scontext.py
+END
+ibvp_solve.py
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/simvisage/!svn/ver/100/src/ibvpy/core/ibvp_solve.py
+END
+bcond_mngr.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/simvisage/!svn/ver/2284/src/ibvpy/core/bcond_mngr.py
+END
+api.py
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/simvisage/!svn/ver/1298/src/ibvpy/core/api.py
+END
+tstepper_eval.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/simvisage/!svn/ver/1386/src/ibvpy/core/tstepper_eval.py
+END
+TODO
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/simvisage/!svn/ver/3/src/ibvpy/core/TODO
+END
+rtrace.py
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/simvisage/!svn/ver/3530/src/ibvpy/core/rtrace.py
+END
+logging.conf
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/simvisage/!svn/ver/3/src/ibvpy/core/logging.conf
+END
+i_tstepper_eval.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/simvisage/!svn/ver/876/src/ibvpy/core/i_tstepper_eval.py
+END
+rtrace_eval.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/simvisage/!svn/ver/2250/src/ibvpy/core/rtrace_eval.py
+END
+ibv_resource.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/simvisage/!svn/ver/100/src/ibvpy/core/ibv_resource.py
+END

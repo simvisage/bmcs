@@ -1,0 +1,45 @@
+#-------------------------------------------------------------------------------
+#
+# Copyright (c) 2009, IMB, RWTH Aachen.
+# All rights reserved.
+#
+# This software is provided without warranty under the terms of the BSD
+# license included in simvisage/LICENSE.txt and may be redistributed only
+# under the conditions described in the aforementioned license.  The license
+# is also available online at http://www.simvisage.com/licenses/BSD.txt
+#
+# Thanks for using Simvisage open source!
+#
+# Created on Sep 8, 2011 by: rch
+
+from stats.spirrid import \
+    convergence_study, Heaviside, RV
+import numpy as np
+from scipy.special import erf
+import math
+
+if __name__ == '__main__':
+
+    # discretize the control variable (x-axis)
+    e_arr = np.linspace(0, 2.0, 800)
+
+    def fiber_tt_2p(e, la, xi):
+        ''' Response function of a single fiber '''
+        return la * e * Heaviside(xi - e)
+
+    # Exact solution
+    def mu_q_ex(e, m_xi, std_xi, m_la):
+        return e * (0.5 - 0.5 * erf(0.5 * math.sqrt(2) * (e - m_xi) / std_xi)) * m_la
+
+    powers = np.linspace(1, math.log(1000, 10), 5)
+    n_int = np.array(np.power(10, powers), dtype = int)
+
+    m_la, std_la = 10., 1.0
+    m_xi, std_xi = 1.0, 0.1
+
+    convergence_study(q = fiber_tt_2p,
+                       e_arr = e_arr,
+                       tvars = [RV('norm', m_la, std_la),
+                                RV('norm', m_xi, std_xi)],
+                       n_int = n_int,
+                       exact_arr = mu_q_ex(e_arr, m_xi, std_xi, m_la))

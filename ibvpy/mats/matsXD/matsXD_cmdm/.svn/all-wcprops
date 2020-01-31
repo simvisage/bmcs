@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/simvisage/!svn/ver/3556/src/ibvpy/mats/matsXD/matsXD_cmdm
+END
+matsXD_phi_fn_strain_hardening_alpha_beta.mw
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/simvisage/!svn/ver/1760/src/ibvpy/mats/matsXD/matsXD_cmdm/matsXD_phi_fn_strain_hardening_alpha_beta.mw
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/simvisage/!svn/ver/1341/src/ibvpy/mats/matsXD/matsXD_cmdm/__init__.py
+END
+matsXD_cmdm.py
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/matsXD/matsXD_cmdm/matsXD_cmdm.py
+END
+matsXD_cmdm_polar_discr.py
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/simvisage/!svn/ver/3533/src/ibvpy/mats/matsXD/matsXD_cmdm/matsXD_cmdm_polar_discr.py
+END
+matsXD_cmdm_phi_fn.py
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/simvisage/!svn/ver/3556/src/ibvpy/mats/matsXD/matsXD_cmdm/matsXD_cmdm_phi_fn.py
+END

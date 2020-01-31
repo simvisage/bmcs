@@ -13,9 +13,11 @@ from mayavi import mlab
 from simulator.demo.mlab_decorators import decorate_figure
 
 import numpy as np
-from pulloutaxisymdemomodel import \
-PullOutAxiSym, Geometry, CrossSection
 import pylab as p
+
+from .pulloutaxisymdemomodel import \
+    PullOutAxiSym, Geometry, CrossSection
+
 
 dir = os.path.expanduser('~')
 
@@ -30,8 +32,7 @@ def verify_normalized_pullout_force():
         ds = 16
         print('lateral confining pressure', f_lateral)
         g = Geometry(L_x=ds * 5)
-        c = CrossSection(R_m=75
-                         ,
+        c = CrossSection(R_m=75,
                          R_f=ds / 2)
         s = PullOutAxiSym(geometry=g,
                           cross_section=c,
@@ -67,6 +68,7 @@ def verify_normalized_pullout_force():
 
         print('P_max', np.max(s.record['Pw'].sim.hist.F_t))
         print('P_end', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
+<<<<<<< Updated upstream
         
         #=======================================================================
         # mlab.options.backend = 'envisage'
@@ -81,11 +83,26 @@ def verify_normalized_pullout_force():
         # lut_manager = mlab.colorbar(title='sig_ab', orientation='horizontal', nb_labels=5)
         # # fix the range
         #=======================================================================
+=======
+
+        mlab.options.backend = 'envisage'
+        print(s.hist['stress'])
+        f_stress = mlab.figure()
+        scene = mlab.get_engine().scenes[-1]
+        scene.name = 'stress'
+        stress_viz = Viz3DTensorField(vis3d=s.hist['stress'])
+        stress_viz.setup()
+        stress_viz.warp_vector.filter.scale_factor = 100.0
+        stress_viz.plot(s.tstep.t_n)
+        lut_manager = mlab.colorbar(
+            title='sig_ab', orientation='horizontal', nb_labels=5)
+        # fix the range
+>>>>>>> Stashed changes
         # print(s.record['stress'])
         # scalar_lut_manager.data_range = array([0., 1.])
        # lut_manager.data_range = np.array([np.min(s.record['stress']), np.max(s.record['stress'])])
-        
-        #=======================================================================
+
+        #======================================================================
         # f_strain = mlab.figure()
         # scene = mlab.get_engine().scenes[-1]
         # scene.name = 'strain'
@@ -97,9 +114,9 @@ def verify_normalized_pullout_force():
         # lut_manager = mlab.colorbar(title='eps_ab', orientation='horizontal', nb_labels=5)
         # # fix the range
         # lut_manager.data_range = (np.min(s.record['strain']), np.max(s.record['strain']))
-        #=======================================================================
-        #=======================================================================
-        # 
+        #======================================================================
+        #======================================================================
+        #
         # f_damage = mlab.figure()
         # scene = mlab.get_engine().scenes[-1]
         # scene.name = 'damage'
@@ -109,16 +126,16 @@ def verify_normalized_pullout_force():
         # damage_viz.warp_vector.filter.scale_factor = 10.0
         # damage_viz.plot(s.tstep.t_n)
         # damage_viz.plot(0.0)
-        #=======================================================================
+        #======================================================================
 
         # decorate_figure(f_stress, stress_viz)  # , 800, [300, 40, 0])
         # decorate_figure(f_strain, strain_viz)  # , 800, [300, 40, 0])
-        #=======================================================================
+        #======================================================================
         # decorate_figure(f_damage, damage_viz, 800, [300, 40, 0])
-        #=======================================================================
-        
+        #======================================================================
+
         s.f_lateral = f_lateral
-        
+
         w = s.get_window()
         w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
     return w
@@ -131,4 +148,3 @@ if __name__ == '__main__':
     # w.configure_traits()
     p.show()
     mlab.show()
-    
