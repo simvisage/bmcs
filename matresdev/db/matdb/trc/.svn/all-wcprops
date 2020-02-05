@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/simvisage/!svn/ver/3415/src/promod/matdb/trc
+END
+concrete_mixture.py
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/simvisage/!svn/ver/3415/src/promod/matdb/trc/concrete_mixture.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/simvisage/!svn/ver/1842/src/promod/matdb/trc/__init__.py
+END
+composite_cross_section.py
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/simvisage/!svn/ver/3415/src/promod/matdb/trc/composite_cross_section.py
+END
+fabric_layup.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/simvisage/!svn/ver/3415/src/promod/matdb/trc/fabric_layup.py
+END
+fabric_layout.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/simvisage/!svn/ver/3415/src/promod/matdb/trc/fabric_layout.py
+END
+ccs_unit_cell.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/simvisage/!svn/ver/3415/src/promod/matdb/trc/ccs_unit_cell.py
+END

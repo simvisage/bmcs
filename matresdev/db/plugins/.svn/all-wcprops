@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/simvisage/!svn/ver/236/src/promod/plugins
+END
+promod_ui_plugin.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/simvisage/!svn/ver/236/src/promod/plugins/promod_ui_plugin.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/simvisage/!svn/ver/234/src/promod/plugins/__init__.py
+END
+promod_plugin.py
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/simvisage/!svn/ver/236/src/promod/plugins/promod_plugin.py
+END
+promod_service.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/simvisage/!svn/ver/236/src/promod/plugins/promod_service.py
+END

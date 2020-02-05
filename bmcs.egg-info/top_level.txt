@@ -3,6 +3,7 @@ bmcs
 docs
 ibvpy
 mathkit
+matresdev
 reporter
 scratch
 simulator

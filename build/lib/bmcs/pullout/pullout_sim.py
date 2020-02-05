@@ -521,9 +521,11 @@ class PullOutModel(Simulator):
                           BC=True,
                           desc='which side of the specimen is fixed [non-loaded end [matrix], loaded end [matrix], non-loaded end [reinf]]')
 
-    fixed_dofs = Property
+    fixed_dofs = Property(depends_on=itags_str)
 
+    @cached_property
     def _get_fixed_dofs(self):
+        print('ressetting', self.fixed_boundary)
         if self.fixed_boundary == 'non-loaded end (matrix)':
             return [0]
         elif self.fixed_boundary == 'non-loaded end (reinf)':
@@ -533,24 +535,28 @@ class PullOutModel(Simulator):
         elif self.fixed_boundary == 'clamped left':
             return [0, 1]
 
-    controlled_dof = Property
+    controlled_dof = Property(depends_on=itags_str)
 
+    @cached_property
     def _get_controlled_dof(self):
         return 2 + 2 * self.n_e_x - 1
 
-    free_end_dof = Property
+    free_end_dof = Property(depends_on=itags_str)
 
+    @cached_property
     def _get_free_end_dof(self):
         return 1
 
-    fixed_bc = Property(depends_on='BC,MESH')
+    fixed_bc_list = Property(depends_on=itags_str)
     '''Foxed boundary condition'''
     @cached_property
-    def _get_fixed_bc(self):
-        return BCDof(node_name='fixed left end', var='u',
-                     dof=0, value=0.0)
+    def _get_fixed_bc_list(self):
+        return [
+            BCDof(node_name='fixed left end', var='u',
+                  dof=dof, value=0.0) for dof in self.fixed_dofs
+        ]
 
-    control_bc = Property(depends_on='BC,MESH')
+    control_bc = Property(depends_on=itags_str)
     '''Control boundary condition - make it accessible directly
     for the visualization adapter as property
     '''
@@ -561,11 +567,11 @@ class PullOutModel(Simulator):
                      dof=self.controlled_dof, value=self.w_max,
                      time_function=self.loading_scenario)
 
-    bc = Property(depends_on='BC,MESH')
+    bc = Property(depends_on=itags_str)
 
     @cached_property
     def _get_bc(self):
-        return [self.fixed_bc, self.control_bc]
+        return [self.control_bc] + self.fixed_bc_list
 
     X_M = Property()
 

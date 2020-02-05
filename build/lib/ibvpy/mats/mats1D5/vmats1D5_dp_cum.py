@@ -4,16 +4,16 @@ Created on Feb 14, 2019
 @author: rch
 '''
 
-from sqlalchemy.orm import state
-from traits.api import on_trait_change
-
 from bmcs.mats.mats_damage_fn import \
     IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
     MultilinearDamageFn, \
     FRPDamageFn
 from ibvpy.api import MATSEval
-import numpy as np
 from simulator.i_model import IModel
+from sqlalchemy.orm import state
+from traits.api import on_trait_change
+
+import numpy as np
 import traits.api as tr
 
 
@@ -67,7 +67,7 @@ class MATS1D5DPCum(MATSEval):
                    desc='Elastic strain/displacement limit')
 
     def __init__(self, *args, **kw):
-        super(MATS1D5DP, self).__init__(*args, **kw)
+        super(MATS1D5DPCum, self).__init__(*args, **kw)
         self._update_s0()
 
     @on_trait_change('tau_bar,E_T')

@@ -6,7 +6,7 @@ from simulator.i_xdomain import IXDomain
 from traits.api import \
     Property, cached_property, \
     provides, Callable, \
-    Tuple, Int, Type, Array, Float, Instance, Bool
+    Tuple, Int, Type, Array, Float, Instance, Bool, DelegatesTo
 from view.ui.bmcs_tree_node import BMCSTreeNode
 
 import numpy as np
@@ -35,6 +35,25 @@ class XDomainFEGrid(BMCSTreeNode):
 
     def _get_state_var_shape(self):
         return (self.mesh.n_active_elems, self.fets.n_m,)
+
+    #=========================================================================
+    # Methods needed by XDomain to chain the subdomains
+    #=========================================================================
+    dof_offset = Property
+
+    def _get_dof_offset(self):
+        return self.mesh.dof_offset
+
+    n_active_elems = Property
+
+    def _get_n_active_elems(self):
+        return self.mesh.n_active_elems
+
+    def set_next(self, next_):
+        self.mesh.next_grid = next_.mesh
+
+    def set_prev(self, prev):
+        self.mesh.prev_grid = prev.mesh
 
     #=========================================================================
     # Input parameters
@@ -143,7 +162,7 @@ class XDomainFEGrid(BMCSTreeNode):
     det_J_Em = Property(depends_on='MESH,GEO,CS,FE')
     '''Jacobi matrix in integration points
     '''
-
+    @cached_property
     def _get_det_J_Em(self):
         return np.linalg.det(self.J_Emar)
 
@@ -206,7 +225,6 @@ class XDomainFEGrid(BMCSTreeNode):
 
     def map_U_to_field(self, U):
         n_c = self.fets.n_nodal_dofs
-        #U_Ia = U.reshape(-1, n_c)
         U_Eia = U[self.o_Eia]
         eps_Emab = np.einsum(
             'Eimabc,Eic->Emab',
