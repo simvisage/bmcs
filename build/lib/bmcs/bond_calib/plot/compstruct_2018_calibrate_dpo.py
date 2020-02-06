@@ -5,11 +5,12 @@ Created on 20.03.2018
 '''
 from os.path import join
 
+from bmcs.bond_calib.inverse.fem_inverse import MATSEval, FETS1D52ULRH, TStepper, TLoop
 from ibvpy.api import BCDof
 
-from bmcs.bond_calibration.inverse.fem_inverse import MATSEval, FETS1D52ULRH, TStepper, TLoop
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 w_data = [0, 0.01, 0.05, 0.1, 0.2, 0.5,    1, 2,     3,   4,   5,   6, 7, 8]
 f_data = [0, 1.0, 1.8, 2.4, 2.6, 2.75, 2.8, 2.7, 2.5, 1.6, 0.7, 0.4, 0.3, 0.2]
@@ -60,7 +61,7 @@ pf_arr = np.interp(w_arr, w / 2., f) * 1000.
 # plt.plot(w_arr, pf_arr)
 # plt.show()
 
-tl = TLoop(ts=ts, w_arr=w_arr, pf_arr=pf_arr, n=4)
+tl = TLoop(ts=ts, w_arr=w_arr, pf_arr=pf_arr, n_reg=4)
 
 slip, bond = tl.eval()
 

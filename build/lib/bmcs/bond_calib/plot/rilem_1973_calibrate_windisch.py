@@ -4,11 +4,13 @@ Created on 20.03.2018
 @author: Yingxiong
 '''
 
+from bmcs.bond_calib.inverse.fem_inverse import \
+    MATSEval, FETS1D52ULRH, TStepper, TLoop
 from ibvpy.api import BCDof
 
-from apps.bond_calibration.inverse.fem_inverse import MATSEval, FETS1D52ULRH, TStepper, TLoop
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 mats = MATSEval(E_m=32701)
 
@@ -42,7 +44,7 @@ pf_arr = np.interp(w_arr, w_exp, P_exp)
 plt.plot(w_arr, pf_arr)
 plt.show()
 
-tl = TLoop(ts=ts, w_arr=w_arr, pf_arr=pf_arr, n=3)
+tl = TLoop(ts=ts, w_arr=w_arr, pf_arr=pf_arr, n_reg=3)
 
 slip, bond = tl.eval()
 
