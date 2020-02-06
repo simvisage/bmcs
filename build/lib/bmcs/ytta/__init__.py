@@ -1,3 +1,0 @@
-'''
-Yarn Test Analysis
-'''
