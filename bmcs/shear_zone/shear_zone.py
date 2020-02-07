@@ -280,21 +280,21 @@ class ShearZone(tr.HasStrictTraits):
         x_J_1 = np.linspace(self.x_Ia[-1, 1], self.x_Ca[-1, 1], self.n_J)
         return np.c_[self.x_Ia[-1, 0] * np.ones_like(x_J_1), x_J_1]
 
-    x_Ka = tr.Property(depends_on='state_changed, x_Ca, n_J')
+    xx_Ka = tr.Property(depends_on='state_changed, x_Ca, n_J')
     '''Integrated section'''
 
-    def _get_x_Ka(self):
+    def _get_xx_Ka(self):
         return np.concatenate([self.x_Ia, self.x_Ja[1:]], axis=0)
 
     n_m = tr.Int(5)
-    x_Kma = tr.Property(depends_on='state_changed, x_Ca, n_J')
+    x_Ka = tr.Property(depends_on='state_changed, x_Ca, n_J')
 
-    def _get_x_Kma(self):
+    def _get_x_Ka(self):
         eta_m = np.linspace(0, 1, self.n_m)
-        d_La = self.x_Ka[1:] - self.x_Ka[:-1]
+        d_La = self.xx_Ka[1:] - self.xx_Ka[:-1]
         d_Kma = np.einsum('Ka,m->Kma', d_La, eta_m)
-        x_Kma = self.x_Ka[:-1, np.newaxis, :] + d_Kma
-        return np.vstack([x_Kma[:, :-1, :].reshape(-1, 2), self.x_Ka[[-1], :]])
+        x_Kma = self.xx_Ka[:-1, np.newaxis, :] + d_Kma
+        return np.vstack([x_Kma[:, :-1, :].reshape(-1, 2), self.xx_Ka[[-1], :]])
 
     K_Li = tr.Property(depends_on='state_changed')
     '''Crack segments'''
@@ -388,7 +388,7 @@ class ShearZone(tr.HasStrictTraits):
     def _get_phi(self):
         return self.X[0]
 
-    theta = tr.Float(0.0)
+    theta = tr.Property(tr.Float)
     '''Direction of the current crack propagation segment.
     '''
 
@@ -543,8 +543,10 @@ class ShearZone(tr.HasStrictTraits):
     w_tip = tr.Property(tr.Float)
 
     def _get_w_tip(self):
-        n_tip = len(self.x_Ia[-1])
-        return self.u_Lib[n_tip, 1, 0]
+        # number of existing crack segments
+        n_tip = len(self.x_t_Ia) - 1
+        n_m_tip = n_tip * self.n_m
+        return self.u_Lib[n_m_tip, 0, 0]
 
     w_f_t = tr.Property(tr.Float)
 
@@ -660,57 +662,70 @@ class ShearZone(tr.HasStrictTraits):
 
 
 if __name__ == '__main__':
-    mm = MaterialModel(G_f=0.05)
+    mm = MaterialModel(G_f=0.09)
 
-    crack_length = 4
-    n_crack_segs = 6
-
+    '''Development history:
+    
+    1) Test the correctness of the calculation for 
+    given values in 
+    2) Integration over the height
+    '''
     sz = ShearZone(
         B=100, H=200, L=500,
         n_J=10,
+        n_m=8,
         initial_crack_position=250,
         y_f=[5],
         plot_scale=1,
-        v=0.2,
         mm=mm
     )
-
-    print(sz.x_fps_a)
-    print(sz.x_tip_a)
-    print(sz.mm.L_c)
-    print(sz.L_fps)
-    # print(sz.x_Kma)
-    print(sz.x_Ia)
     phi_0 = np.arctan(sz.w_f_t / (sz.H / 2))
-    sz.X = np.array([2 * phi_0, 0, sz.H / 2], dtype=np.float)
-
-    print(sz.u_Lb)
-    if True:
-        print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-        print(sz.X)
-        print(sz.FM_a)
-        print(sz.phi)
-        print(sz.x_rot_a)
-        print('sz.FM_a')
-        print(sz.FM_a)
+    sz.X = np.array([phi_0, 0, sz.H / 2], dtype=np.float)
 
     if False:
+        print('x_fps')
+        print(sz.x_fps_a)
+        print('x_tip')
+        print(sz.x_tip_a)
+        print('x_Ia')
+        print(sz.x_Ia)
+        print('L_c')
+        print(sz.mm.L_c)
+        print('L_fps')
+        print(sz.L_fps)
+        print('X')
+        print(sz.X)
+        print('phi')
+        print(sz.phi)
+        print('FM_a')
+        print(sz.FM_a)
+        print('x_rot_a')
+        print(sz.x_rot_a)
+        print('w_tip_a')
+        print(sz.w_tip)
+        print('w_f_t')
+        print(sz.w_f_t)
+
+    if True:
         def resid(X):
             sz.X = X
+            print('X', X)
             N, Q, M = sz.FM_a
+            print('N,Q,M', N, Q, M)
             W = (sz.w_tip - sz.w_f_t)
-            return np.array([W, N, M - Q * sz.L], dtype=np.float_)
+            R = np.array([W, N, M - Q * sz.L], dtype=np.float_)
+            print('R', R)
+            return R
 
         X0 = np.copy(sz.X)
-        res = root(lambda X: resid(X),
-                   X0, tol=1e-6)
+        res = root(lambda X: resid(X), X0, tol=1e-2)
         print('Success')
         print(res.success)
         sz.X = res.x
         print('X')
         print(sz.X)
         print('X_tip_a')
-        print(sz.X_tip_a)
+        print(sz.x_tip_a)
         print('FM_a')
         print(sz.FM_a)
         print('R')
@@ -749,12 +764,27 @@ if __name__ == '__main__':
         mm.plot_tau_s(ax22, ax22.twinx())
 
         _, y_tip = sz.x_tip_a
+        _, y_rot = sz.x_rot_a
+        _, y_fps = sz.x_fps_a
         u_Lb_min = np.min(sz.u_Lb[:, 0])
         u_Lb_max = np.max(sz.u_Lb[:, 0])
         ax13.plot([u_Lb_min, u_Lb_max], [y_tip, y_tip],
-                  color='black')
+                  color='black', linestyle=':')
+        ax13.plot([u_Lb_min, u_Lb_max], [y_rot, y_rot],
+                  color='black', linestyle='--')
+        ax13.plot([u_Lb_min, u_Lb_max], [y_fps, y_fps],
+                  color='black', linestyle='-.')
         ax13.plot(sz.u_Lb[:, 0], x_La[:, 1], color='red')
         ax13.twiny().plot(sz.u_Lb[:, 1], x_La[:, 1], color='orange')
+
+        S_Lb_min = np.min(sz.S_Lb[:, 0])
+        S_Lb_max = np.max(sz.S_Lb[:, 0])
+        ax23.plot([S_Lb_min, S_Lb_max], [y_tip, y_tip],
+                  color='black', linestyle=':')
+        ax23.plot([S_Lb_min, S_Lb_max], [y_rot, y_rot],
+                  color='black', linestyle='--')
+        ax23.plot([S_Lb_min, S_Lb_max], [y_fps, y_fps],
+                  color='black', linestyle='-.')
         ax23.plot(sz.S_Lb[:, 0], x_La[:, 1], color='red')
         ax23.twiny().plot(sz.S_Lb[:, 1], x_La[:, 1], color='orange')
         ax23.plot(sz.S_La[:, 0], x_La[:, 1], color='green')
