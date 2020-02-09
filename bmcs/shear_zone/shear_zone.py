@@ -252,14 +252,15 @@ class ShearZone(tr.HasStrictTraits):
         return np.array([[self.initial_crack_position, 0]],
                         dtype=np.float_)
 
-    x_Ia = tr.Property(depends_on='state_changed')
+    x_Ia = tr.Property  # (depends_on='state_changed')
 
     def _get_x_Ia(self):
         return np.vstack([self.x_t_Ia, self.x_tip_a[np.newaxis, :]])
 
-    I_Li = tr.Property(depends_on='state_changed')
+    I_Li = tr.Property  # (depends_on='state_changed')
     '''Crack segments'''
-    @tr.cached_property
+#    @tr.cached_property
+
     def _get_I_Li(self):
         N_I = np.arange(len(self.x_Ia))
         I_Li = np.array([N_I[:-1], N_I[1:]], dtype=np.int_).T
@@ -273,21 +274,21 @@ class ShearZone(tr.HasStrictTraits):
     '''Number of nodes along the uncracked zone
     '''
 
-    x_Ja = tr.Property(depends_on='state_changed, x_Ca, n_J')
+    x_Ja = tr.Property  # (depends_on='state_changed, x_Ca, n_J')
     '''Uncracked vertical section'''
 
     def _get_x_Ja(self):
         x_J_1 = np.linspace(self.x_Ia[-1, 1], self.x_Ca[-1, 1], self.n_J)
         return np.c_[self.x_Ia[-1, 0] * np.ones_like(x_J_1), x_J_1]
 
-    xx_Ka = tr.Property(depends_on='state_changed, x_Ca, n_J')
+    xx_Ka = tr.Property  # (depends_on='state_changed, x_Ca, n_J')
     '''Integrated section'''
 
     def _get_xx_Ka(self):
         return np.concatenate([self.x_Ia, self.x_Ja[1:]], axis=0)
 
     n_m = tr.Int(5)
-    x_Ka = tr.Property(depends_on='state_changed, x_Ca, n_J')
+    x_Ka = tr.Property  # (depends_on='state_changed, x_Ca, n_J')
 
     def _get_x_Ka(self):
         eta_m = np.linspace(0, 1, self.n_m)
@@ -296,9 +297,9 @@ class ShearZone(tr.HasStrictTraits):
         x_Kma = self.xx_Ka[:-1, np.newaxis, :] + d_Kma
         return np.vstack([x_Kma[:, :-1, :].reshape(-1, 2), self.xx_Ka[[-1], :]])
 
-    K_Li = tr.Property(depends_on='state_changed')
+    K_Li = tr.Property  # (depends_on='state_changed')
     '''Crack segments'''
-    @tr.cached_property
+
     def _get_K_Li(self):
         N_K = np.arange(len(self.x_Ka))
         K_Li = np.array([N_K[:-1], N_K[1:]], dtype=np.int_).T
@@ -313,20 +314,22 @@ class ShearZone(tr.HasStrictTraits):
     # Transformation relative to the crack path
     #=========================================================================
 
-    norm_n_vec_L = tr.Property(depends_on='state_changed')
+    norm_n_vec_L = tr.Property  # (depends_on='state_changed')
     '''Unit line vector
     '''
-    @tr.cached_property
+#    @tr.cached_property
+
     def _get_norm_n_vec_L(self):
         K_Li = self.K_Li
         x_Lia = self.x_Ka[K_Li]
         n_vec_La = x_Lia[:, 1, :] - x_Lia[:, 0, :]
         return np.sqrt(np.einsum('...a,...a->...', n_vec_La, n_vec_La))
 
-    T_Lab = tr.Property(depends_on='state_changed')
+    T_Lab = tr.Property  # (depends_on='state_changed')
     '''Unit line vector
     '''
-    @tr.cached_property
+#    @tr.cached_property
+
     def _get_T_Lab(self):
         K_Li = self.K_Li
         x_Lia = self.x_Ka[K_Li]
@@ -342,10 +345,11 @@ class ShearZone(tr.HasStrictTraits):
 
     plot_scale = tr.Float(1.0, auto_set=False, enter_set=True)
 
-    x_n_ejaM = tr.Property(depends_on='state_changed')
+    x_n_ejaM = tr.Property  # (depends_on='state_changed')
     '''Unit line vector
     '''
-    @tr.cached_property
+#    @tr.cached_property
+
     def _get_x_n_ejaM(self):
         K_Li = self.K_Li
         T_Lab = self.T_Lab
@@ -362,9 +366,9 @@ class ShearZone(tr.HasStrictTraits):
             [[np.cos(phi), -np.sin(phi)],
              [np.sin(phi), np.cos(phi)]], dtype=np.float_)
 
-    x_rot_a = tr.Property(depends_on='state_changed')
+    x_rot_a = tr.Property  # (depends_on='state_changed')
 
-    @tr.cached_property
+#    @tr.cached_property
     def _get_x_rot_a(self):
         x_rot_0 = self.x_tip_a[0]
         x_rot_1 = self.x_rot_1
@@ -386,6 +390,15 @@ class ShearZone(tr.HasStrictTraits):
     '''
 
     def _get_phi(self):
+        d = self.x_rot_1 - self.x_fps_a[1]
+        return np.arctan(sz.w_f_t / d)
+#        return self.X[0]
+
+    x_rot_1 = tr.Property
+    '''Vertical coordinate of the center of rotation.
+    '''
+
+    def _get_x_rot_1(self):
         return self.X[0]
 
     theta = tr.Property(tr.Float)
@@ -395,19 +408,12 @@ class ShearZone(tr.HasStrictTraits):
     def _get_theta(self):
         return self.X[1]
 
-    x_rot_1 = tr.Float
-    '''Vertical coordinate of the center of rotation.
-    '''
-
-    def _x_rot_1_default(self):
-        return self.X[2]
-
     def get_moved_Ka(self, x_Ka):
         return self.rotate(x_Ka=x_Ka, phi=self.phi)
 
-    x1_Ka = tr.Property(depends_on='v, state_changed')
+    x1_Ka = tr.Property  # (depends_on='v, state_changed')
 
-    @tr.cached_property
+#    @tr.cached_property
     def _get_x1_Ka(self):
         return self.get_moved_Ka(self.x_Ka)
 
@@ -428,9 +434,9 @@ class ShearZone(tr.HasStrictTraits):
     _X = tr.Array(np.float_)
 
     def __X_default(self):
-        return [0.0,
-                0.0,
-                self.H / 2.0]
+        return [  # 0.0,
+            self.H / 2.0,
+            0.0, ]
 
     X = tr.Property()
 
@@ -445,9 +451,9 @@ class ShearZone(tr.HasStrictTraits):
     # Kinematics
     #=========================================================================
 
-    u_Lib = tr.Property(depends_on='v, state_changed')
+    u_Lib = tr.Property  # (depends_on='v, state_changed')
 
-    @tr.cached_property
+#    @tr.cached_property
     def _get_u_Lib(self):
         K_Li = self.K_Li
         u_Ka = self.x1_Ka - self.x_Ka
@@ -458,9 +464,9 @@ class ShearZone(tr.HasStrictTraits):
         )
         return u_Lib
 
-    u_Lb = tr.Property(depends_on='v, state_changed')
+    u_Lb = tr.Property  # (depends_on='v, state_changed')
 
-    @tr.cached_property
+#    @tr.cached_property
     def _get_u_Lb(self):
         K_Li = self.K_Li
         u_Ka = self.x1_Ka - self.x_Ka
@@ -478,18 +484,18 @@ class ShearZone(tr.HasStrictTraits):
         return interp1d(self.x_Lb[:, 1], self.u_Lb[:, 0],
                         fill_value='extrapolate')
 
-    x_u0_a = tr.Property(depends_on='state_changed')
+    x_u0_a = tr.Property  # (depends_on='state_changed')
 
-    @tr.cached_property
+#    @tr.cached_property
     def _get_x_u0_a(self):
         x0 = self.X[0]
         res = root(self.get_u0, x0, tol=1e-8)
         if res.success:
             return res.x
 
-    u_ejaM = tr.Property(depends_on='v, state_changed')
+    u_ejaM = tr.Property  # (depends_on='v, state_changed')
 
-    @tr.cached_property
+#    @tr.cached_property
     def _get_u_ejaM(self):
         return self.get_f_ejaM(self.u_Lb)
 
@@ -655,6 +661,33 @@ class ShearZone(tr.HasStrictTraits):
         ax.plot(*S_eajM.reshape(-1, 2, len(self.K_Li)), color='orange', lw=3)
         return
 
+    def get_R(self):
+        N, Q, M = self.FM_a
+        R = np.array([N,  M - Q * sz.L
+                      ], dtype=np.float_)
+        return R
+
+    X_sol = tr.Property
+    '''Get X vector satisfying the conditions given in the residuum.
+    '''
+
+    def _get_X_sol(self):
+        X0 = np.copy(self.X[:])
+
+        def get_R_X(X):
+            self.X[:] = X[:]
+            return self.get_R()
+        res = root(get_R_X, X0, tol=1e-5)
+        if res.success == False:
+            raise ValueError('no solution found')
+        return res.x
+
+    def solve(self):
+        self.X[:] = self.X_sol
+
+    def propagate(self):
+        self.x_t_Ia = np.vstack([self.x_t_Ia, self.x_tip_a[np.newaxis, :]])
+
     traits_view = ui.View(
         ui.Item('L'),
         ui.Item('H')
@@ -674,15 +707,27 @@ if __name__ == '__main__':
         B=100, H=200, L=500,
         n_J=10,
         n_m=8,
-        initial_crack_position=250,
-        y_f=[5],
+        eta=0.05,
+        initial_crack_position=400,
+        #         x_t_Ia=[[400, 0],
+        #                 [400, 14]],
+        y_f=[],
         plot_scale=1,
         mm=mm
     )
-    phi_0 = np.arctan(sz.w_f_t / (sz.H / 2))
-    sz.X = np.array([phi_0, 0, sz.H / 2], dtype=np.float)
+    x_rot_1 = 92.4
+    #phi_0 = np.arctan(sz.w_f_t / (x_rot_1))
+    sz.X = np.array([x_rot_1, 0], dtype=np.float)
 
-    if False:
+    sz.X[0] = 100
+    print(sz.x_rot_1)
+    print(sz.u_Lb[-1])
+    print(sz.FM_a[0])
+    sz.X[0] = 50
+    print(sz.x_rot_1)
+    print(sz.u_Lb[-1])
+    print(sz.FM_a[0])
+    if True:
         print('x_fps')
         print(sz.x_fps_a)
         print('x_tip')
@@ -705,36 +750,15 @@ if __name__ == '__main__':
         print(sz.w_tip)
         print('w_f_t')
         print(sz.w_f_t)
-
-    if True:
-        def resid(X):
-            sz.X = X
-            print('X', X)
-            N, Q, M = sz.FM_a
-            print('N,Q,M', N, Q, M)
-            W = (sz.w_tip - sz.w_f_t)
-            R = np.array([W, N, M - Q * sz.L], dtype=np.float_)
-            print('R', R)
-            return R
-
-        X0 = np.copy(sz.X)
-        res = root(lambda X: resid(X), X0, tol=1e-2)
-        print('Success')
-        print(res.success)
-        sz.X = res.x
         print('X')
         print(sz.X)
-        print('X_tip_a')
-        print(sz.x_tip_a)
-        print('FM_a')
-        print(sz.FM_a)
-        print('R')
-        print(resid(res.x))
-        print('W_f_t')
-        print(sz.w_f_t)
-        print('w_tip')
-        print(sz.w_tip)
-        print('sigma')
+
+        n_seg = 11
+        for seg in range(n_seg):
+            sz.solve()
+            sz.propagate()
+        sz.solve()
+        print(sz.get_R())
     if False:
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
         sz.plot_x_Ka(ax)
