@@ -144,7 +144,7 @@ class BondCalib(BMCSRootNode):
 
         tl = TLoop(ts=ts, k_max=self.k_max,
                    tolerance=self.tolerance, w_arr=self.w_arr,
-                   pf_arr=self.P_arr, n_reg=self.n_reg)
+                   pf_arr=self.P_arr, n=self.n_reg)
 
         slip, bond = tl.eval()
         return bond, slip
@@ -160,10 +160,13 @@ if __name__ == '__main__':
     w = np.array(w_data, dtype=np.float_)
     P = np.array(f_data, dtype=np.float_)
 
-    bcc = BondCalib(w_arr=w, P_arr=P)
+    bcc = BondCalib(w_arr=w, P_arr=P, n_reg=2)
     bond, slip = bcc.get_bond_slip()
     np.set_printoptions(precision=4)
     print('slip')
     print([np.array(slip)])
     print('bond')
     print([np.array(bond)])
+    import matplotlib.pyplot as plt
+    plt.plot(np.array(slip), np.array(bond))
+    plt.show()

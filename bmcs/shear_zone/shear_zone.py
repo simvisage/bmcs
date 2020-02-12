@@ -15,7 +15,7 @@ import numpy as np
 import sympy as sp
 import traits.api as tr
 import traitsui.api as ui
-
+from .sz_rotation_kinematics import get_phi
 
 EPS = np.zeros((3, 3, 3), dtype='f')
 EPS[(0, 1, 2), (1, 2, 0), (2, 0, 1)] = 1
@@ -77,7 +77,7 @@ d_sig_w = sig_w.diff(w)
 # Bond-slip law
 #=========================================================================
 
-tau_s = 0 * sp.Piecewise(
+tau_s = sp.Piecewise(
     (tau_1 / s_1 * s, s < s_1),
     (tau_1 + (tau_2 - tau_1) / (s_2 - s_1) * (s - s_1), s <= s_2),
     (tau_2 + (tau_3 - tau_2) / (s_3 - s_2) * (s - s_2), s > s_2)
@@ -333,13 +333,14 @@ class ShearZone(tr.HasStrictTraits):
     def _get_T_Lab(self):
         K_Li = self.K_Li
         x_Lia = self.x_Ka[K_Li]
-        n_vec_La = x_Lia[:, 1, :] - x_Lia[:, 0, :]
-        norm_n_vec_L = np.sqrt(np.einsum('...a,...a->...', n_vec_La, n_vec_La))
-        normed_n_vec_La = np.einsum('...a,...->...a',
-                                    n_vec_La, 1. / norm_n_vec_L)
+        line_vec_La = x_Lia[:, 1, :] - x_Lia[:, 0, :]
+        norm_line_vec_L = np.sqrt(np.einsum('...a,...a->...',
+                                            line_vec_La, line_vec_La))
+        normed_line_vec_La = np.einsum('...a,...->...a',
+                                       line_vec_La, 1. / norm_line_vec_L)
         t_vec_La = np.einsum('ijk,...j,k->...i',
-                             EPS[:-1, :-1, :], normed_n_vec_La, Z)
-        T_bLa = np.array([t_vec_La, normed_n_vec_La])
+                             EPS[:-1, :-1, :], normed_line_vec_La, Z)
+        T_bLa = np.array([t_vec_La, normed_line_vec_La])
         T_Lab = np.einsum('bLa->Lab', T_bLa)
         return T_Lab
 
@@ -390,9 +391,14 @@ class ShearZone(tr.HasStrictTraits):
     '''
 
     def _get_phi(self):
-        d = self.x_rot_1 - self.x_fps_a[1]
-        return np.arctan(sz.w_f_t / d)
-#        return self.X[0]
+        x_fps_a = self.x_fps_a
+        w_f_t = self.w_f_t
+        x_rot_a = self.x_rot_a
+        n_tip = len(self.x_t_Ia) - 1
+        n_m_tip = n_tip * self.n_m
+        T_ab = self.T_Lab[n_m_tip, ...]
+        phi = get_phi(T_ab, x_fps_a, x_rot_a, w_f_t)
+        return phi
 
     x_rot_1 = tr.Property
     '''Vertical coordinate of the center of rotation.
@@ -426,17 +432,51 @@ class ShearZone(tr.HasStrictTraits):
     #=========================================================================
     # Control and state variables
     #=========================================================================
-    v = tr.Float(0)
-    '''Control vertical displacement
+    v = tr.Property
+    '''Vertical displacement on the right hand side
     '''
+
+    def _get_v(self):
+        x_rot_0 = self.x_rot_a[0]
+        phi = self.phi
+        L_rot_distance = self.L - x_rot_0
+        v = L_rot_distance * np.sin(phi)
+        return v
+
+    I = tr.Property
+    '''Sectional moment of inertia
+    '''
+
+    def _get_I(self):
+        H_uncracked = self.H  # - self.x_tip_a[1]
+        return self.B * np.power(H_uncracked, 3) / 12.0
+
+    Q = tr.Property
+    '''Shear force'''
+
+    def _get_Q(self):
+        return 200 * 12 * self.mm.E_c * self.I / np.power(self.L, 3) * self.v
+
+    tau_fps = tr.Property
+
+    def _get_tau_fps(self):
+        return self.Q / (self.B * (self.H - self.x_fps_a[1]))
+
+    sig_fps_1 = tr.Property
+
+    def _get_sig_fps_1(self):
+        n_tip = len(self.x_t_Ia) - 1
+        n_m_tip = n_tip * self.n_m
+        S_a = self.S_La[n_m_tip, ...]
+        return S_a
+
     state_changed = tr.Event
 
     _X = tr.Array(np.float_)
 
     def __X_default(self):
-        return [  # 0.0,
-            self.H / 2.0,
-            0.0, ]
+        return [self.H / 2.0,
+                0.0, ]
 
     X = tr.Property()
 
@@ -605,7 +645,7 @@ class ShearZone(tr.HasStrictTraits):
         x_Lia = self.x_Ka[self.K_Li]
         x_La = np.sum(x_Lia, axis=1) / 2
         F_La = self.F_La
-        M_L = x_La[:, 0] * F_La[:, 1]
+        M_L = (x_La[:, 1] - self.x_rot_a[1]) * F_La[:, 0]
         F_a = np.sum(F_La, axis=0)
         F_a[0] += np.sum(self.F_f)
         M = np.sum(M_L, axis=0)
@@ -626,6 +666,21 @@ class ShearZone(tr.HasStrictTraits):
         x, y = self.x_tip_a
         ax.plot(x, y, 'bo', color='red')
 
+    def plot_x_rot_a(self, ax):
+        x, y = self.x_rot_a
+
+        ax.annotate('center of rotation', xy=(x, y), xytext=(x + 50, y + 50),
+                    arrowprops=dict(facecolor='black', shrink=0.01),
+                    )
+
+        ax.plot([0, self.L], [y, y],
+                color='black', linestyle='--')
+        ax.plot(x, y, 'bo', color='blue')
+
+    def plot_x_fps_a(self, ax):
+        x, y = self.x_fps_a
+        ax.plot(x, y, 'bo', color='green')
+
     def plot_sz0(self, ax):
         x_Ka = self.x_Ka
         x_Ca = self.x_Ca
@@ -641,6 +696,10 @@ class ShearZone(tr.HasStrictTraits):
         x_aiC = np.einsum('Cia->aiC', x_Ca[self.C_Li])
         ax.plot(*x_aiC, color='black')
         ax.plot(*x_aK, lw=2, color='blue')
+
+    def plot_reinf(self, ax):
+        for y in self.y_f:
+            ax.plot([0, self.L], [y, y], color='brown', lw=3)
 
     def plot_T_Lab(self, ax):
         K_Li = self.K_Li
@@ -662,8 +721,19 @@ class ShearZone(tr.HasStrictTraits):
         return
 
     def get_R(self):
-        N, Q, M = self.FM_a
-        R = np.array([N,  M - Q * sz.L
+        N, Q_int, M_N = self.FM_a
+        Q = self.Q
+        M_Q = Q * self.x_rot_a[0]
+#        R_M = (M_int + M_rot) / self.L
+#        print('Moment', M_int, M_rot)
+#        print('Resid', R_M)
+#        M_Q = Q_int * self.x_rot_a[0]
+        tan_2theta_p = 2 * self.tau_fps / np.fabs(self.sig_fps_1[0])
+        R_M = (self.theta - np.arctan(tan_2theta_p) / 2) * 1000
+
+#         R_M = M_N + M_Q
+#         R_M = 0
+        R = np.array([N,  R_M
                       ], dtype=np.float_)
         return R
 
@@ -704,29 +774,22 @@ if __name__ == '__main__':
     2) Integration over the height
     '''
     sz = ShearZone(
-        B=100, H=200, L=500,
+        B=100, H=200, L=700,
         n_J=10,
         n_m=8,
         eta=0.05,
-        initial_crack_position=400,
+        initial_crack_position=650,
         #         x_t_Ia=[[400, 0],
         #                 [400, 14]],
-        y_f=[],
+        y_f=[20],
         plot_scale=1,
         mm=mm
     )
     x_rot_1 = 92.4
-    #phi_0 = np.arctan(sz.w_f_t / (x_rot_1))
+    phi_0 = np.arctan(sz.w_f_t / (x_rot_1))
     sz.X = np.array([x_rot_1, 0], dtype=np.float)
 
-    sz.X[0] = 100
-    print(sz.x_rot_1)
-    print(sz.u_Lb[-1])
-    print(sz.FM_a[0])
-    sz.X[0] = 50
-    print(sz.x_rot_1)
-    print(sz.u_Lb[-1])
-    print(sz.FM_a[0])
+#    sz.X[0] = 100
     if True:
         print('x_fps')
         print(sz.x_fps_a)
@@ -752,10 +815,13 @@ if __name__ == '__main__':
         print(sz.w_f_t)
         print('X')
         print(sz.X)
-
-        n_seg = 11
+        print('Q')
+        print(sz.Q)
+        n_seg = 13
         for seg in range(n_seg):
+            print('seg', seg)
             sz.solve()
+            print(sz.get_R())
             sz.propagate()
         sz.solve()
         print(sz.get_R())
@@ -773,6 +839,20 @@ if __name__ == '__main__':
         mm.plot_tau_s(ax12, ax22)
         plt.show()
     if True:
+        fig, ax = plt.subplots(
+            1, 1, figsize=(7, 2), tight_layout=True
+        )
+        ax.axis('equal')
+        # sz.plot_x_Ka(ax)
+        sz.plot_sz0(ax)
+        sz.plot_sz1(ax)
+
+        sz.plot_x_tip_a(ax)
+        sz.plot_x_rot_a(ax)
+        sz.plot_x_fps_a(ax)
+        sz.plot_reinf(ax)
+        plt.show()
+    if False:
         fig, ((ax11, ax12, ax13),
               (ax21, ax22, ax23)) = plt.subplots(
             2, 3, figsize=(20, 18), tight_layout=True
@@ -782,6 +862,7 @@ if __name__ == '__main__':
         sz.plot_x_Ka(ax11)
         sz.plot_sz0(ax11)
         sz.plot_sz1(ax11)
+        ax11.set_xlim(450, 700)
         sz.plot_x_tip_a(ax11)
 
         mm.plot_sig_w(ax12, ax12.twinx())
