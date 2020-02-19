@@ -417,6 +417,12 @@ class ShearZone(tr.HasStrictTraits):
     def get_moved_Ka(self, x_Ka):
         return self.rotate(x_Ka=x_Ka, phi=self.phi)
 
+    x1_Ia = tr.Property  # (depends_on='v, state_changed')
+
+#    @tr.cached_property
+    def _get_x1_Ia(self):
+        return self.get_moved_Ka(self.x_Ia)
+
     x1_Ka = tr.Property  # (depends_on='v, state_changed')
 
 #    @tr.cached_property
@@ -460,30 +466,19 @@ class ShearZone(tr.HasStrictTraits):
     def _get_xQ(self):
         return 12 * self.mm.E_c * self.I / np.power(self.L, 3) * self.v
 
-    eta_L0 = tr.Float(0, desc='start of the zone')
-
-    eta_L1 = tr.Float(1, desc='start of the zone')
-
-    L0 = tr.Property()
-
-    def _get_eta_L0(self):
-        return self.L * self.eta_L0
-
-    L1 = tr.Property()
-
-    def _get_eta_L1(self):
-        return self.L * self.eta_L1
-
     M_x_rot = tr.Property
+    '''Bending moment at the center of rotation. 
+    '''
 
     def _get_M_x_rot(self):
         return self.Q * (self.L - self.x_rot_a[0])
 
     tau_fps = tr.Property
+    '''Shear stress in global xz coordinates in the fracture 
+    process segment. Quadratic profile of shear stress assumed.
+    '''
 
     def _get_tau_fps(self):
-        '''Quadratic profile of shear stress assumed.
-        '''
         z_fps = self.x_fps_a[1]
         Q = self.Q
         H = self.H
@@ -492,6 +487,9 @@ class ShearZone(tr.HasStrictTraits):
         return tau_fps / B
 
     sig_fps_0 = tr.Property
+    '''Normal stress component in global $x$ direction in the fracture .
+    process segment.
+    '''
 
     def _get_sig_fps_0(self):
         n_tip = len(self.x_t_Ia) - 1
@@ -499,22 +497,13 @@ class ShearZone(tr.HasStrictTraits):
         S_a = self.S_La[n_m_tip, ...]
         return S_a[0] / self.B
 
+    input_changed = tr.Event
+    '''Register the input change event to trigger recalculation.
+    '''
+
     state_changed = tr.Event
-
-    _X = tr.Array(np.float_)
-
-    def __X_default(self):
-        return [self.H / 2.0,
-                0.0, ]
-
-    X = tr.Property()
-
-    def _get_X(self):
-        return self._X
-
-    def _set_X(self, value):
-        self.state_changed = True
-        self._X[:] = value
+    '''Register the change of state to update derived interim variables.
+    '''
 
     #=========================================================================
     # Kinematics
@@ -586,8 +575,13 @@ class ShearZone(tr.HasStrictTraits):
     # Material characteristics
     #=========================================================================
     mm = tr.Instance(IMaterialModel)
+    '''Material model containing the bond-slip law 
+    concrete compression and crack softening law 
+    '''
 
     eta = tr.Float(0.2, PARAM=True)
+    '''Fraction of characteristic length to take as a propagation segment
+    '''
 
     L_fps = tr.Property(tr.Float)
     '''Length of the fracture process segment.
@@ -600,30 +594,35 @@ class ShearZone(tr.HasStrictTraits):
     # Fracture process segment
     #=========================================================================
     T_fps_a = tr.Property(tr.Array)
+    '''Orientation matrix of the crack propagation segment 
+    '''
 
     def _get_T_fps_a(self):
         return np.array([-np.sin(self.theta), np.cos(self.theta)],
                         dtype=np.float_)
 
     x_tip_a = tr.Property(tr.Array)
+    '''Unknown position of the crack tip. Depends on the sought 
+    fracture process segment orientation $\theta$ 
+    '''
 
     def _get_x_tip_a(self):
         return self.x_fps_a + self.L_fps * self.T_fps_a
 
     x_fps_a = tr.Property(tr.Array)
+    '''Position of the starting point of the fracture process segment.
+    '''
 
     def _get_x_fps_a(self):
         return self.x_t_Ia[-1, :]
 
-    w_tip = tr.Property(tr.Float)
-
-    def _get_w_tip(self):
-        # number of existing crack segments
-        n_tip = len(self.x_t_Ia) - 1
-        n_m_tip = n_tip * self.n_m
-        return self.u_Lib[n_m_tip, 0, 0]
-
     w_f_t = tr.Property(tr.Float)
+    '''Critical crack opening at the level of tensile concrete strength.
+    
+    @todo: Check consistency, the crack opening is obtained as a 
+    product of the critical strain at strength and the characteristic
+    size of the localization zone.
+    '''
 
     def _get_w_f_t(self):
         return self.mm.f_t / self.mm.E_c * self.mm.L_c
@@ -664,13 +663,20 @@ class ShearZone(tr.HasStrictTraits):
     A_f = tr.Array(np.float_, value=[2 * np.pi * 8**2])
 
     F_f = tr.Property
+    '''Get the discrete force in the reinforcement f
+    @todo: Currently, uniform strain is assumed along the bar over the
+    total length of the shear zone. Include a pullout
+    '''
 
     def _get_F_f(self):
         u_f = self.get_u0(self.z_f)
-#        print(u_f)
         return self.E_f * self.A_f * u_f / self.L
 
     M = tr.Property
+    '''Internal bending moment obtained by integrating the  
+    normal stresses with the lever arm rooted at the height of the neutral 
+    axis.
+    '''
 
     def _get_M(self):
         x_Lia = self.x_Ka[self.K_Li]
@@ -682,20 +688,21 @@ class ShearZone(tr.HasStrictTraits):
             M += (y - self.x_rot_a[1]) * self.F_f
         return -M
 
-    FM_a = tr.Property(depends_on='v, state_changed')
+    F_a = tr.Property(depends_on='v, state_changed')
+    '''Integrated normal and shear force
+    '''
 
-    def _get_FM_a(self):
-        x_Lia = self.x_Ka[self.K_Li]
-        x_La = np.sum(x_Lia, axis=1) / 2
+    def _get_F_a(self):
         F_La = self.F_La
-        M_L = (x_La[:, 1] - self.x_rot_a[1]) * F_La[:, 0]
         F_a = np.sum(F_La, axis=0)
         F_a[0] += np.sum(self.F_f)
-        M = np.sum(M_L, axis=0)
-#        M -= np.sum(self.F_f * self.z_f)
-        return np.hstack([F_a, M])
+        return F_a
 
     theta_bar = tr.Property
+    '''Angle between the vertical direction and the orientation of 
+    the principal stresses setting the orientation of the fracture
+    process segment in the next iteration step.
+    '''
 
     def _get_theta_bar(self):
         tau_fps = self.tau_fps
@@ -704,16 +711,36 @@ class ShearZone(tr.HasStrictTraits):
             sig_x + np.sqrt(4 * tau_fps**2 + sig_x**2))
         return np.arctan(tan_theta)
 
-    def _xget_theta_bar(self):
-        tan_2theta_p = 2 * self.tau_fps / self.sig_fps_0
-        return np.arctan(tan_2theta_p) / 2
+    #=========================================================================
+    # Nonlinear solver
+    #=========================================================================
 
-    def get_theta_bar(self, tau_fps):
-        tan_2theta_p = 2 * tau_fps / self.mm.f_t
-        return np.arctan(tan_2theta_p) / 2
+    _X = tr.Array(np.float_)
+    '''Primary unknown variables subject to the iteration process.
+    - center of rotation
+    - inclination angle of a new crack segment
+    '''
+
+    def __X_default(self):
+        return [self.H / 2.0,
+                0.0, ]
+
+    X = tr.Property()
+
+    def _get_X(self):
+        return self._X
+
+    def _set_X(self, value):
+        self.state_changed = True
+        self._X[:] = value
 
     def get_R(self):
-        N, Q_int, M_N = self.FM_a
+        '''Residuum checking the lack-of-fit 
+        - of the normal force equilibrium in the cross section
+        - of the orientation of the principal stress and of the fracture
+          process segment (FPS) 
+        '''
+        N, _ = self.F_a
         R_M = (self.theta - self.theta_bar) * 100
         R = np.array([N,  R_M], dtype=np.float_)
         return R
@@ -741,16 +768,19 @@ class ShearZone(tr.HasStrictTraits):
         self.x_t_Ia = np.vstack([self.x_t_Ia, self.x_tip_a[np.newaxis, :]])
         self.X[1] = 0
 
-    n_seg = tr.Int(5, auto_set=False, enter_set=True)
-
     record_traits = tr.List(
         ['M', 'Q', 'M_x_rot', 'v', 'phi',
          'tau_fps', 'theta', 'theta_bar',
          'sig_fps_0', 'v', 'phi']
     )
 
-    response = tr.Property
+    response = tr.Property(depends_on='input_changed')
 
+    n_seg = tr.Int(5, auto_set=False, enter_set=True)
+    '''Number of crack propagation steps.
+    '''
+
+    @tr.cached_property
     def _get_response(self):
         n_seg = self.n_seg
         record = {key: [0] for key in self.record_traits}
@@ -778,46 +808,97 @@ class ShearZone(tr.HasStrictTraits):
         x_Ka = self.x_Ka
         x_La = np.sum(x_Ka[self.K_Li], axis=1) / 2
         x_aL = x_La.T
-        ax.plot(*x_aL, 'bo')
+        ax.plot(*x_aL, color='brown', markersize=2)
 
     def plot_x_tip_a(self, ax):
+        '''Show the current crack tip.
+        '''
         x, y = self.x_tip_a
-        ax.plot(x, y, 'bo', color='red')
+        ax.plot(x, y, 'bo', color='red', markersize=10)
 
     def plot_x_rot_a(self, ax):
+        '''Show the current center of rotation.
+        '''
         x, y = self.x_rot_a
 
-        ax.annotate('center of rotation', xy=(x, y), xytext=(x + 50, y + 50),
-                    arrowprops=dict(facecolor='black', shrink=0.01),
+        ax.annotate('center of rotation', xy=(x, y), xytext=(x + 50, y + 20),
+                    arrowprops=dict(facecolor='black', width=1, shrink=0.1),
                     )
 
         ax.plot([0, self.L], [y, y],
                 color='black', linestyle='--')
-        ax.plot(x, y, 'bo', color='blue')
+        ax.plot(x, y, 'bo', color='blue', markersize=10)
 
     def plot_x_fps_a(self, ax):
         x, y = self.x_fps_a
-        ax.plot(x, y, 'bo', color='green')
+        ax.plot(x, y, 'bo', color='green', markersize=10)
+
+    def plot_crack_orientation(self, ax1, ax2):
+        '''Visualize the stress components affecting the 
+        crack orientation in the next step.
+        '''
+        z = self.x_Ia[:-1, 1]
+        R = self.response
+        ax1.set_title(r'Fracture propagation segment')
+        ax1.plot(R['theta'], z, color='orange',
+                 label='theta')
+        ax1.plot(R['theta_bar'], z, color='black',
+                 linestyle='dashed', label='theta_bar')
+        ax1.set_xlabel(r'Orientation $\theta$ [$\pi^{-1}$]')
+        ax1.set_ylabel(r'Vertical position $z$ [mm]')
+        ax1.legend(loc='lower left')
+        ax2.plot(R['tau_fps'], z, color='red', label='tau_fps')
+        ax2.fill_betweenx(z, R['tau_fps'], 0, color='red', alpha=0.1)
+        ax2.plot(R['sig_fps_0'], z, color='black', label='sig_x')
+        ax2.fill_betweenx(z, R['sig_fps_0'], 0, color='black', alpha=0.1)
+        ax2.set_xlabel(r'$\sigma_x$ and $\tau_{xz}$ [MPa]')
+        ax2.legend(loc='upper left')
 
     def plot_sz0(self, ax):
-        x_Ka = self.x_Ka
+        x_Ia = self.x_Ia
         x_Ca = self.x_Ca
-        x_aK = x_Ka.T
-        x_aiC = np.einsum('Cia->aiC', x_Ca[self.C_Li])
-        ax.plot(*x_aiC, color='black')
-        ax.plot(*x_aK, lw=2, color='blue')
+        x_aI = x_Ia.T
+        x_LL = x_Ca[0]
+        x_LU = x_Ca[3]
+        x_RL = self.x_Ka[0]
+        x_RU = self.x_Ka[-1]
+        x_Da = np.array([x_LL, x_RL, x_RU, x_LU])
+        D_Li = np.array([[0, 1], [2, 3], [3, 0]], dtype=np.int_)
+        x_aiD = np.einsum('Dia->aiD', x_Da[D_Li])
+        ax.plot(*x_aiD, color='black')
+        ax.plot(*x_aI, lw=2, color='black')
 
     def plot_sz1(self, ax):
-        x_Ka = self.x1_Ka
+        x_Ia = self.x1_Ia
         x_Ca = self.x1_Ca
-        x_aK = x_Ka.T
-        x_aiC = np.einsum('Cia->aiC', x_Ca[self.C_Li])
-        ax.plot(*x_aiC, color='black')
-        ax.plot(*x_aK, lw=2, color='blue')
+        x_aI = x_Ia.T
+        x_LL = self.x1_Ka[0]
+        x_LU = self.x1_Ka[-1]
+        x_RL = x_Ca[1]
+        x_RU = x_Ca[2]
+        x_Da = np.array([x_LL, x_RL, x_RU, x_LU])
+        D_Li = np.array([[0, 1], [1, 2], [2, 3], ], dtype=np.int_)
+        x_aiD = np.einsum('Dia->aiD', x_Da[D_Li])
+        ax.plot(*x_aiD, color='black')
+        ax.set_title(r'Simulated crack path')
+        ax.set_xlabel(r'Horizontal position $x$ [mm]')
+        ax.set_ylabel(r'Vertical position $z$ [mm]')
+        ax.plot(*x_aI, lw=2, color='black')
+
+    def plot_sz_fill(self, ax):
+        x_Ca = self.x1_Ca
+        x_Da = np.vstack([
+            x_Ca[:1],
+            self.x_Ia,
+            self.x1_Ia[::-1],
+            x_Ca[1:, :],
+        ])
+        ax.fill(*x_Da.T, color='gray', alpha=0.2)
 
     def plot_reinf(self, ax):
-        for y in self.z_f:
-            ax.plot([0, self.L], [y, y], color='brown', lw=3)
+        for z in self.z_f:
+            # left part
+            ax.plot([0, self.L], [z, z], color='maroon', lw=5)
 
     def plot_T_Lab(self, ax):
         K_Li = self.K_Li
@@ -937,8 +1018,8 @@ if __name__ == '__main__':
         print(sz.X)
         print('phi')
         print(sz.phi)
-        print('FM_a')
-        print(sz.FM_a)
+        print('F_a')
+        print(sz.F_a)
         print('x_rot_a')
         print(sz.x_rot_a)
         print('w_tip_a')
@@ -952,10 +1033,8 @@ if __name__ == '__main__':
         R = sz.response
     if False:
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-        sz.plot_x_Ka(ax)
         sz.plot_sz0(ax)
         sz.plot_sz1(ax)
-#        sz.plot_S_Lb(ax)
         plt.show()
     if False:
         fig, ((ax11, ax12), (ax21, ax22)) = plt.subplots(
@@ -968,9 +1047,8 @@ if __name__ == '__main__':
             1, 1, figsize=(7, 2), tight_layout=True
         )
         ax.axis('equal')
-        # sz.plot_x_Ka(ax)
-        sz.plot_sz0(ax)
         sz.plot_sz1(ax)
+        sz.plot_sz0(ax)
 
         sz.plot_x_tip_a(ax)
         sz.plot_x_rot_a(ax)
@@ -985,9 +1063,9 @@ if __name__ == '__main__':
         ax11.axis('equal')
         x_La = np.sum(sz.x_Ka[sz.K_Li], axis=1) / 2
 
-        sz.plot_x_Ka(ax11)
-        sz.plot_sz0(ax11)
         sz.plot_sz1(ax11)
+        sz.plot_sz0(ax11)
+        sz.plot_sz_fill(ax11)
         sz.plot_x_tip_a(ax11)
         sz.plot_x_rot_a(ax11)
         sz.plot_x_fps_a(ax11)
@@ -995,21 +1073,12 @@ if __name__ == '__main__':
         ax11.set_xlim(sz.x_rot_a[0] - 50,
                       sz.initial_crack_position + 40)
 
-        z = sz.x_Ia[:-1, 1]
-        ax21.plot(z, R['theta'], color='green', lw=3, label='theta')
-        ax21.plot(z, R['theta_bar'], color='blue', label='theta_bar')
-        ax21.legend()
-        ax21b = ax21.twinx()
-        ax21b.plot(z, R['tau_fps'], color='red', label='tau_fps')
-        ax21b.plot(z, R['sig_fps_0'], color='black', label='sig_x')
-        ax21b.legend()
+        ax21b = ax21.twiny()
+        sz.plot_crack_orientation(ax21, ax21b)
 
         ax12.plot(R['v'], R['Q'], color='black')
-        ax12.set_ylabel('Force [kN]')
-        ax12.set_xlabel('Displacement [mm]')
-#         ax12b = ax12.twinx()
-#         ax12b.plot(R['phi'], R['M'], color='green')
-#         ax12b.set_ylabel('Moment [kNm]')
+        ax12.set_ylabel(r'Shear force $Q$ [kN]')
+        ax12.set_xlabel(r'Displacement $v$ [mm]')
 
         mm.plot_sig_w(ax22, ax22.twinx())
         mm.plot_tau_s(ax22, ax22.twinx())
