@@ -88,7 +88,7 @@ d_tau_s = tau_s.diff(s)
 @tr.provides(IMaterialModel)
 class MaterialModel(tr.HasStrictTraits):
 
-    f_c = tr.Float(-30.0, PARAM=True)
+    f_c = tr.Float(-80.0, PARAM=True)
     E_c = tr.Float(28000, PARAM=True)
 
     f_t = tr.Float(3.0, PARAM=True)
@@ -143,11 +143,11 @@ class MaterialModel(tr.HasStrictTraits):
     #=========================================================================
     #
     #=========================================================================
-    tau_1 = tr.Float(2.0, PARAM=True)
+    tau_1 = tr.Float(1.0, PARAM=True)
     s_1 = tr.Float(0.000001, PARAM=True)
     tau_2 = tr.Float(1.0, PARAM=True)
-    s_2 = tr.Float(0.4, PARAM=True)
-    tau_3 = tr.Float(0.8, PARAM=True)
+    s_2 = tr.Float(0.02, PARAM=True)
+    tau_3 = tr.Float(0.0, PARAM=True)
     s_3 = tr.Float(1.6, PARAM=True)
 
     bond_law_data = tr.Property(depends_on='+PARAM')
@@ -189,7 +189,7 @@ class MaterialModel(tr.HasStrictTraits):
         ax1.plot(eps_data, self.get_sig_eps(eps_data), color='black')
         ax1.set_xlabel(r'$\varepsilon\;\;\mathrm{[-]}$')
         ax1.set_ylabel(r'$\sigma\;\;\mathrm{[MPa]}$')
-        ax1.set_title('concrete law')
+        ax1.set_title('Concrete law')
         ax2.plot(eps_data, self.get_d_sig_eps(eps_data), color='black')
         ax2.set_xlabel(r'$s\;\;\mathrm{[mm]}$')
         ax2.set_ylabel(r'$\mathrm{d}\sigma/\mathrm{d}w\;\;\mathrm{[MPa/mm]}$')
@@ -215,12 +215,12 @@ class MaterialModel(tr.HasStrictTraits):
         s_max = float(s_3.subs(self.bond_law_data))
         s_data = np.linspace(-s_max, s_max, 100)
         ax2.plot(s_data, self.get_d_tau_s(s_data), color='orange')
-        ax2.set_xlabel(r'$s\;\;\mathrm{[mm]}$')
-        ax2.set_ylabel(r'$\mathrm{d}\tau/\mathrm{d}s\;\;\mathrm{[MPa/mm]}$')
-        ax1.plot(s_data, self.get_tau_s(s_data), lw=2, color='black')
-        ax1.set_xlabel(r'$s\;\;\mathrm{[mm]}$')
-        ax1.set_ylabel(r'$\tau\;\;\mathrm{[MPa]}$')
-        ax1.set_title('bond-slip law')
+#         ax2.set_xlabel(r'$s\;\;\mathrm{[mm]}$')
+#         ax2.set_ylabel(r'$\mathrm{d}\tau/\mathrm{d}s\;\;\mathrm{[MPa/mm]}$')
+        ax1.plot(s_data, self.get_tau_s(s_data), lw=2, color='green')
+#         ax1.set_xlabel(r'$s\;\;\mathrm{[mm]}$')
+#         ax1.set_ylabel(r'$\tau\;\;\mathrm{[MPa]}$')
+#         ax1.set_title('Bond-slip law')
 
 
 class ShearZone(tr.HasStrictTraits):
@@ -455,20 +455,49 @@ class ShearZone(tr.HasStrictTraits):
     '''Shear force'''
 
     def _get_Q(self):
-        return 200 * 12 * self.mm.E_c * self.I / np.power(self.L, 3) * self.v
+        return self.M / (self.L - self.x_rot_a[0])
+
+    def _get_xQ(self):
+        return 12 * self.mm.E_c * self.I / np.power(self.L, 3) * self.v
+
+    eta_L0 = tr.Float(0, desc='start of the zone')
+
+    eta_L1 = tr.Float(1, desc='start of the zone')
+
+    L0 = tr.Property()
+
+    def _get_eta_L0(self):
+        return self.L * self.eta_L0
+
+    L1 = tr.Property()
+
+    def _get_eta_L1(self):
+        return self.L * self.eta_L1
+
+    M_x_rot = tr.Property
+
+    def _get_M_x_rot(self):
+        return self.Q * (self.L - self.x_rot_a[0])
 
     tau_fps = tr.Property
 
     def _get_tau_fps(self):
-        return self.Q / (self.B * (self.H - self.x_fps_a[1]))
+        '''Quadratic profile of shear stress assumed.
+        '''
+        z_fps = self.x_fps_a[1]
+        Q = self.Q
+        H = self.H
+        B = self.B
+        tau_fps = (6 * Q * z_fps / (H**2 + H * z_fps - 2 * z_fps**2))
+        return tau_fps / B
 
-    sig_fps_1 = tr.Property
+    sig_fps_0 = tr.Property
 
-    def _get_sig_fps_1(self):
+    def _get_sig_fps_0(self):
         n_tip = len(self.x_t_Ia) - 1
         n_m_tip = n_tip * self.n_m
         S_a = self.S_La[n_m_tip, ...]
-        return S_a
+        return S_a[0] / self.B
 
     state_changed = tr.Event
 
@@ -610,8 +639,9 @@ class ShearZone(tr.HasStrictTraits):
     def _get_S_Lb(self):
         u_a = self.u_Lb
         Sig_w = mm.get_sig_w(u_a[..., 0]) * self.B
-        Tau_w = mm.get_tau_s(np.fabs(u_a[..., 1])) * self.B
-        return np.einsum('b...->...b', np.array([Sig_w, Tau_w], dtype=np.float_))
+        Tau_w = mm.get_tau_s(u_a[..., 1]) * self.B
+#        Tau_w = mm.get_tau_s(np.fabs(u_a[..., 1])) * self.B
+        return np.einsum('b...->...b', np.array([Sig_w, -Tau_w], dtype=np.float_))
 
     S_La = tr.Property
     '''Transposed stresses'''
@@ -629,15 +659,28 @@ class ShearZone(tr.HasStrictTraits):
         F_La = np.einsum('La,L->La', S_La, self.norm_n_vec_L)
         return F_La
 
-    y_f = tr.Array(np.float_, value=[1])
+    z_f = tr.Array(np.float_, value=[1])
     E_f = tr.Array(np.float_, value=[210000])
     A_f = tr.Array(np.float_, value=[2 * np.pi * 8**2])
 
     F_f = tr.Property
 
     def _get_F_f(self):
-        u_f = self.get_u0(self.y_f)
+        u_f = self.get_u0(self.z_f)
+#        print(u_f)
         return self.E_f * self.A_f * u_f / self.L
+
+    M = tr.Property
+
+    def _get_M(self):
+        x_Lia = self.x_Ka[self.K_Li]
+        x_La = np.sum(x_Lia, axis=1) / 2
+        F_La = self.F_La
+        M_L = (x_La[:, 1] - self.x_rot_a[1]) * F_La[:, 0]
+        M = np.sum(M_L, axis=0)
+        for y in self.z_f:
+            M += (y - self.x_rot_a[1]) * self.F_f
+        return -M
 
     FM_a = tr.Property(depends_on='v, state_changed')
 
@@ -649,8 +692,83 @@ class ShearZone(tr.HasStrictTraits):
         F_a = np.sum(F_La, axis=0)
         F_a[0] += np.sum(self.F_f)
         M = np.sum(M_L, axis=0)
-#        M -= np.sum(self.F_f * self.y_f)
+#        M -= np.sum(self.F_f * self.z_f)
         return np.hstack([F_a, M])
+
+    theta_bar = tr.Property
+
+    def _get_theta_bar(self):
+        tau_fps = self.tau_fps
+        sig_x = self.sig_fps_0
+        tan_theta = 2 * tau_fps / (
+            sig_x + np.sqrt(4 * tau_fps**2 + sig_x**2))
+        return np.arctan(tan_theta)
+
+    def _xget_theta_bar(self):
+        tan_2theta_p = 2 * self.tau_fps / self.sig_fps_0
+        return np.arctan(tan_2theta_p) / 2
+
+    def get_theta_bar(self, tau_fps):
+        tan_2theta_p = 2 * tau_fps / self.mm.f_t
+        return np.arctan(tan_2theta_p) / 2
+
+    def get_R(self):
+        N, Q_int, M_N = self.FM_a
+        R_M = (self.theta - self.theta_bar) * 100
+        R = np.array([N,  R_M], dtype=np.float_)
+        return R
+
+    X_sol = tr.Property
+    '''Get X vector satisfying the conditions given in the residuum.
+    '''
+
+    def _get_X_sol(self):
+        X0 = np.copy(self.X[:])
+
+        def get_R_X(X):
+            self.X[:] = X[:]
+            return self.get_R()
+        res = root(get_R_X, X0, tol=1e-5)
+        if res.success == False:
+            raise ValueError('no solution found')
+        return res.x
+
+    def solve(self):
+        self.X[:] = self.X_sol
+        print(self.get_R())
+
+    def next_crack_segment(self):
+        self.x_t_Ia = np.vstack([self.x_t_Ia, self.x_tip_a[np.newaxis, :]])
+        self.X[1] = 0
+
+    n_seg = tr.Int(5, auto_set=False, enter_set=True)
+
+    record_traits = tr.List(
+        ['M', 'Q', 'M_x_rot', 'v', 'phi',
+         'tau_fps', 'theta', 'theta_bar',
+         'sig_fps_0', 'v', 'phi']
+    )
+
+    response = tr.Property
+
+    def _get_response(self):
+        n_seg = self.n_seg
+        record = {key: [0] for key in self.record_traits}
+        for seg in range(n_seg):
+            print('seg', seg)
+            try:
+                self.solve()
+            except ValueError:
+                print('No convergence')
+                self.X[1] = 0
+                break
+            record_vals = self.trait_get(*self.record_traits)
+            for key, val in record.items():
+                val.append(record_vals[key])
+            self.next_crack_segment()
+        rarr = {key: np.array(vals, dtype=np.float_)
+                for key, vals in record.items()}
+        return rarr
 
     #=========================================================================
     # Plotting methods
@@ -698,7 +816,7 @@ class ShearZone(tr.HasStrictTraits):
         ax.plot(*x_aK, lw=2, color='blue')
 
     def plot_reinf(self, ax):
-        for y in self.y_f:
+        for y in self.z_f:
             ax.plot([0, self.L], [y, y], color='brown', lw=3)
 
     def plot_T_Lab(self, ax):
@@ -712,7 +830,7 @@ class ShearZone(tr.HasStrictTraits):
         u_eajM = np.einsum('ejaM->eajM', u_ejaM)
         ax.plot(*u_eajM.reshape(-1, 2, len(self.K_Li)), color='orange', lw=3)
 
-    def plot_S_Lb(self, ax):
+    def x_plot_S_Lb(self, ax):
         S_max = np.max(self.S_Lb)
         G_min = np.min([self.L, self.H]) * 0.2
         S_ejaM = self.get_f_ejaM(self.S_Lb, scale=G_min / S_max)
@@ -720,43 +838,62 @@ class ShearZone(tr.HasStrictTraits):
         ax.plot(*S_eajM.reshape(-1, 2, len(self.K_Li)), color='orange', lw=3)
         return
 
-    def get_R(self):
-        N, Q_int, M_N = self.FM_a
-        Q = self.Q
-        M_Q = Q * self.x_rot_a[0]
-#        R_M = (M_int + M_rot) / self.L
-#        print('Moment', M_int, M_rot)
-#        print('Resid', R_M)
-#        M_Q = Q_int * self.x_rot_a[0]
-        tan_2theta_p = 2 * self.tau_fps / np.fabs(self.sig_fps_1[0])
-        R_M = (self.theta - np.arctan(tan_2theta_p) / 2) * 1000
+    def plot_hlines(self, ax, h_min, h_max):
+        _, y_tip = self.x_tip_a
+        _, y_rot = self.x_rot_a
+        _, z_fps = self.x_fps_a
+        ax.plot([h_min, h_max], [y_tip, y_tip],
+                color='black', linestyle=':')
+        ax.plot([h_min, h_max], [y_rot, y_rot],
+                color='black', linestyle='--')
+        ax.plot([h_min, h_max], [z_fps, z_fps],
+                color='black', linestyle='-.')
 
-#         R_M = M_N + M_Q
-#         R_M = 0
-        R = np.array([N,  R_M
-                      ], dtype=np.float_)
-        return R
+    def plot_u_Lc(self, ax, u_Lc, idx=0, color='red', label='w'):
+        x_La = self.x_Lb
+        u_Lb_min = np.min(u_Lc[:, idx])
+        u_Lb_max = np.max(u_Lc[:, idx])
+        self.plot_hlines(ax, u_Lb_min, u_Lb_max)
+        ax.plot(u_Lc[:, idx], x_La[:, 1], color=color, label=label)
+        ax.fill_betweenx(x_La[:, 1], u_Lc[:, idx], 0, color=color, alpha=0.1)
+        ax.legend()
 
-    X_sol = tr.Property
-    '''Get X vector satisfying the conditions given in the residuum.
-    '''
+    def plot_S_Lc(self, ax, S_Lc, idx=0,
+                  title='Normal stress profile',
+                  label=r'$\sigma_{xx}$',
+                  color='green',
+                  ylabel=r'Vertical position [mm]',
+                  xlabel=r'Stress [MPa]'):
+        x_La = self.x_Lb
+        S_La_min = np.min(S_Lc[:, idx])
+        S_La_max = np.max(S_Lc[:, idx])
+        self.plot_hlines(ax, S_La_min, S_La_max)
+        ax.set_title(title)
+        ax.plot(S_Lc[:, idx], x_La[:, 1],
+                color=color, label=label)
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+        ax.fill_betweenx(x_La[:, 1], S_Lc[:, idx], 0,
+                         color=color, alpha=0.2)
+        ax.legend()
 
-    def _get_X_sol(self):
-        X0 = np.copy(self.X[:])
+    def _align_xaxis(self, ax1, ax2):
+        """Align zeros of the two axes, zooming them out by same ratio"""
+        axes = (ax1, ax2)
+        extrema = [ax.get_xlim() for ax in axes]
+        tops = [extr[1] / (extr[1] - extr[0]) for extr in extrema]
+        # Ensure that plots (intervals) are ordered bottom to top:
+        if tops[0] > tops[1]:
+            axes, extrema, tops = [list(reversed(l))
+                                   for l in (axes, extrema, tops)]
 
-        def get_R_X(X):
-            self.X[:] = X[:]
-            return self.get_R()
-        res = root(get_R_X, X0, tol=1e-5)
-        if res.success == False:
-            raise ValueError('no solution found')
-        return res.x
+        # How much would the plot overflow if we kept current zoom levels?
+        tot_span = tops[1] + 1 - tops[0]
 
-    def solve(self):
-        self.X[:] = self.X_sol
-
-    def propagate(self):
-        self.x_t_Ia = np.vstack([self.x_t_Ia, self.x_tip_a[np.newaxis, :]])
+        b_new_t = extrema[0][0] + tot_span * (extrema[0][1] - extrema[0][0])
+        t_new_b = extrema[1][1] - tot_span * (extrema[1][1] - extrema[1][0])
+        axes[0].set_xlim(extrema[0][0], b_new_t)
+        axes[1].set_xlim(t_new_b, extrema[1][1])
 
     traits_view = ui.View(
         ui.Item('L'),
@@ -765,7 +902,7 @@ class ShearZone(tr.HasStrictTraits):
 
 
 if __name__ == '__main__':
-    mm = MaterialModel(G_f=0.09)
+    mm = MaterialModel(G_f=0.09, f_c=-30)
 
     '''Development history:
     
@@ -774,22 +911,17 @@ if __name__ == '__main__':
     2) Integration over the height
     '''
     sz = ShearZone(
-        B=100, H=200, L=700,
+        B=100, H=200, L=800,
         n_J=10,
         n_m=8,
-        eta=0.05,
-        initial_crack_position=650,
-        #         x_t_Ia=[[400, 0],
-        #                 [400, 14]],
-        y_f=[20],
+        n_seg=31,
+        eta=0.02,
+        initial_crack_position=250,
+        z_f=[20],  # 10],
+        A_f=[2 * np.pi * 8**2],
         plot_scale=1,
         mm=mm
     )
-    x_rot_1 = 92.4
-    phi_0 = np.arctan(sz.w_f_t / (x_rot_1))
-    sz.X = np.array([x_rot_1, 0], dtype=np.float)
-
-#    sz.X[0] = 100
     if True:
         print('x_fps')
         print(sz.x_fps_a)
@@ -817,14 +949,7 @@ if __name__ == '__main__':
         print(sz.X)
         print('Q')
         print(sz.Q)
-        n_seg = 13
-        for seg in range(n_seg):
-            print('seg', seg)
-            sz.solve()
-            print(sz.get_R())
-            sz.propagate()
-        sz.solve()
-        print(sz.get_R())
+        R = sz.response
     if False:
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
         sz.plot_x_Ka(ax)
@@ -838,7 +963,7 @@ if __name__ == '__main__':
         mm.plot_sig_w(ax11, ax21)
         mm.plot_tau_s(ax12, ax22)
         plt.show()
-    if True:
+    if False:
         fig, ax = plt.subplots(
             1, 1, figsize=(7, 2), tight_layout=True
         )
@@ -852,48 +977,61 @@ if __name__ == '__main__':
         sz.plot_x_fps_a(ax)
         sz.plot_reinf(ax)
         plt.show()
-    if False:
-        fig, ((ax11, ax12, ax13),
-              (ax21, ax22, ax23)) = plt.subplots(
-            2, 3, figsize=(20, 18), tight_layout=True
+    if True:
+        fig, ((ax11, ax12, ax13, ax14),
+              (ax21, ax22, ax23, ax24)) = plt.subplots(
+            2, 4, figsize=(20, 18), tight_layout=True
         )
+        ax11.axis('equal')
         x_La = np.sum(sz.x_Ka[sz.K_Li], axis=1) / 2
 
         sz.plot_x_Ka(ax11)
         sz.plot_sz0(ax11)
         sz.plot_sz1(ax11)
-        ax11.set_xlim(450, 700)
         sz.plot_x_tip_a(ax11)
+        sz.plot_x_rot_a(ax11)
+        sz.plot_x_fps_a(ax11)
+        sz.plot_reinf(ax11)
+        ax11.set_xlim(sz.x_rot_a[0] - 50,
+                      sz.initial_crack_position + 40)
 
-        mm.plot_sig_w(ax12, ax12.twinx())
+        z = sz.x_Ia[:-1, 1]
+        ax21.plot(z, R['theta'], color='green', lw=3, label='theta')
+        ax21.plot(z, R['theta_bar'], color='blue', label='theta_bar')
+        ax21.legend()
+        ax21b = ax21.twinx()
+        ax21b.plot(z, R['tau_fps'], color='red', label='tau_fps')
+        ax21b.plot(z, R['sig_fps_0'], color='black', label='sig_x')
+        ax21b.legend()
+
+        ax12.plot(R['v'], R['Q'], color='black')
+        ax12.set_ylabel('Force [kN]')
+        ax12.set_xlabel('Displacement [mm]')
+#         ax12b = ax12.twinx()
+#         ax12b.plot(R['phi'], R['M'], color='green')
+#         ax12b.set_ylabel('Moment [kNm]')
+
+        mm.plot_sig_w(ax22, ax22.twinx())
         mm.plot_tau_s(ax22, ax22.twinx())
 
-        _, y_tip = sz.x_tip_a
-        _, y_rot = sz.x_rot_a
-        _, y_fps = sz.x_fps_a
-        u_Lb_min = np.min(sz.u_Lb[:, 0])
-        u_Lb_max = np.max(sz.u_Lb[:, 0])
-        ax13.plot([u_Lb_min, u_Lb_max], [y_tip, y_tip],
-                  color='black', linestyle=':')
-        ax13.plot([u_Lb_min, u_Lb_max], [y_rot, y_rot],
-                  color='black', linestyle='--')
-        ax13.plot([u_Lb_min, u_Lb_max], [y_fps, y_fps],
-                  color='black', linestyle='-.')
-        ax13.plot(sz.u_Lb[:, 0], x_La[:, 1], color='red')
-        ax13.twiny().plot(sz.u_Lb[:, 1], x_La[:, 1], color='orange')
+        ax13a = ax13.twiny()
+        sz.plot_u_Lc(ax13a, sz.u_Lb, 1)
+        sz.plot_S_Lc(ax13, sz.S_Lb, 1)
+        sz._align_xaxis(ax13, ax13a)
 
-        S_Lb_min = np.min(sz.S_Lb[:, 0])
-        S_Lb_max = np.max(sz.S_Lb[:, 0])
-        ax23.plot([S_Lb_min, S_Lb_max], [y_tip, y_tip],
-                  color='black', linestyle=':')
-        ax23.plot([S_Lb_min, S_Lb_max], [y_rot, y_rot],
-                  color='black', linestyle='--')
-        ax23.plot([S_Lb_min, S_Lb_max], [y_fps, y_fps],
-                  color='black', linestyle='-.')
-        ax23.plot(sz.S_Lb[:, 0], x_La[:, 1], color='red')
-        ax23.twiny().plot(sz.S_Lb[:, 1], x_La[:, 1], color='orange')
-        ax23.plot(sz.S_La[:, 0], x_La[:, 1], color='green')
-        ax23.twiny().plot(sz.S_La[:, 1], x_La[:, 1], color='blue')
-#         ax2.plot(x_La[1], sz.F_La[0])
-#         ax2.plot(x_La[1], sz.F_La[1])
+        ax23a = ax23.twiny()
+        sz.plot_u_Lc(ax23a, sz.u_Lb, 0)
+        sz.plot_S_Lc(ax23, sz.S_Lb, 0)
+        sz._align_xaxis(ax23, ax23a)
+
+        ax14a = ax14.twiny()
+        sz.plot_u_Lc(ax14a, sz.u_Lb, 1)
+        sz.plot_S_Lc(ax14, sz.S_La, 1)
+        sz._align_xaxis(ax14, ax14a)
+
+        ax24a = ax24.twiny()
+        sz.plot_u_Lc(ax24a, sz.u_Lb, 0)
+        sz.plot_S_Lc(ax24, sz.S_La, 0)
+        sz._align_xaxis(ax24, ax24a)
+
         plt.show()
