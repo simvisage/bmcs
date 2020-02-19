@@ -12,12 +12,12 @@ from ibvpy.mats.viz3d_tensor_field import \
 from mayavi import mlab
 from simulator.demo.mlab_decorators import decorate_figure
 
-import numpy as np
-from pulloutaxisymdemomodel import \
+from apps.sandbox.fahad.pulloutaxisymdemomodel import \
 PullOutAxiSym, Geometry, CrossSection
+import numpy as np
 import pylab as p
 
-dir = os.path.expanduser('~')
+# dir = os.path.expanduser('~')
 
 
 def verify_normalized_pullout_force():
@@ -56,11 +56,11 @@ def verify_normalized_pullout_force():
                           tau_bar=4.2,  # 4.0,
                           K=11, gamma=55,  # 10,
                           c=2.8, S=0.00048, r=0.51,
-                          m=0.4,  # 0.175,
+                          m=0.0,  # 0.175,
                           #                           algorithmic=False)
                           )
 
-        s.u_max = 0.5
+        s.u_max = 1
         s.tline.step = dt
         s.tloop.verbose = True
         s.run()
@@ -125,8 +125,8 @@ def verify_normalized_pullout_force():
 
 
 if __name__ == '__main__':
-    #     abc = open('sigNnew1.txt', 'w')
-    #     abc.close()
+    abc = open('sigNm07lp-20000(newdellam).txt', 'w')
+    abc.close()
     w = verify_normalized_pullout_force()
     # w.configure_traits()
     p.show()

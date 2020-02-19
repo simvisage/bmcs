@@ -40,7 +40,7 @@ from view.ui import BMCSLeafNode
 from view.ui.bmcs_tree_node import itags_str
 from view.window import BMCSWindow
 
-from apps.sandbox.fahad.vmats1d5_dp_newtest import \
+from apps.sandbox.fahad.vmats1d5_dp_new import \
     MATS1D5DPCumPressnew
 import numpy as np
 import pylab as p

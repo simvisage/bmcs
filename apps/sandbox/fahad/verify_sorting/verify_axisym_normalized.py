@@ -3,7 +3,7 @@ Created on 01.10.2019
 
 @author: fseemab
 '''
-from apps.verify.bond_cum_damage.pullout_axisymmetric_model.pullout_axisym_model import PullOutAxiSym, Geometry, CrossSection
+from apps.sandbox.fahad.verify_sorting.pulloutaxisymdemomodel import PullOutAxiSym, Geometry, CrossSection
 import matplotlib.pyplot as plt
 import numpy as np
 import pylab as p
@@ -47,8 +47,8 @@ def verify_normalized_pullout_force():
                           m=0.175,
                           algorithmic=False)
 
-        s.u_max = 0.005
-        s.tline.step = 0.01
+        s.u_max = 1
+        s.tline.step = 0.1
         s.tloop.verbose = True
         s.run()
 
