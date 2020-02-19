@@ -1,5 +1,5 @@
 '''
-Created on 20 Nov 2019
+Created on 7 Jan 2020
 
 @author: fseemab
 '''
@@ -42,7 +42,6 @@ from view.window import BMCSWindow
 
 from apps.sandbox.fahad.vmats1d5_dp_new import \
     MATS1D5DPCumPressnew
-from apps.sandbox.fahad.new2dmatmodel import MATS1D5DP2D
 import numpy as np
 import pylab as p
 import traits.api as tr
@@ -132,7 +131,7 @@ class PullOutAxiSym(Simulator):
     u_max = tr.Float(BC=True, auto_set=False, enter_set=True)
     '''Radius of the pullout test
     '''
-    
+
     cross_section = tr.Instance(
         CrossSection,
         report=True,
@@ -224,22 +223,19 @@ class PullOutAxiSym(Simulator):
             integ_factor=self.cross_section.P_b
         )
 
-    m_ifc = tr.Instance(MATS1D5DP2D)
+    m_ifc = tr.Instance(MATS1D5DPCumPressnew)
 
     def _m_ifc_default(self):
-        return MATS1D5DP2D(
-            sigma_o=10.0,
-            E_N=50000,
-            E_T=20000,
-            sig_t=5.0,
-            S_N=0.00000001,
-            S_T=0.0000005,
-            c_N=1.2,
-            c_T=2.2,
-            K=0,
-            gamma=0,
-            m=0.2,
-            b=0.2,
+        return MATS1D5DPCumPressnew(
+            E_T=10000,
+            E_N=1000000,
+            gamma=55.0,
+            K=11.0,
+            tau_bar=4.2,
+            S=0.005,
+            r=1.0,
+            c=2.8,
+            m=0.175,
             algorithmic=True)  # omega_fn_type='li',
 
     domains = tr.Property(depends_on=itags_str)
@@ -265,7 +261,7 @@ class PullOutAxiSym(Simulator):
     @tr.cached_property
     def _get_right_x_c(self):
         return BCSlice(slice=self.xd_concrete.mesh[0, :, 0, :],
-                       var='u', dims=[0], value=0)
+                       var='u', dims=[0], value=self.u_max)
 
     left_x_s = tr.Property(depends_on=itags_str)
 
@@ -300,8 +296,8 @@ class PullOutAxiSym(Simulator):
     def _get_bc(self):
         self.bc_lateral_pressure_dofs
         return [self.right_x_s, self.right_x_c, self.bc_y_0] + \
-            self.bc_lateral_pressure_dofs  # 
- 
+            self.bc_lateral_pressure_dofs
+
     record = {
         'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),
         'Pw2': Vis2DFW(bc_right='right_x_c', bc_left='left_x_s'),
@@ -356,8 +352,29 @@ class PullOutAxiSym(Simulator):
 
 
 if __name__ == '__main__':
-    s = PullOutAxiSym(u_max=0.04, f_lateral=-100)
-    s.tloop.k_max = 10000
+    ds = 16
+    f_lateral = 0
+    g = Geometry(L_x=ds * 5)
+    c = CrossSection(R_m=75
+                         ,
+                    R_f=ds / 2)
+    s = PullOutAxiSym(geometry=g,
+                          cross_section=c,
+                          n_x=5,
+                          n_y_concrete=1,
+                          n_y_steel=1)
+    s.tloop.k_max = 1000
+    s.f_lateral = f_lateral
+    s.xd_steel.trait_set(coord_min=(0, 0),
+                             coord_max=(g.L_x, c.R_f),
+                             shape=(s.n_x, s.n_y_steel)
+                             )
+    s.xd_concrete.trait_set(coord_min=(0, c.R_f),
+                                coord_max=(g.L_x,
+                                           c.R_m),
+                                shape=(s.n_x, s.n_y_concrete)
+                                )
+    s.tloop.k_max = 1000
     s.tline.step = 0.05
     s.tloop.verbose = True
     s.run()
@@ -377,11 +394,13 @@ if __name__ == '__main__':
 #     ax = p.subplot(111)
 #     w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
 
-    s.f_lateral = -100
-    s.run()
-    w = s.get_window()
-    print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
-    ax = p.subplot(111)
-    w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+    #===========================================================================
+    # s.f_lateral = -100
+    # s.run()
+    # w = s.get_window()
+    # print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
+    # ax = p.subplot(111)
+    # w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+    #===========================================================================
 
     p.show()

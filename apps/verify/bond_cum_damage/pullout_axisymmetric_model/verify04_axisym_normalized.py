@@ -3,7 +3,7 @@ Created on 01.10.2019
 
 @author: fseemab
 '''
-from apps.verify.bond_cum_damage.pullout_axisym import PullOutAxiSym, Geometry, CrossSection
+from apps.verify.bond_cum_damage.pullout_axisymmetric_model.pullout_axisym_model import PullOutAxiSym, Geometry, CrossSection
 
 import numpy as np
 import pylab as p
@@ -13,10 +13,10 @@ def verify_normalized_pullout_force():
 
     ax = p.subplot(111)
 
-    f_lateral = 0
+    f_list = [0, -10000, -20000]
     u_max = 1
-    dt_list = [0.1]
-    for dt in dt_list:  # [0, -100]
+    # dt_list = [0.01]
+    for f_lateral in f_list:  # [0, -100]
         ds = 16
         print('lateral confining pressure', f_lateral)
         g = Geometry(L_x=ds * 5)
@@ -24,7 +24,7 @@ def verify_normalized_pullout_force():
                          R_f=ds / 2)
         s = PullOutAxiSym(geometry=g,
                           cross_section=c,
-                          n_x=5,
+                          n_x=100,
                           n_y_concrete=1,
                           n_y_steel=1)
         s.tloop.k_max = 1000
@@ -45,11 +45,11 @@ def verify_normalized_pullout_force():
                           tau_bar=4.2,  # 4.0,
                           K=11, gamma=55,  # 10,
                           c=2.8, S=0.00048, r=0.51,
-                          m=0.175,
+                          m=0.9,
                           algorithmic=False)
 
         s.u_max = u_max
-        s.tline.step = dt
+        s.tline.step = 0.1
         s.tloop.verbose = True
         s.run()
 
@@ -68,7 +68,7 @@ def verify_normalized_pullout_force():
 
 
 if __name__ == '__main__':
-    #     abc = open('sigNnew1.txt', 'w')
-    #     abc.close()
+    abc = open('sigNm0lp-100tan.txt', 'w')
+    abc.close()
     w = verify_normalized_pullout_force()
     p.show()

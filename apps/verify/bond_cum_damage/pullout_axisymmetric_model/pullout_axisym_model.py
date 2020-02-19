@@ -351,7 +351,7 @@ class PullOutAxiSym(Simulator):
 if __name__ == '__main__':
     s = PullOutAxiSym(u_max=0.04, f_lateral=-100)
     s.tloop.k_max = 10000
-    s.tline.step = 0.05
+    s.tline.step = 0.1
     s.tloop.verbose = True
     s.run()
     print('F', np.max(
