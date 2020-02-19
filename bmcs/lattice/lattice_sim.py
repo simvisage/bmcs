@@ -7,6 +7,7 @@ Created on 12.01.2016
 @todo: introduce a switch for left and right supports
 '''
 
+import os
 import time
 
 from bmcs.time_functions import \
@@ -27,7 +28,7 @@ from view.ui import BMCSLeafNode
 from view.ui.bmcs_tree_node import itags_str
 from view.window import BMCSWindow
 
-from ibvpy.mats.mats3D_ifc import MATS3DIfcElastic
+from ibvpy.mats.mats3D_ifc import MATS3DIfcElastic, MATS3DIfcCumSlip
 from ibvpy.mats.viz3d_lattice import Vis3DLattice, Viz3DLattice
 import numpy as np
 from simulator.xdomain.xdomain_lattice import LatticeTessellation
@@ -53,8 +54,8 @@ class LatticeRecord(Vis2D):
         c_dof = sim.control_dofs
         U_ti = self.sim.hist.U_t
         F_ti = self.sim.hist.F_t
-        P = F_ti[:, c_dof]
-        w = U_ti[:, c_dof]
+        P = np.sum(F_ti[:, c_dof], axis=-1)
+        w = np.average(U_ti[:, c_dof], axis=-1)
         self.Pw = P, w
 
     def get_t(self):
@@ -231,7 +232,7 @@ class LatticeModelSim(Simulator):
 
     mats_eval_type = Trait('mats3d_ifc_elastic',
                            {'mats3d_ifc_elastic': MATS3DIfcElastic,
-                            'mats3d_ifc_cumslide': MATS3DIfcElastic,
+                            'mats3d_ifc_cumslip': MATS3DIfcCumSlip,
                             },
                            MAT=True,
                            desc='material model type')
@@ -315,7 +316,7 @@ class LatticeModelSim(Simulator):
         w.viz_sheet.viz2d_list.append(fw)
         viz3d_u_Lb = Viz3DLattice(vis3d=self.hist['eps'])
         w.viz_sheet.add_viz3d(viz3d_u_Lb)
-        w.viz_sheet.monitor_chunk_size = 1
+        w.viz_sheet.monitor_chunk_size = 10
         return w
 
 
@@ -401,9 +402,9 @@ def test03_tetrahedron():
     return X_Ia, I_Li, fixed_dofs, control_dofs, w_max
 
 
-def test04_mgrid():
-    Lx, Ly, Lz = 1, 1, 5
-    nx, ny, nz = 10, 5, 5
+def test04_mgrid(dimensions=(1, 1, 5), shape=(10, 5, 5)):
+    Lx, Ly, Lz = dimensions
+    nx, ny, nz = shape
     nx_, ny_, nz_ = complex(nx), complex(ny), complex(nz)
     x, y, z = np.mgrid[:Lx:nx_, :Ly:ny_, :Lz:nz_]
     X_Ia = np.einsum('aI->Ia',
@@ -415,15 +416,24 @@ def test04_mgrid():
     Iy_Li = np.array([I[:, :-1, :].flatten(), I[:, 1:, :].flatten()])
     Iz_Li = np.array([I[:, :, :-1].flatten(), I[:, :, 1:].flatten()])
     I_Li = np.vstack([Ix_Li.T, Iy_Li.T, Iz_Li.T])
+    print(I)
     bot_nodes = I[:, :, 0].flatten()
     top_nodes = I[:, :, -1].flatten()
+    print('bot_nodes', bot_nodes)
+    print('top_nodes', top_nodes)
 
-    fix_top = top_nodes[:, np.newaxis] * 6 + np.array([1, 5], np.int_)
-    fix_bot = bot_nodes[:, np.newaxis] * 6 + np.arange(6)[np.newaxis, :]
-    fixed_dofs = np.hstack([fix_bot.flatten(), fix_top.flatten()])
+    fix_rot = I.flatten()[:, np.newaxis] * 6 + np.array([3, 4, 5], np.int_)
+    fix_top = top_nodes[:, np.newaxis] * 6 + np.array([1, 2], np.int_)
+    fix_bot = bot_nodes[:, np.newaxis] * 6 + np.array([0, 1, 2], np.int_)
+    print('fix_top', fix_top)
+    print('fix_bot', fix_bot)
+    fixed_dofs = np.hstack(
+        [fix_bot.flatten(), fix_top.flatten(), fix_rot.flatten()]
+    )
 
-    control_dofs = top_nodes[:, np.newaxis] * 6 + np.array([1, 0], np.int_)
-    w_max = -0.2
+    control_dofs = top_nodes[:, np.newaxis] * 6 + np.array([0], np.int_)
+    print('control_top', control_dofs)
+    w_max = 0.1
 
     np.savez('myfile.npz', X_Ia=X_Ia, I_Li=I_Li, fixed_dofs=fixed_dofs,
              control_dofs=control_dofs)
@@ -433,26 +443,57 @@ def test04_mgrid():
     return X_Ia, I_Li, fixed_dofs.flatten(), control_dofs.flatten(), w_max
 
 
-if __name__ == '__main__':
-    X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test04_mgrid()
+def test05_lattice():
+    home_dir = os.path.expanduser('~')
+    ldir = os.path.join(home_dir, 'simdb', 'simdata', 'lattice_example')
+    X_Ia = np.loadtxt(os.path.join(ldir, 'nodes.inp'),
+                      skiprows=1, usecols=(1, 2, 3))
+    vertices = np.loadtxt(os.path.join(ldir, 'vertices.inp'),
+                          skiprows=1, usecols=(1, 2, 3))
+    I_Li = np.loadtxt(os.path.join(ldir, 'mechElems.inp'),
+                      skiprows=1, usecols=(1, 2), dtype=np.int_)
+    fixed_dofs = np.arange(20, dtype=np.int_)
+    n_nodes = len(X_Ia)
+    control_dofs = np.arange(n_nodes - 20, n_nodes - 1, dtype=np.int_)
+    return X_Ia, I_Li, fixed_dofs.flatten(), control_dofs.flatten(), -0.01
+
+
+def run_elastic():
+    X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test05_lattice()
+    # print(X_Ia.shape)
+    # print(I_Li.shape)
+#     X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test04_mgrid(
+#         shape=(1, 1, 2), dimensions=(1, 1, 1))
     #X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test03_tetrahedron()
     #X_Ia, I_Li, fixed_dofs, control_dofs, w_max = test01_couple()
     tes = LatticeTessellation(
         X_Ia=X_Ia,
         I_Li=I_Li
     )
+    global sim
     sim = LatticeModelSim(
         lattice_tessellation=tes,
+        mats_eval_type='mats3d_ifc_elastic',
         fixed_dofs=fixed_dofs,
         control_dofs=control_dofs,
         w_max=w_max
     )
+#     sim.mats_eval.trait_set(E_T=1, E_N=1, gamma_T=0, K_T=0,
+#                             tau_pi_bar=0.05)
+#     sim.mats_eval.configure_traits()
     sim.mats_eval.trait_set(E_n=1, E_s=1)
     sim.tstep.init_state()
-    sim.tloop.k_max = 3
-    sim.tline.step = 0.01
+    sim.tloop.k_max = 200
+    sim.tline.step = 0.1
     sim.tloop.verbose = True
     sim.tstep.debug = False
-    w = sim.get_window()
-    time.sleep(1)
-    w.configure_traits()
+    import cProfile
+#    cProfile.run("sim.run()")
+#     w = sim.get_window()
+#     time.sleep(1)
+#     w.run()
+#     w.configure_traits()
+
+
+if __name__ == '__main__':
+    run_elastic()

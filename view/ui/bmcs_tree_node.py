@@ -4,12 +4,10 @@ Created on 14. 4. 2014
 @author: rch
 '''
 
-import string
-
 from reporter import RInputRecord
 from traits.api import \
     HasStrictTraits, Str, List, WeakRef, \
-    Property, cached_property, on_trait_change, Event
+    Property, on_trait_change, Event
 from traitsui.api import \
     View
 
