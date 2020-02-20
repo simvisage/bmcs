@@ -7,7 +7,7 @@ Simulator implementation
 from threading import Thread
 
 from traits.api import \
-    Instance, on_trait_change, Str, \
+    Instance, Type, on_trait_change, Str, \
     Property, cached_property, Bool, List, Dict, provides
 from view.ui.bmcs_tree_node import BMCSRootNode, itags_str
 
@@ -104,15 +104,17 @@ class Simulator(BMCSRootNode):
     #=========================================================================
     # TIME LOOP
     #=========================================================================
+
+    tloop_type = Type(TLoopImplicit)
     tloop = Property(Instance(ITLoop))
     r'''Time loop constructed based on the current model.
     '''
     @cached_property
     def _get_tloop(self):
-        return TLoopImplicit(sim=self,
-                             tstep=self.tstep,
-                             hist=self.hist,
-                             tline=self.tline)
+        return self.tloop_type(sim=self,
+                               tstep=self.tstep,
+                               hist=self.hist,
+                               tline=self.tline)
 
     bc = List
     r'''Boundary conditions

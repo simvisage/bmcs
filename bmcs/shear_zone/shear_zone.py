@@ -6,9 +6,16 @@ Created on Jan 19, 2020
 Test the case of a straight crack in the middle of a zone.
 '''
 
+from reporter import RInputRecord
 from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
 from scipy.optimize import root
+from simulator.api import \
+    Simulator, TLoop
+from view.plot2d import \
+    Viz2D
+from view.ui import BMCSLeafNode
+from view.window import BMCSWindow
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -88,10 +95,22 @@ d_tau_s = tau_s.diff(s)
 
 
 @tr.provides(IMaterialModel)
-class MaterialModel(tr.HasStrictTraits):
+class MaterialModel(BMCSLeafNode, RInputRecord):
 
-    f_c = tr.Float(-80.0, PARAM=True)
-    E_c = tr.Float(28000, PARAM=True)
+    node_name = 'material model'
+
+    f_c = tr.Float(-80.0,
+                   MAT=True,
+                   unit=r'$\mathrm{MPa}$',
+                   symbol=r'f_\mathrm{c}',
+                   auto_set=False, enter_set=True,
+                   desc='concrete strength')
+    E_c = tr.Float(28000,
+                   MAT=True,
+                   unit=r'$\mathrm{MPa}$',
+                   symbol=r'E_\mathrm{c}',
+                   auto_set=False, enter_set=True,
+                   desc='concrete material stiffness')
 
     f_t = tr.Float(3.0, PARAM=True)
     G_f = tr.Float(0.5, PARAM=True)
@@ -217,15 +236,66 @@ class MaterialModel(tr.HasStrictTraits):
         s_max = float(s_3.subs(self.bond_law_data))
         s_data = np.linspace(-s_max, s_max, 100)
         ax2.plot(s_data, self.get_d_tau_s(s_data), color='orange')
-#         ax2.set_xlabel(r'$s\;\;\mathrm{[mm]}$')
-#         ax2.set_ylabel(r'$\mathrm{d}\tau/\mathrm{d}s\;\;\mathrm{[MPa/mm]}$')
         ax1.plot(s_data, self.get_tau_s(s_data), lw=2, color='green')
-#         ax1.set_xlabel(r'$s\;\;\mathrm{[mm]}$')
-#         ax1.set_ylabel(r'$\tau\;\;\mathrm{[MPa]}$')
-#         ax1.set_title('Bond-slip law')
 
 
-class ShearZone(tr.HasStrictTraits):
+class Viz2DShearZonePlot(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = tr.Property(depends_on='plot_fn')
+
+    @tr.cached_property
+    def _get_label(self):
+        return 'view: %s' % self.plot_fn
+
+    plot_fn = tr.Trait('shear_zone',
+                       {'shear_zone': 'plot_sz_state',
+                        },
+                       label='state',
+                       tooltip='Select the field to plot'
+                       )
+
+    def plot(self, ax, vot, *args, **kw):
+        getattr(self.vis2d, self.plot_fn_)(ax, vot, *args, **kw)
+
+    traits_view = ui.View(
+        ui.Item('plot_fn', resizable=True, full_size=True),
+    )
+
+
+class TLoopSZ(TLoop):
+
+    def eval(self):
+        self.sim.response
+
+
+class ShearZone(Simulator):
+
+    tloop_type = TLoopSZ
+
+    node_name = 'pull out simulation'
+
+    tree_node_list = tr.List([])
+
+    def _tree_node_list_default(self):
+
+        return [
+            self.mm,
+
+        ]
+
+    def _update_node_list(self):
+        self.tree_node_list = [
+            self.mm,
+        ]
+
+    tree_view = ui.View(
+        ui.Group(
+            ui.Item('B', resizable=True, full_size=True),
+            ui.Item('L', resizable=True, full_size=True),
+            ui.Item('H', resizable=True, full_size=True),
+        )
+    )
 
     B = tr.Float(20, auto_set=False, enter_set=True)
     H = tr.Float(60, auto_set=False, enter_set=True)
@@ -907,6 +977,17 @@ class ShearZone(tr.HasStrictTraits):
         ])
         ax.fill(*x_Da.T, color='gray', alpha=0.2)
 
+    def plot_sz_state(self, ax, vot=1.0):
+        self.plot_sz1(ax)
+        self.plot_sz0(ax)
+        self.plot_sz_fill(ax)
+        self.plot_x_tip_a(ax)
+        self.plot_x_rot_a(ax)
+        self.plot_x_fps_a(ax)
+        self.plot_reinf(ax)
+        ax.set_xlim(self.x_rot_a[0] - 50,
+                    self.initial_crack_position + 40)
+
     def plot_reinf(self, ax):
         for z in self.z_f:
             # left part
@@ -988,10 +1069,12 @@ class ShearZone(tr.HasStrictTraits):
         axes[0].set_xlim(extrema[0][0], b_new_t)
         axes[1].set_xlim(t_new_b, extrema[1][1])
 
-    traits_view = ui.View(
-        ui.Item('L'),
-        ui.Item('H')
-    )
+    def get_window(self):
+        fw = Viz2DShearZonePlot(name='shear_zone', vis2d=self)
+        w = BMCSWindow(sim=self)
+        w.viz_sheet.viz2d_list.append(fw)
+        w.viz_sheet.monitor_chunk_size = 1
+        return w
 
 
 if __name__ == '__main__':
@@ -1010,11 +1093,15 @@ if __name__ == '__main__':
         n_seg=30,
         eta=0.02,
         initial_crack_position=250,
-        z_f=[],  # 20],
+        z_f=[20],
         A_f=[2 * np.pi * 8**2],
         plot_scale=1,
         mm=mm
     )
+
+    win = sz.get_window()
+    win.configure_traits()
+
     if True:
         print('x_fps')
         print(sz.x_fps_a)
@@ -1073,15 +1160,7 @@ if __name__ == '__main__':
         ax11.axis('equal')
         x_La = np.sum(sz.x_Ka[sz.K_Li], axis=1) / 2
 
-        sz.plot_sz1(ax11)
-        sz.plot_sz0(ax11)
-        sz.plot_sz_fill(ax11)
-        sz.plot_x_tip_a(ax11)
-        sz.plot_x_rot_a(ax11)
-        sz.plot_x_fps_a(ax11)
-        sz.plot_reinf(ax11)
-        ax11.set_xlim(sz.x_rot_a[0] - 50,
-                      sz.initial_crack_position + 40)
+        sz.plot_sz_state(ax11)
 
         ax21b = ax21.twiny()
         sz.plot_crack_orientation(ax21, ax21b)
