@@ -3,28 +3,27 @@ Created on 01.10.2019
 
 @author: fseemab
 '''
-from apps.verify.bond_cum_damage.pullout_axisymmetric_model.pullout_axisym_model import PullOutAxiSym, Geometry, CrossSection
-
+from apps.sandbox.fahad.verify_sorting.pulloutaxisymdemomodel import PullOutAxiSym, Geometry, CrossSection
+import matplotlib.pyplot as plt
 import numpy as np
 import pylab as p
+import traits.api as tr
 
 
 def verify_normalized_pullout_force():
 
     ax = p.subplot(111)
 
-    f_list = [0, -10000, -20000]
-    u_max = 1
-    # dt_list = [0.01]
+    f_list = [0]  # -40000, -50000, -60000
     for f_lateral in f_list:  # [0, -100]
-        ds = 16
+        ds = 16  # 16
         print('lateral confining pressure', f_lateral)
-        g = Geometry(L_x=ds * 5)
+        g = Geometry(L_x=ds * 5)  # ds * 5)
         c = CrossSection(R_m=75,
                          R_f=ds / 2)
         s = PullOutAxiSym(geometry=g,
                           cross_section=c,
-                          n_x=100,
+                          n_x=10,
                           n_y_concrete=1,
                           n_y_steel=1)
         s.tloop.k_max = 1000
@@ -42,13 +41,13 @@ def verify_normalized_pullout_force():
         s.m_concrete.trait_set(E=29800, nu=0.3)
         s.m_ifc.trait_set(E_T=12900,
                           E_N=1e5,
-                          tau_bar=4.2,  # 4.0,
+                          tau_bar=4.2,  # 4.2,
                           K=11, gamma=55,  # 10,
                           c=2.8, S=0.00048, r=0.51,
-                          m=0.9,
+                          m=0.175,
                           algorithmic=False)
 
-        s.u_max = u_max
+        s.u_max = 1
         s.tline.step = 0.1
         s.tloop.verbose = True
         s.run()
@@ -64,11 +63,10 @@ def verify_normalized_pullout_force():
 #         result = np.array(s.record['Pw'].sim.hist.F_t,
 #                           s.record['slip'].sim.hist.F_t).transpose()
 #         np.savetxt("Pullout%s.txt" % f_lateral, result)
-    return w
+    p.show()
 
 
 if __name__ == '__main__':
-    abc = open('sigNm0lp-100tan.txt', 'w')
+    abc = open('sigNfortau10000lp5000.txt', 'w')
     abc.close()
-    w = verify_normalized_pullout_force()
-    p.show()
+    verify_normalized_pullout_force()

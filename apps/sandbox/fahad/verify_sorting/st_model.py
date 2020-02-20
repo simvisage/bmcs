@@ -1,10 +1,7 @@
-''' 
-Created on 30.04.2019 
- 
-@author: fseemab 
+'''
+Created on 7 Jan 2020
 
-Class implementation of crossection, geometry and the axisymmetric 
-pullout for the axisymmetric pullout tests 
+@author: fseemab
 '''
 import time
 
@@ -20,8 +17,12 @@ from ibvpy.mats.mats1D5.vmats1D5_dp_cum_press import \
     MATS1D5DPCumPress
 from ibvpy.mats.mats3D.mats3D_elastic.vmats3D_elastic import \
     MATS3DElastic
+from ibvpy.mats.mats3D.mats3D_microplane.vmats3D_mpl_csd_odf import \
+    MATS3DMplCSDODF
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
+from ibvpy.mats.mats3D.mats3D_sdamage.vmats3D_sdamage import \
+    MATS3DScalarDamage
 from ibvpy.mats.viz2d_field import \
     Vis2DField, Viz2DField
 from ibvpy.mats.viz3d_scalar_field import \
@@ -39,6 +40,8 @@ from view.ui import BMCSLeafNode
 from view.ui.bmcs_tree_node import itags_str
 from view.window import BMCSWindow
 
+from apps.sandbox.fahad.vmats1d5_dp_new import \
+    MATS1D5DPCumPressnew
 import numpy as np
 import pylab as p
 import traits.api as tr
@@ -220,10 +223,10 @@ class PullOutAxiSym(Simulator):
             integ_factor=self.cross_section.P_b
         )
 
-    m_ifc = tr.Instance(MATS1D5DPCumPress)
+    m_ifc = tr.Instance(MATS1D5DPCumPressnew)
 
     def _m_ifc_default(self):
-        return MATS1D5DPCumPress(
+        return MATS1D5DPCumPressnew(
             E_T=10000,
             E_N=1000000,
             gamma=55.0,
@@ -258,7 +261,7 @@ class PullOutAxiSym(Simulator):
     @tr.cached_property
     def _get_right_x_c(self):
         return BCSlice(slice=self.xd_concrete.mesh[0, :, 0, :],
-                       var='u', dims=[0], value=0)
+                       var='u', dims=[0], value=self.u_max)
 
     left_x_s = tr.Property(depends_on=itags_str)
 
@@ -307,10 +310,10 @@ class PullOutAxiSym(Simulator):
         'z': Vis2DField(var='z'),
         'strain': Vis3DTensorField(var='eps_ab'),
         'stress': Vis3DTensorField(var='sig_ab'),
-        #        'damage': Vis3DStateField(var='omega_a'),
-        #        'kinematic hardening': Vis3DStateField(var='z_a')
+        #----------------------------- 'damage': Vis3DStateField(var='omega_a'),
+               #------------ # 'kinematic hardening': Vis3DStateField(var='z_a')
     }
-
+    
     def get_window(self):
 
         fw = Viz2DFW(name='Pw', vis2d=self.hist['Pw'])
@@ -349,9 +352,30 @@ class PullOutAxiSym(Simulator):
 
 
 if __name__ == '__main__':
-    s = PullOutAxiSym(u_max=0.04, f_lateral=-100)
-    s.tloop.k_max = 10000
-    s.tline.step = 0.1
+    ds = 16
+    f_lateral = 0
+    g = Geometry(L_x=ds * 5)
+    c = CrossSection(R_m=75
+                         ,
+                    R_f=ds / 2)
+    s = PullOutAxiSym(geometry=g,
+                          cross_section=c,
+                          n_x=5,
+                          n_y_concrete=1,
+                          n_y_steel=1)
+    s.tloop.k_max = 1000
+    s.f_lateral = f_lateral
+    s.xd_steel.trait_set(coord_min=(0, 0),
+                             coord_max=(g.L_x, c.R_f),
+                             shape=(s.n_x, s.n_y_steel)
+                             )
+    s.xd_concrete.trait_set(coord_min=(0, c.R_f),
+                                coord_max=(g.L_x,
+                                           c.R_m),
+                                shape=(s.n_x, s.n_y_concrete)
+                                )
+    s.tloop.k_max = 1000
+    s.tline.step = 0.05
     s.tloop.verbose = True
     s.run()
     print('F', np.max(
@@ -370,11 +394,13 @@ if __name__ == '__main__':
 #     ax = p.subplot(111)
 #     w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
 
-    s.f_lateral = -100
-    s.run()
-    w = s.get_window()
-    print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
-    ax = p.subplot(111)
-    w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+    #===========================================================================
+    # s.f_lateral = -100
+    # s.run()
+    # w = s.get_window()
+    # print('F', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
+    # ax = p.subplot(111)
+    # w.viz_sheet.viz2d_dict['Pw'].plot(ax, 1)
+    #===========================================================================
 
     p.show()

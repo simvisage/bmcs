@@ -113,7 +113,7 @@ class MATS1D5DPCumPress(MATSEval):
         Y = 0.5 * self.E_T * (s - s_pi) ** 2
         omega[I] += (
             delta_lambda_I * 
-            (1 - omega[I]) ** self.c * (Y[I] / self.S) ** self.r * (self.tau_bar / (self.tau_bar - m * sigma_N))
+            (1 - omega[I]) ** self.c * (Y[I] / self.S) ** self.r * (self.tau_bar / (self.tau_bar - self.m * sig_N[I]))
         )
         sig_T[I] = (1 - omega[I]) * self.E_T * (s[I] - s_pi[I])
         alpha[I] += delta_lambda_I * np.sign(tau_pi_trial[I] - X[I])

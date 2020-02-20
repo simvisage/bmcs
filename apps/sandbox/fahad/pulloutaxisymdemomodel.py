@@ -1,10 +1,7 @@
-''' 
-Created on 30.04.2019 
- 
-@author: fseemab 
+'''
+Created on 20 Nov 2019
 
-Class implementation of crossection, geometry and the axisymmetric 
-pullout for the axisymmetric pullout tests 
+@author: fseemab
 '''
 import time
 
@@ -20,8 +17,12 @@ from ibvpy.mats.mats1D5.vmats1D5_dp_cum_press import \
     MATS1D5DPCumPress
 from ibvpy.mats.mats3D.mats3D_elastic.vmats3D_elastic import \
     MATS3DElastic
+from ibvpy.mats.mats3D.mats3D_microplane.vmats3D_mpl_csd_odf import \
+    MATS3DMplCSDODF
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
+from ibvpy.mats.mats3D.mats3D_sdamage.vmats3D_sdamage import \
+    MATS3DScalarDamage
 from ibvpy.mats.viz2d_field import \
     Vis2DField, Viz2DField
 from ibvpy.mats.viz3d_scalar_field import \
@@ -39,6 +40,9 @@ from view.ui import BMCSLeafNode
 from view.ui.bmcs_tree_node import itags_str
 from view.window import BMCSWindow
 
+from apps.sandbox.fahad.vmats1d5_dp_new import \
+    MATS1D5DPCumPressnew
+from apps.sandbox.fahad.new2dmatmodel import MATS1D5DP2D
 import numpy as np
 import pylab as p
 import traits.api as tr
@@ -128,7 +132,7 @@ class PullOutAxiSym(Simulator):
     u_max = tr.Float(BC=True, auto_set=False, enter_set=True)
     '''Radius of the pullout test
     '''
-
+    
     cross_section = tr.Instance(
         CrossSection,
         report=True,
@@ -220,19 +224,22 @@ class PullOutAxiSym(Simulator):
             integ_factor=self.cross_section.P_b
         )
 
-    m_ifc = tr.Instance(MATS1D5DPCumPress)
+    m_ifc = tr.Instance(MATS1D5DP2D)
 
     def _m_ifc_default(self):
-        return MATS1D5DPCumPress(
-            E_T=10000,
-            E_N=1000000,
-            gamma=55.0,
-            K=11.0,
-            tau_bar=4.2,
-            S=0.005,
-            r=1.0,
-            c=2.8,
-            m=0.175,
+        return MATS1D5DP2D(
+            sigma_o=10.0,
+            E_N=50000,
+            E_T=20000,
+            sig_t=5.0,
+            S_N=0.00000001,
+            S_T=0.0000005,
+            c_N=1.2,
+            c_T=2.2,
+            K=0,
+            gamma=0,
+            m=0.2,
+            b=0.2,
             algorithmic=True)  # omega_fn_type='li',
 
     domains = tr.Property(depends_on=itags_str)
@@ -293,8 +300,8 @@ class PullOutAxiSym(Simulator):
     def _get_bc(self):
         self.bc_lateral_pressure_dofs
         return [self.right_x_s, self.right_x_c, self.bc_y_0] + \
-            self.bc_lateral_pressure_dofs
-
+            self.bc_lateral_pressure_dofs  # 
+ 
     record = {
         'Pw': Vis2DFW(bc_right='right_x_s', bc_left='left_x_s'),
         'Pw2': Vis2DFW(bc_right='right_x_c', bc_left='left_x_s'),
@@ -307,10 +314,10 @@ class PullOutAxiSym(Simulator):
         'z': Vis2DField(var='z'),
         'strain': Vis3DTensorField(var='eps_ab'),
         'stress': Vis3DTensorField(var='sig_ab'),
-        #        'damage': Vis3DStateField(var='omega_a'),
-        #        'kinematic hardening': Vis3DStateField(var='z_a')
+        #----------------------------- 'damage': Vis3DStateField(var='omega_a'),
+               #------------ # 'kinematic hardening': Vis3DStateField(var='z_a')
     }
-
+    
     def get_window(self):
 
         fw = Viz2DFW(name='Pw', vis2d=self.hist['Pw'])
@@ -351,7 +358,7 @@ class PullOutAxiSym(Simulator):
 if __name__ == '__main__':
     s = PullOutAxiSym(u_max=0.04, f_lateral=-100)
     s.tloop.k_max = 10000
-    s.tline.step = 0.1
+    s.tline.step = 0.05
     s.tloop.verbose = True
     s.run()
     print('F', np.max(
