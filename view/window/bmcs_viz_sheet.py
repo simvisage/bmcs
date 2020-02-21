@@ -155,6 +155,72 @@ class AnimationDialog(HasStrictTraits):
     )
 
 
+class PlotPerspective(HasStrictTraits):
+    viz2d_list = List(Viz2D, input=True)
+    positions = List([], input=True)
+    twinx = List([], input=True)
+    twiny = List([], input=True)
+
+    figure = WeakRef(Figure)
+
+    viz2d_axes = Property(depends_on='+input')
+
+    @cached_property
+    def _get_viz2d_axes(self):
+        return {viz2d: self.figure.add_subplot(loc)
+                for viz2d, loc in zip(self.viz2d_list,
+                                      self.positions)}
+
+    twinx_axes = Property(depends_on='+input')
+
+    @cached_property
+    def _get_twinx_axes(self):
+        return {viz_2: self.viz2d_axes[viz_1].twinx()
+                for viz_1, viz_2, _ in self.twinx}
+
+    twiny_axes = Property(depends_on='+input')
+
+    @cached_property
+    def _get_twiny_axes(self):
+        return {viz_2: self.viz2d_axes[viz_1].twiny()
+                for viz_1, viz_2, _ in self.twiny}
+
+    axes = Property(depends_on='+input')
+
+    @cached_property
+    def _get_axes(self):
+        ad = {}
+        ad.update(self.viz2d_axes)
+        ad.update(self.twinx_axes)
+        ad.update(self.twiny_axes)
+        return ad
+
+    def align_xaxis(self):
+        for v1, v2, alignx in self.twiny:
+            if alignx:
+                ax1 = self.viz2d_axes[v1]
+                ax2 = self.twiny_axes[v2]
+                self._align_xaxis(ax1, ax2)
+
+    def _align_xaxis(self, ax1, ax2):
+        """Align zeros of the two axes, zooming them out by same ratio"""
+        axes = (ax1, ax2)
+        extrema = [ax.get_xlim() for ax in axes]
+        tops = [extr[1] / (extr[1] - extr[0]) for extr in extrema]
+        # Ensure that plots (intervals) are ordered bottom to top:
+        if tops[0] > tops[1]:
+            axes, extrema, tops = [list(reversed(l))
+                                   for l in (axes, extrema, tops)]
+
+        # How much would the plot overflow if we kept current zoom levels?
+        tot_span = tops[1] + 1 - tops[0]
+
+        b_new_t = extrema[0][0] + tot_span * (extrema[0][1] - extrema[0][0])
+        t_new_b = extrema[1][1] - tot_span * (extrema[1][1] - extrema[1][0])
+        axes[0].set_xlim(extrema[0][0], b_new_t)
+        axes[1].set_xlim(t_new_b, extrema[1][1])
+
+
 class BMCSVizSheet(ROutputSection):
     '''Vieualization sheet
     - controls the time displayed
@@ -246,7 +312,7 @@ class BMCSVizSheet(ROutputSection):
     def run_started(self):
         self.running = True
         self.offline = False
-        for ax, viz2d in zip(self.axes, self.visible_viz2d_list):
+        for viz2d, ax in self.axes.items():
             ax.clear()
             viz2d.reset(ax)
         self.mode = 'monitor'
@@ -274,10 +340,12 @@ class BMCSVizSheet(ROutputSection):
                 self.skipped_steps < (self.monitor_chunk_size - 1):
             self.skipped_steps += 1
             return
-        for ax, viz2d in zip(self.axes, self.visible_viz2d_list):
+        for viz2d, ax in self.axes.items():
             ax.clear()
             viz2d.clear()
             viz2d.plot(ax, self.vot)
+        if self.selected_pp:
+            self.selected_pp.align_xaxis()
         if self.reference_viz2d:
             ax = self.reference_axes
             ax.clear()
@@ -427,9 +495,11 @@ class BMCSVizSheet(ROutputSection):
 
     figure = Instance(Figure)
 
+    tight_layout = Bool(True)
+
     def _figure_default(self):
         figure = Figure(facecolor='white')
-        figure.set_tight_layout(True)
+        figure.set_tight_layout(self.tight_layout)
         return figure
 
     visible_viz2d_list = Property(List,
@@ -445,6 +515,10 @@ class BMCSVizSheet(ROutputSection):
                 viz_list.append(viz2d)
         return viz_list
 
+    pp_list = List(PlotPerspective)
+
+    selected_pp = Instance(PlotPerspective)
+
     axes = Property(List,
                     depends_on='viz2d_list,viz2d_list_items,n_cols,viz2d_list_changed')
     '''Derived axes objects reflecting the layout of plot pane
@@ -452,13 +526,17 @@ class BMCSVizSheet(ROutputSection):
     '''
     @cached_property
     def _get_axes(self):
-        n_fig = len(self.visible_viz2d_list)
-        n_cols = self.n_cols
-        n_rows = (n_fig + n_cols - 1) / self.n_cols
         self.figure.clear()
-        axes = [self.figure.add_subplot(n_rows, self.n_cols, i + 1)
-                for i in range(n_fig)]
-        return axes
+        if self.selected_pp:
+            self.selected_pp.figure = self.figure
+            ad = self.selected_pp.axes
+        else:
+            n_fig = len(self.visible_viz2d_list)
+            n_cols = self.n_cols
+            n_rows = (n_fig + n_cols - 1) / self.n_cols
+            ad = {viz2d: self.figure.add_subplot(n_rows, self.n_cols, i + 1)
+                  for i, viz2d in enumerate(self.visible_viz2d_list)}
+        return ad
 
     data_changed = Event
 

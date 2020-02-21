@@ -15,7 +15,7 @@ from simulator.api import \
 from view.plot2d import \
     Viz2D
 from view.ui import BMCSLeafNode
-from view.window import BMCSWindow
+from view.window import BMCSWindow, PlotPerspective
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -248,8 +248,14 @@ class Viz2DShearZonePlot(Viz2D):
     def _get_label(self):
         return 'view: %s' % self.plot_fn
 
-    plot_fn = tr.Trait('shear_zone',
-                       {'shear_zone': 'plot_sz_state',
+    plot_fn = tr.Trait('shear zone',
+                       {'shear zone': 'plot_sz_state',
+                        'fps stress state': 'plot_fps_stress',
+                        'fps orientation': 'plot_fps_orientation',
+                        'Qv': 'plot_Qv',
+                        'dGv': 'plot_dGv',
+                        'u_x': 'plot_u_L0',
+                        'S_x': 'plot_S_L0',
                         },
                        label='state',
                        tooltip='Select the field to plot'
@@ -266,7 +272,25 @@ class Viz2DShearZonePlot(Viz2D):
 class TLoopSZ(TLoop):
 
     def eval(self):
-        self.sim.response
+        sz = self.sim
+        n_seg = sz.n_seg
+        delta_t = 1 / (n_seg - 1)
+        t_n1 = 0
+        sz.record = {key: [0] for key in sz.record_traits}
+        sz.response = {key: np.array([0], dtype=np.float)
+                       for key in sz.record_traits}
+        for seg in range(n_seg):
+            print('seg', seg)
+            try:
+                sz.solve()
+            except ValueError:
+                print('No convergence')
+                sz.X[1] = 0
+                break
+            self.tline.val = min(t_n1, self.tline.max)
+            self.tstep.t_n1 += t_n1
+            t_n1 += delta_t
+            sz.next_crack_segment()
 
 
 class ShearZone(Simulator):
@@ -521,7 +545,10 @@ class ShearZone(Simulator):
     '''Shear force'''
 
     def _get_Q(self):
-        return self.M / (self.L - self.x_rot_a[0])
+        if self.x_fps_a[0] < 0:
+            return 0.001
+        else:
+            return self.M / (self.L - self.x_rot_a[0])
 
     tau_fps = tr.Property
     '''Shear stress in global xz coordinates in the fracture
@@ -805,7 +832,7 @@ class ShearZone(Simulator):
         def get_R_X(X):
             self.X[:] = X[:]
             return self.get_R()
-        res = root(get_R_X, X0, tol=1e-5)
+        res = root(get_R_X, X0, tol=1e-3)
         if res.success == False:
             raise ValueError('no solution found')
         return res.x
@@ -815,65 +842,54 @@ class ShearZone(Simulator):
         print(self.get_R())
 
     def next_crack_segment(self):
+        # record the admissible crack state
+        record_vals = self.trait_get(*self.record_traits)
+        for key, val in self.record.items():
+            val.append(record_vals[key])
+        rarr = {key: np.array(vals, dtype=np.float_)
+                for key, vals in self.record.items()}
+        self.response = rarr
+        # predictor step
         self.x_t_Ia = np.vstack([self.x_t_Ia, self.x_tip_a[np.newaxis, :]])
         self.X[1] = 0
 
     record_traits = tr.List(
         ['M', 'Q', 'v', 'phi',
          'tau_fps', 'theta', 'theta_bar',
-         'sig_fps_0', 'v', 'phi']
+         'sig_fps_0', 'G', 'd_G']
     )
-
-    response = tr.Property(depends_on='input_changed')
 
     n_seg = tr.Int(5, auto_set=False, enter_set=True)
     '''Number of crack propagation steps.
     '''
 
-    @tr.cached_property
-    def _get_response(self):
-        n_seg = self.n_seg
-        record = {key: [0] for key in self.record_traits}
-        for seg in range(n_seg):
-            print('seg', seg)
-            try:
-                self.solve()
-            except ValueError:
-                print('No convergence')
-                self.X[1] = 0
-                break
-            record_vals = self.trait_get(*self.record_traits)
-            for key, val in record.items():
-                val.append(record_vals[key])
-            self.next_crack_segment()
-        rarr = {key: np.array(vals, dtype=np.float_)
-                for key, vals in record.items()}
-        return rarr
+    response = tr.Dict
 
     #=========================================================================
     # Energetic characteristics
     #=========================================================================
 
-    G_t = tr.Property(depends_on='input_changed')
+    G = tr.Property  # (depends_on='input_changed, state_')
     '''Dissipated energy
     '''
-    @tr.cached_property
-    def _get_G_t(self):
-        Q = self.response['Q']
-        v = self.response['v']
-        W_t = cumtrapz(Q, v, initial=0)
-        print('W_t', W_t)
-        U_t = Q * v / 2.0
-        return W_t - U_t
+#    @tr.cached_property
 
-    d_G_t = tr.Property(depends_on='input_changed')
+    def _get_G(self):
+        Q = np.hstack([self.response['Q'], self.Q])
+        v = np.hstack([self.response['v'], self.v])
+        W = np.trapz(Q, v)
+        U = self.Q * self.v / 2.0
+        return W - U
+
+    d_G = tr.Property  # (depends_on='input_changed')
     '''Energy release rate
     '''
-    @tr.cached_property
-    def _get_d_G_t(self):
-        return np.hstack(
-            [[0], (self.G_t[1:] - self.G_t[:-1]) / self.L_fps / self.B]
-        )
+#    @tr.cached_property
+
+    def _get_d_G(self):
+        G0 = self.response['G'][-1]
+        G1 = self.G
+        return (G1 - G0) / self.L_fps / self.B
 
     a_t = tr.Property
 
@@ -913,9 +929,24 @@ class ShearZone(Simulator):
         x, y = self.x_fps_a
         ax.plot(x, y, 'bo', color='green', markersize=10)
 
-    def plot_crack_orientation(self, ax1, ax2):
+    def plot_fps_stress(self, ax2, vot=1):
         '''Visualize the stress components affecting the
         crack orientation in the next step.
+        '''
+        z = self.x_Ia[:-1, 1]
+        R = self.response
+        ax2.plot(R['tau_fps'], z, color='blue',
+                 label=r'$\tau^{\mathrm{fps}}_{xz}$')
+        ax2.fill_betweenx(z, R['tau_fps'], 0, color='blue', alpha=0.2)
+        ax2.plot(R['sig_fps_0'], z, color='red',
+                 label=r'$\sigma^{\mathrm{fps}}_{xx}$')
+        ax2.fill_betweenx(z, R['sig_fps_0'], 0, color='red', alpha=0.2)
+        ax2.set_xlabel(r'$\sigma_x$ and $\tau_{xz}$ [MPa]')
+        ax2.legend(loc='center left')
+
+    def plot_fps_orientation(self, ax1, vot=1):
+        '''Show the lack-of-fit between the direction of principal stresses
+        at the process zone and the converged crack inclination angle.
         '''
         z = self.x_Ia[:-1, 1]
         R = self.response
@@ -927,14 +958,18 @@ class ShearZone(Simulator):
         ax1.set_xlabel(r'Orientation $\theta$ [$\pi^{-1}$]')
         ax1.set_ylabel(r'Vertical position $z$ [mm]')
         ax1.legend(loc='lower left')
-        ax2.plot(R['tau_fps'], z, color='red',
-                 label=r'$\tau^{\mathrm{fps}}_{xz}$')
-        ax2.fill_betweenx(z, R['tau_fps'], 0, color='red', alpha=0.1)
-        ax2.plot(R['sig_fps_0'], z, color='black',
-                 label=r'$\sigma^{\mathrm{fps}}_{xx}$')
-        ax2.fill_betweenx(z, R['sig_fps_0'], 0, color='black', alpha=0.1)
-        ax2.set_xlabel(r'$\sigma_x$ and $\tau_{xz}$ [MPa]')
-        ax2.legend(loc='center left')
+
+    def plot_Qv(self, ax, vot=1):
+        ax.set_title('Structural response')
+        R = self.response
+        ax.plot(R['v'], R['Q'], color='black')
+        ax.set_ylabel(r'Shear force $Q$ [kN]')
+        ax.set_xlabel(r'Displacement $v$ [mm]')
+
+    def plot_dGv(self, ax, vot=1):
+        R = self.response
+        ax.plot(R['v'], R['d_G'], color='magenta')
+        ax.fill_between(R['v'], R['d_G'], color='magenta', alpha=0.05)
 
     def plot_sz0(self, ax):
         x_Ia = self.x_Ia
@@ -985,8 +1020,7 @@ class ShearZone(Simulator):
         self.plot_x_rot_a(ax)
         self.plot_x_fps_a(ax)
         self.plot_reinf(ax)
-        ax.set_xlim(self.x_rot_a[0] - 50,
-                    self.initial_crack_position + 40)
+        ax.axis('equal')
 
     def plot_reinf(self, ax):
         for z in self.z_f:
@@ -1004,14 +1038,6 @@ class ShearZone(Simulator):
         u_eajM = np.einsum('ejaM->eajM', u_ejaM)
         ax.plot(*u_eajM.reshape(-1, 2, len(self.K_Li)), color='orange', lw=3)
 
-    def x_plot_S_Lb(self, ax):
-        S_max = np.max(self.S_Lb)
-        G_min = np.min([self.L, self.H]) * 0.2
-        S_ejaM = self.get_f_ejaM(self.S_Lb, scale=G_min / S_max)
-        S_eajM = np.einsum('ejaM->eajM', S_ejaM)
-        ax.plot(*S_eajM.reshape(-1, 2, len(self.K_Li)), color='orange', lw=3)
-        return
-
     def plot_hlines(self, ax, h_min, h_max):
         _, y_tip = self.x_tip_a
         _, y_rot = self.x_rot_a
@@ -1023,19 +1049,20 @@ class ShearZone(Simulator):
         ax.plot([h_min, h_max], [z_fps, z_fps],
                 color='black', linestyle='-.')
 
-    def plot_u_Lc(self, ax, u_Lc, idx=0, color='red', label='w'):
+    def plot_u_Lc(self, ax, u_Lc, idx=0, color='black', label=r'$w$ [mm]'):
         x_La = self.x_Lb
         u_Lb_min = np.min(u_Lc[:, idx])
         u_Lb_max = np.max(u_Lc[:, idx])
         self.plot_hlines(ax, u_Lb_min, u_Lb_max)
         ax.plot(u_Lc[:, idx], x_La[:, 1], color=color, label=label)
         ax.fill_betweenx(x_La[:, 1], u_Lc[:, idx], 0, color=color, alpha=0.1)
-        ax.legend()
+        ax.set_xlabel(label)
+        ax.legend(loc='lower left')
 
     def plot_S_Lc(self, ax, S_Lc, idx=0,
                   title='Normal stress profile',
                   label=r'$\sigma_{xx}$',
-                  color='green',
+                  color='red',
                   ylabel=r'Vertical position [mm]',
                   xlabel=r'Stress [MPa]'):
         x_La = self.x_Lb
@@ -1051,34 +1078,44 @@ class ShearZone(Simulator):
                          color=color, alpha=0.2)
         ax.legend()
 
-    def _align_xaxis(self, ax1, ax2):
-        """Align zeros of the two axes, zooming them out by same ratio"""
-        axes = (ax1, ax2)
-        extrema = [ax.get_xlim() for ax in axes]
-        tops = [extr[1] / (extr[1] - extr[0]) for extr in extrema]
-        # Ensure that plots (intervals) are ordered bottom to top:
-        if tops[0] > tops[1]:
-            axes, extrema, tops = [list(reversed(l))
-                                   for l in (axes, extrema, tops)]
+    def plot_u_L0(self, ax, vot=1):
+        self.plot_u_Lc(ax, sz.u_Lb, 0,
+                       label=r'$w$ [mm]')
+        ax.set_xlabel(r'effective horizontal COD $w$ [mm]')
 
-        # How much would the plot overflow if we kept current zoom levels?
-        tot_span = tops[1] + 1 - tops[0]
-
-        b_new_t = extrema[0][0] + tot_span * (extrema[0][1] - extrema[0][0])
-        t_new_b = extrema[1][1] - tot_span * (extrema[1][1] - extrema[1][0])
-        axes[0].set_xlim(extrema[0][0], b_new_t)
-        axes[1].set_xlim(t_new_b, extrema[1][1])
+    def plot_S_L0(self, ax, vot=1):
+        self.plot_S_Lc(ax, self.S_La, idx=0,
+                       title='Normal stress profile',
+                       label=r'$\sigma_{xx}$',
+                       color='red',
+                       ylabel=r'Vertical position [mm]',
+                       xlabel=r'Stress [MPa]')
 
     def get_window(self):
-        fw = Viz2DShearZonePlot(name='shear_zone', vis2d=self)
+        fw_geo = Viz2DShearZonePlot(plot_fn='shear zone', vis2d=self)
+        fps_state = Viz2DShearZonePlot(plot_fn='fps stress state', vis2d=self)
+        fps_angle = Viz2DShearZonePlot(plot_fn='fps orientation', vis2d=self)
+        Qv = Viz2DShearZonePlot(plot_fn='Qv', vis2d=self)
+        dGv = Viz2DShearZonePlot(plot_fn='dGv', vis2d=self)
+        u_x = Viz2DShearZonePlot(plot_fn='u_x', vis2d=self)
+        S_x = Viz2DShearZonePlot(plot_fn='S_x', vis2d=self)
+
         w = BMCSWindow(sim=self)
-        w.viz_sheet.viz2d_list.append(fw)
         w.viz_sheet.monitor_chunk_size = 1
+        pp1 = PlotPerspective(
+            viz2d_list=[fw_geo, fps_state, u_x, Qv],
+            twiny=[(fps_state, fps_angle, False),
+                   (u_x, S_x, True)],
+            twinx=[(Qv, dGv, False)],
+            positions=[211, 234, 235, 236])
+        w.viz_sheet.pp_list = [pp1]
+        w.viz_sheet.selected_pp = pp1
+        w.viz_sheet.tight_layout = True
         return w
 
 
 if __name__ == '__main__':
-    mm = MaterialModel(G_f=0.09, f_c=-30)
+    mm = MaterialModel(G_f=0.09, f_c=-80)
 
     '''Development history:
 
@@ -1090,7 +1127,7 @@ if __name__ == '__main__':
         B=100, H=200, L=800,
         n_J=10,
         n_m=8,
-        n_seg=30,
+        n_seg=32,
         eta=0.02,
         initial_crack_position=250,
         z_f=[20],
@@ -1099,10 +1136,11 @@ if __name__ == '__main__':
         mm=mm
     )
 
-    win = sz.get_window()
-    win.configure_traits()
-
     if True:
+        win = sz.get_window()
+        win.configure_traits()
+
+    if False:
         print('x_fps')
         print(sz.x_fps_a)
         print('x_tip')
@@ -1127,7 +1165,6 @@ if __name__ == '__main__':
         print(sz.X)
         print('Q')
         print(sz.Q)
-        R = sz.response
     if False:
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
         sz.plot_sz0(ax)
@@ -1153,6 +1190,8 @@ if __name__ == '__main__':
         sz.plot_reinf(ax)
         plt.show()
     if True:
+        sz.tloop.eval()
+        R = sz.response
         fig, ((ax11, ax12, ax13, ax14),
               (ax21, ax22, ax23, ax24)) = plt.subplots(
             2, 4, figsize=(20, 18), tight_layout=True
@@ -1163,15 +1202,13 @@ if __name__ == '__main__':
         sz.plot_sz_state(ax11)
 
         ax21b = ax21.twiny()
-        sz.plot_crack_orientation(ax21, ax21b)
+        sz.plot_fps_stress(ax21)
+        sz.plot_fps_orientation(ax21b)
 
         ax12b = ax12.twinx()
-        ax12.set_title('Structural response')
-        ax12.plot(R['v'], R['Q'], color='black')
-        ax12.set_ylabel(r'Shear force $Q$ [kN]')
-        ax12.set_xlabel(r'Displacement $v$ [mm]')
+        sz.plot_Qv(ax12)
         ax12b.plot(R['v'], R['M'], color='black', linestyle='dashed')
-        ax12.set_ylabel(r'Bending moment $M(x_\mathrm{rot})$ [kNm]')
+        ax12b.set_ylabel(r'Bending moment $M(x_\mathrm{rot})$ [kNm]')
 
         ax22.plot(sz.a_t, sz.G_t, label=r'$G$', color='black',
                   linestyle='dashed')
