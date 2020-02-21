@@ -545,10 +545,7 @@ class ShearZone(Simulator):
     '''Shear force'''
 
     def _get_Q(self):
-        if self.x_fps_a[0] < 0:
-            return 0.001
-        else:
-            return self.M / (self.L - self.x_rot_a[0])
+        return self.M / (self.L - self.x_rot_a[0])
 
     tau_fps = tr.Property
     '''Shear stress in global xz coordinates in the fracture
@@ -818,7 +815,7 @@ class ShearZone(Simulator):
           process segment (FPS)
         '''
         N, _ = self.F_a
-        R_M = (self.theta - self.theta_bar) * 100
+        R_M = (self.theta - self.theta_bar)
         R = np.array([N,  R_M], dtype=np.float_)
         return R
 
@@ -826,7 +823,7 @@ class ShearZone(Simulator):
     '''Get X vector satisfying the conditions given in the residuum.
     '''
 
-    def _get_X_sol(self):
+    def get_X_sol(self):
         X0 = np.copy(self.X[:])
 
         def get_R_X(X):
@@ -838,7 +835,7 @@ class ShearZone(Simulator):
         return res.x
 
     def solve(self):
-        self.X[:] = self.X_sol
+        self.X[:] = self.get_X_sol()
         print(self.get_R())
 
     def next_crack_segment(self):
@@ -929,20 +926,20 @@ class ShearZone(Simulator):
         x, y = self.x_fps_a
         ax.plot(x, y, 'bo', color='green', markersize=10)
 
-    def plot_fps_stress(self, ax2, vot=1):
+    def plot_fps_stress(self, ax, vot=1):
         '''Visualize the stress components affecting the
         crack orientation in the next step.
         '''
         z = self.x_Ia[:-1, 1]
         R = self.response
-        ax2.plot(R['tau_fps'], z, color='blue',
-                 label=r'$\tau^{\mathrm{fps}}_{xz}$')
-        ax2.fill_betweenx(z, R['tau_fps'], 0, color='blue', alpha=0.2)
-        ax2.plot(R['sig_fps_0'], z, color='red',
-                 label=r'$\sigma^{\mathrm{fps}}_{xx}$')
-        ax2.fill_betweenx(z, R['sig_fps_0'], 0, color='red', alpha=0.2)
-        ax2.set_xlabel(r'$\sigma_x$ and $\tau_{xz}$ [MPa]')
-        ax2.legend(loc='center left')
+        ax.plot(R['tau_fps'], z, color='blue',
+                label=r'$\tau^{\mathrm{fps}}_{xz}$')
+        ax.fill_betweenx(z, R['tau_fps'], 0, color='blue', alpha=0.2)
+        ax.plot(R['sig_fps_0'], z, color='red',
+                label=r'$\sigma^{\mathrm{fps}}_{xx}$')
+        ax.fill_betweenx(z, R['sig_fps_0'], 0, color='red', alpha=0.2)
+        ax.set_xlabel(r'$\sigma_x$ and $\tau_{xz}$ [MPa]')
+        ax.legend(loc='center left')
 
     def plot_fps_orientation(self, ax1, vot=1):
         '''Show the lack-of-fit between the direction of principal stresses
@@ -1104,10 +1101,11 @@ class ShearZone(Simulator):
         w.viz_sheet.monitor_chunk_size = 1
         pp1 = PlotPerspective(
             viz2d_list=[fw_geo, fps_state, u_x, Qv],
+            positions=[211, 234, 235, 236],
             twiny=[(fps_state, fps_angle, False),
                    (u_x, S_x, True)],
-            twinx=[(Qv, dGv, False)],
-            positions=[211, 234, 235, 236])
+            twinx=[(Qv, dGv, False)]
+        )
         w.viz_sheet.pp_list = [pp1]
         w.viz_sheet.selected_pp = pp1
         w.viz_sheet.tight_layout = True
@@ -1127,10 +1125,10 @@ if __name__ == '__main__':
         B=100, H=200, L=800,
         n_J=10,
         n_m=8,
-        n_seg=32,
+        n_seg=31,
         eta=0.02,
         initial_crack_position=250,
-        z_f=[20],
+        z_f=[],  # 20],
         A_f=[2 * np.pi * 8**2],
         plot_scale=1,
         mm=mm
