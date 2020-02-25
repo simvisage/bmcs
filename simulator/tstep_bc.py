@@ -1,6 +1,4 @@
 
-import copy
-
 from ibvpy.core.bcond_mngr import \
     BCondMngr
 from mathkit.matrix_la.sys_mtx_assembly import \
@@ -21,8 +19,6 @@ from .xdomain.xdomain import XDomain
 class TStepBC(HasStrictTraits):
 
     sim = WeakRef
-
-    model = DelegatesTo('sim')
 
     hist = DelegatesTo('sim')
 

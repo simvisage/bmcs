@@ -7,6 +7,7 @@ from .i_hist import IHist
 from .i_model import IModel
 from .i_simulator import ISimulator
 from .i_tloop import ITLoop
+from .i_tstep import ITStep
 from .i_xdomain import IXDomain
 from .model import Model
 from .simulator import Simulator

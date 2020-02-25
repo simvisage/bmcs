@@ -55,8 +55,6 @@ def get_phi(T_ab, x_fps_a, x_rot_a, w_f_t):
     v1 = x_fps_a - x_rot_a
     v2 = Q_val[:, 0] - x_rot_a
 
-    cross_v1_v2 = np.einsum('ijk,j,k->...i',
-                            EPS[:, :-1, :-1], v1, v2)[2]
     dot_v1_v2 = np.einsum('i,i',
                           v1, v2)
     v1_norm = np.sqrt(np.einsum('k,k', v1, v1))

@@ -2,9 +2,9 @@
 '''
 
 from traits.api import \
-    HasStrictTraits,\
+    HasStrictTraits, Type,\
     Bool, WeakRef, cached_property,\
-    Property, DelegatesTo, Instance
+    Property, DelegatesTo
 
 from .hist import Hist
 from .i_tstep import ITStep
@@ -23,13 +23,23 @@ class TLoop(HasStrictTraits):
         #calculation
 
     '''
+
+    tstep_type = Type
+
     sim = WeakRef
 
     tline = WeakRef(TLine)
 
-    tstep = WeakRef(ITStep)
+    tstep = Property(depends_on='tstep_type')
+    '''TStep is constructed on demand within for a TLoop.
+    It should not carry any own parameters. Everything should be 
+    obtained via the simulater object.
+    '''
+    @cached_property
+    def _get_tstep(self):
+        return self.tstep_type(sim=self.sim)
 
-    model = DelegatesTo('tstep')
+#    model = DelegatesTo('tstep')
 
     hist = WeakRef(Hist)
 

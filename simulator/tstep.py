@@ -9,7 +9,6 @@ from traits.api import \
 import numpy as np
 
 from .i_hist import IHist
-from .i_model import IModel
 from .i_tstep import ITStep
 
 
@@ -17,7 +16,7 @@ from .i_tstep import ITStep
 class TStep(HasStrictTraits):
     '''Manage the data and metadata of a time step within an interation loop.
     '''
-    model = Instance(IModel)
+    sim = WeakRef
 
     hist = WeakRef(IHist)
 

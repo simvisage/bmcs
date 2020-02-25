@@ -112,7 +112,6 @@ class Simulator(BMCSRootNode):
     @cached_property
     def _get_tloop(self):
         return self.tloop_type(sim=self,
-                               tstep=self.tstep,
                                hist=self.hist,
                                tline=self.tline)
 
@@ -128,7 +127,7 @@ class Simulator(BMCSRootNode):
     '''
     @cached_property
     def _get_tstep(self):
-        return TStepBC(sim=self)
+        return self.tloop.tstep
 
     def pause(self):
         self.tloop.paused = True

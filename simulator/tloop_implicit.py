@@ -14,7 +14,7 @@ class TLoopImplicit(TLoop):
     based algorithms.
     '''
 
-    tstep_type = Type(TStepBC)
+    tstep_type = TStepBC
 
     k_max = Int(100, enter_set=True, auto_set=False)
 
