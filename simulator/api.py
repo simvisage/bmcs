@@ -1,7 +1,4 @@
 
-from simulator.tstep_demo import TStepDemo
-from simulator.xdomain.xdomain_interface1d import XDomainFEInterface1D
-
 from .hist import Hist
 from .i_hist import IHist
 from .i_model import IModel
@@ -16,6 +13,8 @@ from .tloop import TLoop
 from .tloop_implicit import TLoopImplicit
 from .tstep import TStep
 from .tstep_bc import TStepBC
+from .tstep_demo import TStepDemo
 from .xdomain.xdomain_fe_grid import XDomainFEGrid
+from .xdomain.xdomain_interface1d import XDomainFEInterface1D
 from .xdomain.xdomain_lattice import XDomainLattice
 from .xdomain.xdomain_point import XDomainSinglePoint

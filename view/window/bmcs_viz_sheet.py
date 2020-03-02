@@ -23,7 +23,7 @@ from traits.api import \
     HasStrictTraits, WeakRef
 from traitsui.api import \
     View, Item, UItem, VGroup, VSplit, \
-    HSplit, HGroup, Tabbed, TabularEditor
+    HSplit, HGroup, Tabbed, ListEditor
 from traitsui.tabular_adapter import TabularAdapter
 from util.traits.editors import \
     MPLFigureEditor
@@ -76,6 +76,17 @@ viz2d_list_editor = TableEditor(
     columns=[CheckboxColumn(name='visible',  label='visible',
                             width=0.12),
              ObjectColumn(name='name', editable=False, width=0.24,
+                          horizontal_alignment='left'),
+             ])
+
+# The tabular editor works in conjunction with an adapter class, derived from
+# the 'players' trait table editor:
+pp_list_editor = TableEditor(
+    sortable=False,
+    configurable=False,
+    auto_size=False,
+    selected='selected_pp',
+    columns=[ObjectColumn(name='name', editable=False, width=0.24,
                           horizontal_alignment='left'),
              ])
 
@@ -156,14 +167,23 @@ class AnimationDialog(HasStrictTraits):
 
 
 class PlotPerspective(HasStrictTraits):
+    name = Str('<unnamed>')
     viz2d_list = List(Viz2D, input=True)
     positions = List([], input=True)
     twinx = List([], input=True)
     twiny = List([], input=True)
+    data_changed = Event
 
-    figure = WeakRef(Figure)
+    figure = Instance(Figure)
 
-    viz2d_axes = Property(depends_on='+input')
+    tight_layout = Bool(True)
+
+    def _figure_default(self):
+        figure = Figure(facecolor='white')
+        figure.set_tight_layout(self.tight_layout)
+        return figure
+
+    viz2d_axes = Property
 
     @cached_property
     def _get_viz2d_axes(self):
@@ -171,21 +191,21 @@ class PlotPerspective(HasStrictTraits):
                 for viz2d, loc in zip(self.viz2d_list,
                                       self.positions)}
 
-    twinx_axes = Property(depends_on='+input')
+    twinx_axes = Property
 
     @cached_property
     def _get_twinx_axes(self):
         return {viz_2: self.viz2d_axes[viz_1].twinx()
                 for viz_1, viz_2, _ in self.twinx}
 
-    twiny_axes = Property(depends_on='+input')
+    twiny_axes = Property
 
     @cached_property
     def _get_twiny_axes(self):
         return {viz_2: self.viz2d_axes[viz_1].twiny()
                 for viz_1, viz_2, _ in self.twiny}
 
-    axes = Property(depends_on='+input')
+    axes = Property
 
     @cached_property
     def _get_axes(self):
@@ -194,6 +214,24 @@ class PlotPerspective(HasStrictTraits):
         ad.update(self.twinx_axes)
         ad.update(self.twiny_axes)
         return ad
+
+    def clear(self):
+        for viz2d, ax in self.viz2d_axes.items():
+            ax.clear()
+            viz2d.reset(ax)
+        for viz2d, ax in self.twinx_axes.items():
+            ax.clear()
+            viz2d.reset(ax)
+        for viz2d, ax in self.twiny_axes.items():
+            ax.clear()
+            viz2d.reset(ax)
+
+    def replot(self, vot):
+        for viz2d, ax in self.axes.items():
+            ax.clear()
+            viz2d.clear()
+            viz2d.plot(ax, vot)
+        self.data_changed = True
 
     def align_xaxis(self):
         for v1, v2, alignx in self.twiny:
@@ -219,6 +257,12 @@ class PlotPerspective(HasStrictTraits):
         t_new_b = extrema[1][1] - tot_span * (extrema[1][1] - extrema[1][0])
         axes[0].set_xlim(extrema[0][0], b_new_t)
         axes[1].set_xlim(t_new_b, extrema[1][1])
+
+    trait_view = View(
+        UItem('figure', editor=MPLFigureEditor(),
+              resizable=True,
+              springy=True,),
+    )
 
 
 class BMCSVizSheet(ROutputSection):
@@ -312,9 +356,11 @@ class BMCSVizSheet(ROutputSection):
     def run_started(self):
         self.running = True
         self.offline = False
-        for viz2d, ax in self.axes.items():
-            ax.clear()
-            viz2d.reset(ax)
+        for pp in self.pp_list:
+            pp.clear()
+#         for viz2d, ax in self.axes.items():
+#             ax.clear()
+#             viz2d.reset(ax)
         self.mode = 'monitor'
         if self.reference_viz2d:
             ax = self.reference_axes
@@ -340,12 +386,14 @@ class BMCSVizSheet(ROutputSection):
                 self.skipped_steps < (self.monitor_chunk_size - 1):
             self.skipped_steps += 1
             return
-        for viz2d, ax in self.axes.items():
-            ax.clear()
-            viz2d.clear()
-            viz2d.plot(ax, self.vot)
-        if self.selected_pp:
-            self.selected_pp.align_xaxis()
+        for pp in self.pp_list:
+            pp.replot(self.vot)
+#         for viz2d, ax in self.axes.items():
+#             ax.clear()
+#             viz2d.clear()
+#             viz2d.plot(ax, self.vot)
+#         if self.selected_pp:
+#             self.selected_pp.align_xaxis()
         if self.reference_viz2d:
             ax = self.reference_axes
             ax.clear()
@@ -519,13 +567,13 @@ class BMCSVizSheet(ROutputSection):
 
     selected_pp = Instance(PlotPerspective)
 
-    axes = Property(List,
-                    depends_on='viz2d_list,viz2d_list_items,n_cols,viz2d_list_changed')
+    xaxes = Property(List,
+                     depends_on='selected_pp')
     '''Derived axes objects reflecting the layout of plot pane
     and the individual. 
     '''
     @cached_property
-    def _get_axes(self):
+    def _get_xaxes(self):
         self.figure.clear()
         if self.selected_pp:
             self.selected_pp.figure = self.figure
@@ -631,12 +679,19 @@ class BMCSVizSheet(ROutputSection):
         VSplit(
             HSplit(
                 Tabbed(
-                    UItem('figure', editor=MPLFigureEditor(),
+                    UItem('pp_list',
+                          id='notebook',
+                          style='custom',
                           resizable=True,
-                          springy=True,
-                          label='2d plots'),
+                          editor=ListEditor(use_notebook=True,
+                                            deletable=False,
+                                            # selected='selected_pp',
+                                            export='DockWindowShell',
+                                            page_name='.name')
+                          ),
                     UItem('scene', label='3d scene',
-                          editor=SceneEditor(scene_class=MayaviScene)),
+                          editor=SceneEditor(scene_class=MayaviScene)
+                          ),
                     scrollable=True,
                     label='Plot panel'
                 ),
@@ -649,6 +704,11 @@ class BMCSVizSheet(ROutputSection):
                               width=100),
                         UItem('selected_viz2d@',
                               width=200),
+                        UItem('pp_list@',
+                              editor=pp_list_editor,
+                              width=100),
+                        #                         UItem('selected_pp@',
+                        #                               width=200),
                         UItem('viz3d_list@',
                               editor=viz3d_list_editor,
                               width=100),

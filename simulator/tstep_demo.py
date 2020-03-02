@@ -6,8 +6,6 @@ from traits.api import \
     Property, Float, DelegatesTo, \
     cached_property, Event, Dict, Str, Array, provides
 import numpy as np
-from .i_hist import IHist
-from .i_model import IModel
 from .i_tstep import ITStep
 
 

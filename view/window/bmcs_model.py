@@ -2,18 +2,17 @@
 @author: rch
 '''
 
+from ibvpy.core.tline import TLine
 from traits.api import \
     Instance, List, Bool, on_trait_change, Str, provides
-
-from ibvpy.core.tline import TLine
-import numpy as np
-from simulator.api import ISimulator
 from view.ui.bmcs_tree_node import \
     BMCSRootNode
 
+import numpy as np
 
-@provides(ISimulator)
-class BMCSModel(BMCSRootNode):
+
+#@provides(ISimulator)
+class DELETEBMCSModel(BMCSRootNode):
     '''Base class for models included in the iMCS Tool Suite.
     It implements the state dependencies within the model tree.
     It handles also the communication between the model and

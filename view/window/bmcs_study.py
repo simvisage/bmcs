@@ -7,10 +7,11 @@ from threading import Thread
 
 from reporter import Reporter
 from reporter.reporter import ReportStudy
-from simulator.api import ISimulator
+
 import traits.api as tr
 
 from .bmcs_viz_sheet import BMCSVizSheet
+from .i_bmcs_model import IBMCSModel
 
 
 class XRunTimeLoopThread(Thread):
@@ -36,7 +37,7 @@ class BMCSStudy(ReportStudy):
     '''Combine the simulater with specification of outputs
     '''
 
-    sim = tr.Instance(ISimulator)
+    sim = tr.Instance(IBMCSModel)
     '''Model of the studied phoenomenon.
     '''
 

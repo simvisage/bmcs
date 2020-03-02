@@ -33,7 +33,6 @@ class Hist(HasStrictTraits):
     def _get_record_dict(self):
         for vis in self.sim.record.values():
             vis.sim = self.sim
-            vis.setup()
         return {key: vis for key, vis in self.sim.record.items()}
 
     def __getitem__(self, key):

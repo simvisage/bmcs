@@ -9,16 +9,14 @@ from threading import Thread
 from traits.api import \
     Instance, Type, on_trait_change, Str, \
     Property, cached_property, Bool, List, Dict, provides
-from view.ui.bmcs_tree_node import BMCSRootNode, itags_str
+from view import BMCSRootNode, itags_str, IBMCSModel
 
 from .hist import Hist
 from .i_hist import IHist
-from .i_simulator import ISimulator
 from .i_tloop import ITLoop
 from .i_tstep import ITStep
 from .tline import TLine
 from .tloop_implicit import TLoopImplicit
-from .tstep_bc import TStepBC
 
 
 class RunTimeLoopThread(Thread):
@@ -36,7 +34,7 @@ class RunTimeLoopThread(Thread):
         return
 
 
-@provides(ISimulator)
+@provides(IBMCSModel)
 class Simulator(BMCSRootNode):
     r'''Base class for simulators included in the BMCS Tool Suite.
     It implements the state dependencies within the simulation tree.

@@ -13,6 +13,21 @@ from traitsui.api import \
 from .viz2d import Viz2D
 
 
+class Viz2DPlot(Viz2D):
+    '''Plot adaptor for the pull-out simulator.
+    '''
+    label = Property(depends_on='plot_fn')
+
+    @cached_property
+    def _get_label(self):
+        return 'view: %s' % self.plot_fn
+
+    plot_fn = Str
+
+    def plot(self, ax, vot, *args, **kw):
+        getattr(self.vis2d, self.plot_fn)(ax, vot, *args, **kw)
+
+
 class Viz2DDict(HasStrictTraits):
     '''On demand constructor of viz2d object, 
     Objects are constructed upon access using the key within  
@@ -114,6 +129,9 @@ class Vis2D(HasStrictTraits):
                                 )
               ),
     )
+
+    def plt(self, name):
+        return Viz2DPlot(plot_fn=name, vis2d=self)
 
     view = View(
         Include('actions'),

@@ -6,6 +6,7 @@ Created on Dec 3, 2015
 
 from os.path import join
 
+from reporter import ROutputItem
 from traits.api import \
     HasStrictTraits, Dict, Property, Float, \
     Bool, WeakRef, DelegatesTo, cached_property, \
@@ -15,7 +16,6 @@ from traitsui.api import \
     HSplit, Item, VGroup
 
 import matplotlib.pyplot as plt
-from reporter import ROutputItem
 
 
 class Viz2D(ROutputItem):
@@ -25,8 +25,9 @@ class Viz2D(ROutputItem):
     viz_sheet = WeakRef
 
     name = Str('<unnamed>')
-    label = Property(depends_on='label')
     visible = Bool(True)
+
+    label = Property(depends_on='label')
 
     @cached_property
     def _get_label(self):

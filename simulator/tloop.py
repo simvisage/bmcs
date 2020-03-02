@@ -4,10 +4,9 @@
 from traits.api import \
     HasStrictTraits, Type,\
     Bool, WeakRef, cached_property,\
-    Property, DelegatesTo
+    Property
 
 from .hist import Hist
-from .i_tstep import ITStep
 from .tline import TLine
 
 
