@@ -4,12 +4,23 @@ Created on Jan 19, 2020
 @author: rch
 
 Test the case of a straight crack in the middle of a zone.
+
+Design issues
+
+- Simulator contains a time loop with a timestepper.
+- Time stepper represents the corrector predictor  
+  scheme running along the time line from 0 to 1
+- History records the state of the time stepper.
+
 '''
 
+import copy
+
+from scipy.integrate import cumtrapz
 from scipy.interpolate import interp1d
 from scipy.optimize import root
 from simulator.api import \
-    Simulator, TLoop, TStep
+    Simulator, Hist, TLine, TLoop, TStep
 from view import BMCSLeafNode, Vis2D, BMCSWindow, PlotPerspective
 
 import matplotlib.pyplot as plt
@@ -173,15 +184,22 @@ class XDomain(BMCSLeafNode, Vis2D):
     def _get_x_tip_a(self):
         return self.x_fps_a + self.L_fps * self.T_fps_a
 
+    da_fps = tr.Property(tr.Float, depends_on='input_changed')
+    '''Crack length increment contoling the calculation
+    '''
+    @tr.cached_property
+    def _get_da_fps(self):
+        return self.eta * self.L_fps
+
     x1_fps_a = tr.Property(tr.Array, depends_on='state_changed')
     '''Shifted position of the fracture process hot spot. This 
     is the point that is required to achieve the tensile strength
     '''
     @tr.cached_property
     def _get_x1_fps_a(self):
-        x1_fps_a = self.x_fps_a + self.eta * self.L_fps * self.T_fps_a
-        x1_fps_a[1] = np.max([x1_fps_a[1], self.sim.H])
-        return self.x_fps_a + self.eta * self.L_fps * self.T_fps_a
+        x1_fps_a = self.x_fps_a + self.da_fps * self.T_fps_a
+        x1_fps_a[1] = np.min([x1_fps_a[1], self.sim.H])
+        return x1_fps_a
 
     x_fps_a = tr.Property(tr.Array, depends_on='state_changed')
     '''Position of the starting point of the fracture process segment.
@@ -534,7 +552,25 @@ class TStepSZ(TStep, Vis2D):
     '''
     hist = tr.DelegatesTo('sim')
 
-    xd = tr.DelegatesTo('sim')
+    xd = tr.Instance(XDomain)
+
+    def _xd_default(self):
+        return XDomain(sim=self.sim)
+
+    theta = tr.Property
+
+    def _get_theta(self):
+        return self.xd.theta
+
+    v = tr.Property
+
+    def _get_v(self):
+        return self.xd.v
+
+    z_fps = tr.Property
+
+    def _get_z_fps(self):
+        return self.xd.z_fps
 
     t_n = tr.Float(0.0, auto_set=False, enter_set=True)
     '''Fundamental state time.
@@ -637,7 +673,8 @@ class TStepSZ(TStep, Vis2D):
         return Q_single
 
     z_fps = tr.Property(depends_on='state_changed')
-
+    '''Vertical coordinate of the crack tip
+    '''
     @tr.cached_property
     def _get_z_fps(self):
         #z_fps = self.x_fps_a[1]
@@ -710,8 +747,6 @@ class TStepSZ(TStep, Vis2D):
 
     F_f = tr.Property(depends_on='state_changed')
     '''Get the discrete force in the reinforcement f
-    @todo: Currently, uniform strain is assumed along the bar over the
-    total length of the shear zone. Include a pullout
     '''
     @tr.cached_property
     def _get_F_f(self):
@@ -776,75 +811,16 @@ class TStepSZ(TStep, Vis2D):
                                                    self.xd.x_sig_fps_1],
                 lw=3, color='blue')
 
-    def plot_fps_stress(self, ax, vot=1):
-        '''Visualize the stress components affecting the
-        crack orientation in the next step.
-        '''
-        vis = self
-        R = vis.sim.response
-        z_fps = R['z_fps']
-        ax.plot(R['tau_fps'], z_fps, color='blue',
-                label=r'$\tau^{\mathrm{fps}}_{xz}$')
-        ax.fill_betweenx(z_fps, R['tau_fps'], 0, color='blue', alpha=0.2)
-        ax.plot([0, vis.sig_fps_0], [vis.xd.x_sig_fps_1, vis.xd.x_sig_fps_1],
-                lw=3, color='blue')
-        ax.plot(R['sig_fps_0'], z_fps, color='red',
-                label=r'$\sigma^{\mathrm{fps}}_{xx}$')
-        ax.fill_betweenx(z_fps, R['sig_fps_0'], 0, color='red', alpha=0.2)
-        ax.set_xlabel(r'$\sigma_x$ and $\tau_{xz}$ [MPa]')
-        ax.legend(loc='center left')
-
-    def plot_fps_orientation(self, ax1, vot=1):
-        '''Show the lack-of-fit between the direction of principal stresses
-        at the process zone and the converged crack inclination angle.
-        '''
-        vis = self
-        R = vis.sim.response
-        z_fps = R['z_fps']
-        ax1.set_title(r'Fracture propagation segment')
-        ax1.plot(R['theta'], z_fps, color='orange',
-                 label=r'$\theta$')
-        ax1.plot(R['theta_bar'], z_fps, color='black',
-                 linestyle='dashed', label=r'$\bar{\theta}$')
-        ax1.set_xlabel(r'Orientation $\theta$ [$\pi^{-1}$]')
-        ax1.set_ylabel(r'Vertical position $z$ [mm]')
-        ax1.legend(loc='lower left')
-
-    def plot_Qv(self, ax, vot=1):
-        vis = self
-        ax.set_title('Structural response')
-        R = vis.sim.response
-        ax.plot(R['v'], R['Q'] * 1e-3, color='black')
-        ax.set_ylabel(r'Shear force $Q$ [kN]')
-        ax.set_xlabel(r'Displacement $v$ [mm]')
-
-    def plot_Mw(self, ax, vot=1):
-        vis = self
-        ax.set_title('Structural response')
-        R = vis.sim.response
-        ax.plot(R['cmod'], R['M'], color='black')
-        ax.set_ylabel(r'Moment $M$ [Nmm]')
-        ax.set_xlabel(r'CMOD $w$ [mm]')
-
-    def plot_dGv(self, ax, vot=1):
-        vis = self
-        R = vis.sim.response
-        ax.plot(R['v'], R['d_G'], color='magenta')
-        ax.fill_between(R['v'], R['d_G'], color='magenta', alpha=0.05)
-
     def plot_S_Lc(self, ax, S_Lc, idx=0,
                   title='Normal stress profile',
                   label=r'$\sigma_{xx}$',
                   color='red',
                   ylabel=r'Vertical position [mm]',
                   xlabel=r'Stress [MPa]'):
-        vis = self
-        x_La = vis.xd.x_Lb
-        print('S', S_Lc.shape)
-        print('x', x_La.shape)
+        x_La = self.xd.x_Lb
         S_La_min = np.min(S_Lc[:, idx])
         S_La_max = np.max(S_Lc[:, idx])
-        vis.xd.plot_hlines(ax, S_La_min, S_La_max)
+        self.xd.plot_hlines(ax, S_La_min, S_La_max)
         ax.set_title(title)
         ax.plot(S_Lc[:, idx], x_La[:, 1],
                 color=color, label=label)
@@ -855,8 +831,7 @@ class TStepSZ(TStep, Vis2D):
         ax.legend()
 
     def plot_S_L0(self, ax, vot=1):
-        vis = self
-        self.plot_S_Lc(ax, vis.S_La, idx=0,
+        self.plot_S_Lc(ax, self.S_La, idx=0,
                        title='Normal stress profile',
                        label=r'$\sigma_{xx}$',
                        color='red',
@@ -886,7 +861,7 @@ class TLoopSZ(TLoop):
         delta_t = 1 / (n_seg)
         t_n1 = 0
         for seg in range(n_seg):
-            print('seg', seg)
+            print('seg', seg, t_n1)
             try:
                 ts.make_iter()
             except ValueError:
@@ -894,15 +869,160 @@ class TLoopSZ(TLoop):
                 ts.X[1] = 0
                 break
             t_n1 += delta_t
-            self.tstep.t_n1 += t_n1
+            self.tstep.t_n1 = t_n1
             ts.make_incr()
             self.tline.val = min(t_n1, self.tline.max)
+
+
+class ShearZoneHist(Hist):
+    '''History class
+    '''
+    record_traits = tr.List(
+        ['M', 'Q',
+         'v',
+         # 'cmod', 'phi',
+         'z_fps',
+         'tau_fps',
+         'theta',
+         'theta_bar',
+         'sig_fps_0']
+    )
+
+    x_t_Ia = tr.List
+    record_t = tr.Dict
+
+    def init_state(self):
+        super(ShearZoneHist, self).init_state()
+        self.x_t_Ia.append(np.copy(self.sim.tstep.xd.x_t_Ia))
+        for rt in self.record_traits:
+            self.record_t[rt] = [0]
+
+    def record_timestep(self, t, U, F,
+                        state_vars=None):
+        super(ShearZoneHist, self).record_timestep(t, U, F, state_vars)
+        self.x_t_Ia.append(np.copy(self.sim.tstep.xd.x_t_Ia))
+        for rt in self.record_traits:
+            self.record_t[rt].append(getattr(self.sim.tstep, rt))
+
+    #=========================================================================
+    # History browsering
+    #=========================================================================
+    #
+    # Time slider might be an
+    vot = tr.Float
+
+    def _vot_changed(self):
+        idx = self.get_time_idx(self.vot)
+        # update the primary variables of the model
+        # the internal variables and the geometrical
+        # representation of the model.
+        self.ts.xd.x_t_Ia = self.x_t_Ia[idx]
+        self.ts.X = self.U_t[idx, :]
+
+    ts = tr.Property
+
+    @tr.cached_property
+    def _get_ts(self):
+        return copy.deepcopy(self.sim.tstep)
+
+    response = tr.Property
+
+    def _get_response(self):
+        rarr = {key: np.array(vals, dtype=np.float_)
+                for key, vals in self.record_t.items()}
+        return rarr
+
+    #=========================================================================
+    # Energetic characteristics
+    #=========================================================================
+
+    G = tr.Property  # (depends_on='input_changed, state_')
+    '''Dissipated energy
+    '''
+#    @tr.cached_property
+
+    def _get_G(self):
+        Q = self.response['Q']
+        v = self.response['v']
+        W = cumtrapz(Q, v, initial=0)
+        U = Q * v / 2.0
+        return W - U
+
+    d_G = tr.Property  # (depends_on='input_changed')
+    '''Energy release rate
+    '''
+#    @tr.cached_property
+
+    def _get_d_G(self):
+        G = self.G
+        G0 = G[:-1]
+        G1 = G[1:]
+        dG = np.hstack([0, G1 - G0])
+        return dG / self.ts.xd.da_fps / self.sim.B
+
+    def plot_dGv(self, ax, vot=1):
+        R = self.response
+        ax.plot(R['v'], self.d_G, color='magenta')
+        ax.fill_between(R['v'], self.d_G, color='magenta', alpha=0.05)
+
+    def plot_Qv(self, ax, vot=1):
+        ax.set_title('Structural response')
+        R = self.response
+        ax.plot(R['v'], R['Q'] * 1e-3, color='black')
+        ax.set_ylabel(r'Shear force $Q$ [kN]')
+        ax.set_xlabel(r'Displacement $v$ [mm]')
+
+    def plot_Mw(self, ax, vot=1):
+        ax.set_title('Structural response')
+        R = self.response
+        ax.plot(R['cmod'], R['M'], color='black')
+        ax.set_ylabel(r'Moment $M$ [Nmm]')
+        ax.set_xlabel(r'CMOD $w$ [mm]')
+
+    def plot_fps_stress(self, ax, vot=1):
+        '''Visualize the stress components affecting the
+        crack orientation in the next step.
+        '''
+        R = self.response
+        z_fps = R['z_fps']
+        tau_fps = R['theta_bar']
+        sig_fps_0 = R['sig_fps_0']
+        ax.plot(tau_fps, z_fps, color='blue',
+                label=r'$\tau^{\mathrm{fps}}_{xz}$')
+        ax.fill_betweenx(z_fps, tau_fps, 0, color='blue', alpha=0.2)
+        ax.plot([0, self.ts.sig_fps_0],
+                [self.ts.xd.x_sig_fps_1, self.ts.xd.x_sig_fps_1],
+                lw=3, color='blue')
+        ax.plot(sig_fps_0, z_fps, color='red',
+                label=r'$\sigma^{\mathrm{fps}}_{xx}$')
+        ax.fill_betweenx(z_fps, sig_fps_0, 0, color='red', alpha=0.2)
+        ax.set_xlabel(r'$\sigma_x$ and $\tau_{xz}$ [MPa]')
+        ax.legend(loc='center left')
+
+    def plot_fps_orientation(self, ax1, vot=1):
+        '''Show the lack-of-fit between the direction of principal stresses
+        at the process zone and the converged crack inclination angle.
+        '''
+        R = self.response
+        z_fps = R['z_fps']
+        theta = R['theta_bar']
+        theta_bar = R['theta_bar']
+        ax1.set_title(r'Fracture propagation segment')
+        ax1.plot(theta, z_fps, color='orange',
+                 label=r'$\theta$')
+        ax1.plot(theta_bar, z_fps, color='black',
+                 linestyle='dashed', label=r'$\bar{\theta}$')
+        ax1.set_xlabel(r'Orientation $\theta$ [$\pi^{-1}$]')
+        ax1.set_ylabel(r'Vertical position $z$ [mm]')
+        ax1.legend(loc='lower left')
 
 
 class ShearZone(Simulator):
     '''Simulator object putting the 
     '''
     tloop_type = TLoopSZ
+
+    hist_type = ShearZoneHist
 
     node_name = 'shear zone simulation'
 
@@ -920,6 +1040,7 @@ class ShearZone(Simulator):
             self.xd,
         ]
 
+    xd = tr.DelegatesTo('tstep')
     xd = tr.Property(tr.Instance(XDomain), depends_on='GEO')
 
     @tr.cached_property
@@ -974,37 +1095,6 @@ class ShearZone(Simulator):
     '''Number of crack propagation steps.
     '''
 
-    response = tr.Property()
-
-    def _get_response(self):
-        return self.record['sz'].response
-
-    #=========================================================================
-    # Energetic characteristics
-    #=========================================================================
-
-    G = tr.Property  # (depends_on='input_changed, state_')
-    '''Dissipated energy
-    '''
-#    @tr.cached_property
-
-    def _get_G(self):
-        Q = np.hstack([self.response['Q'], self.tstep.Q])
-        v = np.hstack([self.response['v'], self.xd.v])
-        W = np.trapz(Q, v)
-        U = self.Q * self.xd.v / 2.0
-        return W - U
-
-    d_G = tr.Property  # (depends_on='input_changed')
-    '''Energy release rate
-    '''
-#    @tr.cached_property
-
-    def _get_d_G(self):
-        G0 = self.response['G'][-1]
-        G1 = self.G
-        return (G1 - G0) / self.xd.L_fps / self.B
-
     a_t = tr.Property
 
     def _get_a_t(self):
@@ -1012,24 +1102,30 @@ class ShearZone(Simulator):
         return np.linspace(0, n_a_t, n_a_t) * self.xd.L_fps
 
     def get_window(self):
-        self.record['sz'] = ShearZoneRecorder()
         ts = self.tstep
-        fw_geo = self.xd.plt('plot_sz_state')
-        u_x = self.xd.plt('plot_u_L0')
-        fps_state = ts.plt('plot_fps_stress')
-        fps_angle = ts.plt('plot_fps_orientation')
-        fps_sig_w = ts.plt('plot_fps_sig_w')
-        Qv = ts.plt('plot_Qv')
-        dGv = ts.plt('plot_dGv')
-        S_x = ts.plt('plot_S_L0')
+        hist = self.hist
+        fw_geo = hist.ts.xd.plt('plot_sz_state')
+        u_x = hist.ts.xd.plt('plot_u_L0')
+        fps_sig_w = hist.ts.plt('plot_fps_sig_w')
+        Qv = hist.plt('plot_Qv')
+        fps_angle = hist.plt('plot_fps_orientation')
+        fps_state = hist.plt('plot_fps_stress')
+        dGv = hist.plt('plot_dGv')
+        S_x = hist.ts.plt('plot_S_L0')
         Mw = ts.plt('plot_Mw')
 
         pp1 = PlotPerspective(
             name='main view',
-            viz2d_list=[fw_geo, fps_state, S_x, Qv],
-            positions=[211, 234, 235, 236],
-            twiny=[(fps_state, fps_angle, False),
-                   #(u_x, S_x, True)
+            viz2d_list=[fw_geo,
+                        fps_angle,
+                        u_x,
+                        Qv
+                        ],
+            positions=[211,
+                       234, 235, 236
+                       ],
+            twiny=[(fps_angle, fps_state, False),
+                   (u_x, S_x, True)
                    ],
             twinx=[(Qv, dGv, False)]
         )
@@ -1050,45 +1146,8 @@ class ShearZone(Simulator):
         win.viz_sheet.pp_list = [pp1, pp2]
         win.viz_sheet.selected_pp = pp1
         win.viz_sheet.tight_layout = True
+        win.viz_sheet.hist = hist
         return win
-
-    v = tr.DelegatesTo('xd')
-    phi = tr.DelegatesTo('xd')
-    theta = tr.DelegatesTo('xd')
-    cmod = tr.DelegatesTo('xd')
-    M = tr.DelegatesTo('tstep')
-    Q = tr.DelegatesTo('tstep')
-    z_fps = tr.DelegatesTo('tstep')
-    tau_fps = tr.DelegatesTo('tstep')
-    sig_fps_0 = tr.DelegatesTo('tstep')
-    theta_bar = tr.DelegatesTo('tstep')
-
-
-class ShearZoneRecorder(Vis2D):
-
-    record_traits = tr.List(
-        ['M', 'Q', 'v', 'cmod', 'phi',
-         'z_fps', 'tau_fps', 'theta', 'theta_bar',
-         'sig_fps_0', 'G', 'd_G']
-    )
-
-    record = tr.Dict
-
-    def setup(self):
-        self.record = {key: [0] for key in self.record_traits}
-
-    def update(self):
-        sim = self.sim
-        record_vals = sim.trait_get(*self.record_traits)
-        for key, val in self.record.items():
-            val.append(record_vals[key])
-
-    response = tr.Property
-
-    def _get_response(self):
-        rarr = {key: np.array(vals, dtype=np.float_)
-                for key, vals in self.record.items()}
-        return rarr
 
 
 if __name__ == '__main__':
@@ -1097,14 +1156,14 @@ if __name__ == '__main__':
     '''Development history:
 
     1) Test the correctness of the calculation for
-    given values in
+    given values
     2) Integration over the height
     '''
     L_q = 3850
     shear_zone = ShearZone(
         B=250, H=600, L=L_q,
-        n_seg=240,
-        eta=0.05,
+        n_seg=120,
+        eta=0.1,
         initial_crack_position=L_q * 0.8,  # (1 - 0.25 * 0.8),
         z_f=[50],  # [20],
         A_f=[2 * np.pi * 14**2],
@@ -1112,12 +1171,20 @@ if __name__ == '__main__':
     )
     shear_zone.tstep.xtol = 1e-3
     shear_zone.tstep.maxfev = 1000
-
+    if False:
+        shear_zone.n_seg = 8
+        shear_zone.run()
+        print('timeline')
+        print(shear_zone.hist.timesteps)
+        print(shear_zone.hist.t)
+        shear_zone.hist.vot = 1
+        print(shear_zone.hist.ts.xd.x_Ia)
+        shear_zone.hist.vot = 7
+        print(shear_zone.hist.ts.xd.x_Ia)
     if True:
         win = shear_zone.get_window()
         # shear_zone.run()
         win.configure_traits()
-
     if False:
         xd = shear_zone.xd
         print('x_fps')
@@ -1152,7 +1219,7 @@ if __name__ == '__main__':
         xd.plot_sz_state(ax)
         shear_zone.plot_reinf(ax)
         plt.show()
-    if True:
+    if False:
         fig, ((ax11, ax12), (ax21, ax22)) = plt.subplots(
             2, 2, figsize=(12, 8), tight_layout=True)
         mm.plot_sig_w(ax11)

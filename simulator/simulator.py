@@ -138,12 +138,14 @@ class Simulator(BMCSRootNode):
     #=========================================================================
     # HISTORY
     #=========================================================================
+    hist_type = Type(Hist)
+
     hist = Property(Instance(IHist))
     r'''History representation of the model response.
     '''
     @cached_property
     def _get_hist(self):
-        return Hist(sim=self)
+        return self.hist_type(sim=self)
 
     #=========================================================================
     # COMPUTATION THREAD

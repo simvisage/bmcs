@@ -4,23 +4,34 @@ Created on Dec 3, 2015
 @author: rch
 '''
 
+from matplotlib.pyplot import xlabel
 from traits.api import \
     HasStrictTraits, Dict, Property, Float, \
     WeakRef, DelegatesTo, cached_property, \
     Str, List, Button, Bool
 from traitsui.api import \
     View, Group, UItem, Include, EnumEditor, HGroup
+
 from .viz2d import Viz2D
 
 
 class Viz2DPlot(Viz2D):
     '''Plot adaptor for the pull-out simulator.
     '''
-    label = Property(depends_on='plot_fn')
+    xlabel = Str(None)
+
+    label = Property
+
+    def _set_label(self, value):
+        if value:
+            self.xlabel = value
 
     @cached_property
     def _get_label(self):
-        return 'view: %s' % self.plot_fn
+        if self.xlabel:
+            return xlabel
+        else:
+            return 'plot: %s' % self.plot_fn
 
     plot_fn = Str
 
@@ -130,8 +141,8 @@ class Vis2D(HasStrictTraits):
               ),
     )
 
-    def plt(self, name):
-        return Viz2DPlot(plot_fn=name, vis2d=self)
+    def plt(self, name, label=None):
+        return Viz2DPlot(plot_fn=name, label=label, vis2d=self)
 
     view = View(
         Include('actions'),

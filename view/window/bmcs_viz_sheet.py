@@ -15,6 +15,7 @@ from mayavi.core.ui.api import \
     MayaviScene, SceneEditor, MlabSceneModel
 from pyface.api import GUI
 from reporter import ROutputSection
+from simulator.i_hist import IHist
 from traits.api import \
     Str, Instance,  Event, Enum, \
     Tuple, List, Range, Int, Float, \
@@ -280,6 +281,8 @@ class BMCSVizSheet(ROutputSection):
 
     name = Str
 
+    hist = Instance(IHist)
+
     min = Float(0.0)
     '''Simulation start is always 0.0
     '''
@@ -292,6 +295,10 @@ class BMCSVizSheet(ROutputSection):
 
     def _vot_default(self):
         return self.min
+
+    def _vot_changed(self):
+        if self.hist:
+            self.hist.vot = self.vot
 
     vot_slider = Range(low='min', high='max', step=0.01,
                        enter_set=True, auto_set=False)
@@ -358,9 +365,6 @@ class BMCSVizSheet(ROutputSection):
         self.offline = False
         for pp in self.pp_list:
             pp.clear()
-#         for viz2d, ax in self.axes.items():
-#             ax.clear()
-#             viz2d.reset(ax)
         self.mode = 'monitor'
         if self.reference_viz2d:
             ax = self.reference_axes
@@ -427,7 +431,7 @@ class BMCSVizSheet(ROutputSection):
     viz2d_list_changed = Event
 
     def _viz2d_list_editor_clicked_changed(self, *args, **kw):
-        object, column = self.viz2d_list_editor_clicked
+        _, column = self.viz2d_list_editor_clicked
         self.offline = False
         self.viz2d_list_changed = True
         if self.plot_mode == 'single':

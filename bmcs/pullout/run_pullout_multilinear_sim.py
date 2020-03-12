@@ -4,13 +4,13 @@ Created on 12.01.2016
 '''
 
 import numpy as np
-from .pullout_sim import PullOutModel
+from .pullout_sim import PullOutSim
 
 
 def run_pullout_multilinear(*args, **kw):
-    po = PullOutModel(name='t33_pullout_multilinear',
-                      title='Multi-linear bond slip law',
-                      n_e_x=50, w_max=1.0)
+    po = PullOutSim(name='t33_pullout_multilinear',
+                    title='Multi-linear bond slip law',
+                    n_e_x=50, w_max=1.0)
     po.tloop.k_max = 1000
     po.tline.step = 0.05
     po.geometry.L_x = 100.0
@@ -29,8 +29,8 @@ def run_pullout_multilinear(*args, **kw):
 
 
 def run_pullout_multi(*args, **kw):
-    po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=100, w_max=2.0)
+    po = PullOutSim(name='t33_pullout_multilinear',
+                    n_e_x=100, w_max=2.0)
     po.tloop.k_max = 1000
     po.tline.step = 0.02
     po.geometry.L_x = 500.0
@@ -47,15 +47,15 @@ def run_pullout_multi(*args, **kw):
 
 
 def run_cb_multi(*args, **kw):
-    po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=100, k_max=1000, w_max=2.0)
+    po = PullOutSim(name='t33_pullout_multilinear',
+                    n_e_x=100, k_max=1000, w_max=2.0)
     po.fixed_boundary = 'clamped left'
     po.tline.step = 0.02
     po.geometry.L_x = 200.0
-    po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(s_data='0, 0.1, 0.4, 4.0',
-                     tau_data='0, 70.0, 80, 90')
+    po.loading_scenario.trait_set(loading_type='monotonic')
+    po.cross_section.trait_set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
+    po.mats_eval.trait_set(s_data='0, 0.1, 0.4, 4.0',
+                           tau_data='0, 70.0, 80, 90')
     po.mats_eval.update_bs_law = True
     w = po.get_window()
     w.run()
@@ -82,8 +82,8 @@ def run_po_paper2_4layers(*args, **kw):
     tau_arr = 0.7 * np.array([0., 40, 62.763, 79.7754,
                               63.3328, 53.0229, 42.1918,
                               28.6376, 17, 3, 1], dtype=np.float)
-    po = PullOutModel(name='t33_pullout_multilinear',
-                      n_e_x=100, k_max=1000, w_max=2.0)
+    po = PullOutSim(name='t33_pullout_multilinear',
+                    n_e_x=100, k_max=1000, w_max=2.0)
     po.fixed_boundary = 'clamped left'
     po.loading_scenario.set(loading_type='monotonic')
     po.mats_eval.trait_set(E_f=E_f, E_m=E_m)
@@ -103,7 +103,7 @@ def run_multilinear_bond_slip_law_sbr_jbielak():
     '''This is the verification of the calculation by Li. 
     '''
 
-    po = PullOutModel(n_e_x=200, k_max=500, w_max=5.0)
+    po = PullOutSim(n_e_x=200, k_max=500, w_max=5.0)
     po.tline.step = 0.01
     po.loading_scenario.trait_set(loading_type='cyclic',
                                   amplitude_type='constant',
@@ -142,7 +142,7 @@ def run_multilinear_bond_slip_law_epoxy_tvlach():
     '''This is the verification of the calculation by Li. 
     '''
 
-    po = PullOutModel(n_e_x=200, k_max=500, w_max=0.15)
+    po = PullOutSim(n_e_x=200, k_max=500, w_max=0.15)
     po.tline.step = 0.01
     po.loading_scenario.set(loading_type='cyclic',
                             amplitude_type='constant',

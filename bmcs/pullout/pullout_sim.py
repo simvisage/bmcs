@@ -18,7 +18,7 @@ from ibvpy.mats.mats1D5.vmats1D5_bondslip1D import \
 from reporter import RInputRecord
 from scipy import interpolate as ip
 from simulator.api import \
-    Simulator, XDomainFEInterface1D
+    Simulator, Hist, XDomainFEInterface1D
 from traits.api import \
     Property, Instance, cached_property, \
     HasStrictTraits, Bool, List, Float, Trait, Int, Enum, \
@@ -31,12 +31,20 @@ from traitsui.ui_editors.array_view_editor import ArrayViewEditor
 from view.plot2d import Viz2D, Vis2D
 from view.ui import BMCSLeafNode
 from view.ui.bmcs_tree_node import itags_str
-from view.window import BMCSWindow
+from view.window import BMCSWindow, PlotPerspective
+
 import matplotlib.pyplot as plt
 import numpy as np
+import traits.api as tr
 
 
-class PulloutRecord(Vis2D):
+class PulloutHist(Hist, Vis2D):
+
+    record_traits = tr.List(
+        ['P', 'w_0', 'w_L', ]
+    )
+
+    record_t = tr.Dict
 
     Pw = Tuple()
 
@@ -46,17 +54,22 @@ class PulloutRecord(Vis2D):
     sig_t = List([])
     eps_t = List([])
 
-    def setup(self):
+    def init_state(self):
+        super(PulloutHist, self).init_state()
         self.Pw = ([0], [0], [0])
         self.eps_t = []
         self.sig_t = []
+        for rt in self.record_traits:
+            self.record_t[rt] = [0]
 
-    def update(self):
+    def record_timestep(self, t, U, F,
+                        state_vars=None):
+        super(PulloutHist, self).record_timestep(t, U, F, state_vars)
         sim = self.sim
         c_dof = sim.controlled_dof
         f_dof = sim.free_end_dof
-        U_ti = self.sim.hist.U_t
-        F_ti = self.sim.hist.F_t
+        U_ti = self.U_t
+        F_ti = self.F_t
         P = F_ti[:, c_dof]
         w_L = U_ti[:, c_dof]
         w_0 = U_ti[:, f_dof]
@@ -69,9 +82,19 @@ class PulloutRecord(Vis2D):
         self.sig_t.append(
             self.sim.get_sig_Ems(t)
         )
+        for rt in self.record_traits:
+            self.record_t[rt].append(getattr(self.sim, rt))
 
-    def get_t(self):
-        return self.sim.hist.t
+    def get_Pw_t(self):
+        sim = self.sim
+        c_dof = sim.controlled_dof
+        f_dof = sim.free_end_dof
+        U_ti = self.U_t
+        F_ti = self.F_t
+        P = F_ti[:, c_dof]
+        w_L = U_ti[:, c_dof]
+        w_0 = U_ti[:, f_dof]
+        return P, w_0, w_L
 
     def get_U_bar_t(self):
         sim = self.sim
@@ -87,32 +110,24 @@ class PulloutRecord(Vis2D):
         return U_bar_t
 
     def get_W_t(self):
-        P_t, _, w_L = self.sim.get_Pw_t()
+        P_t, _, w_L = self.get_Pw_t()
         W_t = []
         for i, _ in enumerate(w_L):
             W_t.append(np.trapz(P_t[:i + 1], w_L[:i + 1]))
         return W_t
 
     def get_dG_t(self):
-        sim = self.sim
-        t = sim.hist.t
+        t = self.t
         U_bar_t = self.get_U_bar_t()
         W_t = self.get_W_t()
         G = W_t - U_bar_t
         tck = ip.splrep(t, G, s=0, k=1)
         return ip.splev(t, tck, der=1)
 
-
-class Viz2DPullOutFW(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = 'F-W'
-
     show_legend = Bool(True, auto_set=False, enter_set=True)
 
-    def plot(self, ax, vot, *args, **kw):
-        sim = self.vis2d.sim
-        P_t, w_0_t, w_L_t = sim.hist['Pw'].Pw
+    def plot_Pw(self, ax, vot, *args, **kw):
+        P_t, w_0_t, w_L_t = self.get_Pw_t()
         ymin, ymax = np.min(P_t), np.max(P_t)
         L_y = ymax - ymin
         ymax += 0.05 * L_y
@@ -134,103 +149,20 @@ class Viz2DPullOutFW(Viz2D):
         self.plot_marker(ax, vot)
 
     def plot_marker(self, ax, vot):
-        sim = self.vis2d.sim
-        P_t, w_0_t, w_L_t = sim.hist['Pw'].Pw
-        idx = sim.hist.get_time_idx(vot)
+        P_t, w_0_t, w_L_t = self.Pw
+        idx = self.get_time_idx(vot)
         P, w = P_t[idx], w_L_t[idx]
         ax.plot([w], [P], 'o', color='black', markersize=10)
         P, w = P_t[idx], w_0_t[idx]
         ax.plot([w], [P], 'o', color='magenta', markersize=10)
 
-    show_data = Button()
+    def plot_G_t(self, ax, vot,
+                 label_U='U(t)', label_W='W(t)',
+                 color_U='blue', color_W='red'):
 
-    def _show_data_fired(self):
-        P_t = self.vis2d.get_P_t()
-        w_0, w_L = self.vis2d.get_w_t()
-        data = np.vstack([w_0, w_L, P_t]).T
-        show_data = DataSheet(data=data)
-        show_data.edit_traits()
-
-    def plot_tex(self, ax, vot, *args, **kw):
-        self.plot(ax, vot, *args, **kw)
-
-    traits_view = View(
-        Item('name', style='readonly'),
-        Item('show_legend'),
-        Item('show_data')
-    )
-
-
-class Viz2DPullOutField(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = Property(depends_on='plot_fn')
-
-    @cached_property
-    def _get_label(self):
-        return 'field: %s' % self.plot_fn
-
-    plot_fn = Trait('eps_p',
-                    {'eps_p': 'plot_eps_p',
-                     'sig_p': 'plot_sig_p',
-                     'u_p': 'plot_u_p',
-                     's': 'plot_s',
-                     'sf': 'plot_sf',
-                     'omega': 'plot_omega',
-                     'Fint_p': 'plot_Fint_p',
-                     'eps_f(s)': 'plot_eps_s',
-                     },
-                    label='Field',
-                    tooltip='Select the field to plot'
-                    )
-
-    def plot(self, ax, vot, *args, **kw):
-        ymin, ymax = getattr(self.vis2d, self.plot_fn_)(ax, vot, *args, **kw)
-        if self.adaptive_y_range:
-            if self.initial_plot:
-                self.y_max = ymax
-                self.y_min = ymin
-                self.initial_plot = False
-                return
-        self.y_max = max(ymax, self.y_max)
-        self.y_min = min(ymin, self.y_min)
-        ax.set_ylim(ymin=self.y_min, ymax=self.y_max)
-
-    def savefig(self, fname):
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        for vot in [0.25, 0.5, 0.75, 1.0]:
-            self.plot(ax, vot)
-        fig.savefig(fname)
-
-    y_max = Float(1.0, label='Y-max value',
-                  auto_set=False, enter_set=True)
-    y_min = Float(0.0, label='Y-min value',
-                  auto_set=False, enter_set=True)
-
-    adaptive_y_range = Bool(True)
-    initial_plot = Bool(True)
-
-    traits_view = View(
-        Item('plot_fn', resizable=True, full_size=True),
-        Item('y_min', ),
-        Item('y_max', ),
-        Item('adaptive_y_range')
-    )
-
-
-class Viz2DEnergyPlot(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = 'line plot'
-
-    def plot(self, ax, vot,
-             label_U='U(t)', label_W='W(t)',
-             color_U='blue', color_W='red'):
-
-        t = self.vis2d.get_t()
-        U_bar_t = self.vis2d.get_U_bar_t()
-        W_t = self.vis2d.get_W_t()
+        t = self.t
+        U_bar_t = self.get_U_bar_t()
+        W_t = self.get_W_t()
         if len(W_t) == 0:
             return
         ax.plot(t, W_t, color=color_W, label=label_W)
@@ -241,18 +173,18 @@ class Viz2DEnergyPlot(Viz2D):
         ax.set_xlabel('time [-]')
         ax.legend()
 
-
-class Viz2DEnergyReleasePlot(Viz2D):
-    '''Plot adaptor for the pull-out simulator.
-    '''
-    label = 'line plot'
-
-    def plot(self, ax, vot, *args, **kw):
-        t = self.vis2d.get_t()
-        dG = self.vis2d.get_dG_t()
+    def plot_dG_t(self, ax, vot, *args, **kw):
+        t = self.t
+        dG = self.get_dG_t()
         ax.plot(t, dG, color='black', label='dG/dt')
-        ax.fill_between(t, 0, dG, facecolor='blue', alpha=0.2)
+        ax.fill_between(t, 0, dG, facecolor='blue', alpha=0.05)
         ax.legend()
+
+    show_data = Button()
+
+    def _show_data_fired(self):
+        show_data = DataSheet(data=self.U_t)
+        show_data.edit_traits()
 
 
 class CrossSection(BMCSLeafNode, RInputRecord):
@@ -319,9 +251,6 @@ class DataSheet(HasStrictTraits):
              resizable=True,
              editor=ArrayViewEditor(titles=['x', 'y', 'z'],
                                     format='%.4f',
-                                    # Font fails with wx in OSX;
-                                    #   see traitsui issue #13:
-                                    # font   = 'Arial 8'
                                     )
              ),
         width=0.5,
@@ -329,7 +258,9 @@ class DataSheet(HasStrictTraits):
     )
 
 
-class PullOutModel(Simulator):
+class PullOutSim(Simulator, Vis2D):
+
+    hist_type = PulloutHist
 
     node_name = 'pull out simulation'
 
@@ -583,6 +514,24 @@ class PullOutModel(Simulator):
     # Getter functions @todo move to the PulloutStateRecord
     #=========================================================================
 
+    P = tr.Property
+
+    def _get_P(self):
+        c_dof = self.controlled_dof
+        return self.tstep.F_k[c_dof]
+
+    w_L = tr.Property
+
+    def _get_w_L(self):
+        c_dof = self.controlled_dof
+        return self.tstep.U_n[c_dof]
+
+    w_0 = tr.Property
+
+    def _get_w_0(self):
+        f_dof = self.free_end_dof
+        return self.tstep.U_n[f_dof]
+
     def get_u_p(self, vot):
         '''Displacement field
         '''
@@ -640,28 +589,12 @@ class PullOutModel(Simulator):
         return sig_Ems[..., 1].flatten()
 
     def get_shear_integ(self):
-        #         d_ECid = self.get_d_ECid(vot)
-        #         s_Emd = np.einsum('Cim,ECid->Emd', self.tstepper.sN_Cim, d_ECid)
-        #         idx = self.tloop.get_time_idx(vot)
-        #         sf = self.tloop.sf_Em_record[idx]
-
         sf_t_Em = np.array(self.tloop.sf_Em_record)
         w_ip = self.fets_eval.ip_weights
         J_det = self.tstepper.J_det
         P_b = self.cross_section.P_b
         shear_integ = np.einsum('tEm,m,em->t', sf_t_Em, w_ip, J_det) * P_b
         return shear_integ
-
-    def get_Pw_t(self):
-        sim = self
-        c_dof = sim.controlled_dof
-        f_dof = sim.free_end_dof
-        U_ti = sim.hist.U_t
-        F_ti = sim.hist.F_t
-        P = F_ti[:, c_dof]
-        w_L = U_ti[:, c_dof]
-        w_0 = U_ti[:, f_dof]
-        return P, w_0, w_L
 
     #=========================================================================
     # Plot functions
@@ -718,8 +651,9 @@ class PullOutModel(Simulator):
     def plot_s(self, ax, vot):
         X_J = self.X_M
         s = self.get_s(vot)
-        ax.fill_between(X_J, 0, s, facecolor='lightcoral', alpha=0.3)
-        ax.plot(X_J, s, linewidth=2, color='lightcoral')
+        color = 'green'
+        ax.fill_between(X_J, 0, s, facecolor=color, alpha=0.3)
+        ax.plot(X_J, s, linewidth=2, color=color)
         ax.set_ylabel('slip')
         ax.set_xlabel('bond length')
         return np.min(s), np.max(s)
@@ -727,8 +661,9 @@ class PullOutModel(Simulator):
     def plot_sf(self, ax, vot):
         X_J = self.X_M
         sf = self.get_sf(vot)
-        ax.fill_between(X_J, 0, sf, facecolor='lightcoral', alpha=0.3)
-        ax.plot(X_J, sf, linewidth=2, color='lightcoral')
+        color = 'red'
+        ax.fill_between(X_J, 0, sf, facecolor=color, alpha=0.2)
+        ax.plot(X_J, sf, linewidth=2, color=color)
         ax.set_ylabel('shear flow')
         ax.set_xlabel('bond length')
         return np.min(sf), np.max(sf)
@@ -751,30 +686,27 @@ class PullOutModel(Simulator):
         ax.set_xlabel('slip')
 
     def get_window(self):
-        self.record['Pw'] = PulloutRecord()
-        fw = Viz2DPullOutFW(name='pullout-curve', vis2d=self.hist['Pw'])
-        u_p = Viz2DPullOutField(name='displacement along the bond',
-                                plot_fn='u_p', vis2d=self)
-        eps_p = Viz2DPullOutField(name='strain along the bond',
-                                  plot_fn='eps_p', vis2d=self)
-        sig_p = Viz2DPullOutField(name='stress along the bond',
-                                  plot_fn='sig_p', vis2d=self)
-        s = Viz2DPullOutField(name='slip along the bond',
-                              plot_fn='s', vis2d=self)
-        sf = Viz2DPullOutField(name='shear flow along the bond',
-                               plot_fn='sf', vis2d=self)
-        energy = Viz2DEnergyPlot(name='energy',
-                                 vis2d=self.hist['Pw'])
-        dissipation = Viz2DEnergyReleasePlot(name='energy release',
-                                             vis2d=self.hist['Pw'])
-        w = BMCSWindow(sim=self)
-        w.viz_sheet.viz2d_list.append(fw)
-        w.viz_sheet.viz2d_list.append(u_p)
-        w.viz_sheet.viz2d_list.append(eps_p)
-        w.viz_sheet.viz2d_list.append(sig_p)
-        w.viz_sheet.viz2d_list.append(s)
-        w.viz_sheet.viz2d_list.append(sf)
-        w.viz_sheet.viz2d_list.append(energy)
-        w.viz_sheet.viz2d_list.append(dissipation)
-        w.viz_sheet.monitor_chunk_size = 10
-        return w
+        Pw = self.hist.plt('plot_Pw', label='pullout curve')
+        u_p = self.plt('plot_u_p', label='displacement along the bond')
+        eps_p = self.plt('plot_eps_p', label='strain along the bond')
+        sig_p = self.plt('plot_sig_p', label='stress along the bond')
+        s = self.plt('plot_s', label='slip along the bond')
+        sf = self.plt('plot_sf', label='shear flow along the bond')
+        energy = self.hist.plt('plot_G_t', label='energy')
+        dissipation = self.hist.plt('plot_dG_t', label='energy release')
+        pp1 = PlotPerspective(
+            name='history',
+            viz2d_list=[Pw, energy, dissipation],
+            positions=[121, 222, 224],
+        )
+        pp2 = PlotPerspective(
+            name='fields',
+            viz2d_list=[s, u_p, eps_p, sig_p],
+            twinx=[(s, sf, False)],
+            positions=[221, 222, 223, 224],
+        )
+        win = BMCSWindow(sim=self)
+        win.viz_sheet.pp_list = [pp1, pp2]
+        win.viz_sheet.selected_pp = pp1
+        win.viz_sheet.monitor_chunk_size = 10
+        return win

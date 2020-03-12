@@ -3,21 +3,22 @@ Created on 12.01.2016
 @author: ABaktheer, RChudoba, Yingxiong
 '''
 
-from .pullout_sim import PullOutModel
+from .pullout_sim import PullOutSim
 
 
 def run_pullout_fatigue(*args, **kw):
-    po = PullOutModel(n_e_x=200, k_max=500, control_variable='f', w_max=1)
+    po = PullOutSim(n_e_x=200, k_max=500,
+                    control_variable='f', w_max=1)
     po.tline.step = 0.001
     po.tloop.k_max = 1000
     po.geometry.L_x = 82.0
-    po.loading_scenario.set(loading_type='cyclic')
+    po.loading_scenario.trait_set(loading_type='cyclic')
     po.loading_scenario.trait_set(number_of_cycles=20,
                                   maximum_loading=10000,  # 19200)
                                   unloading_ratio=0.1,
                                   amplitude_type="constant",
                                   loading_range="non-symmetric")
-    po.cross_section.set(A_f=153.9, P_b=44, A_m=15400.0)
+    po.cross_section.trait_set(A_f=153.9, P_b=44, A_m=15400.0)
     po.mats_eval_type = 'cumulative fatigue'
     po.mats_eval.trait_set(
         E_b=12900,
@@ -35,7 +36,7 @@ def run_pullout_fatigue(*args, **kw):
 def test_reporter():
     from reporter import Reporter
     from view.window import BMCSWindow
-    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.0)
+    po = PullOutSim(n_e_x=100, k_max=500, w_max=1.0)
     po.tline.step = 0.01
     po.geometry.L_x = 500.0
     po.loading_scenario.set(loading_type='monotonic')

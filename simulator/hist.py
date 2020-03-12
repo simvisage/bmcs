@@ -7,14 +7,14 @@ Created on Dec 17, 2018
 from traits.api import \
     HasStrictTraits, provides, \
     List, Dict, WeakRef, Property, cached_property
-
+from view.plot2d import Vis2D
 import numpy as np
 
 from .i_hist import IHist
 
 
 @provides(IHist)
-class Hist(HasStrictTraits):
+class Hist(Vis2D):
     '''Object storing and managing the history of calculation.
     '''
 
