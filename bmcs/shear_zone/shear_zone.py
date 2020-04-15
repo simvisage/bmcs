@@ -29,9 +29,13 @@ import numpy as np
 import traits.api as tr
 import traitsui.api as ui
 
+<<<<<<< HEAD
 from .sz_material_model import IMaterialModel, MaterialModel
 from .sz_rotation_kinematics import get_phi
 from .sz_theta import get_theta_0, get_theta_f
+=======
+from bmcs.shear_zone.sz_rotation_kinematics import get_phi
+>>>>>>> master
 
 
 EPS = np.zeros((3, 3, 3), dtype='f')
