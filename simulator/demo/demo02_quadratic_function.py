@@ -8,15 +8,17 @@ quadratic function.
 
 import time
 
+from simulator.api import \
+    TLoop, TStep
 from traits.api import \
     Int, Float
 import traits.has_traits
 
-from bmcs.simulator import \
-    Simulator, TLoop, Model
 import numpy as np
 
 from .interaction_scripts import run_rerun_test
+
+
 traits.has_traits.CHECK_INTERFACES = 2
 
 
@@ -30,13 +32,13 @@ class DemoNRTLoop(TLoop):
         t_n1 = self.tline.val
         t_max = self.tline.max
         dt = self.tline.step
-        U_k = self.model.get_state()
+        U_k = self.tstep.get_state()
         while t_n1 < t_max:
             print('\ttime: %g' % t_n1, end='')
             k = 0
             # run the iteration loop
             while (k < self.k_max) and not self.user_wants_abort:
-                R, dR = self.model.get_corr_pred(U_k, t_n1)
+                R, dR = self.tstep.get_corr_pred(U_k, t_n1)
                 if np.sqrt(R * R) < 1e-5:
                     print('\titer: %g' % k)
                     break
@@ -51,8 +53,8 @@ class DemoNRTLoop(TLoop):
                           'convergence not reached in %g iterations', k)
                 return
             # accept the time step
-            self.model.update_state(U_k, t_n1)
-            self.hist.record_timestep(t_n1, U_k)
+            self.tstep.update_state(U_k, t_n1)
+            self.hist.record_timestep(t_n1, U_k, R)
             # tline launches notifiers to announce a new step to subscribers
             self.tline.val = t_n1
             # set a new target time
@@ -60,7 +62,8 @@ class DemoNRTLoop(TLoop):
         return
 
 
-class DemoQuadFNModel(Model):
+class DemoQuadFNModel(TStep):
+
     tloop_type = DemoNRTLoop
 
     R0 = Float(1.0, auto_set=False, enter_set=True)
@@ -83,7 +86,7 @@ class DemoQuadFNModel(Model):
         dR = max(np.fabs(dR), 1e-3)
         # sleep a bit to make the calculation slower - sleep for 100 msecs
         # to demonstrate the pause-resume, stop-restart functionality
-        time.sleep(0.1)
+        time.sleep(0.01)
         return R, dR
 
     def init_state(self):
@@ -110,7 +113,7 @@ class DemoQuadFNModel(Model):
 
 
 # Construct a Simulator
-m = DemoQuadFNModel()
-s = Simulator(model=m)
-print(s.tloop)
-run_rerun_test(s)
+model = DemoQuadFNModel()
+sim = model.sim
+print(sim.tloop)
+run_rerun_test(sim)

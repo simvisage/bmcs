@@ -3,18 +3,19 @@ Created on 12.01.2016
 @author: ABaktheer, RChudoba, Yingxiong
 '''
 
-from .pullout_sim import PullOutSim
+from .pullout_sim import PullOutModel
 
 
 def run_pullout_ep(*args, **kw):
-    po = PullOutSim(n_e_x=100, k_max=500, w_max=1.5)
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
     po.tline.step = 0.01
     po.geometry.L_x = 200.0
     po.loading_scenario.trait_set(loading_type='monotonic')
     po.cross_section.trait_set(A_f=16.67, P_b=1.0, A_m=1540.0)
     po.mats_eval_type = 'elasto-plasticity'
     po.mats_eval.trait_set(gamma=0.0, K=0.0, tau_bar=0.0)
-    w = po.get_window()
+    s = po.sim
+    w = s.get_window()
     w.run()
     w.offline = False
     w.finish_event = True
@@ -22,9 +23,8 @@ def run_pullout_ep(*args, **kw):
 
 
 def run_pullout_ep_cyclic():
-    po = PullOutSim(n_e_x=200, k_max=500, w_max=2.5,
-                    mats_eval_type='elasto-plasticity')
-    po.tline.step = 0.01
+    po = PullOutModel(n_e_x=200, k_max=500, w_max=2.5,
+                      mats_eval_type='elasto-plasticity')
     po.loading_scenario.trait_set(loading_type='cyclic',
                                   amplitude_type='constant',
                                   loading_range='non-symmetric'
@@ -34,6 +34,8 @@ def run_pullout_ep_cyclic():
                                   )
     po.cross_section.trait_set(A_f=16.67, P_b=1.0, A_m=1540.0)
     po.mats_eval.trait_set(gamma=25.0, K=0.0, tau_bar=2.5 * 9.0)
+    s = po.sim
+    s.tline.step = 0.01
     w = po.get_window()
     w.run()
     w.configure_traits()

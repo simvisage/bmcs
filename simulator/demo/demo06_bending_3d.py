@@ -19,8 +19,6 @@ extracting data from several domains
 
 import time
 
-from mayavi import mlab
-
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS3D8H
 from ibvpy.mats.mats2D import \
@@ -32,9 +30,10 @@ from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
 from ibvpy.mats.viz3d_scalar_field import \
     Vis3DStateField, Viz3DScalarField
 from ibvpy.mats.viz3d_tensor_field import \
-    Vis3DStrainField, Vis3DStressField, Viz3DTensorField
+    Vis3DTensorField, Viz3DTensorField
+from mayavi import mlab
 from simulator.api import \
-    Simulator, XDomainFEGrid
+    TStepBC, XDomainFEGrid
 
 from .mlab_decorators import decorate_figure
 
@@ -77,19 +76,23 @@ m_mic = MATS3DMplDamageEEQ(
     c_T=0.01
 )
 
-s = Simulator(
+model = TStepBC(
     domains=[(dgrid1, m_mic)],
     bc=[fixed_right_bc, fixed_x, control_bc],
     record={
-        'strain': Vis3DStrainField(var='eps_ab'),
-        'stress': Vis3DStressField(var='sig_ab'),
+        'strain': Vis3DTensorField(var='eps_ab'),
+        'stress': Vis3DTensorField(var='sig_ab'),
         #        'damage': Vis3DStateField(var='omega_a'),
     }
 )
-
-s.tloop.k_max = 200
+s = model.sim
+s.tloop.k_max = 1000
+s.tloop.verbose = True
 s.tline.step = 0.05
-s.run()
+print(model.hist)
+print(model.hist.record_dict)
+print(model.hist.record_dict['strain'])
+s.run_thread()
 time.sleep(8)
 
 mlab.options.backend = 'envisage'
@@ -97,18 +100,18 @@ mlab.options.backend = 'envisage'
 f_strain = mlab.figure()
 scene = mlab.get_engine().scenes[-1]
 scene.name = 'stress'
-strain_viz = Viz3DTensorField(vis3d=s.hist['strain'])
+strain_viz = Viz3DTensorField(vis3d=model.hist['strain'])
 strain_viz.setup()
 strain_viz.warp_vector.filter.scale_factor = 100.0
-strain_viz.plot(s.tstep.t_n)
+strain_viz.plot(model.t_n)
 
 f_stress = mlab.figure()
 scene = mlab.get_engine().scenes[-1]
 scene.name = 'stress'
-stress_viz = Viz3DTensorField(vis3d=s.hist['stress'])
+stress_viz = Viz3DTensorField(vis3d=model.hist['stress'])
 stress_viz.setup()
 stress_viz.warp_vector.filter.scale_factor = 100.0
-stress_viz.plot(s.tstep.t_n)
+stress_viz.plot(model.t_n)
 
 
 # f_damage = mlab.figure()

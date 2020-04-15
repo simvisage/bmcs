@@ -17,8 +17,9 @@ from ibvpy.mats.mats1D5.vmats1D5_bondslip1D import \
     MATSBondSlipD, MATSBondSlipEP, MATSBondSlipFatigue
 from reporter import RInputRecord
 from scipy import interpolate as ip
+from scipy.integrate import cumtrapz
 from simulator.api import \
-    Simulator, Hist, XDomainFEInterface1D
+    TStepBC, Hist, XDomainFEInterface1D
 from traits.api import \
     Property, Instance, cached_property, \
     HasStrictTraits, Bool, List, Float, Trait, Int, Enum, \
@@ -28,12 +29,10 @@ from traits.api import \
 from traitsui.api import \
     View, Item, Group
 from traitsui.ui_editors.array_view_editor import ArrayViewEditor
-from view.plot2d import Viz2D, Vis2D
-from view.ui import BMCSLeafNode
-from view.ui.bmcs_tree_node import itags_str
+from view.plot2d import Vis2D
+from view.ui import BMCSLeafNode, itags_str, BMCSRootNode
 from view.window import BMCSWindow, PlotPerspective
 
-import matplotlib.pyplot as plt
 import numpy as np
 import traits.api as tr
 
@@ -55,6 +54,7 @@ class PulloutHist(Hist, Vis2D):
     eps_t = List([])
 
     def init_state(self):
+        print('INITINITINIT')
         super(PulloutHist, self).init_state()
         self.Pw = ([0], [0], [0])
         self.eps_t = []
@@ -65,9 +65,8 @@ class PulloutHist(Hist, Vis2D):
     def record_timestep(self, t, U, F,
                         state_vars=None):
         super(PulloutHist, self).record_timestep(t, U, F, state_vars)
-        sim = self.sim
-        c_dof = sim.controlled_dof
-        f_dof = sim.free_end_dof
+        c_dof = self.tstep_source.controlled_dof
+        f_dof = self.tstep_source.free_end_dof
         U_ti = self.U_t
         F_ti = self.F_t
         P = F_ti[:, c_dof]
@@ -75,20 +74,19 @@ class PulloutHist(Hist, Vis2D):
         w_0 = U_ti[:, f_dof]
         self.Pw = P, w_0, w_L
 
-        t = self.sim.tstep.t_n1
+        t = self.tstep_source.t_n1
         self.eps_t.append(
-            self.sim.get_eps_Ems(t)
+            self.tstep_source.get_eps_Ems(t)
         )
         self.sig_t.append(
-            self.sim.get_sig_Ems(t)
+            self.tstep_source.get_sig_Ems(t)
         )
         for rt in self.record_traits:
-            self.record_t[rt].append(getattr(self.sim, rt))
+            self.record_t[rt].append(getattr(self.tstep_source, rt))
 
     def get_Pw_t(self):
-        sim = self.sim
-        c_dof = sim.controlled_dof
-        f_dof = sim.free_end_dof
+        c_dof = self.tstep_source.controlled_dof
+        f_dof = self.tstep_source.free_end_dof
         U_ti = self.U_t
         F_ti = self.F_t
         P = F_ti[:, c_dof]
@@ -97,8 +95,7 @@ class PulloutHist(Hist, Vis2D):
         return P, w_0, w_L
 
     def get_U_bar_t(self):
-        sim = self.sim
-        xdomain = sim.tstep.fe_domain[0].xdomain
+        xdomain = self.tstep_source.fe_domain[0].xdomain
         fets = xdomain.fets
         A = xdomain.A
         sig_t = np.array(self.sig_t)
@@ -111,9 +108,7 @@ class PulloutHist(Hist, Vis2D):
 
     def get_W_t(self):
         P_t, _, w_L = self.get_Pw_t()
-        W_t = []
-        for i, _ in enumerate(w_L):
-            W_t.append(np.trapz(P_t[:i + 1], w_L[:i + 1]))
+        W_t = cumtrapz(P_t, w_L, initial=0)
         return W_t
 
     def get_dG_t(self):
@@ -121,6 +116,10 @@ class PulloutHist(Hist, Vis2D):
         U_bar_t = self.get_U_bar_t()
         W_t = self.get_W_t()
         G = W_t - U_bar_t
+        G0 = G[:-1]
+        G1 = G[1:]
+        dG = np.hstack([0, G1 - G0])
+        return dG
         tck = ip.splrep(t, G, s=0, k=1)
         return ip.splev(t, tck, der=1)
 
@@ -258,7 +257,7 @@ class DataSheet(HasStrictTraits):
     )
 
 
-class PullOutSim(Simulator, Vis2D):
+class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
 
     hist_type = PulloutHist
 
@@ -269,20 +268,20 @@ class PullOutSim(Simulator, Vis2D):
     def _tree_node_list_default(self):
 
         return [
-            self.tline,
-            self.loading_scenario,
-            self.mats_eval,
-            self.cross_section,
-            self.geometry
-        ]
-
-    def _update_node_list(self):
-        self.tree_node_list = [
-            self.tline,
             self.loading_scenario,
             self.mats_eval,
             self.cross_section,
             self.geometry,
+            self.sim
+        ]
+
+    def _update_node_list(self):
+        self.tree_node_list = [
+            self.loading_scenario,
+            self.mats_eval,
+            self.cross_section,
+            self.geometry,
+            self.sim
         ]
 
     tree_view = View(
@@ -298,6 +297,14 @@ class PullOutSim(Simulator, Vis2D):
         )
     )
 
+    @tr.on_trait_change(itags_str)
+    def report_change(self):
+        self.model_structure_changed = True
+        print('something changed')
+
+    @tr.on_trait_change('GEO')
+    def ge_change(self):
+        print('GEO changed')
     #=========================================================================
     # Test setup parameters
     #=========================================================================
@@ -421,10 +428,11 @@ class PullOutSim(Simulator, Vis2D):
     def _get_fe_grid(self):
         return self.dots_grid.mesh
 
-    domains = Property(depends_on=itags_str)
+    domains = Property(depends_on=itags_str + 'model_structure_changed')
 
     @cached_property
     def _get_domains(self):
+        print('reconstructed model')
         return [(self.dots_grid, self.mats_eval)]
 
     #=========================================================================
@@ -507,7 +515,7 @@ class PullOutSim(Simulator, Vis2D):
     X_M = Property()
 
     def _get_X_M(self):
-        state = self.tstep.fe_domain[0]
+        state = self.fe_domain[0]
         return state.xdomain.x_Ema[..., 0].flatten()
 
     #=========================================================================
@@ -518,26 +526,26 @@ class PullOutSim(Simulator, Vis2D):
 
     def _get_P(self):
         c_dof = self.controlled_dof
-        return self.tstep.F_k[c_dof]
+        return self.F_k[c_dof]
 
     w_L = tr.Property
 
     def _get_w_L(self):
         c_dof = self.controlled_dof
-        return self.tstep.U_n[c_dof]
+        return self.U_n[c_dof]
 
     w_0 = tr.Property
 
     def _get_w_0(self):
         f_dof = self.free_end_dof
-        return self.tstep.U_n[f_dof]
+        return self.U_n[f_dof]
 
     def get_u_p(self, vot):
         '''Displacement field
         '''
         idx = self.hist.get_time_idx(vot)
         U = self.hist.U_t[idx]
-        state = self.tstep.fe_domain[0]
+        state = self.fe_domain[0]
         dof_Epia = state.xdomain.o_Epia
         fets = state.xdomain.fets
         u_Epia = U[dof_Epia]
@@ -547,7 +555,7 @@ class PullOutSim(Simulator, Vis2D):
 
     def get_eps_Ems(self, vot):
         '''Epsilon in the components'''
-        state = self.tstep.fe_domain[0]
+        state = self.fe_domain[0]
         idx = self.hist.get_time_idx(vot)
         U = self.hist.U_t[idx]
         return state.xdomain.map_U_to_field(U)
@@ -565,12 +573,12 @@ class PullOutSim(Simulator, Vis2D):
     def get_sig_Ems(self, vot):
         '''Get streses in the components 
         '''
-        txdomain = self.tstep.fe_domain[0]
+        txdomain = self.fe_domain[0]
         idx = self.hist.get_time_idx(vot)
         U = self.hist.U_t[idx]
         t_n1 = self.hist.t[idx]
         eps_Ems = txdomain.xdomain.map_U_to_field(U)
-        state_vars_t = self.tstep.hist.state_vars[idx]
+        state_vars_t = self.hist.state_vars[idx]
         state_k = copy.deepcopy(state_vars_t)
         sig_Ems, _ = txdomain.tmodel.get_corr_pred(
             eps_Ems, t_n1, **state_k[0]
@@ -705,7 +713,7 @@ class PullOutSim(Simulator, Vis2D):
             twinx=[(s, sf, False)],
             positions=[221, 222, 223, 224],
         )
-        win = BMCSWindow(sim=self)
+        win = BMCSWindow(model=self)
         win.viz_sheet.pp_list = [pp1, pp2]
         win.viz_sheet.selected_pp = pp1
         win.viz_sheet.monitor_chunk_size = 10

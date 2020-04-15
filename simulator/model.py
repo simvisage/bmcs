@@ -4,16 +4,18 @@ Created on Dec 17, 2018
 @author: rch
 '''
 
-from traits.api import \
-    provides, Type
 from view.ui.bmcs_tree_node import \
     BMCSTreeNode
+
+import traits.api as tr
+
 from .i_model import IModel
+from simulator.sim_base import Simulator
 from .tloop import TLoop
 from .tstep import TStep
 
 
-@provides(IModel)
+@tr.provides(IModel)
 class Model(BMCSTreeNode):
     '''
     Base class of a time-stepping model capturing the state
@@ -34,11 +36,11 @@ class Model(BMCSTreeNode):
     a material point. 
     '''
 
-    tloop_type = Type(TLoop)
+    tloop_type = tr.Type(TLoop)
     '''Type of time loop to be used with the model
     '''
 
-    tstep_type = Type(TStep)
+    tstep_type = tr.Type(TStep)
     '''Type of the time step to be used with the model
     '''
 

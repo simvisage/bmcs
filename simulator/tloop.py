@@ -1,16 +1,15 @@
 '''
 '''
 
-from traits.api import \
-    HasStrictTraits, Type,\
-    Bool, WeakRef, cached_property,\
-    Property
+import traits.api as tr
 
-from .hist import Hist
-from .tline import TLine
+from .i_tloop import ITLoop
+from .i_tstep import ITStep
+from .tline_mixin import TLineMixIn
 
 
-class TLoop(HasStrictTraits):
+@tr.provides(ITLoop)
+class TLoop(TLineMixIn):
     '''The time loop serves as the base class for application time loops.
     That can be interrupted paused, resumed or restarted.
 
@@ -23,30 +22,23 @@ class TLoop(HasStrictTraits):
 
     '''
 
-    tstep_type = Type
+    tstep = tr.WeakRef(ITStep)
 
-    sim = WeakRef
+    sim = tr.Property
 
-    tline = WeakRef(TLine)
+    def _get_sim(self):
+        return self.tstep.sim
 
-    tstep = Property(depends_on='tstep_type')
-    '''TStep is constructed on demand within for a TLoop.
-    It should not carry any own parameters. Everything should be 
-    obtained via the simulater object.
-    '''
-    @cached_property
-    def _get_tstep(self):
-        return self.tstep_type(sim=self.sim)
+    hist = tr.Property
 
-#    model = DelegatesTo('tstep')
+    def _get_hist(self):
+        return self.tstep.hist
 
-    hist = WeakRef(Hist)
+    paused = tr.Bool(False)
 
-    paused = Bool(False)
+    restart = tr.Bool(True)
 
-    restart = Bool(True)
-
-    user_wants_abort = Property()
+    user_wants_abort = tr.Property
 
     def _get_user_wants_abort(self):
         return self.restart or self.paused

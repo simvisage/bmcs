@@ -3,12 +3,12 @@ Created on 12.01.2016
 @author: ABaktheer, RChudoba, Yingxiong
 '''
 
-from .pullout_sim import PullOutSim
+from .pullout_sim import PullOutModel
 
 
 def run_pullout_dp(*args, **kw):
-    po = PullOutSim(n_e_x=100, k_max=500, w_max=1.5)
-    po.tline.step = 0.01
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.5)
+    po.sim.tline.step = 0.01
     po.geometry.L_x = 200.0
     po.loading_scenario.trait_set(loading_type='monotonic')
     po.cross_section.trait_set(A_f=16.67, P_b=1.0, A_m=1540.0)
@@ -24,9 +24,9 @@ def run_pullout_dp(*args, **kw):
 
 
 def run_pullout_dp_cyclic():
-    po = PullOutSim(n_e_x=200, k_max=500, w_max=2.5,
-                    mats_eval_type='damage-plasticity')
-    po.tline.step = 0.01
+    po = PullOutModel(n_e_x=200, k_max=500, w_max=2.5,
+                      mats_eval_type='damage-plasticity')
+    po.sim.tline.step = 0.01
     po.loading_scenario.trait_set(loading_type='cyclic',
                                   amplitude_type='constant',
                                   loading_range='non-symmetric'
@@ -39,7 +39,8 @@ def run_pullout_dp_cyclic():
     po.mats_eval.omega_fn_type = 'li'
     po.mats_eval.omega_fn.trait_set(alpha_1=1.0, alpha_2=2, plot_max=2.8)
     w = po.get_window()
-    w.run()
+    # w.run()
+
     w.configure_traits()
 
 

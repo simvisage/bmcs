@@ -37,7 +37,13 @@ class BMCSStudy(ReportStudy):
     '''Combine the simulater with specification of outputs
     '''
 
-    sim = tr.Instance(IBMCSModel)
+    model = tr.Instance(IBMCSModel)
+
+    sim = tr.Property(depends_on='model')
+
+    def _get_sim(self):
+        return self.model.sim
+
     '''Model of the studied phoenomenon.
     '''
 

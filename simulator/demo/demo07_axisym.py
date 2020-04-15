@@ -11,7 +11,7 @@ from ibvpy.mats.viz3d_tensor_field import \
     Vis3DTensorField, Viz3DTensorField
 from mayavi import mlab
 from simulator.api import \
-    Simulator
+    TStepBC
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 
 import numpy as np
@@ -40,7 +40,7 @@ left_x = BCSlice(slice=xdomain.mesh[0, :, 0, :],
 right_x = BCSlice(slice=xdomain.mesh[-1, :, -1, :],
                   var='u', dims=[0], value=0.0)
 
-s = Simulator(
+m = TStepBC(
     domains=[(xdomain, m)],
     bc=[left_x, right_x, left_y],
     record={
@@ -49,13 +49,15 @@ s = Simulator(
         #        'kinematic hardening': Vis3DStateField(var='z_a')
     }
 )
+
+s = m.sim
 s.tloop.k_max = 1000
-s.tline.step = 1
+s.tline.step = 0.01
 s.tloop.verbose = True
 s.run()
 
 print('area', np.pi * radius**2)
-F_ti = s.hist.F_t
+F_ti = m.hist.F_t
 print('left')
 print(np.sum(F_ti[-1, right_x.dofs]))
 print('right')
@@ -66,7 +68,7 @@ mlab.options.backend = 'envisage'
 f_strain = mlab.figure()
 scene = mlab.get_engine().scenes[-1]
 scene.name = 'strain'
-strain_viz = Viz3DTensorField(vis3d=s.hist['strain'])
+strain_viz = Viz3DTensorField(vis3d=m.hist['strain'])
 strain_viz.setup()
 
 decorate_figure(f_strain, strain_viz, 200, [70, 20, 0])

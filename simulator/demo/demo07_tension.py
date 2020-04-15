@@ -11,7 +11,7 @@ from ibvpy.mats.viz3d_tensor_field import \
     Vis3DTensorField, Viz3DTensorField
 from mayavi import mlab
 from simulator.api import \
-    Simulator
+    TStepBC
 from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
 
 import numpy as np
@@ -35,11 +35,11 @@ m = MATS2DElastic(E=1, nu=0)
 left_y = BCSlice(slice=xdomain.mesh[0, :, 0, :],
                  var='u', dims=[1], value=0)
 left_x = BCSlice(slice=xdomain.mesh[0, :, 0, :],
-                 var='u', dims=[0], value=1)
+                 var='u', dims=[0], value=-1)
 right_x = BCSlice(slice=xdomain.mesh[-1, :, -1, :],
                   var='u', dims=[0], value=0.0)
 
-s = Simulator(
+m = TStepBC(
     domains=[(xdomain, m)],
     bc=[left_x, right_x, left_y],
     record={
@@ -48,8 +48,9 @@ s = Simulator(
         #        'kinematic hardening': Vis3DStateField(var='z_a')
     }
 )
+s = m.sim
 s.tloop.k_max = 1000
-s.tline.step = 1
+s.tline.step = 0.1
 s.tloop.verbose = True
 s.run()
 

@@ -3,14 +3,14 @@ Created on 12.01.2016
 @author: ABaktheer, RChudoba, Yingxiong
 '''
 
-from .pullout_sim import PullOutSim
+from .pullout_sim import PullOutModel
 
 
 def run_pullout_fatigue(*args, **kw):
-    po = PullOutSim(n_e_x=200, k_max=500,
-                    control_variable='f', w_max=1)
-    po.tline.step = 0.001
-    po.tloop.k_max = 1000
+    po = PullOutModel(n_e_x=200, k_max=500,
+                      control_variable='f', w_max=1)
+    po.sim.tline.step = 0.001
+    po.sim.tloop.k_max = 1000
     po.geometry.L_x = 82.0
     po.loading_scenario.trait_set(loading_type='cyclic')
     po.loading_scenario.trait_set(number_of_cycles=20,
@@ -36,7 +36,7 @@ def run_pullout_fatigue(*args, **kw):
 def test_reporter():
     from reporter import Reporter
     from view.window import BMCSWindow
-    po = PullOutSim(n_e_x=100, k_max=500, w_max=1.0)
+    po = PullOutModel(n_e_x=100, k_max=500, w_max=1.0)
     po.tline.step = 0.01
     po.geometry.L_x = 500.0
     po.loading_scenario.set(loading_type='monotonic')

@@ -20,7 +20,9 @@ class Vis3DField(Vis3D):
     def setup(self):
         self.new_dir()
         # make a loop over the XDomainModel
-        fe_domain = self.sim.tstep.fe_domain
+        #sim = self.sim
+        ts = self.tstep
+        fe_domain = ts.fe_domain
         vtk_point_list = []
         vtk_cell_list = []
         vtk_cell_offset_list = []
@@ -29,6 +31,10 @@ class Vis3DField(Vis3D):
         cell_offset = 0
         for domain in fe_domain:
             xdomain = domain.xdomain
+            print('VAR')
+            print(self.var)
+            print('DOMAIN')
+            print(domain.tmodel.var_dict)
             var_function = domain.tmodel.var_dict.get(self.var, None)
             if var_function == None or xdomain.hidden:
                 continue
@@ -75,6 +81,8 @@ class Viz3DField(Viz3D):
         return self.d.visible
 
     def plot(self, vot):
-        idx = self.vis3d.sim.hist.get_time_idx(vot)
+        # self.vis3d.sim
+        ts = self.vis3d.tstep
+        idx = ts.hist.get_time_idx(vot)
         self.d.file_list = self.vis3d.file_list
         self.d.timestep = idx

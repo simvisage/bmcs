@@ -1,21 +1,23 @@
 
+from simulator.api import \
+    TStep
+from simulator.tloop_implicit import TLoopImplicit
 from traits.api import \
     Float
 import traits.has_traits
 
 import numpy as np
-from simulator.api import \
-    Model, Simulator, TLoopImplicit, TStepState
 
 from .interaction_scripts import run_rerun_test
+
+
 traits.has_traits.CHECK_INTERFACES = 2
 
 
-class ModelWithState(Model):
+class ModelWithState(TStep):
     '''Model with a state management distinguishing .
     '''
     tloop_type = TLoopImplicit
-    tstep_type = TStepState
 
     U_var_shape = (1,)
     '''Shape of the primary variable required by the TStepState.
@@ -79,6 +81,7 @@ class ModelWithState(Model):
     def update_state(self, U_k, t_n1, eps_p_n, q_n, alpha_n):
         '''In-place update of state variables. 
         '''
+        print('CALLED')
         eps_n = U_k
         sig_trial = self.E * (eps_n - eps_p_n)
         xi_trial = sig_trial - q_n
@@ -92,5 +95,5 @@ class ModelWithState(Model):
 
 # Construct a Simulator
 m = ModelWithState(sigma_y=0.5)
-s = Simulator(model=m)
+s = m.sim
 run_rerun_test(s)

@@ -12,8 +12,6 @@ from ibvpy.mats.mats_damage_fn import \
     MultilinearDamageFn, \
     FRPDamageFn
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
-from simulator.api import \
-    TLoopImplicit, TStepBC
 from traits.api import  \
     Float, Tuple, List, on_trait_change, \
     Instance, Trait, Bool, Str, Button, Property
@@ -28,8 +26,6 @@ class MATSBondSlipMultiLinear(MATSEval):
 
     # To use the model directly in the simulator specify the
     # time stepping classes
-    tloop_type = TLoopImplicit
-    tstep_type = TStepBC
 
     def __init__(self, *args, **kw):
         super(MATSBondSlipMultiLinear, self).__init__(*args, **kw)

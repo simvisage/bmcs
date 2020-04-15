@@ -11,11 +11,9 @@ Test two independent domains.
 
 import time
 
-from mayavi import mlab
-
-from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
+from ibvpy.fets.fets1D5 import FETS1D52ULRH
 from ibvpy.mats.mats1D5.vmats1D5_e import MATS1D5Elastic
 from ibvpy.mats.mats2D import \
     MATS2DScalarDamage
@@ -24,14 +22,17 @@ from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
 from ibvpy.mats.viz3d_scalar_field import \
     Vis3DStateField, Viz3DScalarField
 from ibvpy.mats.viz3d_tensor_field import \
-    Vis3DStrainField, Viz3DTensorField
-import numpy as np
+    Vis3DTensorField, Viz3DTensorField
+from mayavi import mlab
 from simulator.api import \
-    Simulator
+    TStepBC
 from simulator.xdomain.xdomain_fe_grid import XDomainFEGrid
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
 
+import numpy as np
 
+
+#from bmcs.mats.fets1d52ulrhfatigue import FETS1D52ULRHFatigue
 n_x_e = 20
 xdomain1 = XDomainFEGrid(coord_min=(0, 0),
                          coord_max=(100, 10),
@@ -44,7 +45,7 @@ xdomain2 = XDomainFEGrid(coord_min=(0, 10),
 xdomain12 = XDomainFEInterface(
     I=xdomain1.mesh.I[:, -1],
     J=xdomain2.mesh.I[:, 0],
-    fets=FETS1D52ULRHFatigue()
+    fets=FETS1D52ULRH()
 )
 
 left_y = BCSlice(slice=xdomain1.mesh[0, 0, 0, 0],
@@ -55,7 +56,7 @@ right_x = BCSlice(slice=xdomain1.mesh[-1, :, -1, :],
                   var='u', dims=[0], value=0.1)
 bc1 = [left_y, left_x, right_x]
 
-s = Simulator(
+m = TStepBC(
     domains=[(xdomain1, MATS2DScalarDamage(algorithmic=False)),
              (xdomain2, MATS2DScalarDamage(algorithmic=False)),
              #             (xdomain3, MATS3DDesmorat()),
@@ -64,12 +65,14 @@ s = Simulator(
              ],
     bc=bc1,  # + bc2,
     record={
-        'strain': Vis3DStrainField(var='eps_ab'),
-        'damage': Vis3DStateField(var='omega'),
+        'strain': Vis3DTensorField(var='eps_ab'),
+        #'damage': Vis3DStateField(var='omega'),
         #        'kinematic hardening': Vis3DStateField(var='z_a')
     }
 )
-s.tstep.fe_domain[0].tmodel.omega_fn.f_t = 100.0
+s = m.sim
+m.fe_domain[0].tmodel.omega_fn.f_t = 100.0
+s.tloop.verbose = True
 s.tloop.k_max = 1000
 s.tline.step = 0.05
 s.tstep.fe_domain.serialized_subdomains
@@ -87,13 +90,14 @@ strain_viz.setup()
 strain_viz.warp_vector.filter.scale_factor = 100.0
 strain_viz.plot(s.tstep.t_n)
 
-f_damage = mlab.figure()
-scene = mlab.get_engine().scenes[-1]
-scene.name = 'damage'
-damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
-damage_viz.setup()
-damage_viz.warp_vector.filter.scale_factor = 100.0
-damage_viz.plot(s.tstep.t_n)
+if False:
+    f_damage = mlab.figure()
+    scene = mlab.get_engine().scenes[-1]
+    scene.name = 'damage'
+    damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
+    damage_viz.setup()
+    damage_viz.warp_vector.filter.scale_factor = 100.0
+    damage_viz.plot(s.tstep.t_n)
 
 
 def decorate_figure(f, viz):
@@ -110,6 +114,6 @@ def decorate_figure(f, viz):
     )
 
 
-decorate_figure(f_damage, damage_viz)
+#decorate_figure(f_damage, damage_viz)
 decorate_figure(f_strain, strain_viz)
 mlab.show()

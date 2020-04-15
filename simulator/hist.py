@@ -5,8 +5,7 @@ Created on Dec 17, 2018
 '''
 
 from traits.api import \
-    HasStrictTraits, provides, \
-    List, Dict, WeakRef, Property, cached_property
+    provides, List, Dict, WeakRef, Property, cached_property
 from view.plot2d import Vis2D
 import numpy as np
 
@@ -18,22 +17,26 @@ class Hist(Vis2D):
     '''Object storing and managing the history of calculation.
     '''
 
-    sim = WeakRef
+    tstep_source = WeakRef
 
     timesteps = List()
 
     U_list = List()
     F_list = List()
 
+    vis_record = Dict
+
     record_dict = Property(
-        Dict, depends_on='sim.record, sim.record_items'
+        Dict, depends_on='tstep_source.record, tstep_source.record_items'
     )
 
     @cached_property
     def _get_record_dict(self):
-        for vis in self.sim.record.values():
-            vis.sim = self.sim
-        return {key: vis for key, vis in self.sim.record.items()}
+        ts = self.tstep_source
+        for vis in self.vis_record.values():
+            #vis.sim = self.tstep_source.sim
+            vis.tstep = ts
+        return {key: vis for key, vis in self.vis_record.items()}
 
     def __getitem__(self, key):
         return self.record_dict[key]

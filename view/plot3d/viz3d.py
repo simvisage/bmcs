@@ -12,6 +12,8 @@ class Vis3D(tr.HasTraits):
 
     sim = tr.WeakRef
 
+    tstep = tr.WeakRef
+
     dir = tr.Directory
 
     file_list = tr.List(tr.Str,

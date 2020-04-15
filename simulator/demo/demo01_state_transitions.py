@@ -7,12 +7,13 @@ This script is used to demonstrate the states of a model.
 
 import time
 
+from simulator.api import \
+    Simulator, TLoop, TStep
 import traits.has_traits
 
-from bmcs.simulator import \
-    Simulator, TLoop, Model
-
 from .interaction_scripts import run_rerun_test
+
+
 traits.has_traits.CHECK_INTERFACES = 2
 
 
@@ -34,16 +35,16 @@ class DemoExplicitTLoop(TLoop):
                 break
             time.sleep(1)
             t_n += dt
-            self.hist.record_timestep(t_n, None)
+            self.hist.record_timestep(t_n, None, None)
             self.tline.val = t_n
         return
 
 
-class DemoStatesModel(Model):
+class DemoStatesModel(TStep):
     tloop_type = DemoExplicitTLoop
 
 
 # Construct a Simulator
 m = DemoStatesModel()
-s = Simulator(model=m)
+s = m.sim
 run_rerun_test(s)

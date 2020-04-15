@@ -1,11 +1,10 @@
 
+from ibvpy.core.i_bcond import IBCond
 from traits.api import \
     Instance,  \
     List
 from traitsui.api import \
     TableEditor, ObjectColumn
-
-from ibvpy.core.i_bcond import IBCond
 from view.ui import BMCSTreeNode
 
 
@@ -37,11 +36,11 @@ class BCondMngr(BMCSTreeNode):
         for bc in self.bcond_list:
             bc.setup(sctx)
 
-    def apply_essential(self, K):
+    def register(self, K):
         '''Register the boundary condition in the equation system.
         '''
         for bcond in self.bcond_list:
-            bcond.apply_essential(K)
+            bcond.register(K)
 
     def apply(self, step_flag, sctx, K, R, t_n, t_n1):
 

@@ -21,10 +21,6 @@ Test two independent domains.
 
 import time
 
-from bmcs.mats.mats_damage_fn import \
-    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
-    MultilinearDamageFn, \
-    FRPDamageFn
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.fets.fets1D5.fets1d52ulrh import FETS1D52ULRH
@@ -32,13 +28,17 @@ from ibvpy.mats.mats1D5.vmats1D5_dp import \
     MATS1D5DP
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
+from ibvpy.mats.mats_damage_fn import \
+    IDamageFn, LiDamageFn, JirasekDamageFn, AbaqusDamageFn, \
+    MultilinearDamageFn, \
+    FRPDamageFn
 from ibvpy.mats.viz3d_scalar_field import \
     Vis3DStateField, Viz3DScalarField
 from ibvpy.mats.viz3d_tensor_field import \
-    Vis3DStrainField, Vis3DStressField, Viz3DTensorField
+    Vis3DTensorField, Viz3DTensorField
 from mayavi import mlab
 from simulator.api import \
-    Simulator
+    TStepBC
 from simulator.xdomain.xdomain_fe_grid_axisym import XDomainFEGridAxiSym
 from simulator.xdomain.xdomain_interface import XDomainFEInterface
 
@@ -83,20 +83,20 @@ m_interface = MATS1D5DP(E_N=1000, E_T=2000,
                         tau_bar=10)
 
 m_interface.omega_fn = FRPDamageFn()
-s = Simulator(
+m = TStepBC(
     domains=[(xd1, m1),
              (xd2, m2),
              (xd12, m_interface),
              ],
     bc=bc1,  # + bc2,
     record={
-        'strain': Vis3DStrainField(var='eps_ab'),
-        'stress': Vis3DStressField(var='sig_ab'),
-        'damage': Vis3DStateField(var='omega_a'),
+        'strain': Vis3DTensorField(var='eps_ab'),
+        'stress': Vis3DTensorField(var='sig_ab'),
+        #  'damage': Vis3DStateField(var='omega_a'),
         #        'kinematic hardening': Vis3DStateField(var='z_a')
     }
 )
-
+s = m.sim
 s.tloop.k_max = 1000
 s.tline.step = 0.01
 s.tstep.fe_domain.serialized_subdomains
@@ -124,16 +124,17 @@ stress_viz.setup()
 stress_viz.warp_vector.filter.scale_factor = 100.0
 stress_viz.plot(s.tstep.t_n)
 
-f_damage = mlab.figure()
-scene = mlab.get_engine().scenes[-1]
-scene.name = 'damage'
-damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
-damage_viz.setup()
-damage_viz.warp_vector.filter.scale_factor = 100.0
-damage_viz.plot(s.tstep.t_n)
+if False:
+    f_damage = mlab.figure()
+    scene = mlab.get_engine().scenes[-1]
+    scene.name = 'damage'
+    damage_viz = Viz3DScalarField(vis3d=s.hist['damage'])
+    damage_viz.setup()
+    damage_viz.warp_vector.filter.scale_factor = 100.0
+    damage_viz.plot(s.tstep.t_n)
 
 
 decorate_figure(f_strain, strain_viz)
 decorate_figure(f_stress, stress_viz)
-decorate_figure(f_damage, damage_viz)
+# decorate_figure(f_damage, damage_viz)
 mlab.show()

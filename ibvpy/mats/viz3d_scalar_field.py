@@ -17,24 +17,24 @@ import traits.api as tr
 
 class Vis3DStateField(Vis3DField):
 
-    model = tr.DelegatesTo('sim')
-
-    state_vars = tr.Property()
-
-    def _get_state_vars(self):
-        return self.model.state_var_shapes
+    mats = tr.WeakRef
 
     def update(self):
-        ts = self.sim.tstep
+        ts = self.tstep
         U = ts.U_k
         t = ts.t_n1
         # this needs to be adopted to tstep[domain_state]
         # loop over the subdomains
         U_vector_fields = []
         state_fields = []
+        print('JJJJJJJJJJJJJJJJJJJ', ts.fe_domain)
         for domain in ts.fe_domain:
             xdomain = domain.xdomain
             fets = xdomain.fets
+            print('XXXXX', xdomain)
+            print(self.var)
+            print('YYYYY')
+            print(domain.state_n.keys())
             state_field = domain.state_n.get(self.var, None)
             if (xdomain.hidden) or (state_field is None):
                 # If the state variable not present in the domain, skip

@@ -37,7 +37,6 @@ class SysMtxArray(HasTraits):
         '''
         el_arr, row_arr = dof_ix_array
         for el, i_dof in zip(el_arr, row_arr):
-            k_diag = self.mtx_arr[el, i_dof, i_dof]
             self.mtx_arr[el, i_dof, :] = 0.0
             self.mtx_arr[el, :, i_dof] = 0.0
 

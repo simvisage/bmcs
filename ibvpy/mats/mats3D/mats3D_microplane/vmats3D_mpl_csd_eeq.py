@@ -11,6 +11,7 @@ Microplane Fatigue model 3D
 Using Jirasek homogenization approach [1999]
 '''
 
+from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from numpy import array,\
     einsum, zeros_like, identity, sign,\
     sqrt
@@ -19,10 +20,7 @@ from traits.api import Constant,\
 from traitsui.api import \
     View, VGroup, Item
 
-from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 import numpy as np
-from simulator.api import \
-    TLoopImplicit, TStepBC
 import traits.api as tr
 
 
@@ -31,8 +29,6 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
     # To use the model directly in the simulator specify the
     # time stepping classes
-    tloop_type = TLoopImplicit
-    tstep_type = TStepBC
 
     node_name = 'Microplane CSD model (EEQ)'
 

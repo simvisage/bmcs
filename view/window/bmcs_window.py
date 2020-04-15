@@ -16,12 +16,16 @@ from traitsui.menu import \
     Menu, MenuBar, Separator
 from view.ui.bmcs_tree_node import \
     BMCSRootNode, BMCSTreeNode, BMCSLeafNode
+
+import traits.api as tr
+
 from .bmcs_study import BMCSStudy
 from .bmcs_tree_view_handler import \
     menu_tools_report_pdf, menu_tools_report_tex, \
     BMCSTreeViewHandler, plot_self, menu_save, \
     menu_open, menu_exit, \
     toolbar_actions, key_bindings
+from .i_bmcs_model import IBMCSModel
 
 
 if ETSConfig.toolkit == 'wx':
@@ -88,7 +92,7 @@ class BMCSWindow(BMCSStudy):
     view = View(
         HSplit(
             VGroup(
-                Item('sim',
+                Item('model',
                      id='bmcs.hsplit.left.tree.id',
                      dock='tab',
                      editor=tree_editor,

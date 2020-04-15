@@ -5,8 +5,6 @@ Created on 30.10.2018
 '''
 from ibvpy.mats.mats3D.mats3D_eval import \
     MATS3DEval
-from simulator.api import \
-    TLoopImplicit, TStepBC
 from traits.api import \
     Float, List
 from traitsui.api import View, VGroup, Item
@@ -18,10 +16,6 @@ import traits.api as tr
 class MATS3DDesmorat(MATS3DEval):
     '''Damage - plasticity model by Desmorat.
     '''
-    # To use the model directly in the simulator specify the
-    # time stepping classes
-    tloop_type = TLoopImplicit
-    tstep_type = TStepBC
 
     #-------------------------------------------------------------------------
     # Material parameters

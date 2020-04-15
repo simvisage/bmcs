@@ -4,21 +4,21 @@ from bmcs.time_functions import \
 from ibvpy.bcond import BCDof
 from ibvpy.mats.mats3D.mats3D_plastic.vmats3D_desmorat import \
     MATS3DDesmorat
-from simulator.api import Simulator, XDomainSinglePoint
+from simulator.api import TStepBC, XDomainSinglePoint
 
-s = Simulator(
-    domains=[(XDomainSinglePoint(), MATS3DDesmorat())]
-)
 bc = BCDof(
     var='f', dof=0, value=-0.001,
     time_function=LoadingScenario()
 )
-s.bc = [bc]
-s.tstep.debug = False
+model = TStepBC(
+    domains=[(XDomainSinglePoint(), MATS3DDesmorat())],
+    bc=[bc],
+    debug=False
+)
+s = model.sim
 s.tloop.verbose = True
-s.run()
+s.run_thread()
 s.join_thread()
 
-#print(s.hist.F_t)
-#print(s.hist.U_t)
-
+print(model.hist.F_t)
+print(model.hist.U_t)

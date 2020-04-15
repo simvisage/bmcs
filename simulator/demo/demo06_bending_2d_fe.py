@@ -19,16 +19,15 @@ extracting data from several domains
 
 import time
 
-from mayavi import mlab
-
 from ibvpy.bcond import BCSlice
 from ibvpy.fets import FETS2D4Q
 from ibvpy.mats.mats2D import \
     MATS2DScalarDamage
 from ibvpy.mats.viz3d_scalar_field import \
     Vis3DStateField, Viz3DScalarField
+from mayavi import mlab
 from simulator.api import \
-    Simulator, XDomainFEGrid
+    TStepBC, XDomainFEGrid
 
 
 L = 600.0
@@ -52,15 +51,15 @@ fixed_x = BCSlice(slice=dgrid1.mesh[0, n_a:, 0, -1],
                   var='u', dims=[0], value=0)
 control_bc = BCSlice(slice=dgrid1.mesh[0, -1, :, -1],
                      var='u', dims=[1], value=-w_max)
-s = Simulator(
+m = TStepBC(
     domains=[(dgrid1, MATS2DScalarDamage(algorithmic=True))],
     bc=[fixed_right_bc, fixed_x, control_bc],
     record={
         'damage': Vis3DStateField(var='omega'),
     }
 )
-
-s.tloop.k_max = 200
+s = m.sim
+s.tloop.trait_set(verbose=True, k_max=200)
 s.tline.step = 0.05
 s.run()
 time.sleep(3)

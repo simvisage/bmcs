@@ -9,23 +9,17 @@ Microplane damage model 2D - Jirasek [1999]
 from ibvpy.mats.mats3D.mats3D_eval import MATS3DEval
 from numpy import \
     array, einsum, identity, sqrt
-from simulator.api import IModel
-from simulator.api import \
-    TLoopImplicit, TStepBC
 from traits.api import \
-    Constant, provides, \
+    Constant, \
     Float, Property, cached_property
 
 import numpy as np
 import traits.api as tr
 
 
-@provides(IModel)
 class MATS3DMplDamageEEQ(MATS3DEval):
     # To use the model directly in the simulator specify the
     # time stepping classes
-    tloop_type = TLoopImplicit
-    tstep_type = TStepBC
 
     epsilon_0 = Float(59.0e-6,
                       label="a",

@@ -24,7 +24,8 @@ class Vis3DTensorField(Vis3DField):
     var = tr.Str('eps_ab')
 
     def update(self):
-        ts = self.sim.tstep
+        #ts = self.sim.tstep
+        ts = self.tstep
         U = ts.U_k
         t_n1 = ts.t_n1
         U_vector_fields = []

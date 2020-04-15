@@ -7,16 +7,15 @@ Simulator implementation
 from threading import Thread
 
 from traits.api import \
-    Instance, Type, on_trait_change, Str, \
-    Property, cached_property, Bool, List, Dict, provides
-from view import BMCSRootNode, itags_str, IBMCSModel
+    Instance, on_trait_change, Str, \
+    Property, cached_property, Bool, List, provides
+from view import BMCSTreeNode, itags_str, IBMCSModel
 
-from .hist import Hist
-from .i_hist import IHist
+import traits.api as tr
+
 from .i_tloop import ITLoop
 from .i_tstep import ITStep
-from .tline import TLine
-from .tloop_implicit import TLoopImplicit
+from .tline_mixin import TLineMixIn
 
 
 class RunTimeLoopThread(Thread):
@@ -35,7 +34,7 @@ class RunTimeLoopThread(Thread):
 
 
 @provides(IBMCSModel)
-class Simulator(BMCSRootNode):
+class Simulator(BMCSTreeNode, TLineMixIn):
     r'''Base class for simulators included in the BMCS Tool Suite.
     It implements the state dependencies within the simulation tree.
     It handles also the communication between the simulation and
@@ -46,15 +45,11 @@ class Simulator(BMCSRootNode):
     def _tree_node_list_default(self):
         return [
             self.tline,
-            # self.domains,
-            #            self.bc
         ]
 
     def _update_node_list(self):
         self.tree_node_list = [
             self.tline,
-            # self.domains,
-            #            self.bc
         ]
 
     title = Str
@@ -66,66 +61,23 @@ class Simulator(BMCSRootNode):
         self.tloop.restart = True
 
     #=========================================================================
-    # Spatial domain
-    #=========================================================================
-    domains = List([])
-    r'''Spatial domain represented by a finite element discretization.
-    providing the kinematic mapping between the linear algebra (vector and
-    matrix) and field representation of the primary variables.
-    '''
-
-    #=========================================================================
-    # TIME LINE
-    #=========================================================================
-    tline = Instance(TLine)
-    r'''Time line defining the time range, discretization and state,  
-    '''
-
-    def _tline_default(self):
-        return TLine(
-            time_change_notifier=self.time_changed,
-            time_range_change_notifier=self.time_range_changed
-        )
-
-    def time_changed(self, time):
-        if not(self.ui is None):
-            self.ui.viz_sheet.time_changed(time)
-
-    def time_range_changed(self, tmax):
-        self.tline.max = tmax
-        if self.ui != None:
-            self.ui.viz_sheet.time_range_changed(tmax)
-
-    def set_tmax(self, time):
-        self.time_range_changed(time)
-
-    #=========================================================================
     # TIME LOOP
     #=========================================================================
 
-    tloop_type = Type(TLoopImplicit)
-    tloop = Property(Instance(ITLoop))
+    tloop = Property(Instance(ITLoop), depends_on=itags_str)
     r'''Time loop constructed based on the current model.
     '''
     @cached_property
     def _get_tloop(self):
-        return self.tloop_type(sim=self,
-                               hist=self.hist,
-                               tline=self.tline)
+        return self.tstep.tloop_type(tstep=self.tstep,
+                                     tline=self.tline)
 
-    bc = List
-    r'''Boundary conditions
-    '''
-    record = Dict
-    r'''Recorded variables
-    '''
+    tstep = tr.WeakRef(ITStep)
 
-    tstep = Property(Instance(ITStep))
-    r'''Class representing the time step and state
-    '''
-    @cached_property
-    def _get_tstep(self):
-        return self.tloop.tstep
+    hist = tr.Property
+
+    def _get_hist(self):
+        return self.tstep.hist
 
     def pause(self):
         self.tloop.paused = True
@@ -134,18 +86,6 @@ class Simulator(BMCSRootNode):
     def stop(self):
         self.tloop.restart = True
         self.join_thread()
-
-    #=========================================================================
-    # HISTORY
-    #=========================================================================
-    hist_type = Type(Hist)
-
-    hist = Property(Instance(IHist))
-    r'''History representation of the model response.
-    '''
-    @cached_property
-    def _get_hist(self):
-        return self.hist_type(sim=self)
 
     #=========================================================================
     # COMPUTATION THREAD

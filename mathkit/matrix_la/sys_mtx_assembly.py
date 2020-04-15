@@ -443,10 +443,10 @@ class SysMtxAssembly(HasTraits):
 
             self._add_col_to_vector(dof_ix_array, rhs, factor=-u_a)
 
-            K_a_a = self._get_diag_elem(dof_ix_array)
+            K_aa = self._get_diag_elem(dof_ix_array)
 
-            if fabs(K_a_a) < (1.0e-5):
-                K_a_a = 1.
+            if fabs(K_aa) < (1.0e-5):
+                K_aa = 1.
                 rhs[a] = -u_a
 
             # After remembering the submatrices in K_aa, and K_na
@@ -454,7 +454,7 @@ class SysMtxAssembly(HasTraits):
             #
             self._zero_rc(dof_ix_array)
 
-            self._add_diag_elem(dof_ix_array, -K_a_a)
+            self._add_diag_elem(dof_ix_array, -K_aa)
 
         else:
 
