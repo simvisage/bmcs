@@ -40,34 +40,22 @@ def verify_normalized_pullout_force():
                                 )
         s.m_steel.trait_set(E=200000, nu=0.3)
         s.m_concrete.trait_set(E=29800, nu=0.3)
-        s.m_ifc.trait_set(sigma_o=10.0,
-                          E_N=50000,
-                          E_T=20000,
-                          sig_t=5.0,
-                          S_N=0.00000001,
-                          S_T=0.0000005,
-                          c_N=1.2,
-                          c_T=2.2,
-                          K=0,
-                          gamma=0,
-                          m=0.2,
-                          b=0.2,
-                          #=====================================================
-                          # E_T=10000,
-                          # E_N=1000000,
-                          # gamma=55.0,
-                          # K=11.0,
-                          # tau_bar=4.2,
-                          # S=0.005,
-                          # r=1.0,
-                          # c=2.8,
-                          # m=0.175,
+        s.m_ifc.trait_set(
+                          E_T=10000,
+                          E_N=1000000,
+                          gamma=55.0,
+                          K=11.0,
+                          tau_bar=4.2,
+                          S=0.005,
+                          r=1.0,
+                          c=2.8,
+                          m=0.175,
                           algorithmic=False)
 
         s.u_max = u_max
         s.tline.step = 0.1
         s.tloop.verbose = True
-        #s.run()
+        s.run()
 
         #=======================================================================
         # print('P_max', np.max(s.record['Pw'].sim.hist.F_t))

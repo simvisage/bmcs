@@ -13,7 +13,7 @@ def verify_normalized_pullout_force():
 
     ax = p.subplot(111)
 
-    f_list = [0, -10000, -20000]
+    f_list = [-100]
     u_max = 1
     # dt_list = [0.01]
     for f_lateral in f_list:  # [0, -100]
@@ -45,7 +45,7 @@ def verify_normalized_pullout_force():
                           tau_bar=4.2,  # 4.0,
                           K=11, gamma=55,  # 10,
                           c=2.8, S=0.00048, r=0.51,
-                          m=0.9,
+                          m=0.175,
                           algorithmic=False)
 
         s.u_max = u_max
@@ -55,6 +55,10 @@ def verify_normalized_pullout_force():
 
         print('P_max', np.max(s.record['Pw'].sim.hist.F_t))
         print('P_end', np.sum(s.hist.F_t[-1, s.right_x_s.dofs]))
+        print('S_shape', np.array(s.record['stress'].ug.point_data.tensors).shape)
+        print('S_max', np.max(s.record['stress'].ug.point_data.tensors))
+        print('S_min', np.min(s.record['stress'].ug.point_data.tensors))
+        print('S1', np.array(s.record['stress'].ug.point_data.tensors)[0, :])
 
         s.f_lateral = f_lateral
 

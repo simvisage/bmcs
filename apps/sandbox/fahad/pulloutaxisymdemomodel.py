@@ -224,22 +224,19 @@ class PullOutAxiSym(Simulator):
             integ_factor=self.cross_section.P_b
         )
 
-    m_ifc = tr.Instance(MATS1D5DP2D)
+    m_ifc = tr.Instance( MATS1D5DPCumPress)
 
     def _m_ifc_default(self):
-        return MATS1D5DP2D(
-            sigma_o=10.0,
-            E_N=50000,
-            E_T=20000,
-            sig_t=5.0,
-            S_N=0.00000001,
-            S_T=0.0000005,
-            c_N=1.2,
-            c_T=2.2,
-            K=0,
-            gamma=0,
-            m=0.2,
-            b=0.2,
+        return  MATS1D5DPCumPress(
+            E_T=10000,
+            E_N=1000000,
+            gamma=55.0,
+            K=11.0,
+            tau_bar=4.2,
+            S=0.005,
+            r=1.0,
+            c=2.8,
+            m=0.175,
             algorithmic=True)  # omega_fn_type='li',
 
     domains = tr.Property(depends_on=itags_str)
