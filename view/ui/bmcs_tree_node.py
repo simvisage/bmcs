@@ -4,6 +4,7 @@ Created on 14. 4. 2014
 @author: rch
 '''
 
+from bmcs_ipw import IPWNode
 from reporter import RInputRecord
 from traits.api import \
     HasStrictTraits, Str, List, WeakRef, \

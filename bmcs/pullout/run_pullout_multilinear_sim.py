@@ -11,20 +11,19 @@ def run_pullout_multilinear(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
                       title='Multi-linear bond slip law',
                       n_e_x=50, w_max=1.0)
-    po.tloop.k_max = 1000
-    po.tline.step = 0.05
+    po.sim.tloop.k_max = 1000
+    po.sim.tline.step = 0.05
     po.geometry.L_x = 100.0
     po.loading_scenario.trait_set(loading_type='monotonic')
-#    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
-    po.cross_section.set(A_f=153, P_b=44, A_m=15240.0)
+#    po.cross_section.trait_set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
+    po.cross_section.trait_set(A_f=153, P_b=44, A_m=15240.0)
     po.mats_eval_type = 'multilinear'
-    po.mats_eval.set(E_m=28000,
-                     E_f=170000,
-                     s_data='0, 0.1, 0.4, 4',
-                     tau_data='0, 800, 0, 0')
+    po.mats_eval.trait_set(E_m=28000,
+                           E_f=170000,
+                           s_data='0, 0.1, 0.4, 4',
+                           tau_data='0, 800, 0, 0')
     po.mats_eval.update_bs_law = True
-    s = po.sim
-    w = s.get_window()
+    w = po.get_window()
     w.run()
     w.configure_traits()
 
@@ -32,13 +31,13 @@ def run_pullout_multilinear(*args, **kw):
 def run_pullout_multi(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
                       n_e_x=100, w_max=2.0)
-    po.tloop.k_max = 1000
+    po.sim.tloop.k_max = 1000
     po.sim.tline.step = 0.02
     po.geometry.L_x = 500.0
-    po.loading_scenario.set(loading_type='monotonic')
-    po.cross_section.set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
-    po.mats_eval.set(s_data='0, 0.1, 0.4, 4.0',
-                     tau_data='0, 7.0, 0, 0')
+    po.loading_scenario.trait_set(loading_type='monotonic')
+    po.cross_section.trait_set(A_f=16.67 / 9.0, P_b=1.0, A_m=1540.0)
+    po.mats_eval.trait_set(s_data='0, 0.1, 0.4, 4.0',
+                           tau_data='0, 7.0, 0, 0')
     po.mats_eval.update_bs_law = True
     w = po.get_window()
     w.run()
@@ -94,7 +93,7 @@ def run_po_paper2_4layers(*args, **kw):
     po = PullOutModel(name='t33_pullout_multilinear',
                       n_e_x=100, k_max=1000, w_max=2.0)
     po.fixed_boundary = 'clamped left'
-    po.loading_scenario.set(loading_type='monotonic')
+    po.loading_scenario.trait_set(loading_type='monotonic')
     po.mats_eval.trait_set(E_f=E_f, E_m=E_m)
     po.mats_eval.s_tau_table = [
         s_arr, tau_arr
@@ -121,11 +120,11 @@ def run_multilinear_bond_slip_law_sbr_jbielak():
     po.loading_scenario.trait_set(number_of_cycles=1,
                                   unloading_ratio=0.98,
                                   )
-    po.geometry.set(L_x=100.0)
-    po.cross_section.set(A_f=16.65, P_b=1.0, A_m=1543.35)
+    po.geometry.trait_set(L_x=100.0)
+    po.cross_section.trait_set(A_f=16.65, P_b=1.0, A_m=1543.35)
     po.mats_eval_type = 'multilinear'
-    po.mats_eval.set(E_m=28480, E_f=170000)
-    po.mats_eval.bs_law.set(
+    po.mats_eval.trait_set(E_m=28480, E_f=170000)
+    po.mats_eval.bs_law.trait_set(
         xdata=[0.,  0.18965517,  0.37931034,  0.56896552,  0.75862069,
                0.94827586,  1.13793103,  1.32758621,  1.51724138,  1.70689655,
                1.89655172,  2.0862069,  2.27586207,  2.46551724,  2.65517241,
@@ -153,18 +152,19 @@ def run_multilinear_bond_slip_law_epoxy_tvlach():
 
     po = PullOutModel(n_e_x=200, k_max=500, w_max=0.15)
     po.sim.tline.step = 0.01
-    po.loading_scenario.set(loading_type='cyclic',
-                            amplitude_type='constant',
-                            loading_range='non-symmetric'
-                            )
-    po.loading_scenario.set(number_of_cycles=1,
-                            unloading_ratio=0.98,
-                            )
-    po.geometry.set(L_x=12.0)
-    po.cross_section.set(A_f=2.2, P_b=1.0, A_m=10000.0 - 2.0)
+    po.loading_scenario.trait_set(loading_type='cyclic',
+                                  amplitude_type='constant',
+                                  loading_range='non-symmetric'
+                                  )
+    po.loading_scenario.trait_set(number_of_cycles=1,
+                                  unloading_ratio=0.98,
+                                  )
+    po.geometry.trait_set(L_x=12.0)
+    po.fixed_boundary = 'clamped right'
+    po.cross_section.trait_set(A_f=2.2, P_b=1.0, A_m=10000.0 - 2.0)
     po.mats_eval_type = 'multilinear'
-    po.mats_eval.set(E_m=49200.0, E_f=29500.0)
-    po.mats_eval.bs_law.set(
+    po.mats_eval.trait_set(E_m=49200.0, E_f=29500.0)
+    po.mats_eval.bs_law.trait_set(
         xdata=[0, 1e-6, 0.005, 0.035, 0.065, 0.095, 0.15],
         ydata=[0., 10.12901536,   39.9247595,
                84.22654625,  101.35300195,
@@ -176,8 +176,35 @@ def run_multilinear_bond_slip_law_epoxy_tvlach():
     w.configure_traits()
 
 
+def run_two_steps():
+    po = PullOutModel(n_e_x=60, k_max=5, w_max=1.0)
+    po.sim.tline.step = 0.05
+    po.fixed_boundary = 'loaded end (matrix)'
+    po.loading_scenario.trait_set(loading_type='cyclic',
+                                  amplitude_type='constant',
+                                  loading_range='non-symmetric'
+                                  )
+    po.loading_scenario.trait_set(number_of_cycles=1,
+                                  unloading_ratio=0.98,
+                                  )
+    po.geometry.trait_set(L_x=1.0)
+    po.cross_section.trait_set(A_f=1, P_b=1, A_m=1)
+    po.mats_eval_type = 'multilinear'
+    po.mats_eval.trait_set(E_m=1, E_f=1)
+    po.mats_eval.bs_law.trait_set(
+        xdata=[0, 1e-6, 2.0],
+        ydata=[0., 1, 1]
+    )
+    po.mats_eval.bs_law.replot()
+    w = po.get_window()
+    w.run()
+    w.configure_traits()
+
+
 if __name__ == '__main__':
-    run_cb_multi()
+    # run_two_steps()
+    # run_cb_multi()
+    run_pullout_multilinear()
 
     # run_pullout_multi()
     # run_cb_multi()

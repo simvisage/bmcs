@@ -570,7 +570,6 @@ class PullOut2LayerSim(Simulator):
 
     @cached_property
     def _get_fixed_dofs(self):
-        print('ressetting', self.fixed_boundary)
         if self.fixed_boundary == 'non-loaded end (matrix)':
             return [0]
         elif self.fixed_boundary == 'non-loaded end (reinf)':

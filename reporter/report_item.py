@@ -77,8 +77,12 @@ class RInputRecord(RItem):
             symbol = trait.symbol
             label = trait.label
             desc = trait.desc
-            io.write(r'''\textrm{%s} & %s = %s & \textrm{[%s]} & \textrm{%s}  \\
-            ''' % (name, symbol, str(value), unit, desc))
+            if symbol:
+                io.write(r'''\textrm{%s} & %s = %s & \textrm{[%s]} & \textrm{%s}  \\
+                ''' % (name, symbol, str(value), unit, desc))
+            else:
+                io.write(r'''\textrm{%s} & \textrm{%s} & & \textrm{%s}  \\
+                ''' % (name, str(value), desc))
         io.write(r'''\hline
         ''')
         records = self.get_subrecord_traits()

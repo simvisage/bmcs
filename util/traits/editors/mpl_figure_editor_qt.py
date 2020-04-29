@@ -38,12 +38,6 @@ class _MPLFigureEditor(Editor):
         figure.canvas.mpl_connect('key_press_event', self.key_press_callback)
         figure.canvas.draw()
 
-    def x_create_canvas(self, parent):
-        """ Create the MPL canvas. """
-        # matplotlib commands to create a canvas
-        mpl_canvas = FigureCanvas(self.value)
-        return mpl_canvas
-
     def _create_canvas(self, parent):
         """ Create the MPL canvas. """
         # matplotlib commands to create a canvas

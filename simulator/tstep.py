@@ -1,6 +1,8 @@
 '''
 '''
 
+from simulator.sim_base import Simulator
+
 import numpy as np
 import traits.api as tr
 
@@ -8,13 +10,14 @@ from .hist import Hist
 from .i_hist import IHist
 from .i_tloop import ITLoop
 from .i_tstep import ITStep
-from simulator.sim_base import Simulator
 
 
 @tr.provides(ITStep)
 class TStep(tr.HasStrictTraits):
     '''Manage the data and metadata of a time step within an interation loop.
     '''
+    title = tr.Str('<unnamed>')
+
     tloop_type = tr.Type(ITLoop)
     '''Type of time loop to be used with the model
     '''

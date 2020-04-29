@@ -249,7 +249,8 @@ class Reporter(HasStrictTraits):
                 retcode, ' '.join(cmd)))
 
     def show_pdf(self):
-        if sys.platform == 'linux2':
+        print('platform', sys.platform)
+        if sys.platform == 'linux':
             subprocess.call(["xdg-open", self.pdf_file])
         else:
             os.startfile(self.pdf_file)

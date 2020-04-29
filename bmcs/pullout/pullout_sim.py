@@ -54,7 +54,6 @@ class PulloutHist(Hist, Vis2D):
     eps_t = List([])
 
     def init_state(self):
-        print('INITINITINIT')
         super(PulloutHist, self).init_state()
         self.Pw = ([0], [0], [0])
         self.eps_t = []
@@ -300,11 +299,7 @@ class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
     @tr.on_trait_change(itags_str)
     def report_change(self):
         self.model_structure_changed = True
-        print('something changed')
 
-    @tr.on_trait_change('GEO')
-    def ge_change(self):
-        print('GEO changed')
     #=========================================================================
     # Test setup parameters
     #=========================================================================
@@ -337,6 +332,7 @@ class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
 
     control_variable = Enum('u', 'f',
                             auto_set=False, enter_set=True,
+                            desc=r'displacement or force control: [u|f]',
                             BC=True)
 
     #=========================================================================
@@ -355,7 +351,7 @@ class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
     # Algorithimc parameters
     #=========================================================================
     k_max = Int(400,
-                unit='\mathrm{mm}',
+                unit='-',
                 symbol='k_{\max}',
                 desc='maximum number of iterations',
                 ALG=True)
@@ -380,7 +376,8 @@ class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
         self.mats_eval = self.mats_eval_type_()
         self._update_node_list()
 
-    mats_eval = Instance(IMATSEval, report=True)
+    mats_eval = Instance(IMATSEval, report=True,
+                         desc='material model of the interface')
     '''Material model'''
 
     def _mats_eval_default(self):
@@ -432,7 +429,6 @@ class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
 
     @cached_property
     def _get_domains(self):
-        print('reconstructed model')
         return [(self.dots_grid, self.mats_eval)]
 
     #=========================================================================
@@ -464,7 +460,6 @@ class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
 
     @cached_property
     def _get_fixed_dofs(self):
-        print('ressetting', self.fixed_boundary)
         if self.fixed_boundary == 'non-loaded end (matrix)':
             return [0]
         elif self.fixed_boundary == 'non-loaded end (reinf)':
@@ -607,6 +602,46 @@ class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
     #=========================================================================
     # Plot functions
     #=========================================================================
+    def plot_geo(self, ax, vot):
+        u_p = self.get_u_p(vot).T
+
+        f_dof = self.free_end_dof
+        w_L_b = u_p.flatten()[f_dof]
+        c_dof = self.controlled_dof
+        w = u_p.flatten()[c_dof]
+
+        A_m = self.cross_section.A_m
+        A_f = self.cross_section.A_f
+        h = A_m
+        d = h * 0.1  # A_f / A_m
+
+        L_b = self.geometry.L_x
+        x_C = np.array([[-L_b, 0], [0, 0], [0, h], [-L_b, h]], dtype=np.float_)
+        ax.fill(*x_C.T, color='gray', alpha=0.3)
+
+        f_top = h / 2 + d / 2
+        f_bot = h / 2 - d / 2
+        ax.set_xlim(xmin=-1.05 * L_b,
+                    xmax=max(0.05 * L_b, 1.1 * self.w_max))
+
+        if False:
+            a_val = self.get_aw_pull(vot)
+            width = d * 0.5
+            x_a = np.array([[a_val, f_bot - width], [0, f_bot - width],
+                            [0, f_top + width], [a_val, f_top + width]],
+                           dtype=np.float_)
+            line_aw = ax.fill([], [], color='white', alpha=1)
+            line_aw.set_xy(x_a)
+
+        line_F, = ax.fill([], [], color='black', alpha=0.8)
+        x_F = np.array([[-L_b + w_L_b, f_bot], [w, f_bot],
+                        [w, f_top], [-L_b + w_L_b, f_top]], dtype=np.float_)
+        line_F.set_xy(x_F)
+        x_F0 = np.array([[-L_b, f_bot], [-L_b + w_L_b, f_bot],
+                         [-L_b + w_L_b, f_top], [-L_b, f_top]], dtype=np.float_)
+        line_F0, = ax.fill([], [], color='white', alpha=1)
+        line_F0.set_xy(x_F0)
+
     def plot_u_p(self, ax, vot,
                  label_m='matrix', label_f='reinf'):
         X_M = self.X_M
@@ -695,6 +730,7 @@ class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
 
     def get_window(self):
         Pw = self.hist.plt('plot_Pw', label='pullout curve')
+        geo = self.plt('plot_geo', label='geometry')
         u_p = self.plt('plot_u_p', label='displacement along the bond')
         eps_p = self.plt('plot_eps_p', label='strain along the bond')
         sig_p = self.plt('plot_sig_p', label='stress along the bond')
@@ -702,10 +738,15 @@ class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
         sf = self.plt('plot_sf', label='shear flow along the bond')
         energy = self.hist.plt('plot_G_t', label='energy')
         dissipation = self.hist.plt('plot_dG_t', label='energy release')
+        pp0 = PlotPerspective(
+            name='geo',
+            viz2d_list=[geo],
+            positions=[111],
+        )
         pp1 = PlotPerspective(
             name='history',
-            viz2d_list=[Pw, energy, dissipation],
-            positions=[121, 222, 224],
+            viz2d_list=[Pw, geo, energy, dissipation],
+            positions=[221, 222, 223, 224],
         )
         pp2 = PlotPerspective(
             name='fields',
@@ -714,7 +755,7 @@ class PullOutModel(TStepBC, BMCSRootNode, Vis2D):
             positions=[221, 222, 223, 224],
         )
         win = BMCSWindow(model=self)
-        win.viz_sheet.pp_list = [pp1, pp2]
-        win.viz_sheet.selected_pp = pp1
+        win.viz_sheet.pp_list = [pp0, pp1, pp2]
+        win.viz_sheet.selected_pp = pp0
         win.viz_sheet.monitor_chunk_size = 10
         return win

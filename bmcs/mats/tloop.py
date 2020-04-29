@@ -58,17 +58,16 @@ class TLoop(HasStrictTraits):
         self.D_record = [np.zeros_like(D)]
 
     def init(self):
-        print('INIT')
+        # print('INIT')
         if self.paused:
             self.paused = False
         if self.restart:
-            print('RESET TIME')
+            #print('RESET TIME')
             self.tline.val = 0
             self.reset_sv_hist()
             self.restart = False
 
     def eval(self):
-
         self.ts.apply_essential_bc()
 
         self.d_t = self.tline.step
