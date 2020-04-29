@@ -13,7 +13,6 @@
 # Created on Aug 7, 2009 by: rchx
 
 from traits.api import TraitType, HasTraits, TraitError
-from traits.trait_base import ClassTypes
 from traitsui.api import View, Item, InstanceEditor
 from traitsui.instance_choice import \
     InstanceFactoryChoice
@@ -30,7 +29,7 @@ class EitherType(TraitType):
     def validate(self, object, name, value):
         ''' Set the trait value '''
         # first check if the value is a class
-        if isinstance(value, ClassTypes):
+        if isinstance(value, type):
             klass = value
             if not klass in self._klasses:
                 raise TraitError('type %s not in the type scope' % klass)
@@ -42,8 +41,8 @@ class EitherType(TraitType):
             if isinstance(value, tuple(self._klasses)):
                 new_value = value
             else:
-                raise TraitError('value of type %s out of the scope: %s' % \
-                    (value.__class__, self._klasses))
+                raise TraitError('value of type %s out of the scope: %s' %
+                                 (value.__class__, self._klasses))
         return new_value
 
     def get_default_value(self):
@@ -62,34 +61,3 @@ class EitherType(TraitType):
                            for k in self._klasses]
 
         return InstanceEditor(values=choice_list, kind='live')
-
-
-if __name__ == '__main__':
-
-    from types import StringType, IntType
-
-    class UseEitherType(HasTraits):
-        int_or_string = EitherType(klasses=[IntType, StringType])
-
-        trait_vie = View(Item('int_or_string', style='custom'),
-                         resizable=True)
-
-    uet = UseEitherType()
-
-    print('default value', uet.int_or_string)
-
-    uet.int_or_string = 4
-
-    print('value', uet.int_or_string)
-
-    uet.configure_traits()
-
-    uet.int_or_string = StringType
-
-    print('value after type reset', uet.int_or_string)
-
-    uet.int_or_string = 'is now the string'
-
-    print('value', uet.int_or_string)
-
-    uet.int_or_string = 8.9  # exception

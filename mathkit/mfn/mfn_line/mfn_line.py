@@ -5,8 +5,8 @@ from traits.api import Array, Float, Event, \
     ToolbarButton, on_trait_change, \
     Property, cached_property, Enum, Instance, Bool
 from traitsui.api import View, VGroup, UItem
-from util.traits.editors import \
-    MPLFigureEditor
+# from util.traits.editors import \
+#     MPLFigureEditor
 from view.ui import BMCSLeafNode
 
 import matplotlib.pyplot as plt
@@ -153,10 +153,10 @@ class MFnLineArray(BMCSLeafNode):
     tree_view = View(
         VGroup(
             VGroup(
-                UItem('figure', editor=MPLFigureEditor(),
-                      resizable=True,
-                      springy=True),
-                scrollable=True,
+                #                 UItem('figure', editor=MPLFigureEditor(),
+                #                       resizable=True,
+                #                       springy=True),
+                #                 scrollable=True,
             ),
         )
     )

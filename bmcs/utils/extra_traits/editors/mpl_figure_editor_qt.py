@@ -11,7 +11,7 @@ http://markmail.org/message/z3hnoqruk56g2bje
 adapted and tested to work with PySide from Anaconda in March 2014
 """
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from traits.api import Instance
 from traitsui.qt4.basic_editor_factory import BasicEditorFactory

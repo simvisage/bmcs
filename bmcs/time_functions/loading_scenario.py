@@ -8,7 +8,7 @@ from traits.api import \
     Range, on_trait_change, Float, Int
 from traitsui.api import \
     View, Item, Group, VGroup, VSplit, UItem
-from util.traits.editors import MPLFigureEditor
+#from util.traits.editors import MPLFigureEditor
 from view.plot2d import Viz2D
 from view.ui import BMCSLeafNode
 
@@ -169,10 +169,10 @@ class LoadingScenario(MFnLineArray, BMCSLeafNode, RInputRecord):
                         show_border=True, label='Cyclic load inputs'),
                     scrollable=True
                 ),
-                UItem('figure', editor=MPLFigureEditor(),
-                      height=300,
-                      resizable=True,
-                      springy=True),
+                #                 UItem('figure', editor=MPLFigureEditor(),
+                #                       height=300,
+                #                       resizable=True,
+                #                       springy=True),
             )
         )
     )
