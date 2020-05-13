@@ -8,11 +8,12 @@ import traits.api as tr
 
 from .hist import Hist
 from .i_hist import IHist
+from .i_model import IModel
 from .i_tloop import ITLoop
 from .i_tstep import ITStep
 
 
-@tr.provides(ITStep)
+@tr.provides(ITStep, IModel)
 class TStep(tr.HasStrictTraits):
     '''Manage the data and metadata of a time step within an interation loop.
     '''

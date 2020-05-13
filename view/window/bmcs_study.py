@@ -7,6 +7,7 @@ from threading import Thread
 
 from reporter import Reporter
 from reporter.reporter import ReportStudy
+from simulator.i_model import IModel
 
 import traits.api as tr
 
@@ -37,7 +38,7 @@ class BMCSStudy(ReportStudy):
     '''Combine the simulater with specification of outputs
     '''
 
-    model = tr.Instance(IBMCSModel)
+    model = tr.Instance(IModel)
 
     sim = tr.Property(depends_on='model')
 

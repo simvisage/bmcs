@@ -32,6 +32,7 @@ from traitsui.ui_editors.array_view_editor import ArrayViewEditor
 from view.plot2d import Vis2D
 from view.ui import BMCSLeafNode, itags_str, BMCSRootNode
 from view.window import BMCSWindow, PlotPerspective
+from view.window.i_bmcs_model import IBMCSModel
 
 import numpy as np
 import traits.api as tr
