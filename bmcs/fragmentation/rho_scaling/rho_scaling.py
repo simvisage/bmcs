@@ -16,7 +16,6 @@ from traits.api import Property
 import numpy as np
 import pylab as p
 
-
 if __name__ == '__main__':
     from view.window import BMCSWindow
 
