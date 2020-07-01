@@ -116,10 +116,10 @@ class PulloutHist(Hist, Vis2D):
         U_bar_t = self.get_U_bar_t()
         W_t = self.get_W_t()
         G = W_t - U_bar_t
-        G0 = G[:-1]
-        G1 = G[1:]
-        dG = np.hstack([0, G1 - G0])
-        return dG
+#         G0 = G[:-1]
+#         G1 = G[1:]
+#         dG = np.hstack([0, G1 - G0])
+#         return dG
         tck = ip.splrep(t, G, s=0, k=1)
         return ip.splev(t, tck, der=1)
 
