@@ -97,8 +97,9 @@ def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
     sigma_T_Emna = np.zeros((n_mp, 2))
     X_T = np.zeros((n_mp, 2))
     Y_T = np.zeros((n_mp, ))
-    sctx = np.zeros((n_mp, 19))
+    sctx = np.zeros((n_mp, 20))
     macro = np.zeros((3, 2))
+    D_E=np.zeros((1, ))
 
     #sctx = sctx[np.newaxis, :, :]
     macro2 = macro[np.newaxis, :, :]
@@ -171,7 +172,7 @@ def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
 
         # Update states variables after convergence
         [omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn,
-            alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T] = m._get_state_variables(
+            alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T, D_E_s] = m._get_state_variables(
                 eps_ab, 1, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
                 w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F_ext)
 
@@ -190,6 +191,7 @@ def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
         sigma_T_Emna = sigma_T_Emna.reshape(n_mp, 2)
         X_T = X_T.reshape(n_mp, 2)
         Y_T = Y_T.reshape(n_mp, )
+        D_E_s= D_E_s.reshape(1, )
 #
         # if F[t_n1] == 0 or F[t_n1] == factor_H1 * load or F[t_n1] ==
         # factor_H2 * load or F[t_n1] == factor_L * load:
@@ -224,13 +226,15 @@ def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
             eps_aux = get_eps_ab(U_k_O)
             D_aux = D_abcd[np.newaxis, :, :, :, :]
             D = np.concatenate((D, D_aux))
+            #D_E_aux=D_E_s[np.newaxis, :]
+            D_E = np.concatenate((D_E, D_E_s))
             t_aux += 1
             # print(t_aux)
 
         t_n1 += 1
 
     U_t, F_t = np.array(U_t_list), np.array(F_t_list)
-    return U_t, F_t, t_n1 / t_max, t_aux, D
+    return U_t, F_t, t_n1 / t_max, t_aux, D,D_E
 
 # load = -60.54301292467442
 #
@@ -415,7 +419,7 @@ t = np.linspace(0, 1, len(sin_load))
 #
 #
 
-U, F, cyc, number_cyc, D = get_UF_t(
+U, F, cyc, number_cyc, D,D_E = get_UF_t(
     sin_load, t_steps, load, factor_H1, factor_H2, factor_L)
 
 
@@ -456,6 +460,11 @@ ax2.set_ylabel(r'$|\sigma_{11}$| [-]', fontsize=25)
 ax2.set_title(str((n_cycles1)) + ',' + str(cyc))
 # ax2.set_ylim(0.00, 60)
 # ax2.set_xlim(0.000, 0.00333)
+plt.show()
+
+f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
+ax.plot((np.arange(len(U[2::2, 0])) + 1) / len(U[1::2, 0]),
+        np.abs(U[2::2, 0]), linewidth=2.5)
 plt.show()
 
 

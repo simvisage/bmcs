@@ -22,6 +22,7 @@ class Micro2Dplot():
 
         matplotlib.rc('font', **font)
         A = np.array(range(len(F)))
+
         # A = A[1::5]
         #
         # home_dir = os.path.expanduser('~')

@@ -2193,10 +2193,10 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     #--------------------------------------------------------
     # return the state variables (Damage , inelastic strains)
     #--------------------------------------------------------
-    def _get_state_variables(self, eps_Emab, tn1,
-                             omegaN, z_N_Emn,
-                             alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
-                             w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F):
+    def _get_state_variables(self, eps_Emab: object, tn1: object,
+                             omegaN: object, z_N_Emn: object,
+                             alpha_N_Emn: object, r_N_Emn: object, eps_N_p_Emn: object, sigma_N_Emn: object,
+                             w_T_Emn: object, z_T_Emn: object, alpha_T_Emna: object, eps_T_pi_Emna: object, eps_aux: object, F: object) -> object:
 
         e_N_arr = self._get_e_N_Emn_2(eps_Emab)
         e_T_vct_arr = self._get_e_T_Emnar_2(eps_Emab)
@@ -2207,9 +2207,11 @@ class MATS2DMplCSDEEQ(MATS2DEval):
 
         w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T, w_T_Emna = self.get_tangential_law(e_T_vct_arr, w_T_Emn, z_T_Emn,
                                                                                                                   alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, omegaN, sigma_kk)
+        D = np.sum(np.einsum('...n,...n->...n',w_T_Emn,Y_T) + np.einsum('...n,...n->...n',omegaN,Y_n) + np.einsum('...n,...n->...',eps_T_pi_Emna,sigma_T_Emna) + np.einsum('...n,...n->...n',eps_N_p_Emn,sigma_N_Emn))
+
 #         print(eps_N_p_Emn[0], 'eps p')
 #         print(Y_n[0], 'lambda')
-        return omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T
+        return omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T,D
 
     #---------------------------------------------------------------------
     # Extra homogenization of damage tensor in case of two damage parameters
