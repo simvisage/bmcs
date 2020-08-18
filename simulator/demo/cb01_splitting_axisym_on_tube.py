@@ -19,10 +19,16 @@ import numpy as np
 from .mlab_decorators import decorate_figure
 
 inner_radius = 1
-outer_radius = 2
+outer_radius = 20
+L = 10
+E_c = 28e+3
+f_c_t = 5.0
+eps_0 = f_c_t / E_c
+u_0 = L * eps_0
+print('u_9', u_0)
 
 xdomain = XDomainFEGridAxiSym(coord_min=(0, inner_radius),
-                              coord_max=(1, outer_radius),
+                              coord_max=(L, outer_radius),
                               shape=(10, 10),
                               integ_factor=2 * np.pi,
                               fets=FETS2D4Q())
@@ -31,12 +37,12 @@ print(xdomain.B1_Eimabc.shape)
 print(xdomain.B0_Eimabc.shape)
 
 m = MATS3DDesmorat()
-m = MATS3DElastic(E=1, nu=0.3)
+m = MATS3DElastic(E=28e3, nu=0.3)
 
 left_y = BCSlice(slice=xdomain.mesh[:, 0, :, 0],
                  var='u', dims=[1], value=0)
 left_x = BCSlice(slice=xdomain.mesh[0, :, 0, :],
-                 var='u', dims=[0], value=-1.0)
+                 var='u', dims=[0], value=-u_0)
 right_x = BCSlice(slice=xdomain.mesh[-1, :, -1, :],
                   var='u', dims=[0], value=0.0)
 
@@ -75,7 +81,6 @@ scene = mlab.get_engine().scenes[-1]
 scene.name = 'strain'
 strain_viz = Viz3DTensorField(vis3d=m.hist['strain'])
 strain_viz.setup()
-
 decorate_figure(f_strain, strain_viz, 200, [70, 20, 0])
 
 f_stress = mlab.figure()
@@ -83,7 +88,6 @@ scene = mlab.get_engine().scenes[-1]
 scene.name = 'stress'
 stress_viz = Viz3DTensorField(vis3d=m.hist['stress'])
 stress_viz.setup()
-
 decorate_figure(f_stress, stress_viz, 200, [70, 20, 0])
 
 mlab.show()

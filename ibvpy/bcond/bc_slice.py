@@ -197,6 +197,12 @@ class BCSlice(BMCSTreeNode, Vis2D):
                                                              link_coeff],
                                                          time_function=self.time_function))
 
+    def register(self, K):
+        '''Register the boundary condition in the equation system.
+        '''
+        for bcond in self.bcdof_list:
+            bcond.register(K)
+
     def apply_essential(self, K):
 
         for bcond in self.bcdof_list:
@@ -407,98 +413,3 @@ class BCSlice(BMCSTreeNode, Vis2D):
             ),
         )
     )
-
-
-if __name__ == '__main__':
-
-    from ibvpy.api import \
-        TStepper as TS, TLoop, TLine, \
-        RTDofGraph, RTraceDomainListField
-    from ibvpy.mesh.fe_grid import FEGrid
-    from math import pi as Pi
-    from numpy import cos, sin, sqrt
-    from numpy import c_
-
-    dim = '3D'
-
-    if dim == '3D':
-        from ibvpy.fets.fets3D.fets3D8h import \
-            FETS3D8H
-        from ibvpy.fets.fets3D.fets3D8h20u import \
-            FETS3D8H20U
-        from ibvpy.fets.fets3D.fets3D8h27u import \
-            FETS3D8H27U
-        from ibvpy.mats.mats3D.mats3D_elastic.mats3D_elastic import \
-            MATS3DElastic
-
-        fets_eval = FETS3D8H27U(mats_eval=MATS3DElastic())
-
-        alpha = 1 * Pi / 2
-
-        def geo_transform(points):
-            X, Y, Z = points[:, 0], points[:, 1], points[:, 2]
-            x = X * cos(alpha) + Y * sin(alpha)
-            y = -X * sin(alpha) + Y * cos(alpha)
-            return c_[x, y, Z]
-
-        fe_grid = FEGrid(coord_max=(1.0, 1.0, 1.0),
-                         shape=(5, 5, 5),
-                         geo_transform=geo_transform,
-                         fets_eval=fets_eval)
-
-        bcs = [BCSlice(var='u', value=0., dims=[0, 1, 2],
-                       slice=fe_grid[:, :, 0, :, :, 0]),
-               BCSlice(var='f', value=0.1, dims=[2],
-                       slice=fe_grid[:, :, -1, :, :, -1])]
-
-    elif dim == '2D':
-
-        from ibvpy.mats.mats2D.mats2D_elastic.mats2D_elastic import \
-            MATS2DElastic
-        from ibvpy.fets.fets2D.fets2D4q import \
-            FETS2D4Q
-        from ibvpy.fets.fets2D.fets2D9q import \
-            FETS2D9Q
-        from ibvpy.fets.fets2D.fets2D4q9u import \
-            FETS2D4Q9U
-
-        fets_eval = FETS2D4Q(mats_eval=MATS2DElastic())
-
-        alpha = 1 * Pi / 2
-
-        def geo_transform(points):
-            X, Y = points[:, 0], points[:, 1]
-            x = X * cos(alpha) + Y * sin(alpha)
-            y = -X * sin(alpha) + Y * cos(alpha)
-            return c_[x, y]
-
-        fe_grid = FEGrid(coord_max=(1.0, 1.0),
-                         shape=(5, 5),
-                         geo_transform=geo_transform,
-                         fets_eval=fets_eval)
-
-        bcs = [BCSlice(var='u', value=0., dims=[0, 1], slice=fe_grid[:, 0, :, 0]),
-               BCSlice(var='f', value=-1., dims=[1], slice=fe_grid[:, :, :, :])]
-
-    ts = TS(sdomain=fe_grid, bcond_list=bcs,
-            rtrace_list=[
-                RTraceDomainListField(name='Displacement',
-                                      var='u', idx=0, warp=True),
-                RTraceDomainListField(name='Stress',
-                                      var='sig_app', idx=0, warp=True,
-                                      record_on='update'),
-            ]
-            )
-
-    # Add the time-loop control
-    tloop = TLoop(tstepper=ts,
-                  tline=TLine(min=0.0, step=1., max=1.0))
-
-    print('u', tloop.setup())
-
-    # print 'F', tloop.tstepper.F_ext
-
-    from view.window import BMCSWindow
-
-    w = BMCSWindow(model=bcs[0])
-    w.configure_traits()

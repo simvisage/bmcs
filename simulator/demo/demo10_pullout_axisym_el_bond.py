@@ -35,9 +35,9 @@ from .mlab_decorators import decorate_figure
 
 n_x_e = 20
 n_y_e = 5
-L_x = 300.0
-R_in = 5.0
-R_out = 75.0
+L_x = 30.0
+R_in = 1.0
+R_out = 20.0
 xd1 = XDomainFEGridAxiSym(coord_min=(0, 0),
                           coord_max=(L_x, R_in),
                           shape=(n_x_e, 2),
@@ -47,7 +47,7 @@ xd2 = XDomainFEGridAxiSym(coord_min=(0, R_in),
                           shape=(n_x_e, n_y_e),
                           integ_factor=2 * np.pi,
                           fets=FETS2D4Q())
-m1 = MATS3DDesmorat(E_1=210000, tau_bar=200.0)
+m1 = MATS3DDesmorat(E_1=280000, tau_bar=200.0)
 m2 = MATS3DDesmorat()
 
 xd12 = XDomainFEInterface(
@@ -70,12 +70,14 @@ m = TStepBC(
              (xd12, MATS1D5Elastic(E_s=10000, E_n=1)),
              ],
     bc=bc1,  # + bc2,
-    record={
-        'strain': Vis3DTensorField(var='eps_ab'),
-        #        'damage': Vis3DStateField(var='omega_a'),
-        #        'kinematic hardening': Vis3DStateField(var='z_a')
-    }
 )
+
+m.hist.vis_record = {
+    'strain': Vis3DTensorField(var='eps_ab'),
+    #        'damage': Vis3DStateField(var='omega_a'),
+    #        'kinematic hardening': Vis3DStateField(var='z_a')
+}
+
 s = m.sim
 s.tloop.verbose = True
 s.tloop.k_max = 1000
