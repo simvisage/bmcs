@@ -139,68 +139,68 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     #                   auto_set=False,
     #                   input=True)
 
-    gamma_T = Float(800000.,
-                    label="Gamma",
-                    desc=" Tangential Kinematic hardening modulus",
-                    enter_set=True,
-                    auto_set=False)
-
-    K_T = Float(50000.0,
-                label="K",
-                desc="Tangential Isotropic harening",
-                enter_set=True,
-                auto_set=False)
-
-    S_T = Float(0.029,
-                label="S",
-                desc="Damage strength",
-                enter_set=True,
-                auto_set=False)
-
-    r_T = Float(13.,
-                label="r",
-                desc="Damage cumulation parameter",
-                enter_set=True,
-                auto_set=False)
-
-    c_T = Float(8,
-                label="c",
-                desc="Damage cumulation parameter",
-                enter_set=True,
-                auto_set=False)
-
-    e_T = Float(11.,
-                label="c",
-                desc="Damage cumulation parameter",
-                enter_set=True,
-                auto_set=False)
-
-    tau_pi_bar = Float(2.0,
-                       label="Tau_bar",
-                       desc="Reversibility limit",
-                       enter_set=True,
-                       auto_set=False)
-
-    a = Float(0.012,
-              label="a",
-              desc="Lateral pressure coefficient",
-              enter_set=True,
-              auto_set=False)
-
-    # -------------------------------------------
-    # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    # -------------------------------------------
-    Ad = Float(1000.0,
-               label="a",
-               desc="brittleness coefficient",
-               enter_set=True,
-               auto_set=False)
-
-    eps_0 = Float(0.0001,
-                  label="a",
-                  desc="threshold strain",
-                  enter_set=True,
-                  auto_set=False)
+    # gamma_T = Float(800000.,
+    #                 label="Gamma",
+    #                 desc=" Tangential Kinematic hardening modulus",
+    #                 enter_set=True,
+    #                 auto_set=False)
+    #
+    # K_T = Float(50000.0,
+    #             label="K",
+    #             desc="Tangential Isotropic harening",
+    #             enter_set=True,
+    #             auto_set=False)
+    #
+    # S_T = Float(0.029,
+    #             label="S",
+    #             desc="Damage strength",
+    #             enter_set=True,
+    #             auto_set=False)
+    #
+    # r_T = Float(13.,
+    #             label="r",
+    #             desc="Damage cumulation parameter",
+    #             enter_set=True,
+    #             auto_set=False)
+    #
+    # c_T = Float(8,
+    #             label="c",
+    #             desc="Damage cumulation parameter",
+    #             enter_set=True,
+    #             auto_set=False)
+    #
+    # e_T = Float(11.,
+    #             label="c",
+    #             desc="Damage cumulation parameter",
+    #             enter_set=True,
+    #             auto_set=False)
+    #
+    # tau_pi_bar = Float(2.0,
+    #                    label="Tau_bar",
+    #                    desc="Reversibility limit",
+    #                    enter_set=True,
+    #                    auto_set=False)
+    #
+    # a = Float(0.012,
+    #           label="a",
+    #           desc="Lateral pressure coefficient",
+    #           enter_set=True,
+    #           auto_set=False)
+    #
+    # # -------------------------------------------
+    # # Normal_Tension constitutive law parameters (without cumulative normal strain)
+    # # -------------------------------------------
+    # Ad = Float(1000.0,
+    #            label="a",
+    #            desc="brittleness coefficient",
+    #            enter_set=True,
+    #            auto_set=False)
+    #
+    # eps_0 = Float(0.0001,
+    #               label="a",
+    #               desc="threshold strain",
+    #               enter_set=True,
+    #               auto_set=False)
 
     #     Ad = Float(100000.0,
     #                label="a",
@@ -217,43 +217,43 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     # -----------------------------------------------
     # Normal_Compression constitutive law parameters
     # -----------------------------------------------
-    K_N = Float(80000.,
-                label="K_N",
-                desc=" Normal isotropic harening",
-                enter_set=True,
-                auto_set=False)
-
-    gamma_N = Float(100000.,
-                    label="gamma_N",
-                    desc="Normal kinematic hardening",
-                    enter_set=True,
-                    auto_set=False)
-
-    sigma_0 = Float(80.,
-                    label="sigma_0",
-                    desc="Yielding stress",
-                    enter_set=True,
-                    auto_set=False)
-
-    state_var_shapes = Property(Dict(), depends_on='n_mp')
-    '''Dictionary of state variable entries with their array shapes.
-    '''
-
-    # -------------------------------------------------------------------------
-    # Cached elasticity tensors
-    # -------------------------------------------------------------------------
-
-    E = tr.Float(34e+3,
-                 label="E",
-                 desc="Young's Modulus",
-                 auto_set=False,
-                 input=True)
-
-    nu = tr.Float(0.2,
-                  label='nu',
-                  desc="Poison ratio",
-                  auto_set=False,
-                  input=True)
+    # K_N = Float(80000.,
+    #             label="K_N",
+    #             desc=" Normal isotropic harening",
+    #             enter_set=True,
+    #             auto_set=False)
+    #
+    # gamma_N = Float(100000.,
+    #                 label="gamma_N",
+    #                 desc="Normal kinematic hardening",
+    #                 enter_set=True,
+    #                 auto_set=False)
+    #
+    # sigma_0 = Float(80.,
+    #                 label="sigma_0",
+    #                 desc="Yielding stress",
+    #                 enter_set=True,
+    #                 auto_set=False)
+    #
+    # state_var_shapes = Property(Dict(), depends_on='n_mp')
+    # '''Dictionary of state variable entries with their array shapes.
+    # '''
+    #
+    # # -------------------------------------------------------------------------
+    # # Cached elasticity tensors
+    # # -------------------------------------------------------------------------
+    #
+    # E = tr.Float(34e+3,
+    #              label="E",
+    #              desc="Young's Modulus",
+    #              auto_set=False,
+    #              input=True)
+    #
+    # nu = tr.Float(0.2,
+    #               label='nu',
+    #               desc="Poison ratio",
+    #               auto_set=False,
+    #               input=True)
     #     #    PARAMETERS FOR C80
 
     # gamma_T = Float(1000000.,
@@ -360,6 +360,124 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     # Cached elasticity tensors
     #-------------------------------------------------------------------------
 
+    # E = tr.Float(42e+3,
+    #              label="E",
+    #              desc="Young's Modulus",
+    #              auto_set=False,
+    #              input=True)
+    #
+    # nu = tr.Float(0.2,
+    #               label='nu',
+    #               desc="Poison ratio",
+    #               auto_set=False,
+    #               input=True)
+
+    #     #    PARAMETERS FOR C80 MA
+
+    gamma_T = Float(1000000.,
+                    label="Gamma",
+                    desc=" Tangential Kinematic hardening modulus",
+                    enter_set=True,
+                    auto_set=False)
+
+    K_T = Float(30000.0,
+                label="K",
+                desc="Tangential Isotropic harening",
+                enter_set=True,
+                auto_set=False)
+
+    S_T = Float(0.01,
+                label="S",
+                desc="Damage strength",
+                enter_set=True,
+                auto_set=False)
+
+    r_T = Float(14.,
+                label="r",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
+
+    c_T = Float(6.,
+                label="c",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
+
+    e_T = Float(14.,
+                label="c",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
+
+    tau_pi_bar = Float(2.0,
+                       label="Tau_bar",
+                       desc="Reversibility limit",
+                       enter_set=True,
+                       auto_set=False)
+
+    a = Float(0.01,
+              label="a",
+              desc="Lateral pressure coefficient",
+              enter_set=True,
+              auto_set=False)
+
+    #-------------------------------------------
+    # Normal_Tension constitutive law parameters (without cumulative normal strain)
+    #-------------------------------------------
+    Ad = Float(1000.0,
+               label="a",
+               desc="brittleness coefficient",
+               enter_set=True,
+               auto_set=False)
+
+    Ad2 = Float(1000.0,
+                label="a",
+                desc="brittleness coefficient",
+                enter_set=True,
+                auto_set=False)
+
+    eps_0 = Float(0.0001,
+                  label="a",
+                  desc="threshold strain",
+                  enter_set=True,
+                  auto_set=False)
+
+    eps_02 = Float(400.003,
+                   label="a",
+                   desc="threshold strain",
+                   enter_set=True,
+                   auto_set=False)
+
+    #-----------------------------------------------
+    # Normal_Compression constitutive law parameters
+    #-----------------------------------------------
+    K_N = Float(30000.,
+                label="K_N",
+                desc=" Normal isotropic harening",
+                enter_set=True,
+                auto_set=False)
+
+    gamma_N = Float(20000.,
+                    label="gamma_N",
+                    desc="Normal kinematic hardening",
+                    enter_set=True,
+                    auto_set=False)
+
+    sigma_0 = Float(60.,
+                    label="sigma_0",
+                    desc="Yielding stress",
+                    enter_set=True,
+                    auto_set=False)
+
+    state_var_shapes = Property(Dict(), depends_on='n_mp')
+    '''Dictionary of state variable entries with their array shapes.
+    '''
+
+    #-------------------------------------------------------------------------
+    # Cached elasticity tensors
+    #-------------------------------------------------------------------------
+
     E = tr.Float(42e+3,
                  label="E",
                  desc="Young's Modulus",
@@ -371,124 +489,6 @@ class MATS2DMplCSDEEQ(MATS2DEval):
                   desc="Poison ratio",
                   auto_set=False,
                   input=True)
-
-    #     #    PARAMETERS FOR C80 MA
-
-    #     gamma_T = Float(1000000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(30000.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.01,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(14.,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(6.,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     e_T = Float(14.,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(2.0,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.01,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(1000.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(1000.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.0001,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #
-    #     eps_02 = Float(400.003,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(30000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(20000.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(60.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     state_var_shapes = Property(Dict(), depends_on='n_mp')
-    #     '''Dictionary of state variable entries with their array shapes.
-    #     '''
-    #
-    #     #-------------------------------------------------------------------------
-    #     # Cached elasticity tensors
-    #     #-------------------------------------------------------------------------
-    #
-    #     E = tr.Float(42e+3,
-    #                  label="E",
-    #                  desc="Young's Modulus",
-    #                  auto_set=False,
-    #                  input=True)
-    #
-    #     nu = tr.Float(0.2,
-    #                   label='nu',
-    #                   desc="Poison ratio",
-    #                   auto_set=False,
-    #                   input=True)
 
     #    PARAMETERS FOR C120
 
@@ -2089,17 +2089,19 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         #         sigma_N_Emn = (1.0 - w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
         #         sigma_N_Emn_tilde = E_N * (eps_N_Emn - eps_N_p_Emn)
 
-        return w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, delta_lamda, X
+        return w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_N, X
+
+
 
     #-------------------------------------------------------------------------
     # microplane constitutive law (Tangential CSD)-(Pressure sensitive cumulative damage)
     #-------------------------------------------------------------------------
     def get_tangential_law(self, eps_T_Emna, w_T_Emn, z_T_Emn,
                            alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, omegaN, sigma_kk):
-        E_T = self.E / (1.0 + self.nu)
+        # E_T = self.E / (1.0 + self.nu)
 
-        # E_T = self.E * (1.0 - 4 * self.nu) / \
-        #     ((1.0 + self.nu) * (1.0 - 2 * self.nu))
+        E_T = self.E * (1.0 - 4 * self.nu) / \
+            ((1.0 + self.nu) * (1.0 - 2 * self.nu))
 
         sig_pi_trial = E_T * (eps_T_Emna - eps_T_pi_Emna)
 
@@ -2152,7 +2154,9 @@ class MATS2DMplCSDEEQ(MATS2DEval):
             '...n,...na->...na', (1 - w_T_Emn), E_T * (eps_T_Emna - eps_T_pi_Emna))
         w_T_Emna = w_T_Emn
 
-        return w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Z, X, w_T_Emna
+        return w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y, X, w_T_Emna
+
+
 
 #     #-------------------------------------------------------------------------
 #     # MICROPLANE-Kinematic constraints
@@ -2202,16 +2206,19 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         e_T_vct_arr = self._get_e_T_Emnar_2(eps_Emab)
         sigma_kk = np.abs(np.sum(F))
 
+
         omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n = self.get_normal_law(e_N_arr,  omegaN, z_N_Emn,
                                                                                                         alpha_N_Emn, r_N_Emn, eps_N_p_Emn, eps_aux)
 
-        w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T, w_T_Emna = self.get_tangential_law(e_T_vct_arr, w_T_Emn, z_T_Emn,
-                                                                                                                  alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, omegaN, sigma_kk)
-        D = np.sum(np.einsum('...n,...n->...n',w_T_Emn,Y_T) + np.einsum('...n,...n->...n',omegaN,Y_n) + np.einsum('...n,...n->...',eps_T_pi_Emna,sigma_T_Emna) + np.einsum('...n,...n->...n',eps_N_p_Emn,sigma_N_Emn))
+        w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T, w_T_Emna = self.get_tangential_law(e_T_vct_arr, w_T_Emn, z_T_Emn,alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, omegaN, sigma_kk)
+
+        #D = np.sum(np.einsum('...n,...n->...n',w_T_Emn-w_T_Emn_aux,Y_T) + np.einsum('...n,...n->...n',omegaN_aux-omegaN,Y_n))
+        #D = np.sum(np.einsum('...n,...n->...n',w_T_Emn-w_T_Emn_aux,Y_T) + np.einsum('...n,...n->...n',omegaN_aux-omegaN,Y_n) + np.einsum('...n,...n->...',eps_T_pi_Emna_aux-eps_T_pi_Emna,sigma_T_Emna) + np.einsum('...n,...n->...n',eps_N_p_Emn_aux-eps_N_p_Emn,sigma_N_Emn))
+        #D = np.sum(np.einsum('...n,...n->...n',self._MPW,np.einsum('...n,...n->...n',w_T_Emn,Y_T)) + np.einsum('...n,...n->...n',self._MPW,np.einsum('...n,...n->...n',omegaN,Y_n)) + np.einsum('...n,...n->...n',self._MPW,np.einsum('...n,...n->...',eps_T_pi_Emna,sigma_T_Emna)) + np.einsum('...n,...n->...n',self._MPW,np.einsum('...n,...n->...n',eps_N_p_Emn,sigma_N_Emn)))
 
 #         print(eps_N_p_Emn[0], 'eps p')
 #         print(Y_n[0], 'lambda')
-        return omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T,D
+        return omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T
 
     #---------------------------------------------------------------------
     # Extra homogenization of damage tensor in case of two damage parameters
@@ -2325,7 +2332,7 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         # calculation of the stress tensor
         sig_Emab = np.einsum('...abcd,...cd->...ab', D_Emabcd, eps_e_Emab)
 
-        return D_Emabcd, sig_Emab
+        return D_Emabcd, sig_Emab, eps_p_Emab
 
 # class MATS2DMplCSDEEQ(MATSXDMplCDSEEQ, MATS2DEval):
 
@@ -2334,7 +2341,7 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     #-----------------------------------------------
     # number of microplanes
     #-----------------------------------------------
-    n_mp = Constant(360)
+    n_mp = Constant(100)
 
     #-----------------------------------------------
     # get the normal vectors of the microplanes
@@ -2385,7 +2392,7 @@ if __name__ == '__main__':
 
     t_steps_total = len(sin_load)
 
-    n_mp = 360
+    n_mp = 100
     omegaN = np.zeros((n_mp, ))
     z_N_Emn = np.zeros((n_mp, ))
     alpha_N_Emn = np.zeros((n_mp, ))

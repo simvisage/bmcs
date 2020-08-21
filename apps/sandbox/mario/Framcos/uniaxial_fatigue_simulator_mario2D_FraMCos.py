@@ -18,21 +18,14 @@ import matplotlib
 
 from apps.sandbox.mario.Framcos.Micro2Dplot import Micro2Dplot
 from apps.sandbox.mario.Framcos.vmats2D_mpl_csd_eeq import MATS2DMplCSDEEQ
-#import h5py
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 
-#folder = '0.8'
-home_dir = os.path.expanduser('~')
-path = os.path.join(
-   home_dir, 'Data Processing/0.75_internals.hdf5')
-# path2 = os.path.join(
-#     home_dir, 'Desktop/Master/HiWi/Master Thesis/Framcos/Calibration/sixth approach/0.75/0.75_macro.hdf5')
-# path3 = os.path.join(
-# home_dir, 'Desktop/Master/HiWi/Master Thesis/Framcos/Calibration/sixth
-# approach/0.75/0.75_D.hdf5')
+
+
 
 
 def get_eps_ab(eps_O):
@@ -79,27 +72,33 @@ m = MATS2DMplCSDEEQ()
 plot = Micro2Dplot()
 
 
-def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
+def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1):
 
-    n_mp = 360
+    n_mp = 100
     omegaN = np.zeros((n_mp, ))
+    omegaN_aux  = np.zeros((n_mp, ))
     z_N_Emn = np.zeros((n_mp, ))
     alpha_N_Emn = np.zeros((n_mp, ))
     r_N_Emn = np.zeros((n_mp, ))
     eps_N_p_Emn = np.zeros((n_mp, ))
+    eps_N_p_Emn_aux = np.zeros((n_mp,))
     sigma_N_Emn = np.zeros((n_mp, ))
     Y_n = np.zeros((n_mp, ))
     R_n = np.zeros((n_mp, ))
     w_T_Emn = np.zeros((n_mp, ))
+    w_T_Emn_aux = np.zeros((n_mp, ))
     z_T_Emn = np.zeros((n_mp, ))
     alpha_T_Emna = np.zeros((n_mp, 2))
     eps_T_pi_Emna = np.zeros((n_mp, 2))
+    eps_T_pi_Emna_aux = np.zeros((n_mp, 2))
     sigma_T_Emna = np.zeros((n_mp, 2))
     X_T = np.zeros((n_mp, 2))
     Y_T = np.zeros((n_mp, ))
-    sctx = np.zeros((n_mp, 20))
+    sctx = np.zeros((n_mp, 19))
     macro = np.zeros((3, 2))
     D_E=np.zeros((1, ))
+    D_E_s=np.zeros((1, ))
+    MPW = np.ones(n_mp) / n_mp * 2
 
     #sctx = sctx[np.newaxis, :, :]
     macro2 = macro[np.newaxis, :, :]
@@ -118,6 +117,7 @@ def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
     # Global vectors
     F_ext = np.zeros((n_O,), np.float_)
     F_O = np.zeros((n_O,), np.float_)
+    U_P = np.zeros((n_O,), np.float_)
     U_k_O = np.zeros((n_O,), dtype=np.float_)
     eps_aux = get_eps_ab(U_k_O)
     # Setup the system matrix with displacement constraints
@@ -126,7 +126,7 @@ def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
     # Iteration parameters
     k_max, R_acc = 1000, 1e-3
     # Record solutions
-    U_t_list, F_t_list = [np.copy(U_k_O)], [np.copy(F_O)]
+    U_t_list, F_t_list, U_P_list = [np.copy(U_k_O)], [np.copy(F_O)], [np.copy(U_P)]
     D = np.zeros((2, 2, 2, 2))
     D = D[np.newaxis, :, :, :, :]
 
@@ -143,7 +143,7 @@ def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
             eps_ab = get_eps_ab(U_k_O)
             # Stress and material stiffness
 
-            D_abcd, sig_ab = m.get_corr_pred(
+            D_abcd, sig_ab, eps_p_Emab = m.get_corr_pred(
                 eps_ab, 1, omegaN, z_N_Emn,
                 alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
                 w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F_ext
@@ -151,6 +151,7 @@ def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
 
             # Internal force
             F_O = get_sig_O(sig_ab).reshape(3,)
+            U_P = get_sig_O(eps_p_Emab).reshape(3, )
             # Residuum
             R_O = F_ext - F_O
             # System matrix
@@ -172,36 +173,50 @@ def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
 
         # Update states variables after convergence
         [omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn,
-            alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T, D_E_s] = m._get_state_variables(
+            alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T] = m._get_state_variables(
                 eps_ab, 1, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
                 w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F_ext)
 
+        # D_E_s = np.sum(np.einsum('...n,...n->...n',w_T_Emn-w_T_Emn_aux,Y_T) + np.einsum('...n,...n->...n',omegaN-omegaN_aux,Y_n) + np.einsum('...n,...n->...',eps_T_pi_Emna-eps_T_pi_Emna_aux,sigma_T_Emna) + np.einsum('...n,...n->...n',eps_N_p_Emn-eps_N_p_Emn_aux,sigma_N_Emn))
+        D_E_s_aux = np.sum(np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...n',w_T_Emn-w_T_Emn_aux,Y_T)) + np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...n',omegaN-omegaN_aux,Y_n)) + np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...',eps_T_pi_Emna-eps_T_pi_Emna_aux,sigma_T_Emna)) + np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...n',eps_N_p_Emn-eps_N_p_Emn_aux,sigma_N_Emn)))
+
+
+        if D_E_s_aux < -1e-5:
+            print('2nd law thermo violation')
+
         omegaN = omegaN.reshape(n_mp, )
+        omegaN_aux = omegaN * 1
         z_N_Emn = z_N_Emn.reshape(n_mp, )
         alpha_N_Emn = alpha_N_Emn.reshape(n_mp, )
         r_N_Emn = r_N_Emn.reshape(n_mp, )
         eps_N_p_Emn = eps_N_p_Emn.reshape(n_mp, )
+        eps_N_p_Emn_aux = eps_N_p_Emn * 1
         sigma_N_Emn = sigma_N_Emn.reshape(n_mp,)
         Y_n = Y_n.reshape(n_mp,)
         R_n = R_n.reshape(n_mp,)
         w_T_Emn = w_T_Emn.reshape(n_mp, )
+        w_T_Emn_aux = w_T_Emn * 1
         z_T_Emn = z_T_Emn.reshape(n_mp, )
         alpha_T_Emna = alpha_T_Emna.reshape(n_mp, 2)
         eps_T_pi_Emna = eps_T_pi_Emna.reshape(n_mp, 2)
+        eps_T_pi_Emna_aux = eps_T_pi_Emna * 1
         sigma_T_Emna = sigma_T_Emna.reshape(n_mp, 2)
         X_T = X_T.reshape(n_mp, 2)
         Y_T = Y_T.reshape(n_mp, )
-        D_E_s= D_E_s.reshape(1, )
+        D_E_s= D_E_s.reshape(1, ) + D_E_s_aux.reshape(1, )
+
 #
-        # if F[t_n1] == 0 or F[t_n1] == factor_H1 * load or F[t_n1] ==
-        # factor_H2 * load or F[t_n1] == factor_L * load:
-        if F[t_n1] == 0 or F[t_n1] == factor_H1 * load or F[t_n1] == factor_L * load:
+        #if F[t_n1] == 0 or F[t_n1] == S_max1 * load or F[t_n1] == S_max2 * load or F[t_n1] == S_min1 * load:
+        if F[t_n1] == 0 or F[t_n1] == S_max1 * load or F[t_n1] == S_min1 * load:
 
             sctx_aux = np.concatenate((omegaN.reshape(n_mp, 1), z_N_Emn.reshape(n_mp, 1), alpha_N_Emn.reshape(n_mp, 1), r_N_Emn.reshape(n_mp, 1), eps_N_p_Emn.reshape(n_mp, 1), sigma_N_Emn.reshape(
                 n_mp, 1), Y_n.reshape(n_mp, 1), R_n.reshape(n_mp, 1),
                 w_T_Emn.reshape(n_mp, 1), z_T_Emn.reshape(
                 n_mp, 1), alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna,
                 Y_T.reshape(n_mp, 1), X_T), axis=1)
+
+            D_E = np.concatenate((D_E, D_E_s))
+
 
             #             U_k = U_k_O.reshape((3, 1))
             #             F_k = F_O.reshape((3, 1))
@@ -223,140 +238,165 @@ def get_UF_t(F, n_t, load, factor_H1, factor_H2, factor_L):
     #         sctx = np.concatenate((sctx, sctx_aux))
             U_t_list.append(np.copy(U_k_O))
             F_t_list.append(F_O)
+            U_P_list.append(U_P)
             eps_aux = get_eps_ab(U_k_O)
             D_aux = D_abcd[np.newaxis, :, :, :, :]
             D = np.concatenate((D, D_aux))
             #D_E_aux=D_E_s[np.newaxis, :]
-            D_E = np.concatenate((D_E, D_E_s))
             t_aux += 1
             # print(t_aux)
 
         t_n1 += 1
 
-    U_t, F_t = np.array(U_t_list), np.array(F_t_list)
-    return U_t, F_t, t_n1 / t_max, t_aux, D,D_E
+    U_t, F_t, U_p = np.array(U_t_list), np.array(F_t_list),np.array(U_P_list)
+    return U_t, F_t, t_n1 / t_max, t_aux, D,D_E,U_p
+
+
+Concrete_Type= 1        # 0:C40MA, 1:C80MA, 2:120MA
+
+Concrete_Type_string = ['C40MA', 'C80MA','C120MA']
+
+loading_scenario = 'constant'   # constant, order, increasing
+
+S_max1 = 0.9            # maximum loading level
+S_min1 = 0.05           # minimum loading level
+n_cycles1 = 1000         # number of applied cycles
+
+# For sequence order effect
+
+eta1 = 0.15             # fatigue life fraction first level
+cycles1 = 221           # fatigue life first level
+
+S_max2 = 0.8            # maximum loading level second level
+cycles2 = 27928         # fatigue life second level
+n_cycles2 = 1e5 - n_cycles1 # number of applied cycles second level
+
+# Path saving data
+
+home_dir = os.path.expanduser('~')
+
+if not os.path.exists('Data Processing'):
+    os.makedirs('Data Processing')
+
+path = os.path.join(
+   home_dir, 'Data Processing/' + Concrete_Type_string[Concrete_Type] + loading_scenario + str(S_max1) + str(eta1) + '.hdf5')
 
 # load = -60.54301292467442
 #
-load = -97.38726895936968
+# load = -97.38726895936968
 # load = -73.43966477329167
 # load = -123.82847695050454
-
-
 # load = 41.81
+
+
 # FINAL LOADINGS
-# load = -91.69221808121128
 
-# load = -119.33166543189739
+load_options = [-60.54301292467442, -91.69221808121128, -119.33166543189739]
 
+load = load_options[Concrete_Type]
 
-# load = -60.54301292467442
-
-
-
-l_H1 = 0.85
-cycles1 = 5808 / 0.65
-
-l_H2 = 0.15
-cycles2 = 32
-
-factor_H1 = 0.85
-factor_H2 = 0.95
-factor_L = 0.2
-
-
-max_load1 = load * factor_H1
-max_load2 = load * factor_H2
-max_load3 = load * 0.6
-max_load4 = load * 0.65
-max_load5 = load * 0.7
-max_load6 = load * 0.75
-max_load7 = load * 0.8
-max_load8 = load * 0.85
-max_load9 = load * 0.9
-max_load10 = load * 0.95
-max_load11 = load * 1.0
-min_load = load * factor_L
-
-
-# n_cycles1 = 88
-# n_cycles2 = 99912
-
-n_cycles1 = 100000
-n_cycles2 = 4192
-n_cycles3 = 10
-n_cycles4 = 10
-n_cycles5 = 10
-n_cycles6 = 10
-n_cycles7 = 10
-n_cycles8 = 10
-n_cycles9 = 10
-n_cycles10 = 10
-n_cycles11 = 10
-
+# LOADING SCENARIOS
 
 t_steps_cycle = 20
 
-monotonic = np.linspace(0, max_load1, t_steps_cycle)
+first_load = np.concatenate((np.linspace(0, load * S_max1, t_steps_cycle), np.linspace(
+    load * S_max1, load * S_min1, t_steps_cycle)[1:]))
 
-first_load = np.concatenate((np.linspace(0, max_load1, t_steps_cycle), np.linspace(
-    max_load1, min_load, t_steps_cycle)[1:]))
-cycle1 = np.concatenate((np.linspace(min_load, max_load1, t_steps_cycle)[1:], np.linspace(max_load1, min_load, t_steps_cycle)[
-                        1:]))
-cycle1 = np.tile(cycle1, n_cycles1 - 1)
+if loading_scenario == 'constant':
 
-change_order = np.concatenate((np.linspace(min_load, max_load2, 632)[1:], np.linspace(max_load2, min_load, 632)[
-    1:]))
+    cycle1 = np.concatenate(
+        (np.linspace(load * S_min1, load * S_max1, t_steps_cycle)[1:], np.linspace(load * S_max1, load * S_min1, t_steps_cycle)[
+                                                              1:]))
+    cycle1 = np.tile(cycle1, n_cycles1 - 1)
 
-cycle2 = np.concatenate((np.linspace(min_load, max_load2, t_steps_cycle)[1:], np.linspace(max_load2, min_load, t_steps_cycle)[
-                        1:]))
-cycle2 = np.tile(cycle2, n_cycles2)
+    sin_load = np.concatenate((first_load, cycle1))
 
-cycle3 = np.concatenate((np.linspace(min_load, max_load3, t_steps_cycle)[1:], np.linspace(max_load3, min_load, t_steps_cycle)[
-                        1:]))
-cycle3 = np.tile(cycle3, n_cycles3)
 
-cycle4 = np.concatenate((np.linspace(min_load, max_load4, t_steps_cycle)[1:], np.linspace(max_load4, min_load, t_steps_cycle)[
-                        1:]))
-cycle4 = np.tile(cycle4, n_cycles4)
+if loading_scenario == 'order':
 
-cycle5 = np.concatenate((np.linspace(min_load, max_load5, t_steps_cycle)[1:], np.linspace(max_load5, min_load, t_steps_cycle)[
-                        1:]))
-cycle5 = np.tile(cycle5, n_cycles5)
+    cycle1 = np.concatenate(
+        (np.linspace(load * S_min1, load * S_max1, t_steps_cycle)[1:], np.linspace(load * S_max1, load * S_min1, t_steps_cycle)[
+                                                              1:]))
+    cycle1 = np.tile(cycle1, n_cycles1 - 1)
 
-cycle6 = np.concatenate((np.linspace(min_load, max_load6, t_steps_cycle)[1:], np.linspace(max_load6, min_load, t_steps_cycle)[
-                        1:]))
-cycle6 = np.tile(cycle6, n_cycles6)
+    change_order = np.concatenate((np.linspace(load * S_min1, load * S_max2, 632)[1:], np.linspace(load * S_max2, load * S_min1, 632)[
+                                                                              1:]))
 
-cycle7 = np.concatenate((np.linspace(min_load, max_load7, t_steps_cycle)[1:], np.linspace(max_load7, min_load, t_steps_cycle)[
-                        1:]))
-cycle7 = np.tile(cycle7, n_cycles7)
+    cycle2 = np.concatenate(
+        (np.linspace(load * S_min1, load * S_max2, t_steps_cycle)[1:], np.linspace(load * S_max2, load * S_min1, t_steps_cycle)[
+                                                              1:]))
+    cycle2 = np.tile(cycle2, n_cycles2)
 
-cycle8 = np.concatenate((np.linspace(min_load, max_load8, t_steps_cycle)[1:], np.linspace(max_load8, min_load, t_steps_cycle)[
-                        1:]))
-cycle8 = np.tile(cycle8, n_cycles8)
+    sin_load = np.concatenate((first_load, cycle1, change_order, cycle2))
 
-cycle9 = np.concatenate((np.linspace(min_load, max_load9, t_steps_cycle)[1:], np.linspace(max_load9, min_load, t_steps_cycle)[
-                        1:]))
-cycle9 = np.tile(cycle9, n_cycles9)
 
-cycle10 = np.concatenate((np.linspace(min_load, max_load10, t_steps_cycle)[1:], np.linspace(max_load10, min_load, t_steps_cycle)[
-    1:]))
-cycle10 = np.tile(cycle10, n_cycles10)
 
-cycle11 = np.concatenate((np.linspace(min_load, max_load11, t_steps_cycle)[1:], np.linspace(max_load11, min_load, t_steps_cycle)[
-    1:]))
-cycle11 = np.tile(cycle11, n_cycles11)
 
-# sin_load = np.concatenate((first_load, cycle2, cycle3,
-#                            cycle4, cycle5, cycle6, cycle7, cycle8, cycle9, cycle10, cycle11))
+
+
+
+
+
+# monotonic = np.linspace(0, max_load1, t_steps_cycle)
 #
-#sin_load = np.concatenate((first_load, cycle1, change_order, cycle2))
-
-
-sin_load = np.concatenate((first_load, cycle1))
-
-# sin_load = monotonic
+# first_load = np.concatenate((np.linspace(0, max_load1, t_steps_cycle), np.linspace(
+#     max_load1, min_load, t_steps_cycle)[1:]))
+# cycle1 = np.concatenate((np.linspace(min_load, max_load1, t_steps_cycle)[1:], np.linspace(max_load1, min_load, t_steps_cycle)[
+#                         1:]))
+# cycle1 = np.tile(cycle1, n_cycles1 - 1)
+#
+# change_order = np.concatenate((np.linspace(min_load, max_load2, 632)[1:], np.linspace(max_load2, min_load, 632)[
+#     1:]))
+#
+# cycle2 = np.concatenate((np.linspace(min_load, max_load2, t_steps_cycle)[1:], np.linspace(max_load2, min_load, t_steps_cycle)[
+#                         1:]))
+# cycle2 = np.tile(cycle2, n_cycles2)
+#
+# cycle3 = np.concatenate((np.linspace(min_load, max_load3, t_steps_cycle)[1:], np.linspace(max_load3, min_load, t_steps_cycle)[
+#                         1:]))
+# cycle3 = np.tile(cycle3, n_cycles3)
+#
+# cycle4 = np.concatenate((np.linspace(min_load, max_load4, t_steps_cycle)[1:], np.linspace(max_load4, min_load, t_steps_cycle)[
+#                         1:]))
+# cycle4 = np.tile(cycle4, n_cycles4)
+#
+# cycle5 = np.concatenate((np.linspace(min_load, max_load5, t_steps_cycle)[1:], np.linspace(max_load5, min_load, t_steps_cycle)[
+#                         1:]))
+# cycle5 = np.tile(cycle5, n_cycles5)
+#
+# cycle6 = np.concatenate((np.linspace(min_load, max_load6, t_steps_cycle)[1:], np.linspace(max_load6, min_load, t_steps_cycle)[
+#                         1:]))
+# cycle6 = np.tile(cycle6, n_cycles6)
+#
+# cycle7 = np.concatenate((np.linspace(min_load, max_load7, t_steps_cycle)[1:], np.linspace(max_load7, min_load, t_steps_cycle)[
+#                         1:]))
+# cycle7 = np.tile(cycle7, n_cycles7)
+#
+# cycle8 = np.concatenate((np.linspace(min_load, max_load8, t_steps_cycle)[1:], np.linspace(max_load8, min_load, t_steps_cycle)[
+#                         1:]))
+# cycle8 = np.tile(cycle8, n_cycles8)
+#
+# cycle9 = np.concatenate((np.linspace(min_load, max_load9, t_steps_cycle)[1:], np.linspace(max_load9, min_load, t_steps_cycle)[
+#                         1:]))
+# cycle9 = np.tile(cycle9, n_cycles9)
+#
+# cycle10 = np.concatenate((np.linspace(min_load, max_load10, t_steps_cycle)[1:], np.linspace(max_load10, min_load, t_steps_cycle)[
+#     1:]))
+# cycle10 = np.tile(cycle10, n_cycles10)
+#
+# cycle11 = np.concatenate((np.linspace(min_load, max_load11, t_steps_cycle)[1:], np.linspace(max_load11, min_load, t_steps_cycle)[
+#     1:]))
+# cycle11 = np.tile(cycle11, n_cycles11)
+#
+# # sin_load = np.concatenate((first_load, cycle2, cycle3,
+# #                            cycle4, cycle5, cycle6, cycle7, cycle8, cycle9, cycle10, cycle11))
+# #
+# # sin_load = np.concatenate((first_load, cycle1, change_order, cycle2))
+#
+#
+#
+#
+# # sin_load = monotonic
 
 
 t_steps = len(sin_load)
@@ -419,8 +459,8 @@ t = np.linspace(0, 1, len(sin_load))
 #
 #
 
-U, F, cyc, number_cyc, D,D_E = get_UF_t(
-    sin_load, t_steps, load, factor_H1, factor_H2, factor_L)
+U, F, cyc, number_cyc, D,D_E, U_p = get_UF_t(
+    sin_load, t_steps, load, S_max1, S_max2, S_min1)
 
 
 # macro = np.zeros((np.int(number_cyc - 1), 3, 2))
@@ -463,8 +503,8 @@ ax2.set_title(str((n_cycles1)) + ',' + str(cyc))
 plt.show()
 
 f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
-ax.plot((np.arange(len(U[2::2, 0])) + 1) / len(U[1::2, 0]),
-        np.abs(U[2::2, 0]), linewidth=2.5)
+ax.plot(np.arange(len(D_E)),
+        D_E, linewidth=2.5)
 plt.show()
 
 
@@ -534,45 +574,45 @@ f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
 
 ax.plot((np.arange(len(U[2::2, 0])) + 1) / len(U[1::2, 0]),
         np.abs(U[2::2, 0]), linewidth=2.5)
-ax.plot((np.arange(len(U[1::2, 0])) + 1) / len(U[0::2, 0]),
-        np.abs(U[1::2, 0]), linewidth=2.5)
+# ax.plot((np.arange(len(U[1::2, 0])) + 1) / len(U[0::2, 0]),
+#         np.abs(U[1::2, 0]), linewidth=2.5)
 
 
-# X_axis1 = np.array(np.arange(l_H1 * cycles1) + 1)[1:] / cycles1
-# X_axis1 = np.concatenate((np.array([0]), X_axis1))
-# Y_axis1 = np.abs(U[2:np.int(2 * l_H1 * cycles1) + 2:2, 0])
-# # Y_axis1 = np.concatenate((np.array([Y_axis1[0]]), Y_axis1))
-#
-#
-# print(U[2:np.int(2 * l_H1 * cycles1) + 2, 0])
-# print(X_axis1.shape)
-# print(Y_axis1.shape)
-#
-# print(len(U[2::2, 0]))
-# X_axis2 = np.array((np.arange(len(U[2::2, 0]) -
-#                               (l_H1 * cycles1)) + 1) / (cycles2) + l_H1)
-# X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
-#
-# Y_axis2 = np.abs(U[np.int(2 * l_H1 * cycles1) + 2::2, 0])
-# Y_axis2 = np.concatenate(
-#     (np.array([Y_axis2[0]]), Y_axis2))
-# X_axis = np.concatenate((X_axis1, X_axis2))
-#
-# print(U[np.int(2 * l_H1 * cycles1):np.int(2 * l_H1 * cycles1) + 10, 0])
-# print(X_axis2.shape)
-# print(Y_axis2.shape)
-#
-#
-# x = U[2, 0]
-# Y_axis = np.concatenate((np.array([x]), np.array(U[2::2, 0])))
-# ax.plot(X_axis1, Y_axis1, 'k', linewidth=2.5)
-# ax.plot(X_axis2, Y_axis2, 'k', linewidth=2.5)
-# # ax.plot(X_axis, Y_axis, 'r', linewidth=2.5)
-# ax.plot([X_axis1[-1], X_axis2[0]],
-#         [Y_axis1[-1], Y_axis2[0]], 'k', linewidth=2.5)
+X_axis1 = np.array(np.arange(eta1 * cycles1) + 1)[1:] / cycles1
+X_axis1 = np.concatenate((np.array([0]), X_axis1))
+Y_axis1 = np.abs(U[2:np.int(2 * eta1 * cycles1) + 2:2, 0])
+# Y_axis1 = np.concatenate((np.array([Y_axis1[0]]), Y_axis1))
 
 
-# ax.plot(np.arange(cycles1) / l_H1 * cycles1,
+print(U[2:np.int(2 * eta1 * cycles1) + 2, 0])
+print(X_axis1.shape)
+print(Y_axis1.shape)
+
+print(len(U[2::2, 0]))
+X_axis2 = np.array((np.arange(len(U[2::2, 0]) -
+                              (eta1 * cycles1)) + 1) / (cycles2) + eta1)
+X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
+
+Y_axis2 = np.abs(U[np.int(2 * eta1 * cycles1) + 2::2, 0])
+Y_axis2 = np.concatenate(
+    (np.array([Y_axis2[0]]), Y_axis2))
+X_axis = np.concatenate((X_axis1, X_axis2))
+
+print(U[np.int(2 * eta1 * cycles1):np.int(2 * eta1 * cycles1) + 10, 0])
+print(X_axis2.shape)
+print(Y_axis2.shape)
+
+
+x = U[2, 0]
+Y_axis = np.concatenate((np.array([x]), np.array(U[2::2, 0])))
+ax.plot(X_axis1, Y_axis1, 'k', linewidth=2.5)
+ax.plot(X_axis2, Y_axis2, 'k', linewidth=2.5)
+# ax.plot(X_axis, Y_axis, 'r', linewidth=2.5)
+ax.plot([X_axis1[-1], X_axis2[0]],
+        [Y_axis1[-1], Y_axis2[0]], 'k', linewidth=2.5)
+
+
+# ax.plot(np.arange(cycles1) / eta1 * cycles1,
 #         np.abs(U[2::2, 0]), linewidth=2.5)
 
 
@@ -584,11 +624,48 @@ ax.set_ylabel('strain', fontsize=25)
 plt.title('creep fatigue Smax = 0.85')
 plt.show()
 
-plt.plot(np.arange(len(U[2::2, 0])), U[2::2, 0])
+f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
+
+X_axis1 = np.array(np.arange(eta1 * cycles1) + 1)[1:] / cycles1
+X_axis1 = np.concatenate((np.array([0]), X_axis1))
+Y_axis1 = np.abs(D_E[2:np.int(2 * eta1 * cycles1) + 2:2])
+# Y_axis1 = np.concatenate((np.array([Y_axis1[0]]), Y_axis1))
+
+
+# print(U[2:np.int(2 * eta1 * cycles1) + 2, 0])
+# print(X_axis1.shape)
+# print(Y_axis1.shape)
+#
+# print(len(D_E[2::2, 0]))
+X_axis2 = np.array((np.arange(len(D_E[2::2]) -
+                              (eta1 * cycles1)) + 1) / (cycles2) + eta1)
+X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
+
+Y_axis2 = np.abs(D_E[np.int(2 * eta1 * cycles1) + 2::2])
+Y_axis2 = np.concatenate(
+    (np.array([Y_axis2[0]]), Y_axis2))
+X_axis = np.concatenate((X_axis1, X_axis2))
+
+# print(D_E[np.int(2 * eta1 * cycles1):np.int(2 * eta1 * cycles1) + 10])
+# print(X_axis2.shape)
+# print(Y_axis2.shape)
+
+
+x = D_E[2]
+Y_axis = np.concatenate((np.array([x]), np.array(D_E[2::2])))
+ax.plot(X_axis1, Y_axis1, 'k', linewidth=2.5)
+ax.plot(X_axis2, Y_axis2, 'k', linewidth=2.5)
+# ax.plot(X_axis, Y_axis, 'r', linewidth=2.5)
+ax.plot([X_axis1[-1], X_axis2[0]],
+        [Y_axis1[-1], Y_axis2[0]], 'k', linewidth=2.5)
 plt.show()
 
 
-n_mp = 360
+plt.plot(np.arange(len(U[2::2])), U[2::2, 0])
+plt.show()
+
+
+n_mp = 100
 
 S = np.zeros((len(F), n_mp, 19))
 
@@ -659,7 +736,7 @@ eps_global_norm = np.zeros((len(S), len(S[1])))
 sigma_global_norm = np.zeros((len(S), len(S[1])))
 eps = np.zeros((len(S), 2, 2))
 sigma = np.zeros((len(S), 2, 2))
-n_mp = 360
+n_mp = 100
 
 for i in range(len(F)):
     eps[i] = get_eps_ab(U[i])

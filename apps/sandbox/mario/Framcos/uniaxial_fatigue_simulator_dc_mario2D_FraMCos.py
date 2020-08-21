@@ -19,12 +19,12 @@ from apps.sandbox.mario.Framcos.vmats2D_mpl_csd_eeq import MATS2DMplCSDEEQ
 
 import matplotlib.pyplot as plt
 import numpy as np
-import sympy as sp
+from scipy import integrate
 
 #from .vmats3D_mpl_csd_eeq import MATS3DMplCSDEEQ
 
 
-sp.init_printing()
+
 
 
 def get_eps_ab(eps_O):
@@ -78,19 +78,24 @@ plot = Micro2Dplot()
 
 def get_UF_t(eps_max, time_function, n_t):
 
-    n_mp = 360
+    n_mp = 100
     omegaN = np.zeros((n_mp, ))
+    omegaN_aux = np.zeros((n_mp,))
     z_N_Emn = np.zeros((n_mp, ))
     alpha_N_Emn = np.zeros((n_mp, ))
     r_N_Emn = np.zeros((n_mp, ))
     eps_N_p_Emn = np.zeros((n_mp, ))
+    eps_N_p_Emn_aux = np.zeros((n_mp,))
     sigma_N_Emn = np.zeros((n_mp, ))
     Y_n = np.zeros((n_mp, ))
     R_n = np.zeros((n_mp, ))
     w_T_Emn = np.zeros((n_mp, ))
+    w_T_Emn_aux = np.zeros((n_mp,))
     z_T_Emn = np.zeros((n_mp, ))
     alpha_T_Emna = np.zeros((n_mp, 2))
     eps_T_pi_Emna = np.zeros((n_mp, 2))
+    eps_T_pi_Emna_aux = np.zeros((n_mp, 2))
+    # eps_T_pi_Emna_aux = eps_T_pi_Emna_aux[np.newaxis, :, :]
     sigma_T_Emna = np.zeros((n_mp, 2))
     X_T = np.zeros((n_mp, 2))
     Y_T = np.zeros((n_mp, ))
@@ -98,12 +103,15 @@ def get_UF_t(eps_max, time_function, n_t):
     sctx = sctx[np.newaxis, :, :]
     D = np.zeros((2, 2, 2, 2))
     D = D[np.newaxis, :, :, :, :]
+    D_E = np.zeros((1,))
+    MPW = np.ones(n_mp) / n_mp * 2
 
     # total number of DOFs
     n_O = 3
     # Global vectors
     F_ext = np.zeros((n_O,), np.float_)
     F_O = np.zeros((n_O,), np.float_)
+    U_P = np.zeros((n_O,), np.float_)
     U_k_O = np.zeros((n_O,), dtype=np.float_)
     eps_aux = get_eps_ab(U_k_O)
     # Construct index maps distinguishing the controlled displacements
@@ -119,7 +127,7 @@ def get_UF_t(eps_max, time_function, n_t):
     # Iteration parameters
     k_max, R_acc = 1000, 1e-5
     # Record solutions
-    U_t_list, F_t_list = [np.copy(U_k_O)], [np.copy(F_O)]
+    U_t_list, F_t_list, U_P_list = [np.copy(U_k_O)], [np.copy(F_O)], [np.copy(U_P)]
 
     # Load increment loop
     while t_n1 <= t_max - 1:
@@ -132,13 +140,14 @@ def get_UF_t(eps_max, time_function, n_t):
             # Transform the primary vector to field
             eps_ab = get_eps_ab(U_k_O)
             # Stress and material stiffness
-            D_abcd, sig_ab = m.get_corr_pred(
+            D_abcd, sig_ab, eps_p_Emab = m.get_corr_pred(
                 eps_ab, 1, omegaN, z_N_Emn,
                 alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
                 w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F_O
             )
             # Internal force
             F_O = get_sig_O(sig_ab).reshape(3,)
+            U_P = get_sig_O(eps_p_Emab).reshape(3, )
             # System matrix
             K_OP = get_K_OP(D_abcd)
             #Beta = get_K_OP(beta_Emabcd)
@@ -170,26 +179,40 @@ def get_UF_t(eps_max, time_function, n_t):
 #         U_t_list.append(np.copy(U_k_O))
 #         F_t_list.append(F_O)
 
+
         [omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn,
             alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T] = m._get_state_variables(
                 eps_ab, 1, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
                 w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F_O)
 
+        #D_E_s = np.sum(np.einsum('...n,...n->...n',w_T_Emn-w_T_Emn_aux,Y_T) + np.einsum('...n,...n->...n',omegaN-omegaN_aux,Y_n) + np.einsum('...n,...n->...',eps_T_pi_Emna-eps_T_pi_Emna_aux,sigma_T_Emna) + np.einsum('...n,...n->...n',eps_N_p_Emn-eps_N_p_Emn_aux,sigma_N_Emn))
+        D_E_s = np.sum(np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...n',w_T_Emn-w_T_Emn_aux,Y_T)) + np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...n',omegaN-omegaN_aux,Y_n)) + np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...',eps_T_pi_Emna-eps_T_pi_Emna_aux,sigma_T_Emna)) + np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...n',eps_N_p_Emn-eps_N_p_Emn_aux,sigma_N_Emn)))
+
+        print(eps_T_pi_Emna-eps_T_pi_Emna_aux)
         omegaN = omegaN.reshape(n_mp, )
+        omegaN_aux=omegaN*1
         z_N_Emn = z_N_Emn.reshape(n_mp, )
         alpha_N_Emn = alpha_N_Emn.reshape(n_mp, )
         r_N_Emn = r_N_Emn.reshape(n_mp, )
         eps_N_p_Emn = eps_N_p_Emn.reshape(n_mp, )
+        eps_N_p_Emn_aux=eps_N_p_Emn*1
         sigma_N_Emn = sigma_N_Emn.reshape(n_mp,)
         Y_n = Y_n.reshape(n_mp,)
         R_n = R_n.reshape(n_mp,)
         w_T_Emn = w_T_Emn.reshape(n_mp, )
+        w_T_Emn_aux=w_T_Emn*1
         z_T_Emn = z_T_Emn.reshape(n_mp, )
         alpha_T_Emna = alpha_T_Emna.reshape(n_mp, 2)
         eps_T_pi_Emna = eps_T_pi_Emna.reshape(n_mp, 2)
+        eps_T_pi_Emna_aux=eps_T_pi_Emna*1
+        # eps_T_pi_Emna_aux2 = eps_T_pi_Emna[np.newaxis, :, :]
+        # eps_T_pi_Emna_aux= np.concatenate((eps_T_pi_Emna_aux, eps_T_pi_Emna_aux2))
         sigma_T_Emna = sigma_T_Emna.reshape(n_mp, 2)
         X_T = X_T.reshape(n_mp, 2)
         Y_T = Y_T.reshape(n_mp, )
+        D_E_s = D_E_s.reshape(1, ) + D_E[-1]
+        D_E = np.concatenate((D_E, D_E_s))
+
 
         sctx_aux = np.concatenate((omegaN.reshape(n_mp, 1), z_N_Emn.reshape(n_mp, 1), alpha_N_Emn.reshape(n_mp, 1),
                                    r_N_Emn.reshape(n_mp, 1), eps_N_p_Emn.reshape(
@@ -202,25 +225,27 @@ def get_UF_t(eps_max, time_function, n_t):
         D = np.concatenate((D, D_aux))
         U_t_list.append(np.copy(U_k_O))
         F_t_list.append(F_O)
+        U_P_list.append(U_P)
         eps_aux = get_eps_ab(U_k_O)
+
 
         t_n = t_n1
         t_n1 += 1
         # print(t_n1)
         # print(Beta)
 
-    U_t, F_t = np.array(U_t_list), np.array(F_t_list)
-    return U_t, F_t, sctx, D
+    U_t, F_t, U_p = np.array(U_t_list), np.array(F_t_list),np.array(U_P_list)
+    return U_t, F_t, sctx, D, D_E,U_p
 
 
 n_cycles = 1
 T = 1 / n_cycles
 eps_max = -0.01
 
-t_steps = 500 * n_cycles
+t_steps = 100 * n_cycles
 
-eps1 = -0.0032
-eps2 = -0.00156
+eps1 = -0.002785
+eps2 = -0.000225050506
 eps3 = -0.0055
 eps4 = -0.0025
 eps5 = -0.0065
@@ -231,14 +256,15 @@ eps9 = -0.01
 
 load1 = np.linspace(0, eps1, t_steps)
 
+
 load2 = np.linspace(load1[-1], eps2, t_steps)
-load3 = np.linspace(load2[-1], eps3, t_steps)
-load4 = np.linspace(load3[-1], eps4, t_steps)
-load5 = np.linspace(load4[-1], eps5, t_steps)
-load6 = np.linspace(load5[-1], eps6, t_steps)
-load7 = np.linspace(load6[-1], eps7, t_steps)
-load8 = np.linspace(load7[-1], eps8, t_steps)
-load9 = np.linspace(load8[-1], eps9, t_steps)
+# load3 = np.linspace(load2[-1], eps3, t_steps)
+# load4 = np.linspace(load3[-1], eps4, t_steps)
+# load5 = np.linspace(load4[-1], eps5, t_steps)
+# load6 = np.linspace(load5[-1], eps6, t_steps)
+# load7 = np.linspace(load6[-1], eps7, t_steps)
+# load8 = np.linspace(load7[-1], eps8, t_steps)
+# load9 = np.linspace(load8[-1], eps9, t_steps)
 
 
 # sin_load = np.concatenate(
@@ -249,6 +275,7 @@ load9 = np.linspace(load8[-1], eps9, t_steps)
 t = np.linspace(0, 1, t_steps)
 #load = eps_max * (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
 sin_load = np.linspace(0, eps_max, t_steps)
+# sin_load = np.concatenate((load1, load2[1::]))
 # # plt.plot(t, load)
 # plt.show()
 
@@ -258,7 +285,7 @@ t_steps_total = len(sin_load)
 def loading_history(t): return (np.sin(np.pi / T * (t - T / 2)) + 1) / 2
 
 
-U, F, S, D = get_UF_t(
+U, F, S, D, D_E, U_p = get_UF_t(
     eps_max,
     sin_load,
     t_steps_total
@@ -289,6 +316,12 @@ print(np.max(np.abs(F[:, 0])), 'fc')
 
 
 plt.show()
+y_int = integrate.cumtrapz(np.abs(F[:, 0]),np.abs(U[:, 0]))
+print(y_int[-1])
+print(0.5*U_p[-1,0]*F[-1, 0])
+print(0.5*(U[-1, 0]-U_p[-1,0])*F[-1, 0])
+print(y_int[-1] - U_p[-1,0]*F[-1, 0])
+print(D_E[-1])
 
 # f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
 #
@@ -298,7 +331,7 @@ plt.show()
 # ax2.set_ylabel(r'$|\sigma{11}$| [-]', fontsize=25)
 # plt.show()
 
-n_mp = 360
+n_mp = 200
 rads = np.arange(0, (2 * np.pi), (2 * np.pi) / n_mp)
 eps_N = np.zeros((len(S), len(S[1])))
 
@@ -360,7 +393,7 @@ eps_global_norm = np.zeros((len(S), len(S[1])))
 sigma_global_norm = np.zeros((len(S), len(S[1])))
 eps = np.zeros((len(S), 2, 2))
 sigma = np.zeros((len(S), 2, 2))
-n_mp = 360
+n_mp = 100
 
 for i in range(len(F)):
     eps[i] = get_eps_ab(U[i])
