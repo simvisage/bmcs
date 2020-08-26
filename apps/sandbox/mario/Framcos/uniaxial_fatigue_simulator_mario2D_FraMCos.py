@@ -1,17 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # Simulation of fatigue for uniaxial stress state
-
-# Assume a uniaxial stress state with $\sigma_{11} = \bar{\sigma}(\theta)$ representing the loading function. All other components of the stress tensor are assumed zero
-# \begin{align}
-# \sigma_{ab} = 0; \forall a,b \in (0,1,2), a = b \neq 1
-# \end{align}
-#
-
-# In[1]:
-
-
 import os
 
 import matplotlib
@@ -75,42 +61,13 @@ plot = Micro2Dplot()
 def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1):
 
     n_mp = 100
-    omegaN = np.zeros((n_mp, ))
-    omegaN_aux  = np.zeros((n_mp, ))
-    z_N_Emn = np.zeros((n_mp, ))
-    alpha_N_Emn = np.zeros((n_mp, ))
-    r_N_Emn = np.zeros((n_mp, ))
-    eps_N_p_Emn = np.zeros((n_mp, ))
-    eps_N_p_Emn_aux = np.zeros((n_mp,))
-    sigma_N_Emn = np.zeros((n_mp, ))
-    Y_n = np.zeros((n_mp, ))
-    R_n = np.zeros((n_mp, ))
-    w_T_Emn = np.zeros((n_mp, ))
-    w_T_Emn_aux = np.zeros((n_mp, ))
-    z_T_Emn = np.zeros((n_mp, ))
-    alpha_T_Emna = np.zeros((n_mp, 2))
-    eps_T_pi_Emna = np.zeros((n_mp, 2))
-    eps_T_pi_Emna_aux = np.zeros((n_mp, 2))
-    sigma_T_Emna = np.zeros((n_mp, 2))
-    X_T = np.zeros((n_mp, 2))
-    Y_T = np.zeros((n_mp, ))
-    sctx = np.zeros((n_mp, 19))
-    macro = np.zeros((3, 2))
-    D_E=np.zeros((1, ))
-    D_E_s=np.zeros((1, ))
-    MPW = np.ones(n_mp) / n_mp * 2
 
-    #sctx = sctx[np.newaxis, :, :]
-    macro2 = macro[np.newaxis, :, :]
+    int_var = np.zeros((n_mp,21))
+    int_var_aux = np.zeros((n_mp, 21))
+    disip=  np.zeros((n_mp,8))
 
-    df = pd.DataFrame(sctx)
+    df = pd.DataFrame(int_var)
     df.to_hdf(path, 'first', mode='w', format='table')
-
-#     df2 = pd.DataFrame(macro)
-#     df2.to_hdf(path2, 'first', mode='w', format='table')
-
-#     df3 = pd.DataFrame(D)
-#     df3.to_hdf(path3, 'first', mode='w', format='table')
 
     # total number of DOFs
     n_O = 3
@@ -144,9 +101,7 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1):
             # Stress and material stiffness
 
             D_abcd, sig_ab, eps_p_Emab = m.get_corr_pred(
-                eps_ab, 1, omegaN, z_N_Emn,
-                alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
-                w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F_ext
+                eps_ab, 1, int_var, eps_aux, F_ext
             )
 
             # Internal force
@@ -171,71 +126,38 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1):
 
             break
 
+
         # Update states variables after convergence
-        [omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn,
-            alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T] = m._get_state_variables(
-                eps_ab, 1, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
-                w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F_ext)
+        int_var = m._get_state_variables(eps_ab, int_var, eps_aux)
 
-        # D_E_s = np.sum(np.einsum('...n,...n->...n',w_T_Emn-w_T_Emn_aux,Y_T) + np.einsum('...n,...n->...n',omegaN-omegaN_aux,Y_n) + np.einsum('...n,...n->...',eps_T_pi_Emna-eps_T_pi_Emna_aux,sigma_T_Emna) + np.einsum('...n,...n->...n',eps_N_p_Emn-eps_N_p_Emn_aux,sigma_N_Emn))
-        D_E_s_aux = np.sum(np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...n',w_T_Emn-w_T_Emn_aux,Y_T)) + np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...n',omegaN-omegaN_aux,Y_n)) + np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...',eps_T_pi_Emna-eps_T_pi_Emna_aux,sigma_T_Emna)) + np.einsum('...n,...n->...n',MPW,np.einsum('...n,...n->...n',eps_N_p_Emn-eps_N_p_Emn_aux,sigma_N_Emn)))
+        # Definition internal variables / forces per column:  1) damage N, 2)iso N, 3)kin N, 4) consolidation N, 5) eps p N,
+        # 6) sigma N, 7) iso F N, 8) kin F N, 9) energy release N, 10) damage T, 11) iso T, 12-13) kin T, 14-15) eps p T,
+        # 16-17) sigma T, 18) iso F T, 19-20) kin F T, 21) energy release T
 
 
-        if D_E_s_aux < -1e-5:
-            print('2nd law thermo violation')
+        # Definition dissipation components per column: 1) damage N, 2) damage T, 3) eps p N, 4) eps p T, 5) iso N
+        # 6) iso T, 7) kin N, 8) kin T
 
-        omegaN = omegaN.reshape(n_mp, )
-        omegaN_aux = omegaN * 1
-        z_N_Emn = z_N_Emn.reshape(n_mp, )
-        alpha_N_Emn = alpha_N_Emn.reshape(n_mp, )
-        r_N_Emn = r_N_Emn.reshape(n_mp, )
-        eps_N_p_Emn = eps_N_p_Emn.reshape(n_mp, )
-        eps_N_p_Emn_aux = eps_N_p_Emn * 1
-        sigma_N_Emn = sigma_N_Emn.reshape(n_mp,)
-        Y_n = Y_n.reshape(n_mp,)
-        R_n = R_n.reshape(n_mp,)
-        w_T_Emn = w_T_Emn.reshape(n_mp, )
-        w_T_Emn_aux = w_T_Emn * 1
-        z_T_Emn = z_T_Emn.reshape(n_mp, )
-        alpha_T_Emna = alpha_T_Emna.reshape(n_mp, 2)
-        eps_T_pi_Emna = eps_T_pi_Emna.reshape(n_mp, 2)
-        eps_T_pi_Emna_aux = eps_T_pi_Emna * 1
-        sigma_T_Emna = sigma_T_Emna.reshape(n_mp, 2)
-        X_T = X_T.reshape(n_mp, 2)
-        Y_T = Y_T.reshape(n_mp, )
-        D_E_s= D_E_s.reshape(1, ) + D_E_s_aux.reshape(1, )
+        disip[:, 0] += np.einsum('...n,...n->...n', int_var[:,0] - int_var_aux[:,0], int_var[:, 8])
+        disip[:, 1] += np.einsum('...n,...n->...n', int_var[:, 9] - int_var_aux[:, 9], int_var[:, 20])
+        disip[:, 2] += np.einsum('...n,...n->...n', int_var[:, 4] - int_var_aux[:, 4], int_var[:, 5])
+        disip[:, 3] += np.einsum('...n,...n->...', int_var[:, 13-15] - int_var_aux[:, 15-15], int_var[:, 15-17])
+        disip[:, 4] += np.einsum('...n,...n->...n', int_var[:, 1] - int_var_aux[:, 1], int_var[:, 6])
+        disip[:, 5] += np.einsum('...n,...n->...n', int_var[:, 10] - int_var_aux[:, 10], int_var[:, 17])
+        disip[:, 6] += np.einsum('...n,...n->...n', int_var[:, 2] - int_var_aux[:, 2], int_var[:, 7])
+        disip[:, 7] += np.einsum('...n,...n->...', int_var[:, 11-13] - int_var_aux[:, 11-13], int_var[:, 18-20])
 
-#
-        #if F[t_n1] == 0 or F[t_n1] == S_max1 * load or F[t_n1] == S_max2 * load or F[t_n1] == S_min1 * load:
+
+        int_var_aux = int_var * 1
+
         if F[t_n1] == 0 or F[t_n1] == S_max1 * load or F[t_n1] == S_min1 * load:
 
-            sctx_aux = np.concatenate((omegaN.reshape(n_mp, 1), z_N_Emn.reshape(n_mp, 1), alpha_N_Emn.reshape(n_mp, 1), r_N_Emn.reshape(n_mp, 1), eps_N_p_Emn.reshape(n_mp, 1), sigma_N_Emn.reshape(
-                n_mp, 1), Y_n.reshape(n_mp, 1), R_n.reshape(n_mp, 1),
-                w_T_Emn.reshape(n_mp, 1), z_T_Emn.reshape(
-                n_mp, 1), alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna,
-                Y_T.reshape(n_mp, 1), X_T), axis=1)
 
-            D_E = np.concatenate((D_E, D_E_s))
+            save=np.concatenate((int_var,disip), axis = 1)
 
-
-            #             U_k = U_k_O.reshape((3, 1))
-            #             F_k = F_O.reshape((3, 1))
-
-            #             macro = np.concatenate((U_k, F_k), axis=1)
-            #         D = D_abcd.reshape((2, 8))
-            #         sctx_aux = sctx_aux[np.newaxis, :, :]
-            #             macro_aux=np.concatenate((U_k, F_k), axis=1)
-            #             macro_aux=macro_aux[np.newaxis, :, :]
-            #                     macro2 = np.concatenate((macro2, macro_aux))
-            #
-            df = pd.DataFrame(sctx_aux)
+            df = pd.DataFrame(save)
             df.to_hdf(path, 'middle' + np.str(t_aux), append=True)
-            #             df2 = pd.DataFrame(macro)
-            #             df2.to_hdf(path2, 'middle' + np.str(t_aux), append=True)
-            #df3 = pd.DataFrame(D)
-            #df3.to_hdf(path3, 'middle' + np.str(t_aux), append=True)
 
-    #         sctx = np.concatenate((sctx, sctx_aux))
             U_t_list.append(np.copy(U_k_O))
             F_t_list.append(F_O)
             U_P_list.append(U_P)
@@ -249,7 +171,9 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1):
         t_n1 += 1
 
     U_t, F_t, U_p = np.array(U_t_list), np.array(F_t_list),np.array(U_P_list)
-    return U_t, F_t, t_n1 / t_max, t_aux, D,D_E,U_p
+    return U_t, F_t, t_n1 / t_max, t_aux, D,U_p
+
+    #return U_t, F_t, t_n1 / t_max, t_aux, D,D_E_damage_N,D_E_damage_T, D_E_plast_N,D_E_plast_T, D_E_hard_iso_N,D_E_hard_iso_T,D_E_hard_kin_N,D_E_hard_kin_T,U_p,D_E_damage_N_M,D_E_damage_T_M, D_E_plast_N_M,D_E_plast_T_M, D_E_hard_iso_N_M,D_E_hard_iso_T_M,D_E_hard_kin_N_M,D_E_hard_kin_T_M
 
 
 Concrete_Type= 1        # 0:C40MA, 1:C80MA, 2:120MA
@@ -258,9 +182,9 @@ Concrete_Type_string = ['C40MA', 'C80MA','C120MA']
 
 loading_scenario = 'constant'   # constant, order, increasing
 
-S_max1 = 0.9            # maximum loading level
+S_max1 = 0.95           # maximum loading level
 S_min1 = 0.05           # minimum loading level
-n_cycles1 = 1000         # number of applied cycles
+n_cycles1 = 100         # number of applied cycles
 
 # For sequence order effect
 
@@ -294,7 +218,7 @@ path = os.path.join(
 load_options = [-60.54301292467442, -91.69221808121128, -119.33166543189739]
 
 load = load_options[Concrete_Type]
-
+# load = -85.0521424220676
 # LOADING SCENARIOS
 
 t_steps_cycle = 20
@@ -331,462 +255,322 @@ if loading_scenario == 'order':
 
 
 
-
-
-
-
-
-
-# monotonic = np.linspace(0, max_load1, t_steps_cycle)
-#
-# first_load = np.concatenate((np.linspace(0, max_load1, t_steps_cycle), np.linspace(
-#     max_load1, min_load, t_steps_cycle)[1:]))
-# cycle1 = np.concatenate((np.linspace(min_load, max_load1, t_steps_cycle)[1:], np.linspace(max_load1, min_load, t_steps_cycle)[
-#                         1:]))
-# cycle1 = np.tile(cycle1, n_cycles1 - 1)
-#
-# change_order = np.concatenate((np.linspace(min_load, max_load2, 632)[1:], np.linspace(max_load2, min_load, 632)[
-#     1:]))
-#
-# cycle2 = np.concatenate((np.linspace(min_load, max_load2, t_steps_cycle)[1:], np.linspace(max_load2, min_load, t_steps_cycle)[
-#                         1:]))
-# cycle2 = np.tile(cycle2, n_cycles2)
-#
-# cycle3 = np.concatenate((np.linspace(min_load, max_load3, t_steps_cycle)[1:], np.linspace(max_load3, min_load, t_steps_cycle)[
-#                         1:]))
-# cycle3 = np.tile(cycle3, n_cycles3)
-#
-# cycle4 = np.concatenate((np.linspace(min_load, max_load4, t_steps_cycle)[1:], np.linspace(max_load4, min_load, t_steps_cycle)[
-#                         1:]))
-# cycle4 = np.tile(cycle4, n_cycles4)
-#
-# cycle5 = np.concatenate((np.linspace(min_load, max_load5, t_steps_cycle)[1:], np.linspace(max_load5, min_load, t_steps_cycle)[
-#                         1:]))
-# cycle5 = np.tile(cycle5, n_cycles5)
-#
-# cycle6 = np.concatenate((np.linspace(min_load, max_load6, t_steps_cycle)[1:], np.linspace(max_load6, min_load, t_steps_cycle)[
-#                         1:]))
-# cycle6 = np.tile(cycle6, n_cycles6)
-#
-# cycle7 = np.concatenate((np.linspace(min_load, max_load7, t_steps_cycle)[1:], np.linspace(max_load7, min_load, t_steps_cycle)[
-#                         1:]))
-# cycle7 = np.tile(cycle7, n_cycles7)
-#
-# cycle8 = np.concatenate((np.linspace(min_load, max_load8, t_steps_cycle)[1:], np.linspace(max_load8, min_load, t_steps_cycle)[
-#                         1:]))
-# cycle8 = np.tile(cycle8, n_cycles8)
-#
-# cycle9 = np.concatenate((np.linspace(min_load, max_load9, t_steps_cycle)[1:], np.linspace(max_load9, min_load, t_steps_cycle)[
-#                         1:]))
-# cycle9 = np.tile(cycle9, n_cycles9)
-#
-# cycle10 = np.concatenate((np.linspace(min_load, max_load10, t_steps_cycle)[1:], np.linspace(max_load10, min_load, t_steps_cycle)[
-#     1:]))
-# cycle10 = np.tile(cycle10, n_cycles10)
-#
-# cycle11 = np.concatenate((np.linspace(min_load, max_load11, t_steps_cycle)[1:], np.linspace(max_load11, min_load, t_steps_cycle)[
-#     1:]))
-# cycle11 = np.tile(cycle11, n_cycles11)
-#
-# # sin_load = np.concatenate((first_load, cycle2, cycle3,
-# #                            cycle4, cycle5, cycle6, cycle7, cycle8, cycle9, cycle10, cycle11))
-# #
-# # sin_load = np.concatenate((first_load, cycle1, change_order, cycle2))
-#
-#
-#
-#
-# # sin_load = monotonic
-
-
 t_steps = len(sin_load)
 T = 1 / n_cycles1
 t = np.linspace(0, 1, len(sin_load))
-# plt.plot(t, (np.sin(np.pi / T * (t - T / 2)) + 1) / 2)
-# plt.show()
-
-# T1 = (1 - n_cycles1 / (n_cycles1 + n_cycles2)) / n_cycles1
-# T2 = (1 - n_cycles2 / (n_cycles1 + n_cycles2)) / n_cycles2
-# A1 = (max_load1 - min_load) / 2
-# A2 = (max_load2 - min_load) / 2
-# t_steps_cycle = 10
-#
-# t_steps1 = t_steps_cycle * n_cycles1
-# t_steps2 = t_steps_cycle * n_cycles2
-#
-# sin_load = np.linspace(0, A1 + min_load, t_steps_cycle)
-#
-# t1 = np.linspace(0, t_steps1 / (t_steps1 + t_steps2), t_steps1)
-# t2 = np.linspace(t_steps2 / (t_steps1 + t_steps2), 1, t_steps2)
-#
-# sin_load = np.concatenate(
-#     (sin_load, A1 * (np.sin(np.pi / T1 * (t1[:-1]))) + A1 + min_load, A2 * (np.sin(np.pi / T2 * (t2[1:]))) + A2 + min_load))
-# t_steps = t_steps_cycle * (n_cycles1 + n_cycles2 + 1)
-# t = np.linspace(0, 1, len(sin_load))
-
-# print(sin_load)
 
 
-# def loading_history(t): return (np.sin(np.pi / T * (t)))
-#
-#
-# def first_loading(t): return ((A1 + min_load) / t_steps_cycle * t)
-#
-#
-# def F(t):
-#     if t < t_steps_cycle / len(sin_load):
-#         return first_loading(t)
-#     if t <= 0.5:
-#         return A1 * loading_history(t) + A1 + min_load
-#     if t > 0.5:
-#         return A2 * loading_history(t)
+# U, F, cyc, number_cyc, D,D_E_damage_N,D_E_damage_T, D_E_plast_N,D_E_plast_T, D_E_hard_iso_N,D_E_hard_iso_T,D_E_hard_kin_N,D_E_hard_kin_T,U_p,D_E_damage_N_M,D_E_damage_T_M, D_E_plast_N_M,D_E_plast_T_M, D_E_hard_iso_N_M,D_E_hard_iso_T_M,D_E_hard_kin_N_M,D_E_hard_kin_T_M= get_UF_t(
+#     sin_load, t_steps, load, S_max1, S_max2, S_min1)
 
-
-# font = {'family': 'normal',
-#         'size': 18}
-#
-# matplotlib.rc('font', **font)
-#
-# load = np.zeros_like(t)
-# for i in range(len(t)):
-#     load[i] = F(t[i])
-#
-# f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
-# ax.plot(t, load, linewidth=2.5)
-# ax.set_xlabel('pseudotime [-]', fontsize=25)
-# ax.set_ylabel('Loading [Mpa]', fontsize=25)
-# plt.show()
-#
-#
-
-U, F, cyc, number_cyc, D,D_E, U_p = get_UF_t(
+U, F, cyc, number_cyc, D, U_p = get_UF_t(
     sin_load, t_steps, load, S_max1, S_max2, S_min1)
 
-
-# macro = np.zeros((np.int(number_cyc - 1), 3, 2))
-# #D = np.zeros((np.int(number_cyc - 1), 2, 8))
-#
-# macro[0] = np.array(pd.read_hdf(path2, 'first'))
-# #D[0] = np.array(pd.read_hdf(path3, 'first'))
-#
-# for i in range(1, np.int(number_cyc - 1)):
-#     macro[i] = np.array(pd.read_hdf(path2, 'middle' + np.str(i - 1)))
-#     #D[i] = np.array(pd.read_hdf(path3, 'middle' + np.str(i - 1)))
-#
-# U = macro[:, :, 0]
-# F = macro[:, :, 1]
-#D = D.reshape((np.int(number_cyc - 1), 2, 2, 2, 2))
-
-font = {'family': 'normal',
+font = {'family': 'DejaVu Sans',
         'size': 18}
 
 matplotlib.rc('font', **font)
+
+
+
+# Fig 1, loading
 
 f, (ax1) = plt.subplots(1, 1, figsize=(5, 4))
 
 ax1.plot(t[0:], np.abs(sin_load / load)[0:], linewidth=2.5)
 ax1.set_xlabel('pseudotime [-]', fontsize=25)
 ax1.set_ylabel(r'$|S_{max}$| [-]', fontsize=25)
-ax1.set_title('L-H')
+ax1.set_title('Loading')
 
 print(np.max(np.abs(F[:, 0])), 'sigma1')
 print(np.max(np.abs(F[:, 1])), 'sigma2')
+
+# Fig 2, stress-strain curve
 
 f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
 
 ax2.plot(np.abs(U[:, 0]), np.abs(F[:, 0]), linewidth=2.5)
 ax2.set_xlabel(r'$|\varepsilon_{11}$|', fontsize=25)
 ax2.set_ylabel(r'$|\sigma_{11}$| [-]', fontsize=25)
-ax2.set_title(str((n_cycles1)) + ',' + str(cyc))
-# ax2.set_ylim(0.00, 60)
-# ax2.set_xlim(0.000, 0.00333)
+ax2.set_title('stress-strain' + ',' + 'N =' + str(cyc*n_cycles1))
 plt.show()
 
-f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
-ax.plot(np.arange(len(D_E)),
-        D_E, linewidth=2.5)
-plt.show()
-
-
-# f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
-#
-# ax2.plot(np.abs(U[0:t_steps_cycle + 2 * (t_steps_cycle - 1), 0]),
-#          np.abs(F[0:t_steps_cycle + 2 * (t_steps_cycle - 1), 0]), linewidth=2.5)
-# ax2.plot(np.abs(U[t_steps_cycle + 2 * (19 - 1) * (t_steps_cycle - 1):, 0]),
-#          np.abs(F[t_steps_cycle + 2 * (19 - 1) * (t_steps_cycle - 1):, 0]), linewidth=2.5)
-# ax2.set_xlabel(r'$|\varepsilon_{11}$|', fontsize=25)
-# ax2.set_ylabel(r'$|\sigma_{11}$| [-]', fontsize=25)
-# ax2.set_title(str((n_cycles1)) + ',' + str(cyc))
-# plt.show()
-
-
-# f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
-#
-# ax2.plot(np.abs(U[t_steps_cycle + 2 * (5 - 1) * (t_steps_cycle - 1):t_steps_cycle + 2 * 5 * (t_steps_cycle - 1), 0]),
-#          np.abs(F[t_steps_cycle + 2 * (5 - 1) * (t_steps_cycle - 1):t_steps_cycle + 2 * 5 * (t_steps_cycle - 1), 0]), linewidth=2.5)
-# ax2.set_xlabel(r'$|\varepsilon_{11}$|', fontsize=25)
-# ax2.set_ylabel(r'$|\sigma_{11}$| [-]', fontsize=25)
-# ax2.set_title(str((n_cycles1)) + ',' + str(cyc))
-# plt.show()
-#
-#
-# f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
-#
-# ax2.plot(np.abs(U[t_steps_cycle + 2 * (8 - 1) * (t_steps_cycle - 1):, 0]),
-#          np.abs(F[t_steps_cycle + 2 * (8 - 1) * (t_steps_cycle - 1):, 0]), linewidth=2.5)
-# ax2.set_xlabel(r'$|\varepsilon_{11}$|', fontsize=25)
-# ax2.set_ylabel(r'$|\sigma_{11}$| [-]', fontsize=25)
-# ax2.set_title(str((n_cycles1)) + ',' + str(cyc))
-# plt.show()
-
-
-f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
-
-# ax.plot(np.arange(len(U[(t_steps_cycle)::2 * (t_steps_cycle - 1), 0])) + 1,
-# np.abs(U[(t_steps_cycle)::2 * (t_steps_cycle - 1), 0]), linewidth=2.5)
-
-ax.plot(np.arange(len(U[0:-2:2, 0])) + 1,
-        np.abs(U[2::2, 0]), linewidth=2.5)
-ax.set_ylim(0.002, 0.0045)
-ax.set_xlim(0, 1400)
-#ax.set_xlim(0, ((n_cycles1)) + 1)
-ax.set_xlabel('number of cycles [N]', fontsize=25)
-ax.set_ylabel(r'$|\varepsilon_{11}^{max}$|', fontsize=25)
-plt.title('creep fatigue Smax = 0.85')
-plt.show()
-
-# print(U[:, 0])
-# print(U[(t_steps_cycle)::2 * (t_steps_cycle - 1), 0])
-
-
-f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
-
-
-# ax.plot((np.arange(len(U[(t_steps_cycle)::2 * (t_steps_cycle - 1), 0])) + 1),
-#         np.abs(U[(t_steps_cycle)::2 * (t_steps_cycle - 1), 0]), linewidth=2.5)
-# ax.plot((np.arange(len(U[0::2 * (t_steps_cycle - 1), 0])) + 1),
-#         np.abs(U[1::2 * (t_steps_cycle - 1), 0]), linewidth=2.5)
-
-# ax.plot((np.arange(len(U[(t_steps_cycle)::2 * (t_steps_cycle - 1), 0])) + 1) / len(U[(t_steps_cycle)::2 * (t_steps_cycle - 1), 0]),
-#         np.abs(U[(t_steps_cycle)::2 * (t_steps_cycle - 1), 0]), linewidth=2.5)
-# ax.plot((np.arange(len(U[0::2 * (t_steps_cycle - 1), 0])) + 1) / len(U[0::2 * (t_steps_cycle - 1), 0]),
-#         np.abs(U[1::2 * (t_steps_cycle - 1), 0]), linewidth=2.5)
+if loading_scenario == 'constant':
+
+    # Fig 3, creep fatigue curve
+
+    f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
+
+    ax.plot((np.arange(len(U[1::2, 0])) + 1) / len(U[1::2, 0]),
+            np.abs(U[1::2, 0]), linewidth=2.5)
+
+    ax.set_xlabel(r'$N / N_f $|', fontsize=25)
+    ax.set_ylabel(r'$|\varepsilon_{11}^{max}$|', fontsize=25)
+    ax.set_title('creep fatigue')
+    plt.show()
+
+
+    # Fig 4, energy dissipation
+
+    # f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
+    # ax.plot(np.arange(len(D_E_damage_N[1::2])),
+    #         D_E_damage_N[1::2],'black', linewidth=2.5)
+    # ax.plot(np.arange(len(D_E_damage_N[1::2])),
+    #         D_E_damage_N[1::2] + D_E_damage_T[1::2], 'yellow', linewidth=2.5)
+    # ax.plot(np.arange(len(D_E_damage_N[1::2])),
+    #         D_E_damage_N[1::2] + D_E_damage_T[1::2] + D_E_plast_N[1::2], 'black', linewidth=2.5)
+    # ax.plot(np.arange(len(D_E_damage_N[1::2])),
+    #         D_E_damage_N[1::2] + D_E_damage_T[1::2] + D_E_plast_N[1::2] + D_E_plast_T[1::2], 'red', linewidth=2.5)
+    # ax.plot(np.arange(len(D_E_damage_N[1::2])),
+    #         D_E_damage_N[1::2] + D_E_damage_T[1::2] + D_E_plast_N[1::2] + D_E_plast_T[1::2] + D_E_hard_iso_N[1::2], 'black', linewidth=2.5)
+    # ax.plot(np.arange(len(D_E_damage_N[1::2])),
+    #         D_E_damage_N[1::2] + D_E_damage_T[1::2] + D_E_plast_N[1::2] + D_E_plast_T[1::2] + D_E_hard_iso_T[1::2] + D_E_hard_iso_N[1::2], 'blue', linewidth=2.5)
+    # ax.plot(np.arange(len(D_E_damage_N[1::2])),
+    #         D_E_damage_N[1::2] + D_E_damage_T[1::2] + D_E_plast_N[1::2] + D_E_plast_T[1::2] + D_E_hard_iso_T[1::2] + D_E_hard_iso_N[1::2] + D_E_hard_kin_N[1::2], 'black', linewidth=2.5)
+    # ax.plot(np.arange(len(D_E_damage_N[1::2])),
+    #         D_E_damage_N[1::2] + D_E_damage_T[1::2] + D_E_plast_N[1::2] + D_E_plast_T[1::2] + D_E_hard_iso_T[1::2] + D_E_hard_iso_N[1::2] + D_E_hard_kin_N[1::2] + D_E_hard_kin_T[1::2], 'green', linewidth=2.5)
+
+    f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
+
+    ax.plot(np.arange(len(D_E_damage_T[1::2])),
+            D_E_damage_T[1::2], 'yellow', linewidth=2.5)
+    ax.plot(np.arange(len(D_E_damage_T[1::2])),
+            D_E_damage_T[1::2] + D_E_plast_N[1::2], 'black', linewidth=2.5)
+    ax.plot(np.arange(len(D_E_damage_T[1::2])),
+            D_E_damage_T[1::2] + D_E_plast_N[1::2] + D_E_plast_T[1::2], 'red', linewidth=2.5)
+    ax.plot(np.arange(len(D_E_damage_T[1::2])),
+            D_E_damage_T[1::2] + D_E_plast_N[1::2] + D_E_plast_T[1::2] - D_E_hard_iso_N[1::2],
+            'black', linewidth=2.5)
+    ax.plot(np.arange(len(D_E_damage_T[1::2])),
+            D_E_damage_T[1::2] + D_E_plast_N[1::2] + D_E_plast_T[1::2] - D_E_hard_iso_T[
+                                                                                              1::2] - D_E_hard_iso_N[
+                                                                                                      1::2], 'blue',
+            linewidth=2.5)
+    ax.plot(np.arange(len(D_E_damage_T[1::2])),
+            D_E_damage_T[1::2] + D_E_plast_N[1::2] + D_E_plast_T[1::2] - D_E_hard_iso_T[
+                                                                                              1::2] - D_E_hard_iso_N[
+                                                                                                      1::2] - D_E_hard_kin_N[
+                                                                                                              1::2],
+            'black', linewidth=2.5)
+    ax.plot(np.arange(len(D_E_damage_T[1::2])),
+            D_E_damage_T[1::2] + D_E_plast_N[1::2] + D_E_plast_T[1::2] - D_E_hard_iso_T[
+                                                                                              1::2] - D_E_hard_iso_N[
+                                                                                                      1::2] - D_E_hard_kin_N[
+                                                                                                              1::2] - D_E_hard_kin_T[
+                                                                                                                      1::2],
+            'green', linewidth=2.5)
 
-ax.plot((np.arange(len(U[2::2, 0])) + 1) / len(U[1::2, 0]),
-        np.abs(U[2::2, 0]), linewidth=2.5)
-# ax.plot((np.arange(len(U[1::2, 0])) + 1) / len(U[0::2, 0]),
-#         np.abs(U[1::2, 0]), linewidth=2.5)
+    ax.set_title('Energy dissipation yellow:damage, red:plast, blue:iso hard, green:kin hard')
 
+    plt.show()
 
-X_axis1 = np.array(np.arange(eta1 * cycles1) + 1)[1:] / cycles1
-X_axis1 = np.concatenate((np.array([0]), X_axis1))
-Y_axis1 = np.abs(U[2:np.int(2 * eta1 * cycles1) + 2:2, 0])
-# Y_axis1 = np.concatenate((np.array([Y_axis1[0]]), Y_axis1))
+if loading_scenario == 'order':
 
+    # Creep fatigue curve
 
-print(U[2:np.int(2 * eta1 * cycles1) + 2, 0])
-print(X_axis1.shape)
-print(Y_axis1.shape)
+    f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
 
-print(len(U[2::2, 0]))
-X_axis2 = np.array((np.arange(len(U[2::2, 0]) -
-                              (eta1 * cycles1)) + 1) / (cycles2) + eta1)
-X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
 
-Y_axis2 = np.abs(U[np.int(2 * eta1 * cycles1) + 2::2, 0])
-Y_axis2 = np.concatenate(
-    (np.array([Y_axis2[0]]), Y_axis2))
-X_axis = np.concatenate((X_axis1, X_axis2))
 
-print(U[np.int(2 * eta1 * cycles1):np.int(2 * eta1 * cycles1) + 10, 0])
-print(X_axis2.shape)
-print(Y_axis2.shape)
+    X_axis1 = np.array(np.arange(eta1 * cycles1) + 1)[1:] / cycles1
+    X_axis1 = np.concatenate((np.array([0]), X_axis1))
+    Y_axis1 = np.abs(U[2:np.int(2 * eta1 * cycles1) + 2:2, 0])
+    # Y_axis1 = np.concatenate((np.array([Y_axis1[0]]), Y_axis1))
+
+
+    X_axis2 = np.array((np.arange(len(U[2::2, 0]) -
+                                  (eta1 * cycles1)) + 1) / (cycles2) + eta1)
+    X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
 
+    Y_axis2 = np.abs(U[np.int(2 * eta1 * cycles1) + 2::2, 0])
+    Y_axis2 = np.concatenate(
+        (np.array([Y_axis2[0]]), Y_axis2))
+    X_axis = np.concatenate((X_axis1, X_axis2))
+
+    x = U[2, 0]
+    Y_axis = np.concatenate((np.array([x]), np.array(U[2::2, 0])))
+    ax.plot(X_axis1, Y_axis1, 'k', linewidth=2.5)
+    ax.plot(X_axis2, Y_axis2, 'k', linewidth=2.5)
+    # ax.plot(X_axis, Y_axis, 'r', linewidth=2.5)
+    ax.plot([X_axis1[-1], X_axis2[0]],
+            [Y_axis1[-1], Y_axis2[0]], 'k', linewidth=2.5)
+
+
+    # ax.plot(np.arange(cycles1) / eta1 * cycles1,
+    #         np.abs(U[2::2, 0]), linewidth=2.5)
 
-x = U[2, 0]
-Y_axis = np.concatenate((np.array([x]), np.array(U[2::2, 0])))
-ax.plot(X_axis1, Y_axis1, 'k', linewidth=2.5)
-ax.plot(X_axis2, Y_axis2, 'k', linewidth=2.5)
-# ax.plot(X_axis, Y_axis, 'r', linewidth=2.5)
-ax.plot([X_axis1[-1], X_axis2[0]],
-        [Y_axis1[-1], Y_axis2[0]], 'k', linewidth=2.5)
 
+    ax.set_ylim(0.002, 0.0045)
+    ax.set_xlim(-0.1, 1.1)
+    #ax.set_xlim(0, ((n_cycles1 + n_cycles2)) + 1)
+    ax.set_xlabel('N/Nf', fontsize=25)
+    ax.set_ylabel('strain', fontsize=25)
+    plt.title('creep fatigue Smax = 0.85')
+    plt.show()
 
-# ax.plot(np.arange(cycles1) / eta1 * cycles1,
-#         np.abs(U[2::2, 0]), linewidth=2.5)
+    f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
 
+    X_axis1 = np.array(np.arange(eta1 * cycles1) + 1)[1:] / cycles1
+    X_axis1 = np.concatenate((np.array([0]), X_axis1))
+    Y_axis1 = np.abs(D_E[2:np.int(2 * eta1 * cycles1) + 2:2])
+    # Y_axis1 = np.concatenate((np.array([Y_axis1[0]]), Y_axis1))
 
-ax.set_ylim(0.002, 0.0045)
-ax.set_xlim(-0.1, 1.1)
-#ax.set_xlim(0, ((n_cycles1 + n_cycles2)) + 1)
-ax.set_xlabel('N/Nf', fontsize=25)
-ax.set_ylabel('strain', fontsize=25)
-plt.title('creep fatigue Smax = 0.85')
-plt.show()
 
-f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
+    # print(U[2:np.int(2 * eta1 * cycles1) + 2, 0])
+    # print(X_axis1.shape)
+    # print(Y_axis1.shape)
+    #
+    # print(len(D_E[2::2, 0]))
+    X_axis2 = np.array((np.arange(len(D_E[2::2]) -
+                                  (eta1 * cycles1)) + 1) / (cycles2) + eta1)
+    X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
 
-X_axis1 = np.array(np.arange(eta1 * cycles1) + 1)[1:] / cycles1
-X_axis1 = np.concatenate((np.array([0]), X_axis1))
-Y_axis1 = np.abs(D_E[2:np.int(2 * eta1 * cycles1) + 2:2])
-# Y_axis1 = np.concatenate((np.array([Y_axis1[0]]), Y_axis1))
+    Y_axis2 = np.abs(D_E[np.int(2 * eta1 * cycles1) + 2::2])
+    Y_axis2 = np.concatenate(
+        (np.array([Y_axis2[0]]), Y_axis2))
+    X_axis = np.concatenate((X_axis1, X_axis2))
 
+    # print(D_E[np.int(2 * eta1 * cycles1):np.int(2 * eta1 * cycles1) + 10])
+    # print(X_axis2.shape)
+    # print(Y_axis2.shape)
 
-# print(U[2:np.int(2 * eta1 * cycles1) + 2, 0])
-# print(X_axis1.shape)
-# print(Y_axis1.shape)
-#
-# print(len(D_E[2::2, 0]))
-X_axis2 = np.array((np.arange(len(D_E[2::2]) -
-                              (eta1 * cycles1)) + 1) / (cycles2) + eta1)
-X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
 
-Y_axis2 = np.abs(D_E[np.int(2 * eta1 * cycles1) + 2::2])
-Y_axis2 = np.concatenate(
-    (np.array([Y_axis2[0]]), Y_axis2))
-X_axis = np.concatenate((X_axis1, X_axis2))
+    x = D_E[2]
+    Y_axis = np.concatenate((np.array([x]), np.array(D_E[2::2])))
+    ax.plot(X_axis1, Y_axis1, 'k', linewidth=2.5)
+    ax.plot(X_axis2, Y_axis2, 'k', linewidth=2.5)
+    # ax.plot(X_axis, Y_axis, 'r', linewidth=2.5)
+    ax.plot([X_axis1[-1], X_axis2[0]],
+            [Y_axis1[-1], Y_axis2[0]], 'k', linewidth=2.5)
+    plt.show()
 
-# print(D_E[np.int(2 * eta1 * cycles1):np.int(2 * eta1 * cycles1) + 10])
-# print(X_axis2.shape)
-# print(Y_axis2.shape)
 
+    plt.plot(np.arange(len(U[2::2])), U[2::2, 0])
+    plt.show()
 
-x = D_E[2]
-Y_axis = np.concatenate((np.array([x]), np.array(D_E[2::2])))
-ax.plot(X_axis1, Y_axis1, 'k', linewidth=2.5)
-ax.plot(X_axis2, Y_axis2, 'k', linewidth=2.5)
-# ax.plot(X_axis, Y_axis, 'r', linewidth=2.5)
-ax.plot([X_axis1[-1], X_axis2[0]],
-        [Y_axis1[-1], Y_axis2[0]], 'k', linewidth=2.5)
-plt.show()
 
+    n_mp = 100
 
-plt.plot(np.arange(len(U[2::2])), U[2::2, 0])
-plt.show()
+    S = np.zeros((len(F), n_mp, 19))
 
+    S[0] = np.array(pd.read_hdf(path, 'first'))
 
-n_mp = 100
+    for i in range(1, len(F)):
+        S[i] = np.array(pd.read_hdf(path, 'middle' + np.str(i - 1)))
 
-S = np.zeros((len(F), n_mp, 19))
 
-S[0] = np.array(pd.read_hdf(path, 'first'))
+    rads = np.arange(0, (2 * np.pi), (2 * np.pi) / n_mp)
+    eps_N = np.zeros((len(S), len(S[1])))
 
-for i in range(1, len(F)):
-    S[i] = np.array(pd.read_hdf(path, 'middle' + np.str(i - 1)))
+    for i in range(len(F)):
+        eps = get_eps_ab(U[i])
+        eps_N[i] = m._get_e_N_Emn_2(eps)
+
+    omegaN = S[:, :, 0]
+    eps_p_N = S[:, :, 4]
 
+    eps_T = np.zeros((len(S), len(S[1])))
+    eps_T_sign = np.zeros((len(S), len(S[1])))
+    eps_pi_T = np.zeros((len(S), len(S[1])))
+    eps_pi_T_sign = np.zeros((len(S), len(S[1])))
+    sigma_T = np.zeros((len(S), len(S[1])))
+    sigma_T_sign = np.zeros((len(S), len(S[1])))
+    X_T = np.zeros((len(S), len(S[1])))
+    X_T_sign = np.zeros((len(S), len(S[1])))
 
-rads = np.arange(0, (2 * np.pi), (2 * np.pi) / n_mp)
-eps_N = np.zeros((len(S), len(S[1])))
 
-for i in range(len(F)):
-    eps = get_eps_ab(U[i])
-    eps_N[i] = m._get_e_N_Emn_2(eps)
-
-omegaN = S[:, :, 0]
-eps_p_N = S[:, :, 4]
+    for i in range(len(F)):
+        eps = get_eps_ab(U[i])
+        eps_T_aux = m._get_e_T_Emnar_2(eps)
+        eps_T[i] = np.sqrt(np.einsum('...i,...i->... ', eps_T_aux, eps_T_aux))
+        eps_pi_T[i] = np.sqrt(
+            np.einsum('...i,...i->... ', S[i, :, 12:14], S[i, :, 12:14]))
+        sigma_T[i] = np.sqrt(
+            np.einsum('...i,...i->... ', S[i, :, 14:16], S[i, :, 14:16]))
+        X_T[i] = np.sqrt(
+            np.einsum('...i,...i->... ', S[i, :, 17:19], S[i, :, 17:19]))
 
-eps_T = np.zeros((len(S), len(S[1])))
-eps_T_sign = np.zeros((len(S), len(S[1])))
-eps_pi_T = np.zeros((len(S), len(S[1])))
-eps_pi_T_sign = np.zeros((len(S), len(S[1])))
-sigma_T = np.zeros((len(S), len(S[1])))
-sigma_T_sign = np.zeros((len(S), len(S[1])))
-X_T = np.zeros((len(S), len(S[1])))
-X_T_sign = np.zeros((len(S), len(S[1])))
-
-
-for i in range(len(F)):
-    eps = get_eps_ab(U[i])
-    eps_T_aux = m._get_e_T_Emnar_2(eps)
-    eps_T[i] = np.sqrt(np.einsum('...i,...i->... ', eps_T_aux, eps_T_aux))
-    eps_pi_T[i] = np.sqrt(
-        np.einsum('...i,...i->... ', S[i, :, 12:14], S[i, :, 12:14]))
-    sigma_T[i] = np.sqrt(
-        np.einsum('...i,...i->... ', S[i, :, 14:16], S[i, :, 14:16]))
-    X_T[i] = np.sqrt(
-        np.einsum('...i,...i->... ', S[i, :, 17:19], S[i, :, 17:19]))
-
-    sign_T = np.sign(eps_T_aux)
-
-    sign_pi_T = np.sign(S[i, :, 12:14])
-    sign_sigma_T = np.sign(S[i, :, 14:16])
-    sign_X_T = np.sign(S[i, :, 17:19])
-
-    eps_T_sign[i] = np.einsum(
-        '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_T, sign_T)), eps_T[i])
-    eps_pi_T_sign[i] = np.einsum(
-        '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_pi_T, sign_pi_T)), eps_pi_T[i])
-
-    sigma_T_sign[i] = np.einsum(
-        '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_sigma_T, sign_sigma_T)), sigma_T[i])
-    X_T_sign[i] = np.einsum(
-        '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_X_T, sign_X_T)), X_T[i])
-
-
-omegaT = S[:, :, 8]
-
-
-sigma_N = S[:, :, 5]
-Y_N = S[:, :, 6]
-X_N = S[:, :, 7]
-Y_T = S[:, :, 16]
-
-
-eps_global_norm = np.zeros((len(S), len(S[1])))
-sigma_global_norm = np.zeros((len(S), len(S[1])))
-eps = np.zeros((len(S), 2, 2))
-sigma = np.zeros((len(S), 2, 2))
-n_mp = 100
-
-for i in range(len(F)):
-    eps[i] = get_eps_ab(U[i])
-    sigma[i] = get_eps_ab(F[i])
-    eps_micro = np.einsum('...ij,...j->...i', eps[i], m._get__MPN())
-    eps_global_norm[i] = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
-                                                                        eps_micro, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', eps_micro, eps_micro)))
-    sigma_micro = np.einsum('...ij,...j->...i', sigma[i], m._get__MPN())
-    sigma_global_norm[i] = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
-                                                                          sigma_micro, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', sigma_micro, sigma_micro)))
-eps_T = m._get_e_T_Emnar_2(eps)
-eps_Emna = np.einsum(
-    '...i,...i->...i', eps_N.reshape(len(F), n_mp, 1), m._get__MPN()) + eps_T
-eps_micro_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
-                                                                eps_Emna,  m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', eps_Emna, eps_Emna)))
-
-sigma_Emna = np.einsum(
-    '...i,...i->...i', sigma_N.reshape(len(F), n_mp, 1), m._get__MPN()) + S[:, :, 14:16]
-sigma_micro_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
-                                                                  sigma_Emna,  m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ',
-                                                                                                                  sigma_Emna, sigma_Emna)))
-
-D_1 = D[:, 0, 0, :, :]
-D_1_Emna = np.einsum('...ij,...nj->...ni', D_1, m._get__MPN())
-
-D_1_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n',
-                                                          D_1_Emna, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', D_1_Emna, D_1_Emna)))
-
-D_2 = D[:, 1, 1, :, :]
-D_2_Emna = np.einsum(
-    '...ij,...nj->...ni', D_2, m._get__MPN())
-D_2_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
-                                                          D_2_Emna, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', D_2_Emna, D_2_Emna)))
-
-D_12 = D[:, 0, 1, :, :]
-D_12_Emna = np.einsum(
-    '...ij,...nj->...ni', D_12, m._get__MPN())
-D_12_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n',
-                                                           D_12_Emna, D_12_Emna)), np.sqrt(np.einsum('...i,...i->... ', D_12_Emna, D_12_Emna)))
-
-D_21 = D[:, 1, 0, :, :]
-D_21_Emna = np.einsum(
-    '...ij,...nj->...ni', D_21, m._get__MPN())
-D_21_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n',
-                                                           D_21_Emna, D_21_Emna)), np.sqrt(np.einsum('...i,...i->... ', D_21_Emna, D_21_Emna)))
-
-
-plot.get_2Dviz(n_mp, eps_global_norm, sigma_global_norm, eps_micro_norm, sigma_micro_norm, D_1_norm, D_2_norm, D_12_norm,
-               D_21_norm, eps_N, eps_p_N, sigma_N, omegaN, eps_T_sign, eps_pi_T_sign,
-               sigma_T_sign, omegaT, Y_N, X_N, Y_T, X_T_sign, F, U, t_steps_cycle)
+        sign_T = np.sign(eps_T_aux)
+
+        sign_pi_T = np.sign(S[i, :, 12:14])
+        sign_sigma_T = np.sign(S[i, :, 14:16])
+        sign_X_T = np.sign(S[i, :, 17:19])
+
+        eps_T_sign[i] = np.einsum(
+            '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_T, sign_T)), eps_T[i])
+        eps_pi_T_sign[i] = np.einsum(
+            '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_pi_T, sign_pi_T)), eps_pi_T[i])
+
+        sigma_T_sign[i] = np.einsum(
+            '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_sigma_T, sign_sigma_T)), sigma_T[i])
+        X_T_sign[i] = np.einsum(
+            '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_X_T, sign_X_T)), X_T[i])
+
+
+    omegaT = S[:, :, 8]
+
+
+    sigma_N = S[:, :, 5]
+    Y_N = S[:, :, 6]
+    X_N = S[:, :, 7]
+    Y_T = S[:, :, 16]
+
+
+    eps_global_norm = np.zeros((len(S), len(S[1])))
+    sigma_global_norm = np.zeros((len(S), len(S[1])))
+    eps = np.zeros((len(S), 2, 2))
+    sigma = np.zeros((len(S), 2, 2))
+    n_mp = 100
+
+    for i in range(len(F)):
+        eps[i] = get_eps_ab(U[i])
+        sigma[i] = get_eps_ab(F[i])
+        eps_micro = np.einsum('...ij,...j->...i', eps[i], m._get__MPN())
+        eps_global_norm[i] = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
+                                                                            eps_micro, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', eps_micro, eps_micro)))
+        sigma_micro = np.einsum('...ij,...j->...i', sigma[i], m._get__MPN())
+        sigma_global_norm[i] = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
+                                                                              sigma_micro, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', sigma_micro, sigma_micro)))
+    eps_T = m._get_e_T_Emnar_2(eps)
+    eps_Emna = np.einsum(
+        '...i,...i->...i', eps_N.reshape(len(F), n_mp, 1), m._get__MPN()) + eps_T
+    eps_micro_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
+                                                                    eps_Emna,  m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', eps_Emna, eps_Emna)))
+
+    sigma_Emna = np.einsum(
+        '...i,...i->...i', sigma_N.reshape(len(F), n_mp, 1), m._get__MPN()) + S[:, :, 14:16]
+    sigma_micro_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
+                                                                      sigma_Emna,  m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ',
+                                                                                                                      sigma_Emna, sigma_Emna)))
+
+    D_1 = D[:, 0, 0, :, :]
+    D_1_Emna = np.einsum('...ij,...nj->...ni', D_1, m._get__MPN())
+
+    D_1_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n',
+                                                              D_1_Emna, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', D_1_Emna, D_1_Emna)))
+
+    D_2 = D[:, 1, 1, :, :]
+    D_2_Emna = np.einsum(
+        '...ij,...nj->...ni', D_2, m._get__MPN())
+    D_2_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
+                                                              D_2_Emna, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', D_2_Emna, D_2_Emna)))
+
+    D_12 = D[:, 0, 1, :, :]
+    D_12_Emna = np.einsum(
+        '...ij,...nj->...ni', D_12, m._get__MPN())
+    D_12_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n',
+                                                               D_12_Emna, D_12_Emna)), np.sqrt(np.einsum('...i,...i->... ', D_12_Emna, D_12_Emna)))
+
+    D_21 = D[:, 1, 0, :, :]
+    D_21_Emna = np.einsum(
+        '...ij,...nj->...ni', D_21, m._get__MPN())
+    D_21_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n',
+                                                               D_21_Emna, D_21_Emna)), np.sqrt(np.einsum('...i,...i->... ', D_21_Emna, D_21_Emna)))
+
+
+    plot.get_2Dviz(n_mp, eps_global_norm, sigma_global_norm, eps_micro_norm, sigma_micro_norm, D_1_norm, D_2_norm, D_12_norm,
+                   D_21_norm, eps_N, eps_p_N, sigma_N, omegaN, eps_T_sign, eps_pi_T_sign,
+                   sigma_T_sign, omegaT, Y_N, X_N, Y_T, X_T_sign, F, U, t_steps_cycle,D_E_damage_N_M,D_E_damage_T_M, D_E_plast_N_M,D_E_plast_T_M, D_E_hard_iso_N_M,D_E_hard_iso_T_M,D_E_hard_kin_N_M,D_E_hard_kin_T_M)
 #
 #
 # A = np.array(range(len(F)))

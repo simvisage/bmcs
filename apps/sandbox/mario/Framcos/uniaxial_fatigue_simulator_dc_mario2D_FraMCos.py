@@ -179,9 +179,8 @@ def get_UF_t(eps_max, time_function, n_t):
 #         U_t_list.append(np.copy(U_k_O))
 #         F_t_list.append(F_O)
 
-
-        [omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn,
-            alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T] = m._get_state_variables(
+        [omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z_n, X_n, w_T_Emn, z_T_Emn,
+         alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Z_T, X_T, Y_n, Y_T] = m._get_state_variables(
                 eps_ab, 1, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
                 w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F_O)
 
@@ -242,7 +241,7 @@ n_cycles = 1
 T = 1 / n_cycles
 eps_max = -0.01
 
-t_steps = 100 * n_cycles
+t_steps = 500 * n_cycles
 
 eps1 = -0.002785
 eps2 = -0.000225050506

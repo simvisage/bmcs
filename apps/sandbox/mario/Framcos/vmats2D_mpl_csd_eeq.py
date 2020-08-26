@@ -1978,130 +1978,89 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     # microplane constitutive law (normal behavior CP + TD)
     # (without cumulative normal strain for fatigue under tension)
     #--------------------------------------------------------------
-    def get_normal_law(self, eps_N_Emn, w_N_Emn, z_N_Emn,
+    def get_normal_law(self, eps_N_Emn, omega_N_Emn, z_N_Emn,
                        alpha_N_Emn, r_N_Emn, eps_N_p_Emn, eps_aux):
 
         eps_N_Aux = self._get_e_N_Emn_2(eps_aux)
 
         E_N = self.E / (1.0 - 2.0 * self.nu)
 
+        # When deciding if a microplane is in tensile or compression, we define a strain boundary such that that
+        # sigmaN <= 0 if eps_N < 0, avoiding entering in the quadrant of compressive strains and traction
+
         sigma_trial = E_N * (eps_N_Emn - eps_N_p_Emn)
-        pos = eps_N_Emn > 1e-6
-        pos2 = eps_N_Emn < -1e-6
+        pos1 = [(eps_N_Emn < -1e-6) & (sigma_trial > 1e-6)] # looking for microplanes violating strain boundary
+        sigma_trial [pos1[0]] = 0
+        pos = sigma_trial > 1e-6                            # microplanes under traction
+        pos2 = sigma_trial < -1e-6                          # microplanes under compression
         H = 1.0 * pos
         H2 = 1.0 * pos2
 
-        sigma_n_trial = (1.0 - H * w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
+        # thermo forces
         sigma_N_Emn_tilde = E_N * (eps_N_Emn - eps_N_p_Emn)
-        Z = self.K_N * r_N_Emn
+        sigma_N_Emn_tilde[pos1[0]] = 0                      # imposing strain boundary
+
+        Z = self.K_N * z_N_Emn
         X = self.gamma_N * alpha_N_Emn * H2
         h = (self.sigma_0 + Z) * H2
 
         f_trial = (abs(sigma_N_Emn_tilde - X) - h) * H2
 
+        # threshold plasticity
+
         thres_1 = f_trial > 1e-6
 
         delta_lamda = f_trial / \
-            (E_N / (1 - w_N_Emn) + abs(self.K_N) + self.gamma_N) * thres_1
+            (E_N / (1 - omega_N_Emn) + abs(self.K_N) + self.gamma_N) * thres_1
         eps_N_p_Emn = eps_N_p_Emn + delta_lamda * \
             np.sign(sigma_N_Emn_tilde - X)
-        r_N_Emn = r_N_Emn + delta_lamda
+        z_N_Emn = z_N_Emn + delta_lamda
         alpha_N_Emn = alpha_N_Emn + delta_lamda * \
             np.sign(sigma_N_Emn_tilde - X)
 
-        def Z_N(z_N_Emn): return (1.0 / self.Ad) * (-z_N_Emn / (1.0 + z_N_Emn))
+        def Z_N(r_N_Emn): return (1.0 / self.Ad) * (-r_N_Emn / (1.0 + r_N_Emn))
 
         Y_N = 0.5 * H * E_N * (eps_N_Emn - eps_N_p_Emn) ** 2.0
         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
 
         f = (Y_N - (Y_0 + Z_N(z_N_Emn)))
 
+        # threshold damage
+
         thres_2 = f > 1e-6
 
         def f_w(Y): return 1.0 - 1.0 / (1.0 + self.Ad * (Y - Y_0))
 
-        w_N_Emn[f > 1e-6] = f_w(Y_N)[f > 1e-6]
-        z_N_Emn[f > 1e-6] = -w_N_Emn[f > 1e-6]
+        omega_N_Emn[f > 1e-6] = f_w(Y_N)[f > 1e-6]
+        r_N_Emn[f > 1e-6] = -omega_N_Emn[f > 1e-6]
 
-        sigma_N_Emn = (1.0 - H * w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
-        sigma_N_Emn_tilde = E_N * (eps_N_Emn - eps_N_p_Emn)
+        sigma_N_Emn = (1.0 - H * omega_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
+        pos1 = [(eps_N_Emn < -1e-6) & (sigma_trial > 1e-6)] # looking for microplanes violating strain boundary
+        sigma_N_Emn[pos1[0]] = 0
+
+
+        Z = self.K_N * z_N_Emn
+        X = self.gamma_N * alpha_N_Emn * H2
 
         # pos2 = sigma_N_Emn * (eps_N_Emn - eps_N_Aux) > -1e-6
         # H2 = 1.0 * pos2
         # sigma_N_Emn = (1.0 - H * w_N_Emn) * E_N * (eps_N_Emn) * H2
 
-        # WITH COMPRESSIVE DAMAGE
-
-        #         E_N = self.E / (1.0 - 2.0 * self.nu)
-        #
-        #         sigma_trial = E_N * (eps_N_Emn - eps_N_p_Emn)
-        #         pos = eps_N_Emn > 1e-6
-        #         pos2 = eps_N_Emn < -1e-6
-        #         H = 1.0 * pos
-        #         H2 = 1.0 * pos2
-        #
-        #         sigma_n_trial = (1.0 - w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
-        #         sigma_N_Emn_tilde = E_N * (eps_N_Emn - eps_N_p_Emn)
-        #         Z = self.K_N * r_N_Emn
-        #         X = self.gamma_N * alpha_N_Emn * H2
-        #         h = (self.sigma_0 + Z) * H2
-        #
-        #         f_trial = (abs(sigma_N_Emn_tilde - X) - h) * H2
-        #
-        #         thres_1 = f_trial > 1e-6
-        #
-        #         delta_lamda = f_trial / \
-        #             (E_N / (1 - w_N_Emn) + abs(self.K_N) + self.gamma_N) * thres_1
-        #         eps_N_p_Emn = eps_N_p_Emn + delta_lamda * \
-        #             np.sign(sigma_N_Emn_tilde - X)
-        #         r_N_Emn = r_N_Emn + delta_lamda
-        #         alpha_N_Emn = alpha_N_Emn + delta_lamda * \
-        #             np.sign(sigma_N_Emn_tilde - X)
-        #
-        #         def Z_N(z_N_Emn): return 1.0 / self.Ad * (-z_N_Emn) / (1.0 + z_N_Emn)
-        #
-        #         def Z_N2(z_N_Emn): return 1.0 / self.Ad2 * (-z_N_Emn) / (1.0 + z_N_Emn)
-        #
-        #         Y_N = 0.5 * H * E_N * (eps_N_Emn - eps_N_p_Emn) ** 2.0
-        #         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
-        #
-        #         Y_N2 = 0.5 * H2 * E_N * (eps_N_Emn - eps_N_p_Emn) ** 2.0
-        #         Y_02 = 0.5 * E_N * self.eps_02 ** 2.0
-        #
-        #         f = (Y_N - (Y_0 + Z_N(z_N_Emn)))
-        #
-        #         thres_2 = f > 1e-6
-        #
-        #         def f_w(Y): return 1.0 - 1.0 / (1.0 + self.Ad * (Y - Y_0))
-        #
-        #         w_N_Emn[f > 1e-6] = f_w(Y_N)[f > 1e-6]
-        #         z_N_Emn[f > 1e-6] = -w_N_Emn[f > 1e-6]
-        #
-        #         f2 = (Y_N2 - (Y_02 + Z_N2(z_N_Emn)))
-        #
-        #         thres_3 = f2 > 1e-6
-        #
-        #         def f_w2(Y): return 1.0 - 1.0 / (1.0 + self.Ad2 * (Y - Y_02))
-        #
-        #         w_N_Emn[f2 > 1e-6] = f_w2(Y_N2)[f2 > 1e-6]
-        #         z_N_Emn[f2 > 1e-6] = -w_N_Emn[f2 > 1e-6]
-        #
-        #         sigma_N_Emn = (1.0 - w_N_Emn) * E_N * (eps_N_Emn - eps_N_p_Emn)
-        #         sigma_N_Emn_tilde = E_N * (eps_N_Emn - eps_N_p_Emn)
-
-        return w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_N, X
+        return omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z, X, Y_N
 
 
 
     #-------------------------------------------------------------------------
     # microplane constitutive law (Tangential CSD)-(Pressure sensitive cumulative damage)
     #-------------------------------------------------------------------------
-    def get_tangential_law(self, eps_T_Emna, w_T_Emn, z_T_Emn,
-                           alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, omegaN, sigma_kk):
-        # E_T = self.E / (1.0 + self.nu)
+    def get_tangential_law(self, eps_T_Emna, omega_T_Emn, z_T_Emn,
+                           alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
+
 
         E_T = self.E * (1.0 - 4 * self.nu) / \
             ((1.0 + self.nu) * (1.0 - 2 * self.nu))
+
+        # thermo forces
 
         sig_pi_trial = E_T * (eps_T_Emna - eps_T_pi_Emna)
 
@@ -2118,6 +2077,8 @@ class MATS2DMplCSDEEQ(MATS2DEval):
                 (eps_T_Emna - eps_T_pi_Emna),
                 (eps_T_Emna - eps_T_pi_Emna))
 
+        # threshold
+
         f = norm_1 - self.tau_pi_bar - \
             Z + self.a * sigma_N_Emn
 
@@ -2125,7 +2086,7 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         elas_1 = f < 1e-6
 
         delta_lamda = f / \
-            (E_T / (1.0 - w_T_Emn) + self.gamma_T + self.K_T) * plas_1
+            (E_T / (1.0 - omega_T_Emn) + self.gamma_T + self.K_T) * plas_1
 
         norm_2 = 1.0 * elas_1 + np.sqrt(
             np.einsum(
@@ -2134,12 +2095,12 @@ class MATS2DMplCSDEEQ(MATS2DEval):
 
         eps_T_pi_Emna[..., 0] = eps_T_pi_Emna[..., 0] + plas_1 * delta_lamda * \
             ((sig_pi_trial[..., 0] - X[..., 0]) /
-             (1.0 - w_T_Emn)) / norm_2
+             (1.0 - omega_T_Emn)) / norm_2
         eps_T_pi_Emna[..., 1] = eps_T_pi_Emna[..., 1] + plas_1 * delta_lamda * \
             ((sig_pi_trial[..., 1] - X[..., 1]) /
-             (1.0 - w_T_Emn)) / norm_2
+             (1.0 - omega_T_Emn)) / norm_2
 
-        w_T_Emn += ((1 - w_T_Emn) ** self.c_T) * \
+        omega_T_Emn += ((1 - omega_T_Emn) ** self.c_T) * \
             (delta_lamda * (Y / self.S_T) ** self.r_T) * \
             (self.tau_pi_bar / (self.tau_pi_bar + self.a * sigma_N_Emn)) ** self.e_T
 
@@ -2151,10 +2112,17 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         z_T_Emn = z_T_Emn + delta_lamda
 
         sigma_T_Emna = np.einsum(
-            '...n,...na->...na', (1 - w_T_Emn), E_T * (eps_T_Emna - eps_T_pi_Emna))
-        w_T_Emna = w_T_Emn
+            '...n,...na->...na', (1 - omega_T_Emn), E_T * (eps_T_Emna - eps_T_pi_Emna))
 
-        return w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y, X, w_T_Emna
+        Z = self.K_T * z_T_Emn
+        X = self.gamma_T * alpha_T_Emna
+        Y = 0.5 * E_T * \
+            np.einsum(
+                '...na,...na->...n',
+                (eps_T_Emna - eps_T_pi_Emna),
+                (eps_T_Emna - eps_T_pi_Emna))
+
+        return omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Z, X, Y
 
 
 
@@ -2197,37 +2165,64 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     #--------------------------------------------------------
     # return the state variables (Damage , inelastic strains)
     #--------------------------------------------------------
-    def _get_state_variables(self, eps_Emab: object, tn1: object,
-                             omegaN: object, z_N_Emn: object,
-                             alpha_N_Emn: object, r_N_Emn: object, eps_N_p_Emn: object, sigma_N_Emn: object,
-                             w_T_Emn: object, z_T_Emn: object, alpha_T_Emna: object, eps_T_pi_Emna: object, eps_aux: object, F: object) -> object:
+    def _get_state_variables(self, eps_Emab,
+                             int_var, eps_aux):
 
         e_N_arr = self._get_e_N_Emn_2(eps_Emab)
         e_T_vct_arr = self._get_e_T_Emnar_2(eps_Emab)
-        sigma_kk = np.abs(np.sum(F))
+
+        omega_N_Emn = int_var[:, 0]
+        z_N_Emn = int_var[:, 1]
+        alpha_N_Emn = int_var[:, 2]
+        r_N_Emn = int_var[:, 3]
+        eps_N_p_Emn = int_var[:, 4]
+        sigma_N_Emn = int_var[:, 5]
+
+        omega_T_Emn = int_var[:, 9]
+        z_T_Emn = int_var[:, 10]
+        alpha_T_Emna = int_var[:, 11:13]
+        eps_T_pi_Emna = int_var[:, 13:15]
 
 
-        omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n = self.get_normal_law(e_N_arr,  omegaN, z_N_Emn,
+        omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z_n, X_n, Y_n = self.get_normal_law(e_N_arr,  omega_N_Emn, z_N_Emn,
                                                                                                         alpha_N_Emn, r_N_Emn, eps_N_p_Emn, eps_aux)
 
-        w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T, w_T_Emna = self.get_tangential_law(e_T_vct_arr, w_T_Emn, z_T_Emn,alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, omegaN, sigma_kk)
+        omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Z_T, X_T, Y_T = self.get_tangential_law(e_T_vct_arr, omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
-        #D = np.sum(np.einsum('...n,...n->...n',w_T_Emn-w_T_Emn_aux,Y_T) + np.einsum('...n,...n->...n',omegaN_aux-omegaN,Y_n))
-        #D = np.sum(np.einsum('...n,...n->...n',w_T_Emn-w_T_Emn_aux,Y_T) + np.einsum('...n,...n->...n',omegaN_aux-omegaN,Y_n) + np.einsum('...n,...n->...',eps_T_pi_Emna_aux-eps_T_pi_Emna,sigma_T_Emna) + np.einsum('...n,...n->...n',eps_N_p_Emn_aux-eps_N_p_Emn,sigma_N_Emn))
-        #D = np.sum(np.einsum('...n,...n->...n',self._MPW,np.einsum('...n,...n->...n',w_T_Emn,Y_T)) + np.einsum('...n,...n->...n',self._MPW,np.einsum('...n,...n->...n',omegaN,Y_n)) + np.einsum('...n,...n->...n',self._MPW,np.einsum('...n,...n->...',eps_T_pi_Emna,sigma_T_Emna)) + np.einsum('...n,...n->...n',self._MPW,np.einsum('...n,...n->...n',eps_N_p_Emn,sigma_N_Emn)))
+        # Definition internal variables / forces per column:  1) damage N, 2)iso N, 3)kin N, 4)consolidation N, 5) eps p N,
+        # 6) sigma N, 7) iso F N, 8) kin F N, 9) energy release N, 10) damage T, 11) iso T, 12-13) kin T, 14-15) eps p T,
+        # 16-17) sigma T, 18) iso F T, 19-20) kin F T, 21) energy release T
 
-#         print(eps_N_p_Emn[0], 'eps p')
-#         print(Y_n[0], 'lambda')
-        return omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T
+        int_var[:, 0] = omega_N_Emn
+        int_var[:, 1] = z_N_Emn
+        int_var[:, 2] = alpha_N_Emn
+        int_var[:, 3] = r_N_Emn
+        int_var[:, 4] = eps_N_p_Emn
+        int_var[:, 5] = sigma_N_Emn
+        int_var[:, 6] = Z_n
+        int_var[:, 7] = X_n
+        int_var[:, 8] = Y_n
+
+        int_var[:, 9] = omega_T_Emn
+        int_var[:, 10] = z_T_Emn
+        int_var[:, 11:13] = alpha_T_Emna
+        int_var[:, 13:15] = eps_T_pi_Emna
+        int_var[:, 15:17] = sigma_T_Emna
+        int_var[:, 17] = Z_T
+        int_var[:, 18:20] = X_T
+        int_var[:, 20] = Y_T
+
+
+        return int_var
 
     #---------------------------------------------------------------------
     # Extra homogenization of damage tensor in case of two damage parameters
     # Returns the 4th order damage tensor 'beta4' using (ref. [Baz99], Eq.(63))
     #---------------------------------------------------------------------
 
-    def _get_beta_Emabcd_2(self, eps_Emab, w_N_Emn, z_N_Emn,
-                           alpha_N_Emn, r_N_Emn, eps_N_p_Emn, w_T_Emn, z_T_Emn,
-                           alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, eps_aux, sigma_kk):
+    def _get_beta_Emabcd_2(self, eps_Emab, omega_N_Emn, z_N_Emn,
+                           alpha_N_Emn, r_N_Emn, eps_N_p_Emn, omega_T_Emn, z_T_Emn,
+                           alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, eps_aux):
 
         # Returns the 4th order damage tensor 'beta4' using
         #(cf. [Baz99], Eq.(63))
@@ -2235,15 +2230,15 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         eps_N_Emn = self._get_e_N_Emn_2(eps_Emab)
         eps_T_Emna = self._get_e_T_Emnar_2(eps_Emab)
 
-        w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n = self.get_normal_law(
-            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, eps_aux)
+        omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z_n, X_n, Y_n = self.get_normal_law(
+            eps_N_Emn, omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, eps_aux)
 
-        w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T, w_T_Emna = self.get_tangential_law(
-            eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, w_N_Emn, sigma_kk)
+        omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Z_T, X_T, Y_T = self.get_tangential_law(
+            eps_T_Emna, omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
         delta = np.identity(2)
-        beta_N = np.sqrt(1. - w_N_Emn)
-        beta_T = np.sqrt(1. - w_T_Emn)
+        beta_N = np.sqrt(1. - omega_N_Emn)
+        beta_T = np.sqrt(1. - omega_T_Emn)
 
         beta_ijkl = np.einsum('n, ...n,ni, nj, nk, nl -> ...ijkl', self._MPW, beta_N, self._MPN, self._MPN, self._MPN, self._MPN) + \
             0.25 * (np.einsum('n, ...n,ni, nk, jl -> ...ijkl', self._MPW, beta_T, self._MPN, self._MPN, delta) +
@@ -2257,20 +2252,20 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     # Integration of the (inelastic) strains for each microplane
     #-----------------------------------------------------------
 
-    def _get_eps_p_Emab(self, eps_Emab, w_N_Emn, z_N_Emn,
+    def _get_eps_p_Emab(self, eps_Emab, omega_N_Emn, z_N_Emn,
                         alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-                        w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, eps_aux, sigma_kk):
+                        omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, eps_aux):
 
         eps_N_Emn = self._get_e_N_Emn_2(eps_Emab)
         eps_T_Emna = self._get_e_T_Emnar_2(eps_Emab)
 
         # plastic normal strains
-        w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n = self.get_normal_law(
-            eps_N_Emn, w_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, eps_aux)
+        omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z_n, X_n, Y_n = self.get_normal_law(
+            eps_N_Emn, omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, eps_aux)
 
         # sliding tangential strains
-        w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T, w_T_Emna = self.get_tangential_law(
-            eps_T_Emna, w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, w_N_Emn, sigma_kk)
+        omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Z_T, X_T, Y_T = self.get_tangential_law(
+            eps_T_Emna, omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
         delta = np.identity(2)
 
@@ -2292,9 +2287,13 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     # Evaluation - get the corrector and predictor
     #-------------------------------------------------------------------------
 
-    def get_corr_pred(self, eps_Emab, t_n1, w_N_Emn, z_N_Emn,
-                      alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
-                      w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F):
+    def get_corr_pred(self, eps_Emab, t_n1, int_var, eps_aux, F):
+
+
+        # Definition internal variables / forces per column:  1) damage N, 2)iso N, 3)kin N, 4)consolidation N, 5) eps p N,
+        # 6) sigma N, 7) iso F N, 8) kin F N, 9) energy release N, 10) damage T, 11) iso T, 12-13) kin T, 14-15) eps p T,
+        # 16-17) sigma T, 18) iso F T, 19-20) kin F T, 21) energy release T
+
 
         # Corrector predictor computation.
 
@@ -2302,12 +2301,26 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         # Damage tensor (4th order) using product- or sum-type symmetrization:
         #------------------------------------------------------------------
 
-        sigma_kk = np.sum(F)
+
+        eps_N_Emn = self._get_e_N_Emn_2(eps_Emab)
+        eps_T_Emna = self._get_e_T_Emnar_2(eps_Emab)
+
+        omega_N_Emn = int_var[:, 0]
+        z_N_Emn = int_var[:, 1]
+        alpha_N_Emn = int_var[:, 2]
+        r_N_Emn = int_var[:, 3]
+        eps_N_p_Emn = int_var[:, 4]
+        sigma_N_Emn = int_var[:, 5]
+
+        omega_T_Emn = int_var[:, 9]
+        z_T_Emn = int_var[:, 10]
+        alpha_T_Emna = int_var[:, 11:13]
+        eps_T_pi_Emna = int_var[:, 13:15]
+
 
         beta_Emabcd = self._get_beta_Emabcd_2(
-            eps_Emab, w_N_Emn, z_N_Emn,
-            alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-            w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, eps_aux, sigma_kk
+            eps_Emab, omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, omega_T_Emn, z_T_Emn,
+                           alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, eps_aux
         )
 
         #------------------------------------------------------------------
@@ -2322,9 +2335,9 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         #----------------------------------------------------------------------
         # plastic strain tensor
         eps_p_Emab = self._get_eps_p_Emab(
-            eps_Emab, w_N_Emn, z_N_Emn,
+            eps_Emab, omega_N_Emn, z_N_Emn,
             alpha_N_Emn, r_N_Emn, eps_N_p_Emn,
-            w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, eps_aux, sigma_kk)
+            omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, eps_aux)
 
         # elastic strain tensor
         eps_e_Emab = eps_Emab - eps_p_Emab
@@ -2368,91 +2381,3 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         MPW = np.ones(self.n_mp) / self.n_mp * 2
 
         return MPW
-
-
-if __name__ == '__main__':
-    #==========================================================================
-    # Check the model behavior at the single material point
-    #==========================================================================
-    model = MATS2DMplCSDEEQ()
-    p = 1.0  # ratio of strain eps_11 (for bi-axial loading)
-    m = 0.
-
-    n_cycles = 1
-    T = 1 / n_cycles
-    eps_max = -0.01
-    t_steps = 500 * n_cycles
-
-    t = np.linspace(0, 1, t_steps)
-
-    sin_load = np.linspace(0, eps_max, t_steps)
-
-    eps_ab = np.array([np.array([[p * sin_load[i], 0],
-                                 [0,  -m * sin_load[i]]]) for i in range(0, len(sin_load))])
-
-    t_steps_total = len(sin_load)
-
-    n_mp = 100
-    omegaN = np.zeros((n_mp, ))
-    z_N_Emn = np.zeros((n_mp, ))
-    alpha_N_Emn = np.zeros((n_mp, ))
-    r_N_Emn = np.zeros((n_mp, ))
-    eps_N_p_Emn = np.zeros((n_mp, ))
-    sigma_N_Emn = np.zeros((n_mp, ))
-    Y_n = np.zeros((n_mp, ))
-    R_n = np.zeros((n_mp, ))
-    w_T_Emn = np.zeros((n_mp, ))
-    z_T_Emn = np.zeros((n_mp, ))
-    alpha_T_Emna = np.zeros((n_mp, 2))
-    eps_T_pi_Emna = np.zeros((n_mp, 2))
-    sigma_T_Emna = np.zeros((n_mp, 2))
-    X_T = np.zeros((n_mp, 2))
-    Y_T = np.zeros((n_mp, ))
-    eps_aux = np.zeros((2, 2))
-    F_O = np.zeros((3,))
-    sigma_t = np.zeros((2, 2), np.float_)
-    sigma_t = sigma_t[np.newaxis, :, :]
-
-    for i in range(t_steps_total):
-        D_abcd, sig_ab = model.get_corr_pred(
-            eps_ab[i], 1, omegaN, z_N_Emn,
-            alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
-            w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F_O
-        )
-        sigma_aux = sig_ab[np.newaxis, :, :]
-        sigma_t = np.concatenate((sigma_t, sigma_aux))
-
-        [omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Y_n, R_n, w_T_Emn, z_T_Emn,
-            alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Y_T, X_T] = model._get_state_variables(
-                eps_ab[i], 1, omegaN, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn,
-                w_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, eps_aux, F_O)
-
-        omegaN = omegaN.reshape(n_mp, )
-        z_N_Emn = z_N_Emn.reshape(n_mp, )
-        alpha_N_Emn = alpha_N_Emn.reshape(n_mp, )
-        r_N_Emn = r_N_Emn.reshape(n_mp, )
-        eps_N_p_Emn = eps_N_p_Emn.reshape(n_mp, )
-        sigma_N_Emn = sigma_N_Emn.reshape(n_mp,)
-        Y_n = Y_n.reshape(n_mp,)
-        R_n = R_n.reshape(n_mp,)
-        w_T_Emn = w_T_Emn.reshape(n_mp, )
-        z_T_Emn = z_T_Emn.reshape(n_mp, )
-        alpha_T_Emna = alpha_T_Emna.reshape(n_mp, 2)
-        eps_T_pi_Emna = eps_T_pi_Emna.reshape(n_mp, 2)
-        sigma_T_Emna = sigma_T_Emna.reshape(n_mp, 2)
-        X_T = X_T.reshape(n_mp, 2)
-        Y_T = Y_T.reshape(n_mp, )
-
-    import matplotlib.pyplot as plt
-    print(sigma_t.shape)
-
-    f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
-
-    ax2.plot(np.abs(eps_ab[:, 0, 0]), np.abs(
-        sigma_t[1:, 0, 0]), 'k', linewidth=3.5)
-    ax2.set_xlabel(r'$|\varepsilon_{11}$| [-]', fontsize=25)
-    ax2.set_ylabel(r'$|\sigma{11}$| [-]', fontsize=25)
-    #ax2.set_xlim(-0.00001, 0.01)
-
-    # ax2.set_ylim(-0.00001, 70)
-    plt.show()

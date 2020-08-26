@@ -14,10 +14,10 @@ import numpy as np
 
 class Micro2Dplot():
 
-    def get_2Dviz(self, n_mp, eps_global_norm, sigma_global_norm, eps_micro_norm, sigma_micro_norm, D_1_norm, D_2_norm, D_12_norm, D_21_norm, eps_N, eps_p_N, sigma_N, omegaN, eps_T_sign, eps_pi_T_sign, sigma_T_sign, omegaT, Y_N, X_N, Y_T, X_T, F, U, t_steps_cycle):
+    def get_2Dviz(self, n_mp, eps_global_norm, sigma_global_norm, eps_micro_norm, sigma_micro_norm, D_1_norm, D_2_norm, D_12_norm, D_21_norm, eps_N, eps_p_N, sigma_N, omegaN, eps_T_sign, eps_pi_T_sign, sigma_T_sign, omegaT, Y_N, X_N, Y_T, X_T, F, U, t_steps_cycle,D_E_damage_N_M,D_E_damage_T_M, D_E_plast_N_M,D_E_plast_T_M, D_E_hard_iso_N_M,D_E_hard_iso_T_M,D_E_hard_kin_N_M,D_E_hard_kin_T_M):
 
         rads = np.arange(0, (2 * np.pi), (2 * np.pi) / n_mp)
-        font = {'family': 'normal',
+        font = {'family': 'DejaVu Sans',
                 'size': 18}
 
         matplotlib.rc('font', **font)
@@ -95,8 +95,8 @@ class Micro2Dplot():
 #             plt.close()
 
         # A = A[1::10]
-        A = A[(t_steps_cycle - 1) + 1::2 * (t_steps_cycle - 1)]
-
+        #A = A[(t_steps_cycle - 1) + 1::2 * (t_steps_cycle - 1)]
+        plt.figure(figsize=(9, 3))
         plt.subplot(241, projection='polar')
         for i in A:
             #print('idx', idx.shape)
@@ -141,6 +141,53 @@ class Micro2Dplot():
         for i in A:
             plt.plot(rads, np.abs(sigma_T_sign[i, :]), 'b')
         plt.title(r'$\sigma_T$')
+
+        plt.show()
+
+        print(D_E_damage_N_M.shape)
+
+        plt.figure(figsize=(9, 3))
+
+        plt.subplot(241, projection='polar')
+        for i in A:
+            # print('idx', idx.shape)
+            plt.plot(rads, D_E_damage_N_M.transpose()[i, :], 'k')
+        plt.title(r'$D \omega_N_N$')
+
+        plt.subplot(242, projection='polar')
+        for i in A:
+            plt.plot(rads, D_E_damage_T_M.transpose()[i, :], 'g')
+        plt.title(r'$D \omega_T$')
+
+        plt.subplot(243, projection='polar')
+        for i in A:
+            plt.plot(rads, D_E_plast_N_M.transpose()[i, :], 'g')
+        plt.title(r'$\D varepsilon^p_N$')
+
+        plt.subplot(244, projection='polar')
+        for i in A:
+            plt.plot(rads, D_E_plast_T_M.transpose()[i, :], 'b')
+        plt.title(r'$\D varepsilon^p_T$')
+
+        plt.subplot(245, projection='polar')
+        for i in A:
+            plt.plot(rads, -D_E_hard_iso_N_M.transpose()[i, :], 'k')
+        plt.title(r'$D iso N$')
+
+        plt.subplot(246, projection='polar')
+        for i in A:
+            plt.plot(rads, -D_E_hard_iso_T_M.transpose()[i, :], 'k')
+        plt.title(r'$D iso T$')
+
+        plt.subplot(247, projection='polar')
+        for i in A:
+            plt.plot(rads, D_E_hard_kin_N_M.transpose()[i, :], 'r')
+        plt.title(r'$D kin N$')
+
+        plt.subplot(248, projection='polar')
+        for i in A:
+            plt.plot(rads, D_E_hard_kin_T_M.transpose()[i, :], 'r')
+        plt.title(r'$D kin T$')
 
         plt.show()
 #
