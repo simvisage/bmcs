@@ -2222,7 +2222,7 @@ class MATS2DMplCSDEEQ(MATS2DEval):
 
     def _get_beta_Emabcd_2(self, eps_Emab, omega_N_Emn, z_N_Emn,
                            alpha_N_Emn, r_N_Emn, eps_N_p_Emn, omega_T_Emn, z_T_Emn,
-                           alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, eps_aux):
+                           alpha_T_Emna, eps_T_pi_Emna, eps_aux):
 
         # Returns the 4th order damage tensor 'beta4' using
         #(cf. [Baz99], Eq.(63))
@@ -2320,7 +2320,7 @@ class MATS2DMplCSDEEQ(MATS2DEval):
 
         beta_Emabcd = self._get_beta_Emabcd_2(
             eps_Emab, omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, omega_T_Emn, z_T_Emn,
-                           alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn, eps_aux
+                           alpha_T_Emna, eps_T_pi_Emna, eps_aux
         )
 
         #------------------------------------------------------------------
