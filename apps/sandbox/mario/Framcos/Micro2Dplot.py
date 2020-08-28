@@ -14,179 +14,109 @@ import numpy as np
 
 class Micro2Dplot():
 
-    def get_2Dviz(self, n_mp, eps_global_norm, sigma_global_norm, eps_micro_norm, sigma_micro_norm, D_1_norm, D_2_norm, D_12_norm, D_21_norm, eps_N, eps_p_N, sigma_N, omegaN, eps_T_sign, eps_pi_T_sign, sigma_T_sign, omegaT, Y_N, X_N, Y_T, X_T, F, U, t_steps_cycle,D_E_damage_N_M,D_E_damage_T_M, D_E_plast_N_M,D_E_plast_T_M, D_E_hard_iso_N_M,D_E_hard_iso_T_M,D_E_hard_kin_N_M,D_E_hard_kin_T_M):
+    def get_2Dviz(self, n_mp, eps_N_Emn, eps_T_Emn, omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z_N_Emn, X_N_Emn, Y_N_Emn, \
+           omega_T_Emn, z_T_Emn, alpha_T_Emn, eps_T_pi_Emn, sigma_T_Emn, Z_T_pi_Emn, X_T_pi_Emn, Y_T_pi_Emn, \
+           Disip_omena_N_Emn, Disip_omena_T_Emn, Disip_eps_p_N_Emn, Disip_eps_p_T_Emn, Disip_iso_N_Emn, \
+           Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn):
 
         rads = np.arange(0, (2 * np.pi), (2 * np.pi) / n_mp)
         font = {'family': 'DejaVu Sans',
                 'size': 18}
 
         matplotlib.rc('font', **font)
-        A = np.array(range(len(F)))
+        A = np.array(range(len(eps_N_p_Emn)))
 
-        # A = A[1::5]
-        #
-        # home_dir = os.path.expanduser('~')
-        # out_path = os.path.join(home_dir, 'anim')
-        # out_path = os.path.join(out_path, '2D')
-
-#         for i in A:
-#
-#             f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
-#
-#             ax2.plot(np.abs(U[:i, 0]), np.abs(F[:i, 0]), 'k', linewidth=3.5)
-#
-#             ax2.set_xlim(0.0000, 0.01)
-#             #
-#             ax2.set_ylim(0.0000, 70)
-#
-#             filename1 = os.path.join(
-#                 out_path, 'F-U' + 'animation' + np.str(i) + '.png')
-#             f.savefig(fname=filename1)
-#             plt.close()
-#
-#             f, (ax) = plt.subplots(2, 4, figsize=(25, 20))
-#             ax = plt.subplot(241, projection='polar')
-#             ax.plot(rads, eps_N[i, :], 'k')
-#             ax.set_ylim(-0.012, 0.012)
-#             # ax.set_title(r'$\varepsilon_N$')
-#
-#             ax = plt.subplot(242, projection='polar')
-#             ax.plot(rads, omegaN[i, :], 'g')
-#             ax.set_ylim(0., 1.05)
-#             # ax.set_title(r'$\omega_N$')
-#
-#             ax = plt.subplot(243, projection='polar')
-#             ax.plot(rads, eps_p_N[i, :], 'g')
-#             ax.set_ylim(-0.01, 0.002)
-# #             ax.set_ylim(-1.2 * np.max(np.abs(eps_p_N)),
-# #                         0.8 * np.max(np.abs(eps_p_N)))
-#             # ax.set_title(r'$\varepsilon^p_N$')
-#
-#             ax = plt.subplot(244, projection='polar')
-#             ax.plot(rads, sigma_N[i, :], 'b')
-#             ax.set_ylim(-600, 100)
-# #             ax.set_ylim(-1.2 * np.max(np.abs(sigma_N)),
-# #                         0.8 * np.max(np.abs(sigma_N)))
-#             # ax.set_title(r'$\sigma_N$')
-#
-#             ax = plt.subplot(245, projection='polar')
-#             ax.plot(rads, np.abs(eps_T_sign[i, :]), 'k')
-#             ax.set_ylim(0, 0.0105)
-# #             ax.set_title(r'$\varepsilon_T$')
-#
-#             ax = plt.subplot(246, projection='polar')
-#             ax.plot(rads, omegaT[i, :], 'r')
-#             ax.set_ylim(0.0, 1.05)
-# #             ax.set_title(r'$\omega_T$')
-#
-#             ax = plt.subplot(247, projection='polar')
-#             ax.plot(rads, np.abs(eps_pi_T_sign[i, :]), 'r')
-#             ax.set_ylim(0, 0.007)
-# #             ax.set_title(r'$\varepsilon^{\pi}_T$')
-#
-#             ax = plt.subplot(248, projection='polar')
-#             ax.plot(rads, np.abs(sigma_T_sign[i, :]), 'b')
-#             ax.set_ylim(0, 16)
-# #             ax.set_title(r'$\sigma_T$')
-#
-#             filename1 = os.path.join(
-#                 out_path, 'microplane' + 'animation' + np.str(i) + '.png')
-#             f.savefig(fname=filename1)
-#             plt.close()
-
-        # A = A[1::10]
-        #A = A[(t_steps_cycle - 1) + 1::2 * (t_steps_cycle - 1)]
         plt.figure(figsize=(9, 3))
         plt.subplot(241, projection='polar')
         for i in A:
             #print('idx', idx.shape)
-            plt.plot(rads, eps_N[i, :], 'k')
+            plt.plot(rads, eps_N_Emn[i, :], 'k')
         plt.title(r'$\varepsilon_N$')
 
         plt.subplot(242, projection='polar')
         for i in A:
-            plt.plot(rads, omegaN[i, :], 'g')
+            plt.plot(rads, omega_N_Emn[i, :], 'g')
         plt.title(r'$\omega_N$')
 
         plt.subplot(243, projection='polar')
         for i in A:
-            plt.plot(rads, eps_p_N[i, :], 'g')
-        plt.ylim(-1.2 * np.max(np.abs(eps_p_N)),
-                 0.8 * np.max(np.abs(eps_p_N)))
+            plt.plot(rads, eps_N_p_Emn[i, :], 'g')
+        plt.ylim(-1.2 * np.max(np.abs(eps_N_p_Emn)),
+                 0.8 * np.max(np.abs(eps_N_p_Emn)))
         plt.title(r'$\varepsilon^p_N$')
 
         plt.subplot(244, projection='polar')
         for i in A:
-            plt.plot(rads, sigma_N[i, :], 'b')
-        plt.ylim(-1.2 * np.max(np.abs(sigma_N)),
-                 0.8 * np.max(np.abs(sigma_N)))
+            plt.plot(rads, sigma_N_Emn[i, :], 'b')
+        plt.ylim(-1.2 * np.max(np.abs(sigma_N_Emn)),
+                 0.8 * np.max(np.abs(sigma_N_Emn)))
         plt.title(r'$\sigma_N$')
 
         plt.subplot(245, projection='polar')
         for i in A:
-            plt.plot(rads, np.abs(eps_T_sign[i, :]), 'k')
+            plt.plot(rads, np.abs(eps_T_Emn[i, :]), 'k')
         plt.title(r'$\varepsilon_T$')
 
         plt.subplot(246, projection='polar')
         for i in A:
-            plt.plot(rads, omegaT[i, :], 'r')
+            plt.plot(rads, omega_T_Emn[i, :], 'r')
         plt.title(r'$\omega_T$')
 
         plt.subplot(247, projection='polar')
         for i in A:
-            plt.plot(rads, np.abs(eps_pi_T_sign[i, :]), 'r')
+            plt.plot(rads, np.abs(eps_T_pi_Emn[i, :]), 'r')
         plt.title(r'$\varepsilon^{\pi}_T$')
 
         plt.subplot(248, projection='polar')
         for i in A:
-            plt.plot(rads, np.abs(sigma_T_sign[i, :]), 'b')
+            plt.plot(rads, np.abs(sigma_T_Emn[i, :]), 'b')
         plt.title(r'$\sigma_T$')
 
         plt.show()
 
-        print(D_E_damage_N_M.shape)
 
         plt.figure(figsize=(9, 3))
 
         plt.subplot(241, projection='polar')
+        print(Disip_omena_N_Emn[42, :])
         for i in A:
-            # print('idx', idx.shape)
-            plt.plot(rads, D_E_damage_N_M.transpose()[i, :], 'k')
+            print(Disip_omena_N_Emn[i, :].shape, i)
+            plt.plot(rads, np.array(Disip_omena_N_Emn[i, :]), 'k')
         plt.title(r'$D \omega_N_N$')
 
         plt.subplot(242, projection='polar')
         for i in A:
-            plt.plot(rads, D_E_damage_T_M.transpose()[i, :], 'g')
+            plt.plot(rads, Disip_omena_T_Emn[i, :], 'g')
         plt.title(r'$D \omega_T$')
 
         plt.subplot(243, projection='polar')
         for i in A:
-            plt.plot(rads, D_E_plast_N_M.transpose()[i, :], 'g')
+            plt.plot(rads, Disip_eps_p_N_Emn[i, :], 'g')
         plt.title(r'$\D varepsilon^p_N$')
 
         plt.subplot(244, projection='polar')
         for i in A:
-            plt.plot(rads, D_E_plast_T_M.transpose()[i, :], 'b')
+            plt.plot(rads, Disip_eps_p_T_Emn[i, :], 'b')
         plt.title(r'$\D varepsilon^p_T$')
 
         plt.subplot(245, projection='polar')
         for i in A:
-            plt.plot(rads, -D_E_hard_iso_N_M.transpose()[i, :], 'k')
+            plt.plot(rads, Disip_iso_N_Emn[i, :], 'k')
         plt.title(r'$D iso N$')
 
         plt.subplot(246, projection='polar')
         for i in A:
-            plt.plot(rads, -D_E_hard_iso_T_M.transpose()[i, :], 'k')
+            plt.plot(rads, Disip_iso_T_Emn[i, :], 'k')
         plt.title(r'$D iso T$')
 
         plt.subplot(247, projection='polar')
         for i in A:
-            plt.plot(rads, D_E_hard_kin_N_M.transpose()[i, :], 'r')
+            plt.plot(rads, Disip_kin_N_Emn[i, :], 'r')
         plt.title(r'$D kin N$')
 
         plt.subplot(248, projection='polar')
         for i in A:
-            plt.plot(rads, D_E_hard_kin_T_M.transpose()[i, :], 'r')
+            plt.plot(rads, Disip_kin_T_Emn[i, :], 'r')
         plt.title(r'$D kin T$')
 
         plt.show()

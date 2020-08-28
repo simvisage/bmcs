@@ -160,7 +160,7 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1, n_mp, loading_scenario):
         # Saving data just at min and max levels
             if F[t_n1] == 0 or F[t_n1] == S_max1 * load or F[t_n1] == S_max2 * load or F[t_n1] == S_min1 * load:
 
-                save = np.concatenate((int_var, disip), axis=1)
+                save = np.concatenate((int_var, dissip), axis=1)
 
                 df = pd.DataFrame(save)
                 df.to_hdf(path, 'middle' + np.str(t_aux), append=True)
@@ -227,6 +227,8 @@ Concrete_Type_string = ['C40MA', 'C80MA','C120MA']
 
 loading_scenario = 'constant'   # constant, order, increasing
 
+M_plot = 1  # Plot microplanes polar graphs. 1: yes, 0: no
+
 t_steps_cycle = 20
 n_mp = 100
 
@@ -241,7 +243,7 @@ cycles1 = 20           # fatigue life first level
 
 S_max2 = 0.9            # maximum loading level second level
 cycles2 = 221         # fatigue life second level
-n_cycles2 = 1e3 - n_cycles1 # number of applied cycles second level
+n_cycles2 = np.int(1e3 - np.floor(eta1*cycles1)) # number of applied cycles second level
 
 # Path saving data
 
@@ -288,7 +290,7 @@ if loading_scenario == 'order':
     cycle1 = np.concatenate(
         (np.linspace(load * S_min1, load * S_max1, t_steps_cycle)[1:], np.linspace(load * S_max1, load * S_min1, t_steps_cycle)[
                                                               1:]))
-    cycle1 = np.tile(cycle1, n_cycles1 - 1)
+    cycle1 = np.tile(cycle1, np.int(np.floor(eta1*cycles1)) - 1)
 
     change_order = np.concatenate((np.linspace(load * S_min1, load * S_max2, 632)[1:], np.linspace(load * S_max2, load * S_min1, 632)[
                                                                               1:]))
@@ -311,7 +313,7 @@ U, F, cyc, number_cyc, D, U_p = get_UF_t(
 
 
 [omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z_N_Emn, X_N_Emn, Y_N_Emn, omega_T_Emn, z_T_Emn,
- alpha_T_Emna, eps_T_pi_Emna, sigma_T_pi_Emna, Z_T_pi_Emn, X_T_pi_Emna, Y_T_pi_Emn, Dissip_omena_N_Emn, Disip_omena_T_Emn,
+ alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Z_T_pi_Emn, X_T_pi_Emna, Y_T_pi_Emn, Disip_omena_N_Emn, Disip_omena_T_Emn,
  Disip_eps_p_N_Emn, Disip_eps_p_T_Emn, Disip_iso_N_Emn, Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn] \
     = get_int_var(path, len(F), n_mp)
 
@@ -363,38 +365,38 @@ if loading_scenario == 'constant':
 
     f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
 
-    ax.plot(np.arange(len(Dissip_omena_N_Emn[1::2, 0])),
-            np.sum(Dissip_omena_N_Emn, axis=1)[1::2], 'black', linewidth=2.5)
+    ax.plot(np.arange(len(Disip_omena_N_Emn[1::2, 0])),
+            np.sum(Disip_omena_N_Emn, axis=1)[1::2], 'black', linewidth=2.5)
 
     ax.plot(np.arange(len(Disip_omena_T_Emn[1::2,0])),
-            np.sum(Dissip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2], 'yellow', linewidth=2.5)
+            np.sum(Disip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2], 'yellow', linewidth=2.5)
 
     ax.plot(np.arange(len(Disip_eps_p_N_Emn[1::2])),
-            np.sum(Dissip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[1::2], 'black', linewidth=2.5)
 
     ax.plot(np.arange(len(Disip_eps_p_T_Emn[1::2])),
-            np.sum(Dissip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[1::2] + np.sum(Disip_eps_p_T_Emn, axis=1)[1::2], 'red', linewidth=2.5)
 
     ax.plot(np.arange(len(Disip_iso_N_Emn[1::2])),
-            np.sum(Dissip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[1::2] + np.sum(Disip_eps_p_T_Emn, axis=1)[1::2] +
             np.sum(Disip_iso_N_Emn, axis=1)[1::2], 'black', linewidth=2.5)
 
     ax.plot(np.arange(len(Disip_iso_T_Emn[1::2])),
-            np.sum(Dissip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[1::2] + np.sum(Disip_eps_p_T_Emn, axis=1)[1::2] +
             np.sum(Disip_iso_N_Emn, axis=1)[1::2] + np.sum(Disip_iso_T_Emn, axis=1)[1::2], 'blue', linewidth=2.5)
 
     ax.plot(np.arange(len(Disip_kin_N_Emn[1::2])),
-            np.sum(Dissip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[1::2] + np.sum(Disip_eps_p_T_Emn, axis=1)[1::2] +
             np.sum(Disip_iso_N_Emn, axis=1)[1::2] + np.sum(Disip_iso_T_Emn, axis=1)[1::2] +
             np.sum(Disip_kin_N_Emn, axis=1)[1::2], 'black', linewidth=2.5)
 
     ax.plot(np.arange(len(Disip_kin_N_Emn[1::2])),
-            np.sum(Dissip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[1::2] + np.sum(Disip_omena_T_Emn, axis=1)[1::2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[1::2] + np.sum(Disip_eps_p_T_Emn, axis=1)[1::2] +
             np.sum(Disip_iso_N_Emn, axis=1)[1::2] + np.sum(Disip_iso_T_Emn, axis=1)[1::2] +
             np.sum(Disip_kin_N_Emn, axis=1)[1::2] + np.sum(Disip_kin_T_Emn, axis=1)[1::2], 'green', linewidth=2.5)
@@ -409,15 +411,15 @@ if loading_scenario == 'order':
 
     f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
 
-    X_axis1 = np.array(np.arange(eta1 * cycles1) + 1)[1:] / cycles1
-    X_axis1 = np.concatenate((np.array([0]), X_axis1))
-    Y_axis1 = np.abs(U[2:np.int(2 * eta1 * cycles1) + 2:2, 0])
+    X_axis1 = np.array(np.arange(eta1 * cycles1) + 1)[:] / cycles1
+    #X_axis1 = np.concatenate((np.array([0]), X_axis1))
+    Y_axis1 = np.abs(U[3:np.int(2 * eta1 * cycles1) + 2:2, 0])
     # Y_axis1 = np.concatenate((np.array([Y_axis1[0]]), Y_axis1))
 
 
     X_axis2 = np.array((np.arange(len(U[2::2, 0]) - (eta1 * cycles1)) + 1) / (cycles2) + eta1)
     X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
-    Y_axis2 = np.abs(U[np.int(2 * eta1 * cycles1) + 2::2, 0])
+    Y_axis2 = np.abs(U[np.int(2 * eta1 * cycles1) + 1::2, 0])
     Y_axis2 = np.concatenate((np.array([Y_axis2[0]]), Y_axis2))
 
     ax.plot(X_axis1, Y_axis1, 'k', linewidth=2.5)
@@ -439,40 +441,37 @@ if loading_scenario == 'order':
     X_axis1 = np.concatenate((np.array([0]), X_axis1))
 
     X_axis2 = np.array((np.arange(len(Disip_omena_T_Emn[2::2, 0]) - (eta1 * cycles1)) + 1) / (cycles2) + eta1)
-    X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
-
-    X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
-
+    #X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
 
 
 
     ax.plot(X_axis1,
-            np.sum(Dissip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'black', linewidth=2.5)
+            np.sum(Disip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'black', linewidth=2.5)
 
     ax.plot(X_axis1,
-            np.sum(Dissip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_omena_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'yellow', linewidth=2.5)
 
     ax.plot(X_axis1,
-            np.sum(Dissip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_omena_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'black', linewidth=2.5)
 
     ax.plot(X_axis1,
-            np.sum(Dissip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_omena_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'red', linewidth=2.5)
 
     ax.plot(X_axis1,
-            np.sum(Dissip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2]
+            np.sum(Disip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2]
             + np.sum(Disip_omena_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_iso_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'black', linewidth=2.5)
 
     ax.plot(X_axis1,
-            np.sum(Dissip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_omena_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
@@ -480,7 +479,7 @@ if loading_scenario == 'order':
             np.sum(Disip_iso_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'blue', linewidth=2.5)
 
     ax.plot(X_axis1,
-            np.sum(Dissip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_omena_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
@@ -489,7 +488,7 @@ if loading_scenario == 'order':
             np.sum(Disip_kin_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'black', linewidth=2.5)
 
     ax.plot(X_axis1,
-            np.sum(Dissip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
+            np.sum(Disip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_omena_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_eps_p_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
@@ -498,176 +497,122 @@ if loading_scenario == 'order':
             np.sum(Disip_kin_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_kin_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'green', linewidth=2.5)
 
+    ax.plot(X_axis2,
+            np.sum(Disip_omena_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2], 'black', linewidth=2.5)
+
+    ax.plot(X_axis2,
+            np.sum(Disip_omena_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_omena_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2], 'yellow', linewidth=2.5)
+
+    ax.plot(X_axis2,
+            np.sum(Disip_omena_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_omena_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2], 'black', linewidth=2.5)
+
+    ax.plot(X_axis2,
+            np.sum(Disip_omena_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_omena_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2], 'red', linewidth=2.5)
+
+    ax.plot(X_axis2,
+            np.sum(Disip_omena_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2]
+            + np.sum(Disip_omena_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_iso_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2], 'black', linewidth=2.5)
+
+    ax.plot(X_axis2,
+            np.sum(Disip_omena_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_omena_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_iso_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_iso_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2], 'blue', linewidth=2.5)
+
+    ax.plot(X_axis2,
+            np.sum(Disip_omena_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_omena_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_iso_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_iso_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_kin_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2], 'black', linewidth=2.5)
+
+    ax.plot(X_axis2,
+            np.sum(Disip_omena_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_omena_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_eps_p_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_iso_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_iso_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_kin_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2] +
+            np.sum(Disip_kin_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2::2], 'green', linewidth=2.5)
+
+    # Y_axis2 = np.concatenate((np.array([Y_axis2[0]]), Y_axis2))
+
+    # ax.plot([X_axis1[-1], X_axis2[0]],
+    #         [Y_axis1[-1], Y_axis2[0]], 'k', linewidth=2.5)
+
+    ax.plot([X_axis1[-1], X_axis2[0]],
+            [np.sum(Disip_omena_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 1]+
+             np.sum(Disip_omena_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 1] +
+             np.sum(Disip_eps_p_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 1] +
+             np.sum(Disip_eps_p_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 1] +
+             np.sum(Disip_iso_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 1] +
+             np.sum(Disip_iso_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 1] +
+             np.sum(Disip_kin_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 1] +
+             np.sum(Disip_kin_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 1],
+             np.sum(Disip_omena_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2] +
+             np.sum(Disip_omena_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2] +
+             np.sum(Disip_eps_p_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2] +
+             np.sum(Disip_eps_p_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2] +
+             np.sum(Disip_iso_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2] +
+             np.sum(Disip_iso_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2] +
+             np.sum(Disip_kin_N_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2] +
+             np.sum(Disip_kin_T_Emn, axis=1)[np.int(2 * eta1 * cycles1) + 2]], 'k', linewidth=2.5)
+
     ax.set_title('Energy dissipation yellow:damage, red:plast, blue:iso hard, green:kin hard Smax=' + str(
         S_max1) + 'Smin=' + str(S_min1))
 
-    X_axis1 = np.array(np.arange(eta1 * cycles1) + 1)[1:] / cycles1
-    X_axis1 = np.concatenate((np.array([0]), X_axis1))
-    Y_axis1 = np.abs(D_E[2:np.int(2 * eta1 * cycles1) + 2:2])
-    # Y_axis1 = np.concatenate((np.array([Y_axis1[0]]), Y_axis1))
-
-
-    # print(U[2:np.int(2 * eta1 * cycles1) + 2, 0])
-    # print(X_axis1.shape)
-    # print(Y_axis1.shape)
-    #
-    # print(len(D_E[2::2, 0]))
-    X_axis2 = np.array((np.arange(len(D_E[2::2]) -
-                                  (eta1 * cycles1)) + 1) / (cycles2) + eta1)
-    X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
-
-    Y_axis2 = np.abs(D_E[np.int(2 * eta1 * cycles1) + 2::2])
-    Y_axis2 = np.concatenate(
-        (np.array([Y_axis2[0]]), Y_axis2))
-    X_axis = np.concatenate((X_axis1, X_axis2))
-
-    # print(D_E[np.int(2 * eta1 * cycles1):np.int(2 * eta1 * cycles1) + 10])
-    # print(X_axis2.shape)
-    # print(Y_axis2.shape)
-
-
-    x = D_E[2]
-    Y_axis = np.concatenate((np.array([x]), np.array(D_E[2::2])))
-    ax.plot(X_axis1, Y_axis1, 'k', linewidth=2.5)
-    ax.plot(X_axis2, Y_axis2, 'k', linewidth=2.5)
-    # ax.plot(X_axis, Y_axis, 'r', linewidth=2.5)
-    ax.plot([X_axis1[-1], X_axis2[0]],
-            [Y_axis1[-1], Y_axis2[0]], 'k', linewidth=2.5)
     plt.show()
 
+if M_plot == 1:
 
-    plt.plot(np.arange(len(U[2::2])), U[2::2, 0])
-    plt.show()
+    # For plotting polar plots, first convert vectorial variables into scalars (by taking norm)
 
-
-    # Definition internal variables / forces per column:  1) damage N, 2)iso N, 3)kin N, 4) consolidation N, 5) eps p N,
-    # 6) sigma N, 7) iso F N, 8) kin F N, 9) energy release N, 10) damage T, 11) iso T, 12-13) kin T, 14-15) eps p T,
-    # 16-17) sigma T, 18) iso F T, 19-20) kin F T, 21) energy release T
-
-
-
-
-
-
-    n_mp = 100
-
-    S = np.zeros((len(F), n_mp, 19))
-
-    S[0] = np.array(pd.read_hdf(path, 'first'))
-
-    for i in range(1, len(F)):
-        S[i] = np.array(pd.read_hdf(path, 'middle' + np.str(i - 1)))
-
-
-    rads = np.arange(0, (2 * np.pi), (2 * np.pi) / n_mp)
-    eps_N = np.zeros((len(S), len(S[1])))
+    eps_N_Emn = np.zeros_like(eps_N_p_Emn)
+    eps_T_Emna = np.zeros_like(eps_T_pi_Emna)
+    eps_T_Emn = np.zeros_like(eps_N_p_Emn)
+    eps_T_pi_Emn = np.zeros_like(eps_N_p_Emn)
+    sigma_T_Emn = np.zeros_like(eps_N_p_Emn)
+    X_T_pi_Emn = np.zeros_like(eps_N_p_Emn)
+    alpha_T_Emn = np.zeros_like(eps_N_p_Emn)
 
     for i in range(len(F)):
         eps = get_eps_ab(U[i])
-        eps_N[i] = m._get_e_N_Emn_2(eps)
-
-    omegaN = S[:, :, 0]
-    eps_p_N = S[:, :, 4]
-
-    eps_T = np.zeros((len(S), len(S[1])))
-    eps_T_sign = np.zeros((len(S), len(S[1])))
-    eps_pi_T = np.zeros((len(S), len(S[1])))
-    eps_pi_T_sign = np.zeros((len(S), len(S[1])))
-    sigma_T = np.zeros((len(S), len(S[1])))
-    sigma_T_sign = np.zeros((len(S), len(S[1])))
-    X_T = np.zeros((len(S), len(S[1])))
-    X_T_sign = np.zeros((len(S), len(S[1])))
-
-
-    for i in range(len(F)):
+        eps_N_Emn[i] = m._get_e_N_Emn_2(eps)
         eps = get_eps_ab(U[i])
-        eps_T_aux = m._get_e_T_Emnar_2(eps)
-        eps_T[i] = np.sqrt(np.einsum('...i,...i->... ', eps_T_aux, eps_T_aux))
-        eps_pi_T[i] = np.sqrt(
-            np.einsum('...i,...i->... ', S[i, :, 12:14], S[i, :, 12:14]))
-        sigma_T[i] = np.sqrt(
-            np.einsum('...i,...i->... ', S[i, :, 14:16], S[i, :, 14:16]))
-        X_T[i] = np.sqrt(
-            np.einsum('...i,...i->... ', S[i, :, 17:19], S[i, :, 17:19]))
-
-        sign_T = np.sign(eps_T_aux)
-
-        sign_pi_T = np.sign(S[i, :, 12:14])
-        sign_sigma_T = np.sign(S[i, :, 14:16])
-        sign_X_T = np.sign(S[i, :, 17:19])
-
-        eps_T_sign[i] = np.einsum(
-            '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_T, sign_T)), eps_T[i])
-        eps_pi_T_sign[i] = np.einsum(
-            '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_pi_T, sign_pi_T)), eps_pi_T[i])
-
-        sigma_T_sign[i] = np.einsum(
-            '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_sigma_T, sign_sigma_T)), sigma_T[i])
-        X_T_sign[i] = np.einsum(
-            '...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n', sign_X_T, sign_X_T)), X_T[i])
+        eps_T_Emna[i] = m._get_e_T_Emnar_2(eps)
 
 
-    omegaT = S[:, :, 8]
+    eps_T_sign_Emn = np.zeros_like(eps_N_p_Emn)
+    eps_pi_T = np.zeros_like(eps_N_p_Emn)
+    eps_pi_T_sign = np.zeros_like(eps_N_p_Emn)
+    sigma_T = np.zeros_like(eps_N_p_Emn)
+    sigma_T_sign = np.zeros_like(eps_N_p_Emn)
+    X_T = np.zeros_like(eps_N_p_Emn)
+    X_T_sign = np.zeros_like(eps_N_p_Emn)
 
 
-    sigma_N = S[:, :, 5]
-    Y_N = S[:, :, 6]
-    X_N = S[:, :, 7]
-    Y_T = S[:, :, 16]
+    eps_T_Emn = np.sqrt(np.einsum('...i,...i->... ', eps_T_Emna, eps_T_Emna))
+    eps_T_pi_Emn = np.sqrt(np.einsum('...i,...i->... ', eps_T_pi_Emna, eps_T_pi_Emna))
+    sigma_T_Emn = np.sqrt(np.einsum('...i,...i->... ', sigma_T_Emna, sigma_T_Emna))
+    X_T_pi_Emn = np.sqrt(np.einsum('...i,...i->... ', X_T_pi_Emna, X_T_pi_Emna))
+    alpha_T_Emn = np.sqrt(np.einsum('...i,...i->... ', alpha_T_Emna, alpha_T_Emna))
 
 
-    eps_global_norm = np.zeros((len(S), len(S[1])))
-    sigma_global_norm = np.zeros((len(S), len(S[1])))
-    eps = np.zeros((len(S), 2, 2))
-    sigma = np.zeros((len(S), 2, 2))
-    n_mp = 100
-
-    for i in range(len(F)):
-        eps[i] = get_eps_ab(U[i])
-        sigma[i] = get_eps_ab(F[i])
-        eps_micro = np.einsum('...ij,...j->...i', eps[i], m._get__MPN())
-        eps_global_norm[i] = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
-                                                                            eps_micro, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', eps_micro, eps_micro)))
-        sigma_micro = np.einsum('...ij,...j->...i', sigma[i], m._get__MPN())
-        sigma_global_norm[i] = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
-                                                                              sigma_micro, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', sigma_micro, sigma_micro)))
-    eps_T = m._get_e_T_Emnar_2(eps)
-    eps_Emna = np.einsum(
-        '...i,...i->...i', eps_N.reshape(len(F), n_mp, 1), m._get__MPN()) + eps_T
-    eps_micro_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
-                                                                    eps_Emna,  m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', eps_Emna, eps_Emna)))
-
-    sigma_Emna = np.einsum(
-        '...i,...i->...i', sigma_N.reshape(len(F), n_mp, 1), m._get__MPN()) + S[:, :, 14:16]
-    sigma_micro_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
-                                                                      sigma_Emna,  m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ',
-                                                                                                                      sigma_Emna, sigma_Emna)))
-
-    D_1 = D[:, 0, 0, :, :]
-    D_1_Emna = np.einsum('...ij,...nj->...ni', D_1, m._get__MPN())
-
-    D_1_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n',
-                                                              D_1_Emna, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', D_1_Emna, D_1_Emna)))
-
-    D_2 = D[:, 1, 1, :, :]
-    D_2_Emna = np.einsum(
-        '...ij,...nj->...ni', D_2, m._get__MPN())
-    D_2_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...i,...i->...',
-                                                              D_2_Emna, m._get__MPN())), np.sqrt(np.einsum('...i,...i->... ', D_2_Emna, D_2_Emna)))
-
-    D_12 = D[:, 0, 1, :, :]
-    D_12_Emna = np.einsum(
-        '...ij,...nj->...ni', D_12, m._get__MPN())
-    D_12_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n',
-                                                               D_12_Emna, D_12_Emna)), np.sqrt(np.einsum('...i,...i->... ', D_12_Emna, D_12_Emna)))
-
-    D_21 = D[:, 1, 0, :, :]
-    D_21_Emna = np.einsum(
-        '...ij,...nj->...ni', D_21, m._get__MPN())
-    D_21_norm = np.einsum('...n,...n->...n', np.sign(np.einsum('...ni,...ni->...n',
-                                                               D_21_Emna, D_21_Emna)), np.sqrt(np.einsum('...i,...i->... ', D_21_Emna, D_21_Emna)))
-
-
-    plot.get_2Dviz(n_mp, eps_global_norm, sigma_global_norm, eps_micro_norm, sigma_micro_norm, D_1_norm, D_2_norm, D_12_norm,
-                   D_21_norm, eps_N, eps_p_N, sigma_N, omegaN, eps_T_sign, eps_pi_T_sign,
-                   sigma_T_sign, omegaT, Y_N, X_N, Y_T, X_T_sign, F, U, t_steps_cycle,D_E_damage_N_M,D_E_damage_T_M, D_E_plast_N_M,D_E_plast_T_M, D_E_hard_iso_N_M,D_E_hard_iso_T_M,D_E_hard_kin_N_M,D_E_hard_kin_T_M)
+    plot.get_2Dviz(n_mp, eps_N_Emn, eps_T_Emn, omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z_N_Emn, X_N_Emn, Y_N_Emn, \
+           omega_T_Emn, z_T_Emn, alpha_T_Emn, eps_T_pi_Emn, sigma_T_Emn, Z_T_pi_Emn, X_T_pi_Emn, Y_T_pi_Emn, \
+           Disip_omena_N_Emn, Disip_omena_T_Emn, Disip_eps_p_N_Emn, Disip_eps_p_T_Emn, Disip_iso_N_Emn, \
+           Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn)
