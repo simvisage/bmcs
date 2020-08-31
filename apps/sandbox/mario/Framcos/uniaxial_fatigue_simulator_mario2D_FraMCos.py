@@ -46,9 +46,6 @@ def get_K_OP(D_abcd):
 
     return K_OP
 
-m = MATS2DMplCSDEEQ()
-plot = Micro2Dplot()
-
 def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1, n_mp, loading_scenario):
 
     # Initialization internal variables and dissipation
@@ -221,9 +218,9 @@ def get_int_var(path, size, n_mp):  # unpacks saved data
            Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn
 
 
-Concrete_Type= 1        # 0:C40MA, 1:C80MA, 2:120MA
+concrete_type= 1        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
 
-Concrete_Type_string = ['C40MA', 'C80MA','C120MA']
+Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Biaxial']
 
 loading_scenario = 'constant'   # constant, order, increasing
 
@@ -253,21 +250,13 @@ if not os.path.exists('Data Processing'):
     os.makedirs('Data Processing')
 
 path = os.path.join(
-   home_dir, 'Data Processing/' + Concrete_Type_string[Concrete_Type] + loading_scenario + str(S_max1) + str(eta1) + '.hdf5')
-
-# load = -60.54301292467442
-#
-# load = -97.38726895936968
-# load = -73.43966477329167
-# load = -123.82847695050454
-# load = 41.81
-
+   home_dir, 'Data Processing/' + Concrete_Type_string[concrete_type] + loading_scenario + str(S_max1) + str(eta1) + '.hdf5')
 
 # FINAL LOADINGS
 
 load_options = [-60.54301292467442, -91.69221808121128, -119.33166543189739]
 
-load = load_options[Concrete_Type]
+load = load_options[concrete_type]
 # load = -85.0521424220676
 # LOADING SCENARIOS
 
@@ -308,6 +297,9 @@ t_steps = len(sin_load)
 T = 1 / n_cycles1
 t = np.linspace(0, 1, len(sin_load))
 
+m = MATS2DMplCSDEEQ(concrete_type)
+plot = Micro2Dplot()
+
 U, F, cyc, number_cyc, D, U_p = get_UF_t(
     sin_load, t_steps, load, S_max1, S_max2, S_min1, n_mp, loading_scenario)
 
@@ -322,22 +314,10 @@ font = {'family': 'DejaVu Sans',
 
 matplotlib.rc('font', **font)
 
-
-
-# Fig 1, loading
-
-f, (ax1) = plt.subplots(1, 1, figsize=(5, 4))
-
-ax1.plot(t[0:], np.abs(sin_load / load)[0:], linewidth=2.5)
-ax1.set_xlabel('pseudotime [-]', fontsize=25)
-ax1.set_ylabel(r'$|S_{max}$| [-]', fontsize=25)
-ax1.set_title('Loading')
-plt.show()
-
 print(np.max(np.abs(F[:, 0])), 'sigma1')
 print(np.max(np.abs(F[:, 1])), 'sigma2')
 
-# Fig 2, stress-strain curve
+# Fig 1, stress-strain curve
 
 f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
 
@@ -349,7 +329,7 @@ plt.show()
 
 if loading_scenario == 'constant':
 
-    # Fig 3, creep fatigue curve
+    # Fig 2, creep fatigue curve
 
     f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
 
@@ -361,7 +341,7 @@ if loading_scenario == 'constant':
     ax.set_title('creep fatigue Smax=' + str(S_max1) + 'Smin=' + str(S_min1))
     plt.show()
 
-    # Fig 4, energy dissipation
+    # Fig 3, energy dissipation
 
     f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
 
@@ -407,7 +387,7 @@ if loading_scenario == 'constant':
 
 if loading_scenario == 'order':
 
-    # Creep Fatigue Curve
+    # Fig 2, Creep Fatigue Curve
 
     f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
 
@@ -433,7 +413,7 @@ if loading_scenario == 'order':
     plt.title('creep fatigue Smax1=' + str(S_max1) + 'Smax2=' + str(S_max2) + 'Smin=' + str(S_min1))
     plt.show()
 
-    # Fig 4, energy dissipation
+    # Fig 3, energy dissipation
 
     f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
 
@@ -442,8 +422,6 @@ if loading_scenario == 'order':
 
     X_axis2 = np.array((np.arange(len(Disip_omena_T_Emn[2::2, 0]) - (eta1 * cycles1)) + 1) / (cycles2) + eta1)
     #X_axis2 = np.concatenate((np.array([X_axis1[-1]]), X_axis2))
-
-
 
     ax.plot(X_axis1,
             np.sum(Disip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'black', linewidth=2.5)
@@ -477,6 +455,7 @@ if loading_scenario == 'order':
             np.sum(Disip_eps_p_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_iso_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +
             np.sum(Disip_iso_T_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2], 'blue', linewidth=2.5)
+
 
     ax.plot(X_axis1,
             np.sum(Disip_omena_N_Emn, axis=1)[2:np.int(2 * eta1 * cycles1) + 2:2] +

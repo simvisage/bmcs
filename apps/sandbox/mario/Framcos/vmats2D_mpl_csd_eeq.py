@@ -12,7 +12,7 @@ Using Jirasek homogenization approach [1999]
 '''
 
 from traits.api import Constant, \
-    Float, Dict, Property, cached_property
+    Dict, Property, cached_property
 
 from ibvpy.mats.mats2D.mats2D_eval import MATS2DEval
 import numpy as np
@@ -21,464 +21,97 @@ import traits.api as tr
 
 class MATS2DMplCSDEEQ(MATS2DEval):
 
-    # PARAMETERS C40
+    concrete_type = tr.Int
 
-    # Tangential constitutive law parameters
-    #---------------------------------------
-    #     gamma_T = Float(30000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(1000.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.008,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(25,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #     e_T = Float(30.,
-    #                 label="e",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(4,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(4.5,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.016,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(30.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(50.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.00001,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #     eps_02 = Float(1000.0013,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(19000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(19000.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(20.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     state_var_shapes = Property(Dict(), depends_on='n_mp')
-    #     '''Dictionary of state variable entries with their array shapes.
-    #     '''
-    #
-    #     #-------------------------------------------------------------------------
-    #     # Cached elasticity tensors
-    #     #-------------------------------------------------------------------------
-    #
-    #     E = tr.Float(35e+3,
-    #                  label="E",
-    #                  desc="Young's Modulus",
-    #                  auto_set=False,
-    #                  input=True)
-    #
-    #     nu = tr.Float(0.2,
-    #                   label='nu',
-    #                   desc="Poison ratio",
-    #                   auto_set=False,
-    #                   input=True)
 
-    # gamma_T = Float(800000.,
-    #                 label="Gamma",
-    #                 desc=" Tangential Kinematic hardening modulus",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    # K_T = Float(50000.0,
-    #             label="K",
-    #             desc="Tangential Isotropic harening",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # S_T = Float(0.029,
-    #             label="S",
-    #             desc="Damage strength",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # r_T = Float(13.,
-    #             label="r",
-    #             desc="Damage cumulation parameter",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # c_T = Float(8,
-    #             label="c",
-    #             desc="Damage cumulation parameter",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # e_T = Float(11.,
-    #             label="c",
-    #             desc="Damage cumulation parameter",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # tau_pi_bar = Float(2.0,
-    #                    label="Tau_bar",
-    #                    desc="Reversibility limit",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    # a = Float(0.012,
-    #           label="a",
-    #           desc="Lateral pressure coefficient",
-    #           enter_set=True,
-    #           auto_set=False)
-    #
-    # # -------------------------------------------
-    # # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    # # -------------------------------------------
-    # Ad = Float(1000.0,
-    #            label="a",
-    #            desc="brittleness coefficient",
-    #            enter_set=True,
-    #            auto_set=False)
-    #
-    # eps_0 = Float(0.0001,
-    #               label="a",
-    #               desc="threshold strain",
-    #               enter_set=True,
-    #               auto_set=False)
+    gamma_T = tr.Float(100000.,
+                       label="Gamma",
+                        desc=" Tangential Kinematic hardening modulus",
+                        enter_set=True,
+                        auto_set=False)
 
-    #     Ad = Float(100000.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     eps_0 = Float(1e-8,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-
-    # -----------------------------------------------
-    # Normal_Compression constitutive law parameters
-    # -----------------------------------------------
-    # K_N = Float(80000.,
-    #             label="K_N",
-    #             desc=" Normal isotropic harening",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # gamma_N = Float(100000.,
-    #                 label="gamma_N",
-    #                 desc="Normal kinematic hardening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    # sigma_0 = Float(80.,
-    #                 label="sigma_0",
-    #                 desc="Yielding stress",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    # state_var_shapes = Property(Dict(), depends_on='n_mp')
-    # '''Dictionary of state variable entries with their array shapes.
-    # '''
-    #
-    # # -------------------------------------------------------------------------
-    # # Cached elasticity tensors
-    # # -------------------------------------------------------------------------
-    #
-    # E = tr.Float(34e+3,
-    #              label="E",
-    #              desc="Young's Modulus",
-    #              auto_set=False,
-    #              input=True)
-    #
-    # nu = tr.Float(0.2,
-    #               label='nu',
-    #               desc="Poison ratio",
-    #               auto_set=False,
-    #               input=True)
-    #     #    PARAMETERS FOR C80
-
-    # gamma_T = Float(1000000.,
-    #                 label="Gamma",
-    #                 desc=" Tangential Kinematic hardening modulus",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    # K_T = Float(30000.0,
-    #             label="K",
-    #             desc="Tangential Isotropic harening",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # S_T = Float(0.011,
-    #             label="S",
-    #             desc="Damage strength",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # r_T = Float(16.,
-    #             label="r",
-    #             desc="Damage cumulation parameter",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # c_T = Float(6.,
-    #             label="c",
-    #             desc="Damage cumulation parameter",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # e_T = Float(14.,
-    #             label="c",
-    #             desc="Damage cumulation parameter",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # tau_pi_bar = Float(2.0,
-    #                    label="Tau_bar",
-    #                    desc="Reversibility limit",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    # a = Float(0.01,
-    #           label="a",
-    #           desc="Lateral pressure coefficient",
-    #           enter_set=True,
-    #           auto_set=False)
-    #
-    # #-------------------------------------------
-    # # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    # #-------------------------------------------
-    # Ad = Float(1000.0,
-    #            label="a",
-    #            desc="brittleness coefficient",
-    #            enter_set=True,
-    #            auto_set=False)
-    #
-    # Ad2 = Float(1000.0,
-    #             label="a",
-    #             desc="brittleness coefficient",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # eps_0 = Float(0.0001,
-    #               label="a",
-    #               desc="threshold strain",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    # eps_02 = Float(400.003,
-    #                label="a",
-    #                desc="threshold strain",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    # #-----------------------------------------------
-    # # Normal_Compression constitutive law parameters
-    # #-----------------------------------------------
-    # K_N = Float(40000.,
-    #             label="K_N",
-    #             desc=" Normal isotropic harening",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # gamma_N = Float(30000.,
-    #                 label="gamma_N",
-    #                 desc="Normal kinematic hardening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    # sigma_0 = Float(15.,
-    #                 label="sigma_0",
-    #                 desc="Yielding stress",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    # state_var_shapes = Property(Dict(), depends_on='n_mp')
-    # '''Dictionary of state variable entries with their array shapes.
-    # '''
-
-    #-------------------------------------------------------------------------
-    # Cached elasticity tensors
-    #-------------------------------------------------------------------------
-
-    # E = tr.Float(42e+3,
-    #              label="E",
-    #              desc="Young's Modulus",
-    #              auto_set=False,
-    #              input=True)
-    #
-    # nu = tr.Float(0.2,
-    #               label='nu',
-    #               desc="Poison ratio",
-    #               auto_set=False,
-    #               input=True)
-
-    #     #    PARAMETERS FOR C80 MA
-
-    gamma_T = Float(1000000.,
-                    label="Gamma",
-                    desc=" Tangential Kinematic hardening modulus",
-                    enter_set=True,
-                    auto_set=False)
-
-    K_T = Float(30000.0,
+    K_T = tr.Float(10000.,
                 label="K",
                 desc="Tangential Isotropic harening",
                 enter_set=True,
                 auto_set=False)
 
-    S_T = Float(0.01,
+    S_T = tr.Float(0.005,
                 label="S",
                 desc="Damage strength",
                 enter_set=True,
                 auto_set=False)
 
-    r_T = Float(14.,
+    r_T = tr.Float(9.,
                 label="r",
                 desc="Damage cumulation parameter",
                 enter_set=True,
                 auto_set=False)
+    e_T = tr.Float(12.,
+                label="e",
+                desc="Damage cumulation parameter",
+                enter_set=True,
+                auto_set=False)
 
-    c_T = Float(6.,
+    c_T = tr.Float(4.6,
                 label="c",
                 desc="Damage cumulation parameter",
                 enter_set=True,
                 auto_set=False)
 
-    e_T = Float(14.,
-                label="c",
-                desc="Damage cumulation parameter",
-                enter_set=True,
-                auto_set=False)
-
-    tau_pi_bar = Float(2.0,
+    tau_pi_bar = tr.Float(1.7,
                        label="Tau_bar",
                        desc="Reversibility limit",
                        enter_set=True,
                        auto_set=False)
 
-    a = Float(0.01,
+    a = tr.Float(0.003,
               label="a",
               desc="Lateral pressure coefficient",
               enter_set=True,
               auto_set=False)
 
-    #-------------------------------------------
+    # -------------------------------------------
     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #-------------------------------------------
-    Ad = Float(1000.0,
+    # -------------------------------------------
+    Ad = tr.Float(100.0,
                label="a",
                desc="brittleness coefficient",
                enter_set=True,
                auto_set=False)
 
-    Ad2 = Float(1000.0,
-                label="a",
-                desc="brittleness coefficient",
-                enter_set=True,
-                auto_set=False)
-
-    eps_0 = Float(0.0001,
+    eps_0 = tr.Float(0.00008,
                   label="a",
                   desc="threshold strain",
                   enter_set=True,
                   auto_set=False)
 
-    eps_02 = Float(400.003,
-                   label="a",
-                   desc="threshold strain",
-                   enter_set=True,
-                   auto_set=False)
-
-    #-----------------------------------------------
+    # -----------------------------------------------
     # Normal_Compression constitutive law parameters
-    #-----------------------------------------------
-    K_N = Float(30000.,
+    # -----------------------------------------------
+    K_N = tr.Float(10000.,
                 label="K_N",
                 desc=" Normal isotropic harening",
                 enter_set=True,
                 auto_set=False)
 
-    gamma_N = Float(20000.,
+    gamma_N = tr.Float(5000.,
                     label="gamma_N",
                     desc="Normal kinematic hardening",
                     enter_set=True,
                     auto_set=False)
 
-    sigma_0 = Float(60.,
+    sigma_0 = tr.Float(30.,
                     label="sigma_0",
                     desc="Yielding stress",
                     enter_set=True,
                     auto_set=False)
 
-    state_var_shapes = Property(Dict(), depends_on='n_mp')
-    '''Dictionary of state variable entries with their array shapes.
-    '''
-
-    #-------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Cached elasticity tensors
-    #-------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
-    E = tr.Float(42e+3,
+    E = tr.Float(35e+3,
                  label="E",
                  desc="Young's Modulus",
                  auto_set=False,
@@ -490,1456 +123,207 @@ class MATS2DMplCSDEEQ(MATS2DEval):
                   auto_set=False,
                   input=True)
 
-    #    PARAMETERS FOR C120
+    def __init__(self, concrete_type):
 
-    #     gamma_T = Float(2000000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(2200.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.01,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(7,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(4.,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     e_T = Float(6.,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(1.7,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.01,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(1000.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(1000.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.0001,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #
-    #     eps_02 = Float(400.003,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(8000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(6000.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(140.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     state_var_shapes = Property(Dict(), depends_on='n_mp')
-    #     '''Dictionary of state variable entries with their array shapes.
-    #     '''
-    #
-    #     #-------------------------------------------------------------------------
-    #     # Cached elasticity tensors
-    #     #-------------------------------------------------------------------------
-    #
-    #     E = tr.Float(44e+3,
-    #                  label="E",
-    #                  desc="Young's Modulus",
-    #                  auto_set=False,
-    #                  input=True)
-    #
-    #     nu = tr.Float(0.2,
-    #                   label='nu',
-    #                   desc="Poison ratio",
-    #                   auto_set=False,
-    #                   input=True)
+        self.concrete_type = concrete_type
 
-    #    PARAMETERS FOR C120 MA
+        if concrete_type == 0:      #     # C40 MA
 
-    #     gamma_T = Float(2000000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(2200.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.015,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(17.5,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(8.,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     e_T = Float(10.,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(1.8,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.008,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(1000.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(1000.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.0001,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #
-    #     eps_02 = Float(400.003,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(35000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(25000.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(90.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     state_var_shapes = Property(Dict(), depends_on='n_mp')
-    #     '''Dictionary of state variable entries with their array shapes.
-    #     '''
-    #
-    #     #-------------------------------------------------------------------------
-    #     # Cached elasticity tensors
-    #     #-------------------------------------------------------------------------
-    #
-    #     E = tr.Float(44e+3,
-    #                  label="E",
-    #                  desc="Young's Modulus",
-    #                  auto_set=False,
-    #                  input=True)
-    #
-    #     nu = tr.Float(0.2,
-    #                   label='nu',
-    #                   desc="Poison ratio",
-    #                   auto_set=False,
-    #                   input=True)
+            self.gamma_T = 100000
 
-    # PARAMETERS PARAMETRIC STUDY FIGURE 5 FRAMCOS PAPER
-    # TENSILE
+            self.K_T = 10000.0
 
-    #     gamma_T = Float(80000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(10000.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.000000001,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(1.21,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #     e_T = Float(1.,
-    #                 label="e",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(1.85,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(0.1,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.001,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(1500.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(50.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.00008,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #     eps_02 = Float(1000.0013,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(4000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(20000.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(180.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     state_var_shapes = Property(Dict(), depends_on='n_mp')
-    #     '''Dictionary of state variable entries with their array shapes.
-    #     '''
-    #
-    #     #-------------------------------------------------------------------------
-    #     # Cached elasticity tensors
-    #     #-------------------------------------------------------------------------
-    #
-    #     E = tr.Float(35e+3,
-    #                  label="E",
-    #                  desc="Young's Modulus",
-    #                  auto_set=False,
-    #                  input=True)
-    #
-    #     nu = tr.Float(0.2,
-    #                   label='nu',
-    #                   desc="Poison ratio",
-    #                   auto_set=False,
-    #                   input=True)
+            self.S_T = 0.005
 
-    # COMPRESSION
+            self.r_T = 9.
 
-    #     gamma_T = Float(10000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(10000.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.000007,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(1.2,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #     e_T = Float(1.,
-    #                 label="e",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(1.25,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(5.,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.001,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(1500.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(15.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.00008,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #     eps_02 = Float(8e4,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(10000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(10000.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(30.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     state_var_shapes = Property(Dict(), depends_on='n_mp')
-    #     '''Dictionary of state variable entries with their array shapes.
-    #     '''
-    #
-    #     #-------------------------------------------------------------------------
-    #     # Cached elasticity tensors
-    #     #-------------------------------------------------------------------------
-    #
-    #     E = tr.Float(35e+3,
-    #                  label="E",
-    #                  desc="Young's Modulus",
-    #                  auto_set=False,
-    #                  input=True)
-    #
-    #     nu = tr.Float(0.2,
-    #                   label='nu',
-    #                   desc="Poison ratio",
-    #                   auto_set=False,
-    #                   input=True)
+            self.e_T = 12.
 
-    # BI-AXIAL ENVELOPE
+            self.c_T = 4.6
 
-    #     gamma_T = Float(10000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(10000.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.000007,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(1.2,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #     e_T = Float(1.,
-    #                 label="e",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(1.8,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(5.,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.01,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(50000.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(50.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.00008,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #     eps_02 = Float(1000.0013,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(15000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(20000.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(30.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     state_var_shapes = Property(Dict(), depends_on='n_mp')
-    #     '''Dictionary of state variable entries with their array shapes.
-    #     '''
-    #
-    #     #-------------------------------------------------------------------------
-    #     # Cached elasticity tensors
-    #     #-------------------------------------------------------------------------
-    #
-    #     E = tr.Float(35e+3,
-    #                  label="E",
-    #                  desc="Young's Modulus",
-    #                  auto_set=False,
-    #                  input=True)
-    #
-    #     nu = tr.Float(0.2,
-    #                   label='nu',
-    #                   desc="Poison ratio",
-    #                   auto_set=False,
-    #                   input=True)
+            self.tau_pi_bar = 1.7
 
-    #     gamma_T = Float(1000000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(30000.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.011,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(16.,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(8.,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     e_T = Float(4.,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(2.0,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.01,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(1000.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(1000.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.0001,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #
-    #     eps_02 = Float(400.003,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(40000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(30000.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(15.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     state_var_shapes = Property(Dict(), depends_on='n_mp')
-    #     '''Dictionary of state variable entries with their array shapes.
-    #     '''
-    #
-    #     #-------------------------------------------------------------------------
-    #     # Cached elasticity tensors
-    #     #-------------------------------------------------------------------------
-    #
-    #     E = tr.Float(42e+3,
-    #                  label="E",
-    #                  desc="Young's Modulus",
-    #                  auto_set=False,
-    #                  input=True)
-    #
-    #     nu = tr.Float(0.2,
-    #                   label='nu',
-    #                   desc="Poison ratio",
-    #                   auto_set=False,
-    #                   input=True)
+            self.a = 0.003,
 
-    # ALTERNATIVE C80
+            self.Ad = 100.0
 
-    # gamma_T = Float(20000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(1000.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.01,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(22.,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #     e_T = Float(4.,
-    #                 label="e",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(8,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(5.0,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.005,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(800.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(50.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.00001,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #     eps_02 = Float(1000.0013,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(20000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(20000.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(40.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
+            self.eps_0 = 0.00008
 
-    #     gamma_T = Float(5000000.0,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(500000.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.0015,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(4,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #     e_T = Float(1.,
-    #                 label="e",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(1.25,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(5.,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.01,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(1500.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(15.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.00008,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #     eps_02 = Float(8e4,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(5000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(2000.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(30.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
+            self.K_N = 10000.
 
-    #     # C40 EXPERIMENTS
+            self.gamma_N = 5000.
 
-    # gamma_T = Float(100000.,
-    #                 label="Gamma",
-    #                 desc=" Tangential Kinematic hardening modulus",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    # K_T = Float(10000.0,
-    #             label="K",
-    #             desc="Tangential Isotropic harening",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # S_T = Float(0.005,
-    #             label="S",
-    #             desc="Damage strength",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # r_T = Float(9.,
-    #             label="r",
-    #             desc="Damage cumulation parameter",
-    #             enter_set=True,
-    #             auto_set=False)
-    # e_T = Float(12.,
-    #             label="e",
-    #             desc="Damage cumulation parameter",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # c_T = Float(4.6,
-    #             label="c",
-    #             desc="Damage cumulation parameter",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # tau_pi_bar = Float(1.7,
-    #                    label="Tau_bar",
-    #                    desc="Reversibility limit",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    # a = Float(0.003,
-    #           label="a",
-    #           desc="Lateral pressure coefficient",
-    #           enter_set=True,
-    #           auto_set=False)
-    #
-    # #-------------------------------------------
-    # # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    # #-------------------------------------------
-    # Ad = Float(100.0,
-    #            label="a",
-    #            desc="brittleness coefficient",
-    #            enter_set=True,
-    #            auto_set=False)
-    #
-    # Ad2 = Float(15.0,
-    #             label="a",
-    #             desc="brittleness coefficient",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # eps_0 = Float(0.00008,
-    #               label="a",
-    #               desc="threshold strain",
-    #               enter_set=True,
-    #               auto_set=False)
-    # eps_02 = Float(8e4,
-    #                label="a",
-    #                desc="threshold strain",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    # #-----------------------------------------------
-    # # Normal_Compression constitutive law parameters
-    # #-----------------------------------------------
-    # K_N = Float(10000.,
-    #             label="K_N",
-    #             desc=" Normal isotropic harening",
-    #             enter_set=True,
-    #             auto_set=False)
-    #
-    # gamma_N = Float(5000.,
-    #                 label="gamma_N",
-    #                 desc="Normal kinematic hardening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    # sigma_0 = Float(30.,
-    #                 label="sigma_0",
-    #                 desc="Yielding stress",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    # state_var_shapes = Property(Dict(), depends_on='n_mp')
-    # '''Dictionary of state variable entries with their array shapes.
-    # '''
-    #
-    # #-------------------------------------------------------------------------
-    # # Cached elasticity tensors
-    # #-------------------------------------------------------------------------
-    #
-    # E = tr.Float(35e+3,
-    #              label="E",
-    #              desc="Young's Modulus",
-    #              auto_set=False,
-    #              input=True)
-    #
-    # nu = tr.Float(0.2,
-    #               label='nu',
-    #               desc="Poison ratio",
-    #               auto_set=False,
-    #               input=True)
+            self.sigma_0 = 30.
 
-    # C40 SEQUENCE ORDER EFFECT
+            #-------------------------------------------------------------------------
+            # Cached elasticity tensors
+            #-------------------------------------------------------------------------
 
-    #     gamma_T = Float(8000000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(100000.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.0024,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(6.2,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #     e_T = Float(12.,
-    #                 label="e",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(3.6,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(1.7,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.008,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(100.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     Ad2 = Float(15.0,
-    #                 label="a",
-    #                 desc="brittleness coefficient",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     eps_0 = Float(0.0001,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #     eps_02 = Float(8e4,
-    #                    label="a",
-    #                    desc="threshold strain",
-    #                    enter_set=True,
-    #                    auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(100.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(100.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(50.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     state_var_shapes = Property(Dict(), depends_on='n_mp')
-    #     '''Dictionary of state variable entries with their array shapes.
-    #     '''
-    #
-    #     #-------------------------------------------------------------------------
-    #     # Cached elasticity tensors
-    #     #-------------------------------------------------------------------------
-    #
-    #     E = tr.Float(35e+3,
-    #                  label="E",
-    #                  desc="Young's Modulus",
-    #                  auto_set=False,
-    #                  input=True)
-    #
-    #     nu = tr.Float(0.2,
-    #                   label='nu',
-    #                   desc="Poison ratio",
-    #                   auto_set=False,
-    #                   input=True)
+            self.E = 35e+3
 
-    #---------------------------------------
-    # Tangential constitutive law parameters
-    #     #---------------------------------------
-    #     gamma_T = Float(8000000.,
-    #                     label="Gamma",
-    #                     desc=" Tangential Kinematic hardening modulus",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     K_T = Float(50000.0,
-    #                 label="K",
-    #                 desc="Tangential Isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     S_T = Float(0.01,
-    #                 label="S",
-    #                 desc="Damage strength",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     r_T = Float(3.,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     e_T = Float(4.,
-    #                 label="r",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     c_T = Float(1.,
-    #                 label="c",
-    #                 desc="Damage cumulation parameter",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     tau_pi_bar = Float(1.,
-    #                        label="Tau_bar",
-    #                        desc="Reversibility limit",
-    #                        enter_set=True,
-    #                        auto_set=False)
-    #
-    #     a = Float(0.01,
-    #               label="a",
-    #               desc="Lateral pressure coefficient",
-    #               enter_set=True,
-    #               auto_set=False)
-    #
-    #     #-------------------------------------------
-    #     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-    #     #-------------------------------------------
-    #     Ad = Float(500.0,
-    #                label="a",
-    #                desc="brittleness coefficient",
-    #                enter_set=True,
-    #                auto_set=False)
-    #
-    #     eps_0 = Float(0.00001,
-    #                   label="a",
-    #                   desc="threshold strain",
-    #                   enter_set=True,
-    #                   auto_set=False)
-    #
-    #     #-----------------------------------------------
-    #     # Normal_Compression constitutive law parameters
-    #     #-----------------------------------------------
-    #     K_N = Float(1000.,
-    #                 label="K_N",
-    #                 desc=" Normal isotropic harening",
-    #                 enter_set=True,
-    #                 auto_set=False)
-    #
-    #     gamma_N = Float(100.,
-    #                     label="gamma_N",
-    #                     desc="Normal kinematic hardening",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     sigma_0 = Float(35.,
-    #                     label="sigma_0",
-    #                     desc="Yielding stress",
-    #                     enter_set=True,
-    #                     auto_set=False)
-    #
-    #     state_var_shapes = Property(Dict(), depends_on='n_mp')
-    #     '''Dictionary of state variable entries with their array shapes.
-    #     '''
-    #
-    #     #-------------------------------------------------------------------------
-    #     # Cached elasticity tensors
-    #     #-------------------------------------------------------------------------
-    #
-    #     E = tr.Float(35e+3,
-    #                  label="E",
-    #                  desc="Young's Modulus",
-    #                  auto_set=False,
-    #                  input=True)
-    #
-    #     nu = tr.Float(0.2,
-    #                   label='nu',
-    #                   desc="Poison ratio",
-    #                   auto_set=False,
-    #                   input=True)
+            self.nu = 0.2
 
-    ###############
-#     gamma_T = Float(10000.,
-#                     label="Gamma",
-#                     desc=" Tangential Kinematic hardening modulus",
-#                     enter_set=True,
-#                     auto_set=False)
-#
-#     K_T = Float(0000.0,
-#                 label="K",
-#                 desc="Tangential Isotropic harening",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     S_T = Float(0.05,
-#                 label="S",
-#                 desc="Damage strength",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     r_T = Float(1.,
-#                 label="r",
-#                 desc="Damage cumulation parameter",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     e_T = Float(10.,
-#                 label="r",
-#                 desc="Damage cumulation parameter",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     c_T = Float(1.,
-#                 label="c",
-#                 desc="Damage cumulation parameter",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     tau_pi_bar = Float(.5,
-#                        label="Tau_bar",
-#                        desc="Reversibility limit",
-#                        enter_set=True,
-#                        auto_set=False)
-#
-#     a = Float(0.015,
-#               label="a",
-#               desc="Lateral pressure coefficient",
-#               enter_set=True,
-#               auto_set=False)
-#
-#     #-------------------------------------------
-#     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-#     #-------------------------------------------
-#     Ad = Float(500.0,
-#                label="a",
-#                desc="brittleness coefficient",
-#                enter_set=True,
-#                auto_set=False)
-#
-#     eps_0 = Float(0.00001,
-#                   label="a",
-#                   desc="threshold strain",
-#                   enter_set=True,
-#                   auto_set=False)
-#
-#     #-----------------------------------------------
-#     # Normal_Compression constitutive law parameters
-#     #-----------------------------------------------
-#     K_N = Float(100.,
-#                 label="K_N",
-#                 desc=" Normal isotropic harening",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     gamma_N = Float(100.,
-#                     label="gamma_N",
-#                     desc="Normal kinematic hardening",
-#                     enter_set=True,
-#                     auto_set=False)
-#
-#     sigma_0 = Float(10000.,
-#                     label="sigma_0",
-#                     desc="Yielding stress",
-#                     enter_set=True,
-#                     auto_set=False)
-#
-#     state_var_shapes = Property(Dict(), depends_on='n_mp')
-#     '''Dictionary of state variable entries with their array shapes.
-#     '''
-#
-#     #-------------------------------------------------------------------------
-#     # Cached elasticity tensors
-#     #-------------------------------------------------------------------------
-#
-#     E = tr.Float(35e+3,
-#                  label="E",
-#                  desc="Young's Modulus",
-#                  auto_set=False,
-#                  input=True)
-#
-#     nu = tr.Float(0.2,
-#                   label='nu',
-#                   desc="Poison ratio",
-#                   auto_set=False,
-#                   input=True)
+        if concrete_type == 1:      #     #   C80 MA
 
-#     gamma_T = Float(1000000.,
-#                     label="Gamma",
-#                     desc=" Tangential Kinematic hardening modulus",
-#                     enter_set=True,
-#                     auto_set=False)
-#
-#     K_T = Float(30000.0,
-#                 label="K",
-#                 desc="Tangential Isotropic harening",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     S_T = Float(0.01,
-#                 label="S",
-#                 desc="Damage strength",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     r_T = Float(14.,
-#                 label="r",
-#                 desc="Damage cumulation parameter",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     c_T = Float(6.,
-#                 label="c",
-#                 desc="Damage cumulation parameter",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     e_T = Float(14.,
-#                 label="c",
-#                 desc="Damage cumulation parameter",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     tau_pi_bar = Float(2.0,
-#                        label="Tau_bar",
-#                        desc="Reversibility limit",
-#                        enter_set=True,
-#                        auto_set=False)
-#
-#     a = Float(0.01,
-#               label="a",
-#               desc="Lateral pressure coefficient",
-#               enter_set=True,
-#               auto_set=False)
-#
-#     #-------------------------------------------
-#     # Normal_Tension constitutive law parameters (without cumulative normal strain)
-#     #-------------------------------------------
-#     Ad = Float(1000.0,
-#                label="a",
-#                desc="brittleness coefficient",
-#                enter_set=True,
-#                auto_set=False)
-#
-#     Ad2 = Float(1000.0,
-#                 label="a",
-#                 desc="brittleness coefficient",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     eps_0 = Float(0.0001,
-#                   label="a",
-#                   desc="threshold strain",
-#                   enter_set=True,
-#                   auto_set=False)
-#
-#     eps_02 = Float(400.003,
-#                    label="a",
-#                    desc="threshold strain",
-#                    enter_set=True,
-#                    auto_set=False)
-#
-#     #-----------------------------------------------
-#     # Normal_Compression constitutive law parameters
-#     #-----------------------------------------------
-#     K_N = Float(30000.,
-#                 label="K_N",
-#                 desc=" Normal isotropic harening",
-#                 enter_set=True,
-#                 auto_set=False)
-#
-#     gamma_N = Float(20000.,
-#                     label="gamma_N",
-#                     desc="Normal kinematic hardening",
-#                     enter_set=True,
-#                     auto_set=False)
-#
-#     sigma_0 = Float(60.,
-#                     label="sigma_0",
-#                     desc="Yielding stress",
-#                     enter_set=True,
-#                     auto_set=False)
-#
-#     state_var_shapes = Property(Dict(), depends_on='n_mp')
-#     '''Dictionary of state variable entries with their array shapes.
-#     '''
-#
-#     #-------------------------------------------------------------------------
-#     # Cached elasticity tensors
-#     #-------------------------------------------------------------------------
-#
-#     E = tr.Float(42e+3,
-#                  label="E",
-#                  desc="Young's Modulus",
-#                  auto_set=False,
-#                  input=True)
-#
-#     nu = tr.Float(0.2,
-#                   label='nu',
-#                   desc="Poison ratio",
-#                   auto_set=False,
-#                   input=True)
+            self.gamma_T = 1000000.
+
+            self.K_T = 30000.0
+
+            self.S_T = 0.01
+
+            self.r_T = 14.
+
+            self.c_T = 6.
+
+            self.e_T = 14.
+
+            self.tau_pi_bar = 2.0
+
+            self.a = 0.01
+
+            self.Ad = 1000.0
+
+            self.eps_0 = 0.0001
+
+            self.K_N = 30000.
+
+            self.gamma_N = 20000.
+
+            self.sigma_0 = 60.
+
+            self.E = 42e+3
+
+            self.nu = 0.2
+
+        if concrete_type == 2:      #    PARAMETERS FOR C120 MA
+
+            self.gamma_T = 2000000.
+
+            self.K_T = 2200.0
+
+            self.S_T = 0.015
+
+            self.r_T = 17.5
+
+            self.c_T = 8.
+
+            self.e_T = 10.
+
+            self.tau_pi_bar = 1.8
+
+            self.a = 0.008
+
+            self.Ad = 1000.0
+
+            self.eps_0 = 0.0001
+
+            self.K_N = 35000.
+
+            self.gamma_N = 25000.
+
+            self.sigma_0 = 90.
+
+            self.E = 44e+3
+
+            self.nu = 0.2
+
+        if concrete_type == 3:      # TENSILE PARAMETRIC STUDY
+
+            self.gamma_T = 80000.
+
+            self.K_T = 10000.0
+
+            self.S_T = 0.000000001
+
+            self.r_T = 1.21
+
+            self.e_T = 1.
+
+            self.c_T = 1.85
+
+            self.tau_pi_bar = 0.1
+
+            self.a = 0.001
+
+            self.Ad = 1500.0
+
+            self.eps_0 = 0.00008
+
+            self.K_N = 4000.
+
+            self.gamma_N = 20000.
+
+            self.sigma_0 = 180.
+
+            self.E = 35e+3
+
+            self.nu = 0.2
+
+        # COMPRESSION
+        if concrete_type == 4:
+
+            self.gamma_T = 10000.
+
+            self.K_T = 10000.0
+
+            self.S_T = 0.000007
+
+            self.r_T = 1.2
+
+            self.e_T = 1.
+
+            self.c_T = 1.25
+
+            self.tau_pi_bar = 5.
+
+            self.a = 0.001
+
+            self.Ad = 1500.0
+
+            self.eps_0 = 0.00008
+
+            self.K_N = 10000.
+
+            self.gamma_N = 10000.
+
+            self.sigma_0 = 30.
+
+            self.E = 35e+3
+
+            self.nu = 0.2
+
+        # BI-AXIAL ENVELOPE
+        if concrete_type == 5:
+
+            self.gamma_T = 10000.
+
+            self.K_T = 10000.0
+
+            self.S_T = 0.000007
+
+            self.r_T = 1.2
+
+            self.e_T = 1.
+
+            self.c_T = 1.8
+
+            self.tau_pi_bar = 5.
+
+            self.a = 0.01
+
+            self.Ad = 50000.0
+
+            self.eps_0 = 0.00008
+
+            self.K_N = 15000.
+
+            self.gamma_N = 20000.
+
+            self.sigma_0 = 30.
+
+            self.E = 35e+3
+
+            self.nu = 0.2
 
     def _get_lame_params(self):
         la = self.E * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
