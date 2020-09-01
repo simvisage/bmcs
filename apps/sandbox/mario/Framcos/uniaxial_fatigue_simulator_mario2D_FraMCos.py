@@ -110,9 +110,7 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1, n_mp, loading_scenario):
 
         else:
             print('no convergence')
-
             break
-
 
         # Update states variables after convergence
         int_var = m._get_state_variables(eps_ab, int_var, eps_aux)
@@ -257,9 +255,8 @@ path = os.path.join(
 load_options = [-60.54301292467442, -91.69221808121128, -119.33166543189739]
 
 load = load_options[concrete_type]
-# load = -85.0521424220676
-# LOADING SCENARIOS
 
+# LOADING SCENARIOS
 
 first_load = np.concatenate((np.linspace(0, load * S_max1, t_steps_cycle), np.linspace(
     load * S_max1, load * S_min1, t_steps_cycle)[1:]))
