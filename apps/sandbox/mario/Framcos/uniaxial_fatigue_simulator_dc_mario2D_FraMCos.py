@@ -253,7 +253,7 @@ if not os.path.exists('Data Processing'):
     os.makedirs('Data Processing')
 
 path = os.path.join(
-   home_dir, 'Data Processing/' + Concrete_Type_string[concrete_type] + loading_scenario + '.hdf5')
+   home_dir, 'Data Processing/' + 'dc' + Concrete_Type_string[concrete_type] + loading_scenario + '.hdf5')
 
 m = MATS2DMplCSDEEQ(concrete_type)
 plot = Micro2Dplot()

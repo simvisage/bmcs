@@ -486,7 +486,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
     @cached_property
     def _get__MPTT(self):
-        delta = np.identity(2)
+        delta = np.identity(3)
         MPTT_nijr = 0.5 * (
                 np.einsum('ni,jr -> nijr', self._MPN, delta) +
                 np.einsum('nj,ir -> njir', self._MPN, delta) - 2 *
@@ -520,8 +520,8 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
         omega_T_Emn = int_var[:, 9]
         z_T_Emn = int_var[:, 10]
-        alpha_T_Emna = int_var[:, 11:13]
-        eps_T_pi_Emna = int_var[:, 13:15]
+        alpha_T_Emna = int_var[:, 11:14]
+        eps_T_pi_Emna = int_var[:, 14:17]
 
         omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z_n, X_n, Y_n = self.get_normal_law(
             e_N_arr, omega_N_Emn, z_N_Emn,
@@ -575,7 +575,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Z_T, X_T, Y_T = self.get_tangential_law(
             eps_T_Emna, omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
-        delta = np.identity(2)
+        delta = np.identity(3)
         beta_N = np.sqrt(1. - omega_N_Emn)
         beta_T = np.sqrt(1. - omega_T_Emn)
 
@@ -612,7 +612,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_T_Emna, Z_T, X_T, Y_T = self.get_tangential_law(
             eps_T_Emna, omega_T_Emn, z_T_Emn, alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn)
 
-        delta = np.identity(2)
+        delta = np.identity(3)
 
         # 2-nd order plastic (inelastic) tensor
         eps_p_Emab = (
@@ -643,6 +643,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         # Damage tensor (4th order) using product- or sum-type symmetrization:
         # ------------------------------------------------------------------
 
+
         eps_N_Emn = self._get_e_N_Emn_2(eps_Emab)
         eps_T_Emna = self._get_e_T_Emnar_2(eps_Emab)
 
@@ -667,8 +668,12 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         # Damaged stiffness tensor calculated based on the damage tensor beta4:
         # ------------------------------------------------------------------
 
+
+
         D_Emabcd = np.einsum(
             '...ijab, abef, ...cdef->...ijcd', beta_Emabcd, self.D_abef, beta_Emabcd)
+
+
 
         # ----------------------------------------------------------------------
         # Return stresses (corrector) and damaged secant stiffness matrix (predictor)
@@ -681,6 +686,8 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
         # elastic strain tensor
         eps_e_Emab = eps_Emab - eps_p_Emab
+
+
 
         # calculation of the stress tensor
         sig_Emab = np.einsum('...abcd,...cd->...ab', D_Emabcd, eps_e_Emab)
