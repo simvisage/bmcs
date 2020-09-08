@@ -362,8 +362,10 @@ class MATS2DMplCSDEEQ(MATS2DEval):
             self.nu = 0.2
 
     def _get_lame_params(self):
-        la = self.E * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
-        # second Lame parameter (shear modulus)
+        # la = self.E * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
+        # # second Lame parameter (shear modulus)
+        # mu = self.E / (2. + 2. * self.nu)
+        la= self.E * self.nu / ((1. + self.nu) * (1. - self.nu))
         mu = self.E / (2. + 2. * self.nu)
         return la, mu
 
@@ -377,7 +379,6 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         D_abef = (np.einsum(',ij,kl->ijkl', la, delta, delta) +
                   np.einsum(',ik,jl->ijkl', mu, delta, delta) +
                   np.einsum(',il,jk->ijkl', mu, delta, delta))
-
         return D_abef
 
     @cached_property
@@ -403,7 +404,10 @@ class MATS2DMplCSDEEQ(MATS2DEval):
 
         eps_N_Aux = self._get_e_N_Emn_2(eps_aux)
 
-        E_N = self.E / (1.0 - 2.0 * self.nu)
+        # E_N = self.E / (1.0 - 2.0 * self.nu)
+
+        E_N = self.E * (1.0 + 2.0 *  self.nu) / (1.0 - self.nu**2)
+
 
         # When deciding if a microplane is in tensile or compression, we define a strain boundary such that that
         # sigmaN <= 0 if eps_N < 0, avoiding entering in the quadrant of compressive strains and traction
@@ -472,10 +476,13 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     def get_tangential_law(self, eps_T_Emna, omega_T_Emn, z_T_Emn,
                            alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
 
-        E_T = self.E / (1.0 + self.nu)
+        # E_T = self.E / (1.0 + self.nu)
 
         # E_T = self.E * (1.0 - 4 * self.nu) / \
         #     ((1.0 + self.nu) * (1.0 - 2 * self.nu))
+
+        E_T = self.E * (1.0 - 3.0 *  self.nu) / (1.0 - self.nu**2)
+
 
         # thermo forces
 

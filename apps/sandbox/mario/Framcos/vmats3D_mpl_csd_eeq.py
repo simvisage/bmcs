@@ -127,31 +127,31 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
         if concrete_type == 0:  # # C40 MA
 
-            self.gamma_T = 70000
+            self.gamma_T = 60000
 
-            self.K_T = 7000.0
+            self.K_T = 8000.0
 
-            self.S_T = 0.002
+            self.S_T = 0.003
 
-            self.r_T = 7.
+            self.r_T = 9.
 
             self.e_T = 12.
 
-            self.c_T = 5.2
+            self.c_T = 8.6
 
-            self.tau_pi_bar = 1.4
+            self.tau_pi_bar = 1.7
 
             self.a = 0.003
 
-            self.Ad = 100.0
+            self.Ad = 150.0
 
-            self.eps_0 = 0.00000000000008
+            self.eps_0 = 0.0000000000000000000001
 
-            self.K_N = 10000.
+            self.K_N = 8000.
 
-            self.gamma_N = 30000.
+            self.gamma_N = 4000.
 
-            self.sigma_0 = 20.
+            self.sigma_0 = 40.
 
             # -------------------------------------------------------------------------
             # Cached elasticity tensors
@@ -369,7 +369,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         Y_N = 0.5 * H * E_N * (eps_N_Emn - eps_N_p_Emn) ** 2.0
         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
 
-        f = (Y_N - (Y_0 +R_N(r_N_Emn)))
+        f = (Y_N - (Y_0 + R_N(r_N_Emn)))
 
         # threshold damage
 

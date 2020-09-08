@@ -123,7 +123,6 @@ class Micro2Dplot():
 
         plt.subplot(121)
 
-
         plt.plot(A, omega_N_Emn[::2, 90],'b')
         plt.plot(A, omega_N_Emn[::2, 85],'g')
         plt.plot(A, omega_N_Emn[::2 ,75],'r')
@@ -152,6 +151,59 @@ class Micro2Dplot():
         plt.plot(A, omega_T_Emn[::2, 15], 'g', linewidth=4)
         plt.plot(A, omega_T_Emn[::2, 5], 'r', linewidth=4)
         plt.plot(A, omega_T_Emn[::2, 0], 'c', linewidth=4)
+
+        plt.title(r'$ \omega_T$')
+        plt.show()
+
+        plt.figure(figsize=(9, 3))
+
+        plt.subplot(121)
+
+        for i in range(90):
+            plt.plot(A, omega_N_Emn[::2, i])
+        plt.title(r'$ \omega_N$')
+
+        plt.subplot(122)
+
+        for i in range(90):
+            plt.plot(A, omega_T_Emn[::2, i])
+
+        plt.title(r'$ \omega_T$')
+        plt.show()
+
+        B = np.array(range(90))
+        B = B[::5]
+
+        plt.figure(figsize=(9, 3))
+
+        plt.subplot(121)
+
+        for i in B:
+            plt.plot(A, omega_N_Emn[::2, i])
+        plt.title(r'$ \omega_N$')
+
+        plt.subplot(122)
+
+        for i in B:
+            plt.plot(A, omega_T_Emn[::2, i])
+
+        plt.title(r'$ \omega_T$')
+        plt.show()
+
+        C=np.argmax(omega_N_Emn[2::2,0:91], axis=1)
+        D=np.argmax(omega_T_Emn[2::2,0:91], axis=1)
+
+
+        plt.figure(figsize=(9, 3))
+
+        plt.subplot(121)
+
+        plt.plot(np.arange(len(C)), C)
+        plt.title(r'$ \omega_N$')
+
+        plt.subplot(122)
+
+        plt.plot(np.arange(len(D)), D)
 
         plt.title(r'$ \omega_T$')
         plt.show()

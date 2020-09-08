@@ -227,7 +227,7 @@ M_plot = 1  # Plot microplanes polar graphs. 1: yes, 0: no
 t_steps_cycle = 20
 n_mp = 360
 
-S_max1 = 0.90          # maximum loading level
+S_max1 = 0.95          # maximum loading level
 S_min1 = 0.2           # minimum loading level
 n_cycles1 = 1000         # number of applied cycles
 

@@ -227,7 +227,7 @@ concrete_type= 0        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5
 
 Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Biaxial']
 
-loading_scenario = 'monotonic'   # monotonic, cyclic
+loading_scenario = 'cyclic'   # monotonic, cyclic
 
 M_plot = 0  # Plot microplanes polar graphs. 1: yes, 0: no
 
@@ -288,8 +288,9 @@ font = {'family': 'DejaVu Sans',
 
 matplotlib.rc('font', **font)
 
+print(np.max(np.abs(F[:, 0])), 'fc')
 
-f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
+f, (ax2) = plt.subplots(1, 1, figsize=(15, 12))
 
 ax2.plot(np.abs(U[:, 0]), np.abs(F[:, 0]), 'k', linewidth=3.5)
 ax2.set_xlabel(r'$|\varepsilon_{11}$| [-]', fontsize=25)
@@ -297,14 +298,12 @@ ax2.set_ylabel(r'$|\sigma{11}$| [-]', fontsize=25)
 
 print(np.max(np.abs(F[:, 0])), 'fc')
 
-plt.show()
-
 eps_T_pi_Emn = np.sqrt(np.einsum('...i,...i->... ', eps_T_pi_Emna, eps_T_pi_Emna))
 sigma_T_Emn = np.sqrt(np.einsum('...i,...i->... ', sigma_T_Emna, sigma_T_Emna))
 X_T_pi_Emn = np.sqrt(np.einsum('...i,...i->... ', X_T_pi_Emna, X_T_pi_Emna))
 alpha_T_Emn = np.sqrt(np.einsum('...i,...i->... ', alpha_T_Emna, alpha_T_Emna))
 
-plt.figure(figsize=(9, 3))
+plt.figure(figsize=(27, 12))
 
 plt.subplot(241)
 for i in range(n_mp):
@@ -347,6 +346,3 @@ for i in range(n_mp):
 plt.title(r'$X_T$')
 
 plt.show()
-
-
-#plot.get_3Dviz(S[:, :, 0], S[:, :, 8])

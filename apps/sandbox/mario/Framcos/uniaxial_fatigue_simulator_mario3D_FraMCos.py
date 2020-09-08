@@ -260,7 +260,7 @@ path = os.path.join(
 
 # FINAL LOADINGS
 
-load_options = [-59.80362594951494, -114.30945841277135, -119.33166543189739]
+load_options = [-60.66, -114.30945841277135, -119.33166543189739]
 
 load = load_options[concrete_type]
 
