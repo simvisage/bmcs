@@ -77,8 +77,8 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1, n_mp, loading_scenario):
 
     # Load increment loop
     while t_n1 <= t_max - 1:
-        F_ext[0] = F[t_n1]
-        F_ext[1] = 0. * F[t_n1]
+        F_ext[1] = F[t_n1]
+        F_ext[0] = 0. * F[t_n1]
 
         k = 0
         # Equilibrium iteration loop
@@ -216,20 +216,20 @@ def get_int_var(path, size, n_mp):  # unpacks saved data
            Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn
 
 
-concrete_type= 1        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
+concrete_type= 6        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial, 6: Paper 2D redistribution
 
-Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Biaxial']
+Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Biaxial', 'Paper_2D']
 
 loading_scenario = 'constant'   # constant, order, increasing
 
 M_plot = 1  # Plot microplanes polar graphs. 1: yes, 0: no
 
 t_steps_cycle = 20
-n_mp = 100
+n_mp = 360
 
-S_max1 = 0.95           # maximum loading level
-S_min1 = 0.05           # minimum loading level
-n_cycles1 = 100         # number of applied cycles
+S_max1 = 0.90          # maximum loading level
+S_min1 = 0.2           # minimum loading level
+n_cycles1 = 1000         # number of applied cycles
 
 # For sequence order effect
 
@@ -252,7 +252,7 @@ path = os.path.join(
 
 # FINAL LOADINGS
 
-load_options = [-60.54301292467442, -91.69221808121128, -119.33166543189739]
+load_options = [-60.54301292467442, -91.69221808121128, -119.33166543189739, 0, 0 , 0, -97.38726895936968]
 
 load = load_options[concrete_type]
 

@@ -229,7 +229,7 @@ Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Bi
 
 loading_scenario = 'monotonic'   # monotonic, cyclic
 
-M_plot = 1  # Plot microplanes polar graphs. 1: yes, 0: no
+M_plot = 0  # Plot microplanes polar graphs. 1: yes, 0: no
 
 t_steps = 100
 n_mp = 28
@@ -242,7 +242,7 @@ if loading_scenario == 'monotonic':
 
 if loading_scenario == 'cyclic':
 
-    eps = [-0.002785, -0.000225050506, -0.0055, -0.0025, -0.0065, -0.003, -0.0085, -0.004, -0.01]
+    eps = [-0.002745, -0.001, -0.0047, -0.002, -0.0065, -0.0025, -0.0085, -0.0035, -0.01]
 
     load1 = np.linspace(0, eps[0], t_steps)
     load2 = np.linspace(load1[-1], eps[1], t_steps)
@@ -298,5 +298,55 @@ ax2.set_ylabel(r'$|\sigma{11}$| [-]', fontsize=25)
 print(np.max(np.abs(F[:, 0])), 'fc')
 
 plt.show()
+
+eps_T_pi_Emn = np.sqrt(np.einsum('...i,...i->... ', eps_T_pi_Emna, eps_T_pi_Emna))
+sigma_T_Emn = np.sqrt(np.einsum('...i,...i->... ', sigma_T_Emna, sigma_T_Emna))
+X_T_pi_Emn = np.sqrt(np.einsum('...i,...i->... ', X_T_pi_Emna, X_T_pi_Emna))
+alpha_T_Emn = np.sqrt(np.einsum('...i,...i->... ', alpha_T_Emna, alpha_T_Emna))
+
+plt.figure(figsize=(9, 3))
+
+plt.subplot(241)
+for i in range(n_mp):
+    plt.plot(np.abs(U[:, 0]), omega_N_Emn[:, i])
+plt.title(r'$\omega_N$')
+
+plt.subplot(242)
+for i in range(n_mp):
+    plt.plot(np.abs(U[:, 0]), eps_N_p_Emn[:, i])
+plt.title(r'$\varepsilon^p_N$')
+
+plt.subplot(243)
+for i in range(n_mp):
+    plt.plot(np.abs(U[:, 0]), Z_N_Emn[:, i])
+plt.title(r'$Z_N$')
+
+plt.subplot(244)
+for i in range(n_mp):
+    plt.plot(np.abs(U[:, 0]), X_N_Emn[:, i])
+plt.title(r'$X_N$')
+
+plt.subplot(245)
+for i in range(n_mp):
+    plt.plot(np.abs(U[:, 0]), omega_T_Emn[:, i])
+plt.title(r'$\omega_T$')
+
+plt.subplot(246)
+for i in range(n_mp):
+    plt.plot(np.abs(U[:, 0]), eps_T_pi_Emn[:, i])
+plt.title(r'$\varepsilon^p_T$')
+
+plt.subplot(247)
+for i in range(n_mp):
+    plt.plot(np.abs(U[:, 0]), Z_T_pi_Emn[:, i])
+plt.title(r'$Z_T$')
+
+plt.subplot(248)
+for i in range(n_mp):
+    plt.plot(np.abs(U[:, 0]), X_T_pi_Emn[:, i])
+plt.title(r'$X_T$')
+
+plt.show()
+
 
 #plot.get_3Dviz(S[:, :, 0], S[:, :, 8])

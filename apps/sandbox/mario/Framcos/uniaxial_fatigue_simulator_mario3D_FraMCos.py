@@ -224,7 +224,7 @@ def get_int_var(path, size, n_mp):  # unpacks saved data
            Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn
 
 
-concrete_type= 1        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
+concrete_type= 0        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
 
 Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Biaxial']
 
@@ -232,12 +232,12 @@ loading_scenario = 'constant'   # constant, order, increasing
 
 M_plot = 1  # Plot microplanes polar graphs. 1: yes, 0: no
 
-t_steps_cycle = 20
+t_steps_cycle = 200
 n_mp = 28
 
-S_max1 = 0.5           # maximum loading level
+S_max1 = 0.80          # maximum loading level
 S_min1 = 0.05           # minimum loading level
-n_cycles1 = 100000         # number of applied cycles
+n_cycles1 = 1000        # number of applied cycles
 
 # For sequence order effect
 
@@ -260,7 +260,7 @@ path = os.path.join(
 
 # FINAL LOADINGS
 
-load_options = [-60.54301292467442, -114.30945841277135, -119.33166543189739]
+load_options = [-59.80362594951494, -114.30945841277135, -119.33166543189739]
 
 load = load_options[concrete_type]
 

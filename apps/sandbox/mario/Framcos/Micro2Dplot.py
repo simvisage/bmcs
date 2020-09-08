@@ -25,6 +25,7 @@ class Micro2Dplot():
 
         matplotlib.rc('font', **font)
         A = np.array(range(len(eps_N_p_Emn)))
+        A= A[::2]
 
         plt.figure(figsize=(9, 3))
         plt.subplot(241, projection='polar')
@@ -116,4 +117,41 @@ class Micro2Dplot():
             plt.plot(rads, Disip_kin_T_Emn[i, :], 'r')
         plt.title(r'$D kin T$')
 
+        plt.show()
+
+        plt.figure(figsize=(9, 3))
+
+        plt.subplot(121)
+
+
+        plt.plot(A, omega_N_Emn[::2, 90],'b')
+        plt.plot(A, omega_N_Emn[::2, 85],'g')
+        plt.plot(A, omega_N_Emn[::2 ,75],'r')
+        plt.plot(A, omega_N_Emn[::2 ,65],'c')
+        plt.plot(A, omega_N_Emn[::2 ,55],'m')
+        plt.plot(A, omega_N_Emn[::2 ,45],'y')
+        plt.plot(A, omega_N_Emn[::2 ,35],'k')
+        plt.plot(A, omega_N_Emn[::2 ,25],'b', linewidth=4)
+        plt.plot(A, omega_N_Emn[::2 ,15],'g', linewidth=4)
+        plt.plot(A, omega_N_Emn[::2 ,5],'r', linewidth=4)
+        plt.plot(A, omega_N_Emn[::2 ,0],'c', linewidth=4)
+
+
+        plt.title(r'$ \omega_N$')
+
+        plt.subplot(122)
+
+        plt.plot(A, omega_T_Emn[::2, 90], 'b')
+        plt.plot(A, omega_T_Emn[::2, 85], 'g')
+        plt.plot(A, omega_T_Emn[::2, 75], 'r')
+        plt.plot(A, omega_T_Emn[::2, 65], 'c')
+        plt.plot(A, omega_T_Emn[::2, 55], 'm')
+        plt.plot(A, omega_T_Emn[::2, 45], 'y')
+        plt.plot(A, omega_T_Emn[::2, 35], 'k')
+        plt.plot(A, omega_T_Emn[::2, 25], 'b', linewidth=4)
+        plt.plot(A, omega_T_Emn[::2, 15], 'g', linewidth=4)
+        plt.plot(A, omega_T_Emn[::2, 5], 'r', linewidth=4)
+        plt.plot(A, omega_T_Emn[::2, 0], 'c', linewidth=4)
+
+        plt.title(r'$ \omega_T$')
         plt.show()

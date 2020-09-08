@@ -325,6 +325,42 @@ class MATS2DMplCSDEEQ(MATS2DEval):
 
             self.nu = 0.2
 
+        if concrete_type == 6:  # # Paper 2D resdistribution
+
+            self.gamma_T = 800000.
+
+            self.K_T = 50000.0
+
+            self.S_T = 0.029
+
+            self.r_T = 13.
+
+            self.e_T = 11.
+
+            self.c_T = 8
+
+            self.tau_pi_bar = 2.
+
+            self.a = 0.012
+
+            self.Ad = 1000.0
+
+            self.eps_0 = 0.0001
+
+            self.K_N = 80000.
+
+            self.gamma_N = 100000.
+
+            self.sigma_0 = 80.
+
+            # -------------------------------------------------------------------------
+            # Cached elasticity tensors
+            # -------------------------------------------------------------------------
+
+            self.E = 42e+3
+
+            self.nu = 0.2
+
     def _get_lame_params(self):
         la = self.E * self.nu / ((1. + self.nu) * (1. - 2. * self.nu))
         # second Lame parameter (shear modulus)
@@ -375,8 +411,8 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         sigma_trial = E_N * (eps_N_Emn - eps_N_p_Emn)
         pos1 = [(eps_N_Emn < -1e-6) & (sigma_trial > 1e-6)] # looking for microplanes violating strain boundary
         sigma_trial [pos1[0]] = 0
-        pos = sigma_trial > 1e-6                            # microplanes under traction
-        pos2 = sigma_trial < -1e-6                          # microplanes under compression
+        pos = eps_N_Emn > 1e-6                            # microplanes under traction
+        pos2 = eps_N_Emn < -1e-6                          # microplanes under compression
         H = 1.0 * pos
         H2 = 1.0 * pos2
 
@@ -402,12 +438,12 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         alpha_N_Emn = alpha_N_Emn + delta_lamda * \
             np.sign(sigma_N_Emn_tilde - X)
 
-        def Z_N(r_N_Emn): return (1.0 / self.Ad) * (-r_N_Emn / (1.0 + r_N_Emn))
+        def R_N(r_N_Emn): return (1.0 / self.Ad) * (-r_N_Emn / (1.0 + r_N_Emn))
 
         Y_N = 0.5 * H * E_N * (eps_N_Emn - eps_N_p_Emn) ** 2.0
         Y_0 = 0.5 * E_N * self.eps_0 ** 2.0
 
-        f = (Y_N - (Y_0 + Z_N(z_N_Emn)))
+        f = (Y_N - (Y_0 + R_N(r_N_Emn)))
 
         # threshold damage
 
@@ -426,10 +462,6 @@ class MATS2DMplCSDEEQ(MATS2DEval):
         Z = self.K_N * z_N_Emn
         X = self.gamma_N * alpha_N_Emn * H2
 
-        # pos2 = sigma_N_Emn * (eps_N_Emn - eps_N_Aux) > -1e-6
-        # H2 = 1.0 * pos2
-        # sigma_N_Emn = (1.0 - H * w_N_Emn) * E_N * (eps_N_Emn) * H2
-
         return omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z, X, Y_N
 
 
@@ -440,9 +472,10 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     def get_tangential_law(self, eps_T_Emna, omega_T_Emn, z_T_Emn,
                            alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
 
+        E_T = self.E / (1.0 + self.nu)
 
-        E_T = self.E * (1.0 - 4 * self.nu) / \
-            ((1.0 + self.nu) * (1.0 - 2 * self.nu))
+        # E_T = self.E * (1.0 - 4 * self.nu) / \
+        #     ((1.0 + self.nu) * (1.0 - 2 * self.nu))
 
         # thermo forces
 
@@ -736,7 +769,7 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     #-----------------------------------------------
     # number of microplanes
     #-----------------------------------------------
-    n_mp = Constant(100)
+    n_mp = Constant(360)
 
     #-----------------------------------------------
     # get the normal vectors of the microplanes
