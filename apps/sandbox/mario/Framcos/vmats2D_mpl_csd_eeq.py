@@ -800,6 +800,6 @@ class MATS2DMplCSDEEQ(MATS2DEval):
 
     @cached_property
     def _get__MPW(self):
-        MPW = np.ones(self.n_mp) / self.n_mp * 2
+        MPW = np.ones(self.n_mp) / self.n_mp
 
         return MPW

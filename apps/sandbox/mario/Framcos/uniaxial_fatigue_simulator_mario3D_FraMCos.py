@@ -232,19 +232,19 @@ loading_scenario = 'constant'   # constant, order, increasing
 
 M_plot = 1  # Plot microplanes polar graphs. 1: yes, 0: no
 
-t_steps_cycle = 200
+t_steps_cycle = 100
 n_mp = 28
 
-S_max1 = 0.80          # maximum loading level
+S_max1 = 0.9          # maximum loading level
 S_min1 = 0.05           # minimum loading level
-n_cycles1 = 1000        # number of applied cycles
+n_cycles1 = 10000        # number of applied cycles
 
 # For sequence order effect
 
 eta1 = 0.15             # fatigue life fraction first level
 cycles1 = 20           # fatigue life first level
 
-S_max2 = 0.9            # maximum loading level second level
+S_max2 = 0.85            # maximum loading level second level
 cycles2 = 221         # fatigue life second level
 n_cycles2 = np.int(1e3 - np.floor(eta1*cycles1)) # number of applied cycles second level
 
@@ -260,7 +260,7 @@ path = os.path.join(
 
 # FINAL LOADINGS
 
-load_options = [-60.66, -114.30945841277135, -119.33166543189739]
+load_options = [-61.336104559159034, -114.30945841277135, -119.33166543189739]
 
 load = load_options[concrete_type]
 

@@ -137,7 +137,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
             self.e_T = 12.
 
-            self.c_T = 8.6
+            self.c_T = 6.6
 
             self.tau_pi_bar = 1.7
 
@@ -147,11 +147,11 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
             self.eps_0 = 0.0000000000000000000001
 
-            self.K_N = 8000.
+            self.K_N = 16000.
 
             self.gamma_N = 4000.
 
-            self.sigma_0 = 40.
+            self.sigma_0 = 30.
 
             # -------------------------------------------------------------------------
             # Cached elasticity tensors
