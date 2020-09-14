@@ -227,8 +227,8 @@ M_plot = 1  # Plot microplanes polar graphs. 1: yes, 0: no
 t_steps_cycle = 20
 n_mp = 360
 
-S_max1 = 0.95          # maximum loading level
-S_min1 = 0.2           # minimum loading level
+S_max1 = 0.9          # maximum loading level
+S_min1 = 0.20           # minimum loading level
 n_cycles1 = 1000         # number of applied cycles
 
 # For sequence order effect
@@ -252,7 +252,7 @@ path = os.path.join(
 
 # FINAL LOADINGS
 
-load_options = [-60.54301292467442, -91.69221808121128, -119.33166543189739, 0, 0 , 0, -97.38726895936968]
+load_options = [-60.54301292467442, -91.69221808121128, -119.33166543189739, 0, 0 , 0, -95.19749064866976]
 
 load = load_options[concrete_type]
 
@@ -318,7 +318,7 @@ print(np.max(np.abs(F[:, 1])), 'sigma2')
 
 f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
 
-ax2.plot(np.abs(U[:, 0]), np.abs(F[:, 0]), linewidth=2.5)
+ax2.plot(np.abs(U[:, 1]), np.abs(F[:, 1]), linewidth=2.5)
 ax2.set_xlabel(r'$|\varepsilon_{11}$|', fontsize=25)
 ax2.set_ylabel(r'$|\sigma_{11}$| [-]', fontsize=25)
 ax2.set_title('stress-strain' + ',' + 'N =' + str(cyc*n_cycles1) + str(S_max1) + 'Smin=' + str(S_min1))

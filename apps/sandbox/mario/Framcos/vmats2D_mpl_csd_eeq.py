@@ -404,9 +404,9 @@ class MATS2DMplCSDEEQ(MATS2DEval):
 
         eps_N_Aux = self._get_e_N_Emn_2(eps_aux)
 
-        # E_N = self.E / (1.0 - 2.0 * self.nu)
+        E_N = self.E / (1.0 - 2.0 * self.nu)
 
-        E_N = self.E * (1.0 + 2.0 *  self.nu) / (1.0 - self.nu**2)
+        # E_N = self.E * (1.0 + 2.0 *  self.nu) / (1.0 - self.nu**2)
 
 
         # When deciding if a microplane is in tensile or compression, we define a strain boundary such that that
@@ -476,12 +476,12 @@ class MATS2DMplCSDEEQ(MATS2DEval):
     def get_tangential_law(self, eps_T_Emna, omega_T_Emn, z_T_Emn,
                            alpha_T_Emna, eps_T_pi_Emna, sigma_N_Emn):
 
-        # E_T = self.E / (1.0 + self.nu)
+        E_T = self.E / (1.0 + self.nu)
 
         # E_T = self.E * (1.0 - 4 * self.nu) / \
         #     ((1.0 + self.nu) * (1.0 - 2 * self.nu))
 
-        E_T = self.E * (1.0 - 3.0 *  self.nu) / (1.0 - self.nu**2)
+        # E_T = self.E * (1.0 - 3.0 *  self.nu) / (1.0 - self.nu**2)
 
 
         # thermo forces
@@ -800,6 +800,6 @@ class MATS2DMplCSDEEQ(MATS2DEval):
 
     @cached_property
     def _get__MPW(self):
-        MPW = np.ones(self.n_mp) / self.n_mp
+        MPW = np.ones(self.n_mp) / self.n_mp * 2
 
         return MPW

@@ -131,23 +131,23 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
             self.K_T = 8000.0
 
-            self.S_T = 0.003
+            self.S_T = 0.0033
 
             self.r_T = 9.
 
             self.e_T = 12.
 
-            self.c_T = 6.6
+            self.c_T = 7.6
 
-            self.tau_pi_bar = 1.7
+            self.tau_pi_bar = 2.2
 
             self.a = 0.003
 
-            self.Ad = 150.0
+            self.Ad = 800.0
 
             self.eps_0 = 0.0000000000000000000001
 
-            self.K_N = 16000.
+            self.K_N = 5000.
 
             self.gamma_N = 4000.
 
@@ -199,11 +199,11 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
             self.K_T = 2200.0
 
-            self.S_T = 0.015
+            self.S_T = 0.011
 
             self.r_T = 17.5
 
-            self.c_T = 8.
+            self.c_T = 12.
 
             self.e_T = 10.
 
@@ -219,7 +219,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
             self.gamma_N = 25000.
 
-            self.sigma_0 = 90.
+            self.sigma_0 = 80.
 
             self.E = 44e+3
 

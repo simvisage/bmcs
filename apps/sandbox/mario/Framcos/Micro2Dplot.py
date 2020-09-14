@@ -24,8 +24,8 @@ class Micro2Dplot():
                 'size': 18}
 
         matplotlib.rc('font', **font)
-        A = np.array(range(len(eps_N_p_Emn)))
-        A= A[::2]
+        A = np.array(range(len(eps_N_p_Emn[::2])))
+        A= A[::10]
 
         plt.figure(figsize=(9, 3))
         plt.subplot(241, projection='polar')
@@ -196,14 +196,13 @@ class Micro2Dplot():
 
         plt.figure(figsize=(9, 3))
 
-        plt.subplot(121)
+        plt.subplot(111)
 
         plt.plot(np.arange(len(C)), C)
         plt.title(r'$ \omega_N$')
 
-        plt.subplot(122)
 
         plt.plot(np.arange(len(D)), D)
 
-        plt.title(r'$ \omega_T$')
+
         plt.show()

@@ -224,7 +224,7 @@ def get_int_var(path, size, n_mp):  # unpacks saved data
            Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn
 
 
-concrete_type= 0        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
+concrete_type= 2        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
 
 Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Biaxial']
 
@@ -235,9 +235,9 @@ M_plot = 1  # Plot microplanes polar graphs. 1: yes, 0: no
 t_steps_cycle = 100
 n_mp = 28
 
-S_max1 = 0.9          # maximum loading level
-S_min1 = 0.05           # minimum loading level
-n_cycles1 = 10000        # number of applied cycles
+S_max1 = 0.8          # maximum loading level
+S_min1 = 0.2           # minimum loading level
+n_cycles1 = 1000000        # number of applied cycles
 
 # For sequence order effect
 
@@ -260,7 +260,7 @@ path = os.path.join(
 
 # FINAL LOADINGS
 
-load_options = [-61.336104559159034, -114.30945841277135, -119.33166543189739]
+load_options = [-60.04618600894394, -114.30945841277135, -120.68460619830213]
 
 load = load_options[concrete_type]
 
@@ -338,8 +338,8 @@ if loading_scenario == 'constant':
 
     f, (ax) = plt.subplots(1, 1, figsize=(5, 4))
 
-    ax.plot((np.arange(len(U[1::2, 0])) + 1) / len(U[1::2, 0]),
-            np.abs(U[1::2, 0]), linewidth=2.5)
+    ax.plot((np.arange(len(U[2::2, 0])) + 1) / len(U[2::2, 0]),
+            np.abs(U[2::2, 0]), linewidth=2.5)
 
     ax.set_xlabel(r'$N / N_f $|', fontsize=25)
     ax.set_ylabel(r'$|\varepsilon_{11}^{max}$|', fontsize=25)

@@ -223,11 +223,11 @@ def get_int_var(path, size, n_mp):  # unpacks saved data
            Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn
 
 
-concrete_type= 0        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
+concrete_type= 2        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
 
 Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Biaxial']
 
-loading_scenario = 'cyclic'   # monotonic, cyclic
+loading_scenario = 'monotonic'   # monotonic, cyclic
 
 M_plot = 0  # Plot microplanes polar graphs. 1: yes, 0: no
 
@@ -242,7 +242,7 @@ if loading_scenario == 'monotonic':
 
 if loading_scenario == 'cyclic':
 
-    eps = [-0.002745, -0.001, -0.0047, -0.002, -0.0065, -0.0025, -0.0085, -0.0035, -0.01]
+    eps = [-0.003, -0.00117, -0.0053, -0.002, -0.0065, -0.002, -0.0085, -0.003, -0.01]
 
     load1 = np.linspace(0, eps[0], t_steps)
     load2 = np.linspace(load1[-1], eps[1], t_steps)
