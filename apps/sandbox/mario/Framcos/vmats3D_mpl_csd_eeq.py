@@ -658,6 +658,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         z_T_Emn = int_var[:, 10]
         alpha_T_Emna = int_var[:, 11:14]
         eps_T_pi_Emna = int_var[:, 14:17]
+        sigma_T_Emna = int_var[:, 17:20]
 
         beta_Emabcd = self._get_beta_Emabcd_2(
             eps_Emab, omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, omega_T_Emn, z_T_Emn,
@@ -687,12 +688,15 @@ class MATS3DMplCSDEEQ(MATS3DEval):
         # elastic strain tensor
         eps_e_Emab = eps_Emab - eps_p_Emab
 
-
-
+        delta = np.identity(3)
         # calculation of the stress tensor
         sig_Emab = np.einsum('...abcd,...cd->...ab', D_Emabcd, eps_e_Emab)
+        sig_Emab_int= np.einsum('n,...n,na,nb->...ab',
+                          self._MPW, sigma_N_Emn, self._MPN, self._MPN) + 0.5 * np.einsum('n,...ne,na,eb->...ab',
+                          self._MPW, sigma_T_Emna, self._MPN, delta) + 0.5 * np.einsum('n,...ne,nb,ea->...ab',
+                          self._MPW, sigma_T_Emna, self._MPN, delta)
 
-        return D_Emabcd, sig_Emab, eps_p_Emab
+        return D_Emabcd, sig_Emab, eps_p_Emab, sig_Emab_int
 
     #-----------------------------------------------
     # number of microplanes - currently fixed for 3D

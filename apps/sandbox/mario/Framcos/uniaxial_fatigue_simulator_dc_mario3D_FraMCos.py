@@ -223,11 +223,11 @@ def get_int_var(path, size, n_mp):  # unpacks saved data
            Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn
 
 
-concrete_type= 2        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
+concrete_type= 0        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
 
 Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Biaxial']
 
-loading_scenario = 'monotonic'   # monotonic, cyclic
+loading_scenario = 'cyclic'   # monotonic, cyclic
 
 M_plot = 0  # Plot microplanes polar graphs. 1: yes, 0: no
 
@@ -295,6 +295,7 @@ f, (ax2) = plt.subplots(1, 1, figsize=(15, 12))
 ax2.plot(np.abs(U[:, 0]), np.abs(F[:, 0]), 'k', linewidth=3.5)
 ax2.set_xlabel(r'$|\varepsilon_{11}$| [-]', fontsize=25)
 ax2.set_ylabel(r'$|\sigma{11}$| [-]', fontsize=25)
+ax2.set_ylim(0,70)
 
 print(np.max(np.abs(F[:, 0])), 'fc')
 

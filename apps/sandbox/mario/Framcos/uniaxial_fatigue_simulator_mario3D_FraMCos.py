@@ -75,6 +75,7 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1, n_mp, loading_scenario):
     # Global vectors
     F_ext = np.zeros((n_O,), np.float_)
     F_O = np.zeros((n_O,), np.float_)
+    F_O_int = np.zeros((n_O,), np.float_)
     U_k_O = np.zeros((n_O,), dtype=np.float_)
     U_P = np.zeros((n_O,), np.float_)
     eps_aux = get_eps_ab(U_k_O)
@@ -84,7 +85,7 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1, n_mp, loading_scenario):
     # Iteration parameters
     k_max, R_acc = 1000, 1e-3
     # Record solutions
-    U_t_list, F_t_list, U_P_list = [np.copy(U_k_O)], [np.copy(F_O)], [np.copy(U_P)]
+    U_t_list, F_t_list, F_t_int_list, U_P_list = [np.copy(U_k_O)], [np.copy(F_O)], [np.copy(F_O_int)], [np.copy(U_P)]
 
     # Load increment loop
     while t_n1 <= t_max - 1:
@@ -100,11 +101,12 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1, n_mp, loading_scenario):
             eps_ab = get_eps_ab(U_k_O).reshape(3, 3)
             # Stress and material stiffness
 
-            D_abcd, sig_ab, eps_p_Emab = m.get_corr_pred(
+            D_abcd, sig_ab, eps_p_Emab, sig_ab_int = m.get_corr_pred(
                 eps_ab, 1, int_var, eps_aux, F_ext
             )
             # Internal force
             F_O = get_sig_O(sig_ab.reshape(1,3,3)).reshape(6,)
+            F_O_int = get_sig_O(sig_ab_int.reshape(1, 3, 3)).reshape(6, )
             # Residuum
             R_O = F_ext - F_O
             # System matrix
@@ -155,6 +157,7 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1, n_mp, loading_scenario):
 
                 U_t_list.append(np.copy(U_k_O))
                 F_t_list.append(F_O)
+                F_t_int_list.append(F_O_int)
                 U_P_list.append(U_P)
                 eps_aux = get_eps_ab(U_k_O)
                 D_aux = D_abcd[np.newaxis, :, :, :, :]
@@ -171,15 +174,32 @@ def get_UF_t(F, n_t, load, S_max1, S_max2, S_min1, n_mp, loading_scenario):
 
                 U_t_list.append(np.copy(U_k_O))
                 F_t_list.append(F_O)
+                F_t_int_list.append(F_O_int)
                 U_P_list.append(U_P)
                 eps_aux = get_eps_ab(U_k_O)
                 D_aux = D_abcd[np.newaxis, :, :, :, :]
                 D = np.concatenate((D, D_aux))
                 t_aux += 1
+        if loading_scenario == 'increasing':
+            # Saving data all points
+
+            save = np.concatenate((int_var, dissip), axis=1)
+
+            df = pd.DataFrame(save)
+            df.to_hdf(path, 'middle' + np.str(t_aux), append=True)
+
+            U_t_list.append(np.copy(U_k_O))
+            F_t_list.append(F_O)
+            F_t_int_list.append(F_O_int)
+            U_P_list.append(U_P)
+            eps_aux = get_eps_ab(U_k_O)
+            D_aux = D_abcd[np.newaxis, :, :, :, :]
+            D = np.concatenate((D, D_aux))
+            t_aux += 1
         t_n1 += 1
 
-    U_t, F_t, U_p = np.array(U_t_list), np.array(F_t_list), np.array(U_P_list)
-    return U_t, F_t, t_n1 / t_max, t_aux, D, U_p
+    U_t, F_t,F_t_int, U_p = np.array(U_t_list), np.array(F_t_list), np.array(F_t_int_list), np.array(U_P_list)
+    return U_t, F_t,F_t_int, t_n1 / t_max, t_aux, D, U_p
 
 def get_int_var(path, size, n_mp):  # unpacks saved data
 
@@ -224,7 +244,7 @@ def get_int_var(path, size, n_mp):  # unpacks saved data
            Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn
 
 
-concrete_type= 2        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
+concrete_type= 0        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
 
 Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Biaxial']
 
@@ -235,9 +255,9 @@ M_plot = 1  # Plot microplanes polar graphs. 1: yes, 0: no
 t_steps_cycle = 100
 n_mp = 28
 
-S_max1 = 0.8          # maximum loading level
-S_min1 = 0.2           # minimum loading level
-n_cycles1 = 1000000        # number of applied cycles
+S_max1 = 0.95          # maximum loading level
+S_min1 = 0.05           # minimum loading level
+n_cycles1 = 1000        # number of applied cycles
 
 # For sequence order effect
 
@@ -247,6 +267,12 @@ cycles1 = 20           # fatigue life first level
 S_max2 = 0.85            # maximum loading level second level
 cycles2 = 221         # fatigue life second level
 n_cycles2 = np.int(1e3 - np.floor(eta1*cycles1)) # number of applied cycles second level
+
+# For increasing loading levels
+
+cycles10 = 10           # number of cycles per loading level
+S_min10 = 0.1
+
 
 # Path saving data
 
@@ -270,6 +296,8 @@ first_load = np.concatenate((np.linspace(0, load * S_max1, t_steps_cycle), np.li
     load * S_max1, load * S_min1, t_steps_cycle)[1:]))
 
 if loading_scenario == 'constant':
+    first_load = np.concatenate((np.linspace(0, load * S_max1, t_steps_cycle), np.linspace(
+        load * S_max1, load * S_min1, t_steps_cycle)[1:]))
 
     cycle1 = np.concatenate(
         (np.linspace(load * S_min1, load * S_max1, t_steps_cycle)[1:], np.linspace(load * S_max1, load * S_min1, t_steps_cycle)[
@@ -280,6 +308,9 @@ if loading_scenario == 'constant':
 
 
 if loading_scenario == 'order':
+
+    first_load = np.concatenate((np.linspace(0, load * S_max1, t_steps_cycle), np.linspace(
+        load * S_max1, load * S_min1, t_steps_cycle)[1:]))
 
     cycle1 = np.concatenate(
         (np.linspace(load * S_min1, load * S_max1, t_steps_cycle)[1:], np.linspace(load * S_max1, load * S_min1, t_steps_cycle)[
@@ -296,6 +327,73 @@ if loading_scenario == 'order':
 
     sin_load = np.concatenate((first_load, cycle1, change_order, cycle2))
 
+if loading_scenario == 'increasing':
+
+    first_load = np.concatenate((np.linspace(0, load * 0.5, t_steps_cycle), np.linspace(
+        load * 0.5, load * S_min10, t_steps_cycle)[1:]))
+
+    cycle1 = np.concatenate(
+        (np.linspace(load * S_min10, load * 0.5, t_steps_cycle)[1:], np.linspace(load * 0.5, load * S_min10, t_steps_cycle)[
+                                                              1:]))
+    cycle1 = np.tile(cycle1, cycles10 - 1)
+
+    cycle2 = np.concatenate(
+        (np.linspace(load * S_min10, load * 0.55, t_steps_cycle)[1:], np.linspace(load * 0.55, load * S_min10, t_steps_cycle)[
+                                                              1:]))
+    cycle2 = np.tile(cycle2, cycles10)
+
+    cycle3 = np.concatenate(
+        (np.linspace(load * S_min10, load * 0.6, t_steps_cycle)[1:],
+         np.linspace(load * 0.6, load * S_min10, t_steps_cycle)[
+         1:]))
+    cycle3 = np.tile(cycle3, cycles10)
+
+    cycle4 = np.concatenate(
+        (np.linspace(load * S_min10, load * 0.65, t_steps_cycle)[1:],
+         np.linspace(load * 0.65, load * S_min10, t_steps_cycle)[
+         1:]))
+    cycle4 = np.tile(cycle4, cycles10)
+
+    cycle5 = np.concatenate(
+        (np.linspace(load * S_min10, load * 0.7, t_steps_cycle)[1:],
+         np.linspace(load * 0.7, load * S_min10, t_steps_cycle)[
+         1:]))
+    cycle5 = np.tile(cycle5, cycles10)
+
+    cycle6 = np.concatenate(
+        (np.linspace(load * S_min10, load * 0.75, t_steps_cycle)[1:],
+         np.linspace(load * 0.75, load * S_min10, t_steps_cycle)[
+         1:]))
+    cycle6 = np.tile(cycle6, cycles10)
+
+    cycle7 = np.concatenate(
+        (np.linspace(load * S_min10, load * 0.8, t_steps_cycle)[1:],
+         np.linspace(load * 0.8, load * S_min10, t_steps_cycle)[
+         1:]))
+    cycle7 = np.tile(cycle7, cycles10)
+
+    cycle8 = np.concatenate(
+        (np.linspace(load * S_min10, load * 0.85, t_steps_cycle)[1:],
+         np.linspace(load * 0.85, load * S_min10, t_steps_cycle)[
+         1:]))
+    cycle8 = np.tile(cycle8, cycles10)
+
+    cycle9 = np.concatenate(
+        (np.linspace(load * S_min10, load * 0.9, t_steps_cycle)[1:],
+         np.linspace(load * 0.9, load * S_min10, t_steps_cycle)[
+         1:]))
+    cycle9 = np.tile(cycle9, cycles10)
+
+    cycle10 = np.concatenate(
+        (np.linspace(load * S_min10, load * 0.95, t_steps_cycle)[1:],
+         np.linspace(load * 0.95, load * S_min10, t_steps_cycle)[
+         1:]))
+    cycle10 = np.tile(cycle10, cycles10)
+
+
+    sin_load = np.concatenate((first_load, cycle1, cycle2, cycle3, cycle4, cycle5, cycle6, cycle7, cycle8, cycle9, cycle10))
+    plt.plot(np.arange(len(sin_load)),sin_load)
+    plt.show()
 
 
 t_steps = len(sin_load)
@@ -305,7 +403,7 @@ t = np.linspace(0, 1, len(sin_load))
 m = MATS3DMplCSDEEQ(concrete_type)
 
 
-U, F, cyc, number_cyc, D, U_p = get_UF_t(
+U, F, F_int, cyc, number_cyc, D, U_p = get_UF_t(
     sin_load, t_steps, load, S_max1, S_max2, S_min1, n_mp, loading_scenario)
 
 
@@ -323,6 +421,9 @@ print(np.max(np.abs(F[:, 0])), 'sigma1')
 print(np.max(np.abs(F[:, 1])), 'sigma2')
 
 # Fig 1, stress-strain curve
+
+plt.plot(np.arange(len(F[:, 0])),np.abs(F[:, 0])-np.abs(F_int[:, 0]))
+plt.show()
 
 f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
 
