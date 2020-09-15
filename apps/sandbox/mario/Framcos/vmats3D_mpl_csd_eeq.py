@@ -145,7 +145,7 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
             self.Ad = 800.0
 
-            self.eps_0 = 0.0000000000000000000001
+            self.eps_0 = 0.00001
 
             self.K_N = 5000.
 
@@ -163,15 +163,15 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
         if concrete_type == 1:  # #   C80 MA
 
-            self.gamma_T = 1000000.
+            self.gamma_T = 700000.
 
-            self.K_T = 30000.0
+            self.K_T = 20000.0
 
-            self.S_T = 0.01
+            self.S_T = 0.0075
 
-            self.r_T = 14.
+            self.r_T = 15.
 
-            self.c_T = 6.
+            self.c_T = 7.
 
             self.e_T = 14.
 
@@ -179,15 +179,15 @@ class MATS3DMplCSDEEQ(MATS3DEval):
 
             self.a = 0.01
 
-            self.Ad = 1000.0
+            self.Ad = 1700.0
 
             self.eps_0 = 0.0001
 
-            self.K_N = 30000.
+            self.K_N = 17000.
 
-            self.gamma_N = 20000.
+            self.gamma_N = 9000.
 
-            self.sigma_0 = 60.
+            self.sigma_0 = 45.
 
             self.E = 42e+3
 

@@ -7,6 +7,7 @@ from apps.sandbox.mario.Framcos.vmats3D_mpl_csd_eeq import MATS3DMplCSDEEQ
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import time
 
 
 DELTA = np.identity(3)
@@ -244,20 +245,20 @@ def get_int_var(path, size, n_mp):  # unpacks saved data
            Disip_iso_T_Emn, Disip_kin_N_Emn, Disip_kin_T_Emn
 
 
-concrete_type= 0        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
+concrete_type= 1        # 0:C40MA, 1:C80MA, 2:120MA, 3:Tensile, 4:Compressive, 5:Biaxial
 
 Concrete_Type_string = ['C40MA', 'C80MA','C120MA', 'Tensile', 'Compressive', 'Biaxial']
 
-loading_scenario = 'constant'   # constant, order, increasing
+loading_scenario = 'increasing'   # constant, order, increasing
 
 M_plot = 1  # Plot microplanes polar graphs. 1: yes, 0: no
 
 t_steps_cycle = 100
 n_mp = 28
 
-S_max1 = 0.95          # maximum loading level
-S_min1 = 0.05           # minimum loading level
-n_cycles1 = 1000        # number of applied cycles
+S_max1 = 0.05          # maximum loading level
+S_min1 = 0.20           # minimum loading level
+n_cycles1 = 1000000        # number of applied cycles
 
 # For sequence order effect
 
@@ -286,7 +287,7 @@ path = os.path.join(
 
 # FINAL LOADINGS
 
-load_options = [-60.04618600894394, -114.30945841277135, -120.68460619830213]
+load_options = [-60.04618600894394, -91.48124175031421, -120.68460619830213]
 
 load = load_options[concrete_type]
 
@@ -329,8 +330,8 @@ if loading_scenario == 'order':
 
 if loading_scenario == 'increasing':
 
-    first_load = np.concatenate((np.linspace(0, load * 0.5, t_steps_cycle), np.linspace(
-        load * 0.5, load * S_min10, t_steps_cycle)[1:]))
+    first_load = np.concatenate((np.linspace(0, load * 0.55, t_steps_cycle), np.linspace(
+        load * 0.55, load * S_min10, t_steps_cycle)[1:]))
 
     cycle1 = np.concatenate(
         (np.linspace(load * S_min10, load * 0.5, t_steps_cycle)[1:], np.linspace(load * 0.5, load * S_min10, t_steps_cycle)[
@@ -390,10 +391,15 @@ if loading_scenario == 'increasing':
          1:]))
     cycle10 = np.tile(cycle10, cycles10)
 
+    cycle11 = np.concatenate(
+        (np.linspace(load * S_min10, load * 1.0, t_steps_cycle)[1:],
+         np.linspace(load * 1.0, load * S_min10, t_steps_cycle)[
+         1:]))
+    cycle11 = np.tile(cycle11, cycles10)
 
-    sin_load = np.concatenate((first_load, cycle1, cycle2, cycle3, cycle4, cycle5, cycle6, cycle7, cycle8, cycle9, cycle10))
-    plt.plot(np.arange(len(sin_load)),sin_load)
-    plt.show()
+
+    sin_load = np.concatenate((first_load, cycle2, cycle3, cycle4, cycle5, cycle6, cycle7, cycle8, cycle9,cycle11))
+
 
 
 t_steps = len(sin_load)
@@ -402,9 +408,15 @@ t = np.linspace(0, 1, len(sin_load))
 
 m = MATS3DMplCSDEEQ(concrete_type)
 
+start = time.time()
+
+
 
 U, F, F_int, cyc, number_cyc, D, U_p = get_UF_t(
     sin_load, t_steps, load, S_max1, S_max2, S_min1, n_mp, loading_scenario)
+
+end = time.time()
+print(end - start, 'seconds')
 
 
 [omega_N_Emn, z_N_Emn, alpha_N_Emn, r_N_Emn, eps_N_p_Emn, sigma_N_Emn, Z_N_Emn, X_N_Emn, Y_N_Emn, omega_T_Emn, z_T_Emn,
@@ -422,8 +434,8 @@ print(np.max(np.abs(F[:, 1])), 'sigma2')
 
 # Fig 1, stress-strain curve
 
-plt.plot(np.arange(len(F[:, 0])),np.abs(F[:, 0])-np.abs(F_int[:, 0]))
-plt.show()
+# plt.plot(np.arange(len(F[:, 0])),np.abs(F[:, 0])-np.abs(F_int[:, 0]))
+# plt.show()
 
 f, (ax2) = plt.subplots(1, 1, figsize=(5, 4))
 
