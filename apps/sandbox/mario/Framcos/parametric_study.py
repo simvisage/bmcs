@@ -34,7 +34,7 @@ r_T = 1.
 c_T = 1.
 
 
-e_T_serie = np.array([1,2,3,4,5])
+e_T_serie = np.array([0,1,2,3,4,5])
 #e_T = 1.
 
 
